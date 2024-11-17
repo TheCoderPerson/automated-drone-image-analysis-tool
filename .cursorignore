@@ -1,0 +1,14 @@
+# Ignore all files in the `include` directory
+Include/
+Lib/
+resources/
+Scripts/
+src/
+
+# ignore everything
+*
+# do not ignore app
+!app/
+# do not ignore directories inside app
+!app/*/
+!app/**/*/
