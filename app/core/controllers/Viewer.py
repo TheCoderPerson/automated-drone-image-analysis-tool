@@ -1,7 +1,7 @@
 import qimage2ndarray
 import imghdr
 from pathlib import Path
-from PyQt5.QtGui import QImage, QIntValidator, QPixmap, QImageReader, QIcon, QPainter, QFont
+from PyQt5.QtGui import QImage, QIntValidator, QPixmap, QImageReader, QIcon
 from PyQt5.QtCore import Qt, QSize, QThread, pyqtSignal
 from PyQt5.QtWidgets import QMainWindow, QMessageBox, QListWidgetItem, QFileDialog, QPushButton, QFrame, QVBoxLayout, QLabel, QWidget
 from qtwidgets import Toggle
@@ -300,7 +300,11 @@ class Viewer(QMainWindow, Ui_Viewer):
             self.logger.error(e)
 
     def loadAreasofInterest(self, image):
-        """Loads areas of interest thumbnails for a given image."""
+        """Loads areas of interest thumbnails for a given image.
+
+        Args:
+            image (dict): Information about the image to load areas of interest for.
+        """
         self.aoiListWidget.clear()
         img_arr = qimage2ndarray.imread(image['path'])
         count = 0
@@ -354,59 +358,6 @@ class Viewer(QMainWindow, Ui_Viewer):
             count += 1
 
         self.areaCountLabel.setText(f"{count} {'Area' if count == 1 else 'Areas'} of Interest")
-
-    # def loadAreasofInterest(self, image):
-    #     """Loads areas of interest thumbnails for a given image.
-
-    #     Args:
-    #         image (dict): Information about the image to load areas of interest for.
-    #     """
-    #     self.aoiListWidget.clear()
-    #     img_arr = qimage2ndarray.imread(image['path'])
-    #     count = 0
-    #     self.highlights = []
-    #     for area_of_interest in image['areas_of_interest']:
-    #         center = area_of_interest['center']
-    #         radius = area_of_interest['radius'] + 10
-    #         crop_arr = self.crop_image(img_arr, center[0] - radius, center[1] - radius, center[0] + radius, center[1] + radius)
-
-    #         # Convert cropped array to QImage
-    #         img = qimage2ndarray.array2qimage(crop_arr)
-            
-    #         # Create QPainter to draw on the image
-    #         painter = QPainter(img)
-    #         painter.setPen(Qt.white)  # White text
-    #         painter.setFont(QFont('Arial', 4, QFont.Bold))
-            
-    #         # Draw text with black outline for better visibility
-    #         text = f"X:{center[0]}, Y:{center[1]}"
-    #         painter.setPen(Qt.black)
-    #         for dx in [-1, 1]:
-    #             for dy in [-1, 1]:
-    #                 painter.drawText(5 + dx, img.height() - 5 + dy, text)
-    #         painter.setPen(Qt.white)
-    #         painter.drawText(5, img.height() - 5, text)
-    #         painter.end()
-
-
-    #         highlight = QtImageViewer(self, self.aoiListWidget, center, True)
-    #         highlight.setObjectName(f"highlight{count}: x:{center[0]}, y:{center[1]}")
-    #         highlight.setMinimumSize(QSize(190, 190))
-    #         highlight.aspectRatioMode = Qt.KeepAspectRatio
-    #         #img = qimage2ndarray.array2qimage(crop_arr)
-    #         highlight.setImage(img)
-    #         highlight.canZoom = False
-    #         highlight.canPan = False
-
-    #         listItem = QListWidgetItem()
-    #         listItem.setSizeHint(QSize(190, 190))
-    #         self.aoiListWidget.addItem(listItem)
-    #         self.aoiListWidget.setItemWidget(listItem, highlight)
-    #         self.highlights.append(highlight)
-    #         highlight.leftMouseButtonPressed.connect(self.areaOfInterestClick)
-    #         count += 1
-
-    #     self.areaCountLabel.setText(f"{count} {'Area' if count == 1 else 'Areas'} of Interest")
 
     def loadThermalData(self, path):
         """Loads and converts thermal data based on the selected temperature unit.

@@ -50,7 +50,6 @@ class AnalyzeService(QObject):
             kmeans_clusters (int): Number of clusters (colors) to retain in the image.
             thermal (bool): Whether this is a thermal image algorithm.
             options (dict): Additional algorithm-specific options.
-            max_area (int): Maximum area in pixels for an object to be considered an area of interest.
         """
         self.logger = LoggerService()
         self.xmlService = XmlService()
