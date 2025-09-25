@@ -442,11 +442,8 @@ class ImageService:
         # Create a blended overlay where mask pixels are highlighted
         mask_indices = mask > 0
         if np.any(mask_indices):
-            # Blend with 70% original image and 30% highlight color for visibility
-            alpha = 0.3  # Highlight strength
-            highlighted_image[mask_indices] = (
-                highlighted_image[mask_indices] * (1 - alpha) + bgr_color * alpha
-            ).astype(np.uint8)
+            # Use full opacity for highlighted pixels to match previous behavior
+            highlighted_image[mask_indices] = bgr_color
 
         return highlighted_image
     

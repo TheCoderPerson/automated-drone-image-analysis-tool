@@ -497,11 +497,6 @@ class Viewer(QMainWindow, Ui_Viewer):
             self.main_image.setImage(img)
             self.fileNameLabel.setText(image['name'])
 
-            # For AOI thumbnails, we don't need to draw circles on the full image
-            # Just pass the base image array - circles can be drawn on individual crops if needed
-            # Use the base image array for AOI thumbnails (no need to process full image)
-            self.aoi_controller.load_areas_of_interest(image_service.img_array, image['areas_of_interest'], self.current_image)
-
             # Check again before resetting zoom
             if not hasattr(self, 'main_image') or self.main_image is None or getattr(self.main_image, '_is_destroyed', True):
                 return
@@ -533,6 +528,12 @@ class Viewer(QMainWindow, Ui_Viewer):
                 self.messages['Estimated Average GSD'] = f"{avg_gsd}cm/px"
             else:
                 self.messages['Estimated Average GSD'] = None
+
+            # Load AOI thumbnails AFTER GSD is calculated so scale bars can be drawn
+            # For AOI thumbnails, we don't need to draw circles on the full image
+            # Just pass the base image array - circles can be drawn on individual crops if needed
+            self.aoi_controller.load_areas_of_interest(image_service.img_array, image['areas_of_interest'], self.current_image)
+
             position = image_service.get_position(self.position_format)
             if position:
                 self.messages['GPS Coordinates'] = position
@@ -757,6 +758,10 @@ class Viewer(QMainWindow, Ui_Viewer):
         image = self.images[self.current_image]
         image_path = image.get('path', '')
         mask_path = image.get('mask_path', '')
+
+        # Ensure mask_path is a string (it might be stored as a tuple or None)
+        if mask_path and not isinstance(mask_path, str):
+            mask_path = ''
         
         # Load and process the image
         image_service = ImageService(image_path, mask_path)
@@ -776,8 +781,10 @@ class Viewer(QMainWindow, Ui_Viewer):
         # Apply highlight if enabled (independent of circle drawing)
         if hasattr(self, 'highlightPixelsToggle') and self.highlightPixelsToggle.isChecked():
             if mask_path:
+                # ImageService already has mask_path, so we pass None to use the stored one
                 augmented_image = image_service.apply_mask_highlight(
                     augmented_image,
+                    None,  # Use mask_path already stored in image_service
                     self.settings['identifier_color'],
                     image['areas_of_interest']
                 )

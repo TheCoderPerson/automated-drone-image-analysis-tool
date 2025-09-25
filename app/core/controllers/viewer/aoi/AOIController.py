@@ -18,11 +18,57 @@ except Exception:
         except Exception:
             return False
 from PySide6.QtCore import Qt, QSize, QPoint
-from PySide6.QtGui import QCursor
+from PySide6.QtGui import QCursor, QPainter, QPen, QColor, QFont
 
 from core.views.components.QtImageViewer import QtImageViewer
 from core.services.LoggerService import LoggerService
 import qimage2ndarray
+
+
+class AOIScaleWidget(QWidget):
+    """Custom widget for drawing a scale bar on AOI thumbnails."""
+
+    def __init__(self, parent, scale_text, bar_width_px):
+        super().__init__(parent)
+        self.scale_text = scale_text
+        self.bar_width_px = bar_width_px
+        # Make widget wide enough for the bar plus text
+        self.setFixedSize(bar_width_px + 60, 25)
+        self.setAttribute(Qt.WA_TransparentForMouseEvents)
+
+    def paintEvent(self, event):
+        """Paint the scale bar and text."""
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.Antialiasing)
+
+        # Draw semi-transparent background
+        painter.fillRect(self.rect(), QColor(0, 0, 0, 200))
+
+        # Draw white scale bar
+        pen = QPen(Qt.white, 2)
+        painter.setPen(pen)
+
+        bar_y = self.height() // 2 + 2
+        bar_start_x = 5
+        bar_end_x = bar_start_x + self.bar_width_px
+
+        # Draw horizontal line
+        painter.drawLine(bar_start_x, bar_y, bar_end_x, bar_y)
+
+        # Draw end caps
+        cap_height = 3
+        painter.drawLine(bar_start_x, bar_y - cap_height, bar_start_x, bar_y + cap_height)
+        painter.drawLine(bar_end_x, bar_y - cap_height, bar_end_x, bar_y + cap_height)
+
+        # Draw text
+        font = QFont("Arial", 9, QFont.Bold)
+        painter.setFont(font)
+        painter.setPen(Qt.white)
+        text_x = bar_end_x + 5
+        text_y = bar_y + 3
+        painter.drawText(text_x, text_y, self.scale_text)
+
+        painter.end()
 
 
 class AOIController:
@@ -255,6 +301,8 @@ class AOIController:
             radius = area_of_interest['radius'] + 10
             crop_arr = self.parent.crop_image(augmented_image, center[0] - radius, center[1] - radius, center[0] + radius, center[1] + radius)
 
+            # Don't draw scale bar here - we'll draw it only on selection
+
             # Create the image viewer
             highlight = QtImageViewer(self.parent, container, center, True)
             highlight.setObjectName(f"highlight{count}")
@@ -409,17 +457,24 @@ class AOIController:
             aoi_index (int): Index of the AOI in the full list
             visible_index (int): Index of the AOI in the visible containers list
         """
-        # Clear ALL container styles first using the proper update method
+        # Clear ALL container styles and remove scale from previous selection
         for i, container in enumerate(self.aoi_containers):
             self.update_aoi_selection_style(container, False)
+            # Remove any existing scale widget
+            if hasattr(container, 'scale_label'):
+                container.scale_label.hide()
 
         # Set new selection
         self.selected_aoi_index = aoi_index
 
-        # Apply selection style to the clicked container using the proper method
+        # Apply selection style to the clicked container and add scale
         if visible_index >= 0 and visible_index < len(self.aoi_containers):
             container = self.aoi_containers[visible_index]
             self.update_aoi_selection_style(container, True)
+
+            # Add scale text to the selected thumbnail
+            self._add_scale_to_selected_thumbnail(container)
+
             container.update()
             container.repaint()
     
@@ -651,3 +706,98 @@ class AOIController:
 
         # Show confirmation toast
         self.parent._show_toast("AOI data copied", 2000, color="#00C853")
+
+    def _add_scale_to_selected_thumbnail(self, container):
+        """Add a scale bar widget to the selected AOI thumbnail.
+
+        Args:
+            container: The container widget of the selected AOI
+        """
+        try:
+            # Get GSD from parent's messages
+            if not self.parent or not hasattr(self.parent, 'messages'):
+                return
+
+            gsd_text = self.parent.messages.get("Estimated Average GSD")  # e.g. '3.2cm/px'
+            if not gsd_text or gsd_text == 'None':
+                return
+
+            # Parse GSD value
+            try:
+                gsd_cm = float(gsd_text.replace("cm/px", "").strip())  # cm per pixel
+            except (ValueError, AttributeError):
+                return
+
+            # Get the actual AOI index to find its radius
+            aoi_index = container.property("aoi_index")
+            if aoi_index is None or self.parent.current_image >= len(self.parent.images):
+                return
+
+            current_image = self.parent.images[self.parent.current_image]
+            if 'areas_of_interest' not in current_image or aoi_index >= len(current_image['areas_of_interest']):
+                return
+
+            # Get the actual AOI radius
+            aoi = current_image['areas_of_interest'][aoi_index]
+            aoi_radius = aoi.get('radius', 20)  # Default to 20 if not found
+
+            # The thumbnail is 190px wide, but with margins, use about 180px
+            # The thumbnail shows (radius + 10) * 2 pixels of the original image
+            # So we need to calculate the scale based on the actual coverage
+
+            # Use most of the thumbnail width for the scale bar
+            bar_width_px = 120  # Good visible width that leaves room for text
+
+            # The thumbnail shows (radius + 10) * 2 pixels from the original image
+            # stretched to fit 190 pixels
+            original_width_shown = (aoi_radius + 10) * 2
+
+            # Calculate the real-world distance for the scale bar
+            # We need to account for the scaling from original to thumbnail
+            # The thumbnail is 190px showing original_width_shown pixels
+            scale_factor = 190.0 / original_width_shown
+
+            # The bar represents bar_width_px in thumbnail space
+            # which corresponds to bar_width_px / scale_factor in original image pixels
+            original_pixels_for_bar = bar_width_px / scale_factor
+
+            # Calculate real-world distance
+            real_cm = original_pixels_for_bar * gsd_cm
+            distance_unit = getattr(self.parent, 'distance_unit', 'm')
+
+            # Format label with appropriate units
+            if distance_unit == 'ft':
+                real_in = real_cm / 2.54
+                if real_in >= 12:
+                    scale_text = f"{real_in / 12:.1f} ft"
+                elif real_in >= 1:
+                    scale_text = f"{real_in:.1f} in"
+                else:
+                    scale_text = f"{real_in:.2f} in"
+            else:
+                if real_cm >= 100:
+                    scale_text = f"{real_cm / 100:.1f} m"
+                elif real_cm >= 10:
+                    scale_text = f"{real_cm:.0f} cm"
+                elif real_cm >= 1:
+                    scale_text = f"{real_cm:.1f} cm"
+                else:
+                    scale_text = f"{real_cm * 10:.1f} mm"
+
+            # Create or update scale widget
+            if hasattr(container, 'scale_label'):
+                container.scale_label.hide()
+                container.scale_label.deleteLater()
+
+            container.scale_label = AOIScaleWidget(container, scale_text, bar_width_px)
+
+            # Center the scale bar horizontally at the bottom of container
+            scale_x = (container.width() - container.scale_label.width()) // 2
+            scale_y = container.height() - container.scale_label.height() - 25
+            container.scale_label.move(scale_x, scale_y)
+            container.scale_label.show()
+            container.scale_label.raise_()
+
+        except Exception as e:
+            self.logger.error(f"Could not add scale to thumbnail: {e}")
+
