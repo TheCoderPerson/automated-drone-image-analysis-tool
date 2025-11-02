@@ -19,7 +19,7 @@ from urllib.parse import quote_plus
 from PySide6.QtGui import QImage, QIntValidator, QPixmap, QIcon, QPainter, QFont, QPen, QPalette, QColor, QDesktopServices, QBrush, QCursor
 from PySide6.QtCore import Qt, QSize, QThread, QPointF, QPoint, QEvent, QTimer, QUrl, QRectF, QObject
 from PySide6.QtWidgets import QDialog, QMainWindow, QMessageBox, QListWidgetItem, QFileDialog, QApplication
-from PySide6.QtWidgets import QPushButton, QFrame, QVBoxLayout, QHBoxLayout, QLabel, QWidget, QAbstractButton, QMenu, QInputDialog, QStackedWidget, QProgressDialog
+from PySide6.QtWidgets import QPushButton, QFrame, QVBoxLayout, QHBoxLayout, QLabel, QWidget, QAbstractButton, QMenu, QInputDialog, QStackedWidget, QProgressDialog, QSplitter
 
 from core.views.components.Toggle import Toggle
 from core.views.viewer.ui.Viewer_ui import Ui_Viewer
@@ -37,6 +37,7 @@ from core.views.viewer.dialogs.UpscaleDialog import UpscaleDialog
 from core.views.viewer.dialogs.HelpDialog import HelpDialog
 from core.views.viewer.dialogs.ReviewerNameDialog import ReviewerNameDialog
 from core.views.viewer.dialogs.CacheLocationDialog import CacheLocationDialog
+from core.views.viewer.dialogs.BearingRecoveryDialog import BearingRecoveryDialog
 
 from core.controllers.viewer.UIStyleController import UIStyleController
 from core.controllers.viewer.ThermalDataController import ThermalDataController
@@ -64,6 +65,7 @@ from core.services.ThermalParserService import ThermalParserService
 from core.services.SettingsService import SettingsService
 from core.services.BackfillCacheService import BackfillCacheService
 from helpers.LocationInfo import LocationInfo
+from helpers.MetaDataHelper import MetaDataHelper
 
 from typing import List, Dict, Any, Optional
 
@@ -94,6 +96,7 @@ class Viewer(QMainWindow, Ui_Viewer):
         self.theme = theme  # Store theme before calling _add_Toggles
         self.setupUi(self)
         self._add_Toggles()
+        self._adjust_ui_sizing()
         # ---------------- settings / data ----------------
         self.xml_path = xml_path
         self.xml_service = XmlService(xml_path)
@@ -139,6 +142,10 @@ class Viewer(QMainWindow, Ui_Viewer):
         # Load flagged AOIs from XML
         self.aoi_controller.initialize_from_xml(self.images)
         self.is_thermal = (self.settings['thermal'] == 'True')
+
+        # Refresh sort combo now that is_thermal is set and AOI data is loaded
+        self.aoi_controller.refresh_sort_combo()
+
         self.position_format = position_format
         self.current_image_array = None  # Cache for the current image RGB array
         self.current_image_service = None  # Keep reference to ImageService
@@ -191,6 +198,9 @@ class Viewer(QMainWindow, Ui_Viewer):
 
         # ---- load everything ----
         self._load_images()
+
+        # Check for missing bearings and offer recovery
+        self._check_and_recover_bearings()
 
         # Set up UI elements for controllers
         # Controllers get UI elements directly from parent
@@ -299,6 +309,40 @@ class Viewer(QMainWindow, Ui_Viewer):
         self.showOverlayToggle.setChecked(True)
         self.showOverlayToggle.clicked.connect(self._show_overlay_change)
 
+    def _adjust_ui_sizing(self):
+        """Adjust UI element sizing to be content-based rather than fixed height."""
+        from PySide6.QtWidgets import QSizePolicy
+
+        try:
+            # Fix TitleWidget (top icon button row) to be content-height only
+            if hasattr(self, 'TitleWidget') and self.TitleWidget:
+                size_policy = self.TitleWidget.sizePolicy()
+                size_policy.setVerticalPolicy(QSizePolicy.Policy.Fixed)
+                self.TitleWidget.setSizePolicy(size_policy)
+                self.TitleWidget.setMaximumHeight(60)  # Reasonable max for icon buttons
+                self.TitleWidget.adjustSize()
+
+            # Fix thumbnailScrollArea (bottom row) to be content-height only
+            if hasattr(self, 'thumbnailScrollArea') and self.thumbnailScrollArea:
+                # The thumbnail scroll area should be exactly the size of its contents
+                size_policy = self.thumbnailScrollArea.sizePolicy()
+                size_policy.setVerticalPolicy(QSizePolicy.Policy.Fixed)
+                self.thumbnailScrollArea.setSizePolicy(size_policy)
+                # Set to content size (thumbnails are typically ~96px + margins)
+                self.thumbnailScrollArea.setMinimumHeight(0)  # Remove minimum
+                self.thumbnailScrollArea.setMaximumHeight(120)  # Reasonable max for thumbnails
+
+            # Fix statusBarWidget (GPS coordinates area) to be content-height only
+            if hasattr(self, 'statusBarWidget') and self.statusBarWidget:
+                size_policy = self.statusBarWidget.sizePolicy()
+                size_policy.setVerticalPolicy(QSizePolicy.Policy.Fixed)
+                self.statusBarWidget.setSizePolicy(size_policy)
+                self.statusBarWidget.setMaximumHeight(40)  # Reasonable max for status text
+                self.statusBarWidget.adjustSize()
+
+        except Exception as e:
+            self.logger.debug(f"Error adjusting UI sizing: {e}")
+
     def _setup_gallery_mode_ui(self):
         """Set up the gallery mode toggle and stacked widget for AOI display."""
         try:
@@ -339,66 +383,9 @@ class Viewer(QMainWindow, Ui_Viewer):
             # Don't pre-load gallery data yet - images haven't been loaded
             # This will be done after images are loaded
 
-            # Create toggle button for switching modes
-            self.gallery_mode_toggle_btn = QPushButton()
-            self.gallery_mode_toggle_btn.setText("🖼️ Gallery View")
-            self.gallery_mode_toggle_btn.setToolTip("Switch to Gallery View (all images)")
-            self.gallery_mode_toggle_btn.setCheckable(True)
-            self.gallery_mode_toggle_btn.setStyleSheet("""
-                QPushButton {
-                    background-color: #404040;
-                    color: white;
-                    border: 1px solid #666;
-                    border-radius: 4px;
-                    padding: 5px 10px;
-                    font-size: 10pt;
-                }
-                QPushButton:checked {
-                    background-color: #2196F3;
-                    border: 1px solid #1976D2;
-                }
-                QPushButton:hover {
-                    background-color: #505050;
-                }
-                QPushButton:checked:hover {
-                    background-color: #1976D2;
-                }
-            """)
-            self.gallery_mode_toggle_btn.clicked.connect(self._toggle_gallery_mode)
-
-            # Create "Generate Cache" button for regenerating caches on old datasets
-            self.generate_cache_btn = QPushButton()
-            self.generate_cache_btn.setText("🔄 Generate Cache")
-            self.generate_cache_btn.setToolTip("Regenerate thumbnail and color caches for this dataset")
-            self.generate_cache_btn.setStyleSheet("""
-                QPushButton {
-                    background-color: #404040;
-                    color: white;
-                    border: 1px solid #666;
-                    border-radius: 4px;
-                    padding: 5px 10px;
-                    font-size: 10pt;
-                }
-                QPushButton:hover {
-                    background-color: #505050;
-                }
-                QPushButton:pressed {
-                    background-color: #303030;
-                }
-            """)
-            self.generate_cache_btn.clicked.connect(self._generate_cache)
-
-            # Add toggle button after the sort combo box
-            sort_combo_index = -1
-            for i in range(aoi_frame_layout.count()):
-                item = aoi_frame_layout.itemAt(i)
-                if item and item.widget() == self.aoiSortComboBox:
-                    sort_combo_index = i
-                    break
-
-            if sort_combo_index >= 0:
-                aoi_frame_layout.insertWidget(sort_combo_index + 1, self.gallery_mode_toggle_btn)
-                aoi_frame_layout.insertWidget(sort_combo_index + 2, self.generate_cache_btn)
+            # Note: Gallery mode toggle button and Generate Cache button removed
+            # Gallery mode is now toggled using the G key only
+            # Cache generation functionality is still available but UI button removed
 
             self.logger.info("Gallery mode UI setup complete")
 
@@ -406,6 +393,163 @@ class Viewer(QMainWindow, Ui_Viewer):
             self.logger.error(f"Error setting up gallery mode UI: {e}")
             import traceback
             self.logger.error(traceback.format_exc())
+
+    def _setup_splitter_layout(self):
+        """Replace QHBoxLayout with QSplitter for draggable divider between image and gallery."""
+        try:
+            # Gallery column width (thumbnail + spacing)
+            self.GALLERY_COLUMN_WIDTH = 200  # 190px thumbnail + 10px spacing
+            # Gallery overhead (margins + scrollbar + padding)
+            self.GALLERY_OVERHEAD = 35  # Approx. 20px scrollbar + 15px margins/padding
+
+            # Create a QSplitter to replace the ImageLayout
+            self.image_gallery_splitter = QSplitter(Qt.Horizontal, self.centralwidget)
+            self.image_gallery_splitter.setObjectName("imageGallerySplitter")
+            self.image_gallery_splitter.setHandleWidth(4)  # Width of the draggable handle
+            self.image_gallery_splitter.setChildrenCollapsible(False)  # Prevent widgets from collapsing
+
+            # Remove widgets from old layout
+            self.ImageLayout.removeWidget(self.placeholderImage)
+            self.ImageLayout.removeWidget(self.aoiFrame)
+
+            # Add widgets to splitter
+            self.image_gallery_splitter.addWidget(self.main_image)
+            self.image_gallery_splitter.addWidget(self.aoiFrame)
+
+            # Delete the placeholder now
+            self.placeholderImage.deleteLater()
+
+            # Replace the ImageLayout content with the splitter
+            self.ImageLayout.addWidget(self.image_gallery_splitter)
+
+            # Set stretch factors (image expands, gallery stays preferred size)
+            self.image_gallery_splitter.setStretchFactor(0, 1)  # Image expands
+            self.image_gallery_splitter.setStretchFactor(1, 0)  # Gallery fixed size
+
+            # Connect splitter moved signal for snapping behavior
+            self.image_gallery_splitter.splitterMoved.connect(self._on_splitter_moved)
+
+            # Load saved splitter position for single-image mode (default starting mode)
+            saved_position = self.settings_service.get_setting('viewer/splitter_position_single', None)
+            if saved_position:
+                try:
+                    # Restore saved position
+                    positions = [int(p) for p in str(saved_position).split(',')]
+                    if len(positions) == 2:
+                        self.image_gallery_splitter.setSizes(positions)
+                        self.logger.debug(f"Restored single-image splitter position: {positions}")
+                except Exception as e:
+                    self.logger.debug(f"Could not restore splitter position: {e}")
+            else:
+                # Default to 1-column width for single-image mode
+                self._set_splitter_to_single_column()
+
+        except Exception as e:
+            self.logger.error(f"Error setting up splitter layout: {e}")
+
+    def _on_splitter_moved(self, pos, index):
+        """Handle splitter movement with snapping to column widths."""
+        try:
+            # Get current sizes
+            sizes = self.image_gallery_splitter.sizes()
+            if len(sizes) != 2:
+                return
+
+            image_width = sizes[0]
+            gallery_width = sizes[1]
+            total_width = image_width + gallery_width
+
+            # Calculate usable width for columns (subtract overhead for margins/scrollbar)
+            usable_width = gallery_width - self.GALLERY_OVERHEAD
+
+            # Calculate number of columns that fit in the usable space
+            # Use floor to ensure we only count columns that fully fit
+            import math
+            num_columns = max(1, math.floor(usable_width / self.GALLERY_COLUMN_WIDTH))
+
+            # Calculate the ideal gallery width for this number of columns
+            # This ensures no extra space on the right
+            snapped_gallery_width = (num_columns * self.GALLERY_COLUMN_WIDTH) + self.GALLERY_OVERHEAD
+
+            # Apply minimum and maximum constraints
+            min_gallery_width = self.GALLERY_COLUMN_WIDTH + self.GALLERY_OVERHEAD  # 1 column + overhead
+            max_gallery_width = total_width - 400  # Minimum 400px for image
+
+            snapped_gallery_width = max(min_gallery_width, min(snapped_gallery_width, max_gallery_width))
+            snapped_image_width = total_width - snapped_gallery_width
+
+            # Only update if changed significantly (avoid infinite loop)
+            if abs(gallery_width - snapped_gallery_width) > 5:
+                self.image_gallery_splitter.setSizes([snapped_image_width, snapped_gallery_width])
+
+            # Update gallery widget geometry to match new aoiFrame size
+            self._update_gallery_geometry()
+
+            # Save the position
+            self._save_splitter_position()
+
+        except Exception as e:
+            self.logger.error(f"Error handling splitter movement: {e}")
+
+    def _update_gallery_geometry(self):
+        """Update gallery widget geometry to fill aoiFrame."""
+        try:
+            if (hasattr(self, 'gallery_widget') and self.gallery_widget and
+                hasattr(self, 'gallery_mode') and self.gallery_mode and
+                self.gallery_widget.isVisible()):
+
+                # Fill frame width for responsive grid display
+                frame_rect = self.aoiFrame.rect()
+                aoi_list_rect = self.aoiListWidget.geometry()
+
+                self.gallery_widget.setGeometry(
+                    5,
+                    aoi_list_rect.y(),
+                    frame_rect.width() - 10,
+                    aoi_list_rect.height()
+                )
+
+                # Force the gallery view to update its layout
+                if hasattr(self.gallery_controller, 'ui_component') and self.gallery_controller.ui_component:
+                    gallery_view = self.gallery_controller.ui_component.gallery_view
+                    if gallery_view:
+                        # Update the view's geometry and force layout recalculation
+                        gallery_view.updateGeometry()
+                        gallery_view.scheduleDelayedItemsLayout()
+                        gallery_view.viewport().update()
+
+        except Exception as e:
+            self.logger.debug(f"Error updating gallery geometry: {e}")
+
+    def _set_splitter_to_single_column(self):
+        """Set the splitter to show exactly 1 column in the gallery."""
+        try:
+            total_width = sum(self.image_gallery_splitter.sizes())
+            # Calculate width for 1 column + overhead
+            single_column_width = self.GALLERY_COLUMN_WIDTH + self.GALLERY_OVERHEAD
+            image_width = total_width - single_column_width
+
+            self.image_gallery_splitter.setSizes([image_width, single_column_width])
+            self.logger.debug(f"Set splitter to single column: [{image_width}, {single_column_width}]")
+        except Exception as e:
+            self.logger.debug(f"Error setting splitter to single column: {e}")
+
+    def _save_splitter_position(self):
+        """Save current splitter position to settings based on current view mode."""
+        try:
+            sizes = self.image_gallery_splitter.sizes()
+            # Save as comma-separated string
+            position_str = f"{sizes[0]},{sizes[1]}"
+
+            # Save to different settings key based on mode
+            if hasattr(self, 'gallery_mode') and self.gallery_mode:
+                # Save gallery mode position
+                self.settings_service.set_setting('viewer/splitter_position_gallery', position_str)
+            else:
+                # Save single-image mode position
+                self.settings_service.set_setting('viewer/splitter_position_single', position_str)
+        except Exception as e:
+            self.logger.debug(f"Could not save splitter position: {e}")
 
     def _toggle_gallery_mode(self):
         """Toggle between single-image and gallery view modes."""
@@ -425,9 +569,7 @@ class Viewer(QMainWindow, Ui_Viewer):
                     return
 
                 self._gallery_setup_pending = False
-                if hasattr(self, 'gallery_controller'):
-                    self.gallery_controller.sync_filters_from_aoi_controller()
-                    self.gallery_controller.load_all_aois()
+                # Don't load AOIs here - will be loaded when actually switching to gallery mode below
 
             if not self.gallery_widget:
                 self.logger.warning("Gallery widget not available")
@@ -437,17 +579,31 @@ class Viewer(QMainWindow, Ui_Viewer):
 
             if self.gallery_mode:
                 # Switch to gallery view
-                self.gallery_mode_toggle_btn.setText("📄 Single Image View")
-                self.gallery_mode_toggle_btn.setToolTip("Switch to Single Image View")
+                # Remove fixed width constraints - splitter handles sizing
+                self.aoiFrame.setMinimumWidth(250)  # Just ensure minimum
+                self.aoiFrame.setMaximumWidth(16777215)  # Remove max constraint
 
-                # Expand aoiFrame to accommodate grid layout (5+ columns)
-                # Store original width if not already stored
-                if not hasattr(self, '_original_aoi_frame_width'):
-                    self._original_aoi_frame_width = self.aoiFrame.minimumWidth()
-
-                # Set wider minimum width for gallery grid (5 columns * 210px ≈ 1100px)
-                self.aoiFrame.setMinimumWidth(1100)
-                self.aoiFrame.setMaximumWidth(1400)  # Allow some expansion
+                # Restore saved gallery splitter position or set default to 4 columns
+                saved_gallery_position = self.settings_service.get_setting('viewer/splitter_position_gallery', None)
+                if saved_gallery_position:
+                    try:
+                        positions = [int(p) for p in str(saved_gallery_position).split(',')]
+                        if len(positions) == 2:
+                            self.image_gallery_splitter.setSizes(positions)
+                            self.logger.debug(f"Restored gallery splitter position: {positions}")
+                            # Force update of gallery geometry after restoring position
+                            QTimer.singleShot(0, self._update_gallery_geometry)
+                    except Exception as e:
+                        self.logger.debug(f"Could not restore gallery splitter position: {e}")
+                else:
+                    # Default to 4 columns
+                    total_width = sum(self.image_gallery_splitter.sizes())
+                    four_column_width = (4 * self.GALLERY_COLUMN_WIDTH) + self.GALLERY_OVERHEAD
+                    image_width = total_width - four_column_width
+                    self.image_gallery_splitter.setSizes([image_width, four_column_width])
+                    self.logger.debug(f"Set gallery to default 4 columns: [{image_width}, {four_column_width}]")
+                    # Force update of gallery geometry
+                    QTimer.singleShot(0, self._update_gallery_geometry)
 
                 # Gallery widget fills the frame width
                 frame_rect = self.aoiFrame.rect()
@@ -499,13 +655,12 @@ class Viewer(QMainWindow, Ui_Viewer):
 
             else:
                 # Switch to single-image view
-                self.gallery_mode_toggle_btn.setText("🖼️ Gallery View")
-                self.gallery_mode_toggle_btn.setToolTip("Switch to Gallery View (all images)")
+                # Set splitter to single column width
+                self._set_splitter_to_single_column()
 
-                # Restore original aoiFrame width for single-column display
-                if hasattr(self, '_original_aoi_frame_width'):
-                    self.aoiFrame.setMinimumWidth(self._original_aoi_frame_width)
-                    self.aoiFrame.setMaximumWidth(400)  # Reasonable max for single column
+                # Reset to reasonable single-column width
+                self.aoiFrame.setMinimumWidth(250)
+                self.aoiFrame.setMaximumWidth(400)  # Reasonable max for single column
 
                 # Raise single-image list to front, keep gallery in background
                 self.aoiListWidget.raise_()
@@ -765,6 +920,87 @@ class Viewer(QMainWindow, Ui_Viewer):
                     pass  # Not a valid image
         self.images = valid_images
 
+    def _check_and_recover_bearings(self):
+        """Check if images are missing bearings and offer recovery options."""
+        from datetime import datetime
+        import piexif
+
+        # Check how many images are missing bearings
+        images_missing_bearings = []
+
+        # Quick check: do ANY images have bearing in XML?
+        # If all have bearings, skip recovery entirely
+        any_has_xml_bearing = any(img.get('bearing') is not None for img in self.images)
+
+        if any_has_xml_bearing:
+            # Some images have bearings already, skip recovery
+            self.logger.info("Bearing data found in XML, skipping recovery")
+            return
+
+        # No XML bearings found - check if first image has bearing in EXIF data
+        # Use the same logic as the "Gimbal Orientation" display in the viewer
+        if len(self.images) > 0:
+            first_image_path = self.images[0]['path']
+            try:
+                # Create ImageService WITHOUT calculated_bearing to check EXIF/XMP only
+                # This uses the same logic as the "Gimbal Orientation" display
+                image_service = ImageService(first_image_path, calculated_bearing=None)
+
+                # get_camera_yaw() checks Gimbal Yaw first, then Flight Yaw, then calculated_bearing
+                # Since we passed calculated_bearing=None, it only checks EXIF/XMP data
+                camera_yaw = image_service.get_camera_yaw()
+
+                if camera_yaw is not None:
+                    self.logger.info(f"First image has gimbal orientation in EXIF ({camera_yaw}°), skipping recovery")
+                    return
+                else:
+                    self.logger.info("First image does not have gimbal orientation in EXIF, showing recovery dialog")
+            except Exception as e:
+                self.logger.warning(f"Could not check first image EXIF for bearing: {e}")
+                # Continue to show recovery dialog if EXIF check fails
+
+        # No XML bearings found - prepare lightweight image list for dialog
+        # The actual GPS/timestamp extraction happens in the calculation service
+        self.logger.info(f"No bearing data in XML, preparing recovery for {len(self.images)} images")
+
+        for image in self.images:
+            # Just add the image path - GPS/timestamp will be extracted during calculation
+            images_missing_bearings.append({
+                'path': image['path'],
+                'lat': None,  # Will be extracted during calculation
+                'lon': None,  # Will be extracted during calculation
+                'timestamp': None  # Will be extracted during calculation
+            })
+
+        # Show recovery dialog immediately (no slow EXIF check needed)
+        if len(images_missing_bearings) > 0:
+            self.logger.info(f"Found {len(images_missing_bearings)}/{len(self.images)} images missing bearings")
+
+            # Show bearing recovery dialog
+            dialog = BearingRecoveryDialog(self, images_missing_bearings)
+            result = dialog.exec()
+
+            if result == QDialog.Accepted:
+                # Get results and save to XML
+                bearing_results = dialog.get_results()
+
+                if bearing_results:
+                    # Update XML with calculated bearings
+                    updated_count = self.xml_service.set_multiple_bearings(bearing_results)
+
+                    # Save XML file
+                    self.xml_service.save_xml_file(self.xml_path)
+
+                    # Reload images to get updated bearing data
+                    self.images = self.xml_service.get_images()
+
+                    # Re-run _load_images to add 'name' field and validate paths
+                    self._load_images()
+
+                    self.logger.info(f"Saved {updated_count} calculated bearings to XML")
+        else:
+            self.logger.info("All images have bearing information")
+
     def _setupViewer(self):
         if len(self.images) == 0:
             self._show_no_images_message()
@@ -942,9 +1178,9 @@ class Viewer(QMainWindow, Ui_Viewer):
             self.main_image.canZoom = True
             self.main_image.canPan = True
 
-            self.ImageLayout.replaceWidget(self.placeholderImage, self.main_image)
-            # Now it's safe to delete the placeholder
-            self.placeholderImage.deleteLater()
+            # Replace the QHBoxLayout with a QSplitter for draggable divider
+            self._setup_splitter_layout()
+
             self.main_image.viewport().installEventFilter(self)
 
             # Initialize magnifying glass controller

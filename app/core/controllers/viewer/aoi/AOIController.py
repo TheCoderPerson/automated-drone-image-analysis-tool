@@ -8,7 +8,7 @@ UI manipulation is handled by AOIUIComponent.
 import colorsys
 import numpy as np
 import qtawesome as qta
-from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel, QListWidgetItem, QPushButton, QMenu, QApplication, QAbstractItemView
+from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel, QListWidgetItem, QPushButton, QMenu, QApplication, QAbstractItemView, QColorDialog
 try:
     from shiboken6 import isValid as _qt_is_valid
 except Exception:
@@ -19,7 +19,7 @@ except Exception:
         except Exception:
             return False
 from PySide6.QtCore import Qt, QSize, QPoint
-from PySide6.QtGui import QCursor
+from PySide6.QtGui import QCursor, QColor
 
 from core.services.LoggerService import LoggerService
 from core.services.AOIService import AOIService
@@ -48,12 +48,15 @@ class AOIController:
         self.filter_flagged_only = False
 
         # Sort and filter state
-        self.sort_method = None  # 'area_asc', 'area_desc', 'color', 'x', 'y'
+        self.sort_method = None  # 'area_asc', 'area_desc', 'color', 'x', 'y', 'temperature_asc', 'temperature_desc'
         self.sort_color_hue = None  # Hue value (0-360) for color-based sorting
         self.filter_color_hue = None  # Hue value (0-360) for color filtering
         self.filter_color_range = None  # ± degrees for color filtering
         self.filter_area_min = None  # Minimum pixel area for filtering
         self.filter_area_max = None  # Maximum pixel area for filtering
+        self.filter_comment_pattern = None  # Wildcard pattern for comment filtering
+        self.filter_temperature_min = None  # Minimum temperature (Celsius) for filtering
+        self.filter_temperature_max = None  # Maximum temperature (Celsius) for filtering
 
         # Cache for AOIService to avoid recreating for same image
         self._cached_aoi_service = None
@@ -93,6 +96,10 @@ class AOIController:
             self.logger.error(f"Error getting AOIService: {e}")
             return None
 
+    def refresh_sort_combo(self):
+        """Refresh the sort combo box options (e.g., after thermal data is loaded)."""
+        self._initialize_sort_combo()
+
     def initialize_from_xml(self, images):
         """Load flagged AOI information from XML data.
 
@@ -129,7 +136,17 @@ class AOIController:
         try:
             # For thermal images, calculate average temperature
             if is_thermal:
-                # Check if temperature data is available
+                # First check if AOI has cached temperature (from analysis)
+                if 'temperature' in area_of_interest and area_of_interest['temperature'] is not None:
+                    temp_c = area_of_interest['temperature']
+                    # Convert to user's preferred unit
+                    if temperature_unit == 'F':
+                        temp_display = (temp_c * 1.8) + 32.0
+                        return f"Temp: {temp_display:.1f}°F", None
+                    else:
+                        return f"Temp: {temp_c:.1f}°C", None
+
+                # Fall back to calculating from temperature_data array if available
                 if temperature_data is None:
                     return "Temp: N/A", None
 
@@ -683,6 +700,26 @@ class AOIController:
                 # Sort by Y coordinate, smallest first
                 aois_with_indices.sort(key=lambda x: x[1]['center'][1])
 
+            elif self.sort_method == 'temperature_asc':
+                # Sort by temperature, lowest first (Celsius)
+                def temp_sort_key_asc(item):
+                    temp = item[1].get('temperature')
+                    # Sort None/unavailable temperatures to the end
+                    if temp is None:
+                        return float('inf')
+                    return temp
+                aois_with_indices.sort(key=temp_sort_key_asc)
+
+            elif self.sort_method == 'temperature_desc':
+                # Sort by temperature, highest first (Celsius)
+                def temp_sort_key_desc(item):
+                    temp = item[1].get('temperature')
+                    # Sort None/unavailable temperatures to the end
+                    if temp is None:
+                        return float('-inf')
+                    return temp
+                aois_with_indices.sort(key=temp_sort_key_desc, reverse=True)
+
         except Exception as e:
             self.logger.error(f"Error sorting AOIs: {e}")
 
@@ -724,6 +761,25 @@ class AOIController:
             if self.filter_area_max is not None and area > self.filter_area_max:
                 continue
 
+            # Apply comment filter
+            if self.filter_comment_pattern is not None:
+                import fnmatch
+                comment = aoi.get('user_comment', '').strip()
+                if not comment:
+                    continue
+                if not fnmatch.fnmatch(comment.lower(), self.filter_comment_pattern.lower()):
+                    continue
+
+            # Apply temperature filter (in Celsius)
+            if self.filter_temperature_min is not None or self.filter_temperature_max is not None:
+                temp = aoi.get('temperature')
+                if temp is None:
+                    continue
+                if self.filter_temperature_min is not None and temp < self.filter_temperature_min:
+                    continue
+                if self.filter_temperature_max is not None and temp > self.filter_temperature_max:
+                    continue
+
             # AOI passed all filters
             filtered.append((original_idx, aoi))
 
@@ -758,7 +814,10 @@ class AOIController:
                 'color_hue': int or None,
                 'color_range': int or None,
                 'area_min': float or None,
-                'area_max': float or None
+                'area_max': float or None,
+                'comment_filter': str or None,
+                'temperature_min': float or None,
+                'temperature_max': float or None
             }
         """
         self.filter_flagged_only = filters.get('flagged_only', False)
@@ -766,13 +825,19 @@ class AOIController:
         self.filter_color_range = filters.get('color_range')
         self.filter_area_min = filters.get('area_min')
         self.filter_area_max = filters.get('area_max')
+        self.filter_comment_pattern = filters.get('comment_filter')
+        self.filter_temperature_min = filters.get('temperature_min')
+        self.filter_temperature_max = filters.get('temperature_max')
 
         # Update button appearance if available
         has_filters = any([
             self.filter_flagged_only,
             self.filter_color_hue is not None,
             self.filter_area_min is not None,
-            self.filter_area_max is not None
+            self.filter_area_max is not None,
+            self.filter_comment_pattern is not None,
+            self.filter_temperature_min is not None,
+            self.filter_temperature_max is not None
         ])
 
         # Refresh AOI display
@@ -804,14 +869,53 @@ class AOIController:
             ("Pixel Area (Largest First)", 'area_desc', qta.icon('fa6s.arrow-down', color='#4CAF50')),
             ("Confidence (Highest First)", 'confidence_desc', qta.icon('fa6s.star', color='#FFD700')),
             ("Confidence (Lowest First)", 'confidence_asc', qta.icon('fa6s.star-half-stroke', color='#FFD700')),
+            ("Temperature (Lowest First)", 'temperature_asc', qta.icon('fa6s.temperature-low', color='#2196F3')),
+            ("Temperature (Highest First)", 'temperature_desc', qta.icon('fa6s.temperature-high', color='#F44336')),
             ("Color (Closest to Target)", 'color', qta.icon('fa6s.palette', color='#CCCCCC')),
             ("Left to Right", 'x', qta.icon('fa6s.arrow-right', color='#2196F3')),
             ("Top to Bottom", 'y', qta.icon('fa6s.arrow-down', color='#2196F3'))
         ]
-        
+
+        # Check if dataset has thermal data and AOIs have temperature values
+        is_thermal = hasattr(self.parent, 'is_thermal') and self.parent.is_thermal
+
+        # Debug logging
+        self.logger.debug(f"Sort combo initialization: is_thermal={is_thermal}")
+
+        # Also check if any AOI actually has temperature data
+        has_temperature_data = False
+        temp_count = 0
+        total_aois_checked = 0
+        if is_thermal and hasattr(self.parent, 'images'):
+            for image in self.parent.images:
+                aois = image.get('areas_of_interest', [])
+                for aoi in aois:
+                    total_aois_checked += 1
+                    if 'temperature' in aoi and aoi['temperature'] is not None:
+                        has_temperature_data = True
+                        temp_count += 1
+                        # Debug first few
+                        if temp_count <= 3:
+                            self.logger.debug(f"  Found temperature in AOI: {aoi.get('temperature')}°C at {aoi.get('center')}")
+                        # Found temperature, can break early after checking a few
+                        if temp_count >= 5:
+                            break
+                if temp_count >= 5:
+                    break
+
+        self.logger.debug(f"Sort combo: has_temperature_data={has_temperature_data}, found {temp_count} AOIs with temperature (checked {total_aois_checked} total AOIs)")
+
         # Add items dynamically
-        for text, data, icon in sort_options:
+        for idx, (text, data, icon) in enumerate(sort_options):
             combo.addItem(icon, text, data)
+
+            # Disable temperature options if no temperature data available
+            if data in ['temperature_asc', 'temperature_desc'] and not has_temperature_data:
+                # Disable the item
+                model = combo.model()
+                item = model.item(idx)
+                item.setEnabled(False)
+                item.setToolTip("Temperature sorting unavailable (no thermal data)")
         
         # Set current selection based on current sort method
         if self.sort_method is None:
@@ -826,17 +930,23 @@ class AOIController:
         """Handle sort combo box selection change."""
         if not hasattr(self.parent, 'aoiSortComboBox'):
             return
-            
+
         combo = self.parent.aoiSortComboBox
         current_data = combo.currentData()
-        
+
         if current_data is None:
             # "Default" selected - no sorting
             self.set_sort_method(None)
         elif current_data == 'color':
-            # Color-based sorting - get reference color from settings
-            target_hue = self._get_reference_hue_from_settings()
-            self.set_sort_method(current_data, color_hue=target_hue)
+            # Color-based sorting - show color picker to let user choose target color
+            target_hue = self._show_color_picker_for_sort()
+
+            if target_hue is not None:
+                # User selected a color
+                self.set_sort_method(current_data, color_hue=target_hue)
+            else:
+                # User cancelled - revert to previous sort method
+                self._update_combo_selection()
         else:
             # Other sort methods (area_asc, area_desc, x, y)
             self.set_sort_method(current_data)
@@ -857,7 +967,7 @@ class AOIController:
 
     def _get_reference_hue_from_settings(self):
         """Extract reference hue from parent settings.
-        
+
         Returns:
             int: Hue value (0-360) or None if not available
         """
@@ -866,7 +976,7 @@ class AOIController:
             if hasattr(self.parent, 'settings'):
                 options = self.parent.settings.get('options', {})
                 selected_color = options.get('selected_color')
-                
+
                 if selected_color:
                     # selected_color could be a list/tuple [r, g, b] or a QColor
                     if isinstance(selected_color, (list, tuple)) and len(selected_color) >= 3:
@@ -882,17 +992,64 @@ class AOIController:
                     else:
                         # Try to treat as QColor
                         try:
-                            from PySide6.QtGui import QColor
                             if isinstance(selected_color, QColor):
                                 h, _, _, _ = selected_color.getHsv()
                                 return h
                         except Exception:
                             pass
-            
+
             return None
-            
+
         except Exception as e:
             self.logger.error(f"Error extracting reference hue from settings: {e}")
+            return None
+
+    def _show_color_picker_for_sort(self):
+        """Show color picker dialog for user to select target color for sorting.
+
+        Returns:
+            int: Hue value (0-360) or None if user cancelled
+        """
+        try:
+            # Try to get initial color from current sort_color_hue or settings
+            initial_color = QColor(Qt.white)
+
+            # Check if we have a current sort color hue
+            if self.sort_color_hue is not None:
+                # Convert hue to RGB for color dialog
+                r, g, b = colorsys.hsv_to_rgb(self.sort_color_hue / 360.0, 1.0, 1.0)
+                initial_color = QColor(int(r * 255), int(g * 255), int(b * 255))
+            else:
+                # Try to get from settings as fallback
+                settings_hue = self._get_reference_hue_from_settings()
+                if settings_hue is not None:
+                    r, g, b = colorsys.hsv_to_rgb(settings_hue / 360.0, 1.0, 1.0)
+                    initial_color = QColor(int(r * 255), int(g * 255), int(b * 255))
+
+            # Open color dialog
+            color = QColorDialog.getColor(
+                initial_color,
+                self.parent,
+                "Select Target Color for Sorting",
+                QColorDialog.DontUseNativeDialog  # Use Qt dialog for consistency
+            )
+
+            if color.isValid():
+                # Convert to HSV and extract hue
+                h, s, v = color.getHsv()[0], color.getHsv()[1], color.getHsv()[2]
+                # Qt hue is 0-359 (-1 for achromatic), we want 0-360
+                if h == -1:
+                    h = 0
+
+                self.logger.info(f"User selected color for sorting: Hue {h}°")
+                return h
+            else:
+                # User cancelled
+                self.logger.info("User cancelled color selection for sorting")
+                return None
+
+        except Exception as e:
+            self.logger.error(f"Error showing color picker for sort: {e}")
             return None
 
     def open_filter_dialog(self):
@@ -905,10 +1062,17 @@ class AOIController:
             'color_hue': self.filter_color_hue,
             'color_range': self.filter_color_range if self.filter_color_range is not None else 30,
             'area_min': self.filter_area_min,
-            'area_max': self.filter_area_max
+            'area_max': self.filter_area_max,
+            'comment_filter': self.filter_comment_pattern,
+            'temperature_min': self.filter_temperature_min,
+            'temperature_max': self.filter_temperature_max
         }
 
-        dialog = AOIFilterDialog(self.parent, current_filters)
+        # Get temperature unit and thermal flag from parent viewer
+        temperature_unit = getattr(self.parent, 'temperature_unit', 'C')
+        is_thermal = getattr(self.parent, 'is_thermal', False)
+
+        dialog = AOIFilterDialog(self.parent, current_filters, temperature_unit, is_thermal)
         if dialog.exec():
             # User clicked Apply
             filters = dialog.get_filters()

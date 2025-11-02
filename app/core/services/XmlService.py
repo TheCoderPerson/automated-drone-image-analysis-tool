@@ -108,6 +108,14 @@ class XmlService:
                     'hidden': image_xml.get('hidden') == "True" if image_xml.get('hidden') else False
                 }
 
+                # Load bearing metadata if present
+                if image_xml.get('bearing'):
+                    image['bearing'] = float(image_xml.get('bearing'))
+                if image_xml.get('bearing_source'):
+                    image['bearing_source'] = image_xml.get('bearing_source')
+                if image_xml.get('bearing_quality'):
+                    image['bearing_quality'] = image_xml.get('bearing_quality')
+
                 areas_of_interest = []
                 for area_of_interest_xml in image_xml:
                     area_of_interest = {
@@ -134,6 +142,9 @@ class XmlService:
                         area_of_interest['raw_score'] = float(area_of_interest_xml.get('raw_score'))
                     if area_of_interest_xml.get('score_method'):
                         area_of_interest['score_method'] = area_of_interest_xml.get('score_method')
+                    # Load temperature data if present (for thermal datasets)
+                    if area_of_interest_xml.get('temperature'):
+                        area_of_interest['temperature'] = float(area_of_interest_xml.get('temperature'))
                     areas_of_interest.append(area_of_interest)
                 image['areas_of_interest'] = areas_of_interest
                 images.append(image)
@@ -211,6 +222,7 @@ class XmlService:
             image.set('path', img["path"])
         image.set('hidden', "False")
 
+        temp_count = 0  # Track AOIs with temperature data
         for area in img["aois"]:
             area_xml = ET.SubElement(image, 'areas_of_interest')
             area_xml.set('center', str(area['center']))
@@ -231,6 +243,10 @@ class XmlService:
                 area_xml.set('raw_score', str(area['raw_score']))
             if 'score_method' in area:
                 area_xml.set('score_method', str(area['score_method']))
+            # Save temperature data if present (for thermal datasets)
+            if 'temperature' in area and area['temperature'] is not None:
+                area_xml.set('temperature', str(area['temperature']))
+                temp_count += 1
             # Optionally save contour and detected_pixels if available
             # Note: These can be large, so we might want to make this configurable
             if 'contour' in area and area['contour']:
@@ -240,6 +256,10 @@ class XmlService:
                 # Full pixel data is preserved in the image XMP metadata
                 if len(area['detected_pixels']) <= 100:
                     area_xml.set('detected_pixels', str(area['detected_pixels']))
+
+        # Debug logging for temperature save
+        if temp_count > 0:
+            self.logger.debug(f"Saved {temp_count} AOIs with temperature data for image {img.get('path', 'unknown')}")
 
     def save_xml_file(self, path):
         """
@@ -322,3 +342,128 @@ class XmlService:
         self.add_review_metadata(review_id, '', review_date)
 
         return review_id
+
+    def set_image_bearing(self, image_path, bearing_deg, source='calculated', quality='good'):
+        """
+        Set bearing metadata for an image in the XML.
+
+        Args:
+            image_path (str): Path to the image (should match the 'path' attribute or resolved path).
+            bearing_deg (float): Bearing in degrees [0, 360).
+            source (str): Source of bearing ('kml', 'gpx', 'csv', 'auto_prev_next', etc.).
+            quality (str): Quality indicator ('good', 'turn_inferred', 'gap', 'hover_estimate').
+
+        Returns:
+            bool: True if image was found and updated, False otherwise.
+        """
+        try:
+            root = self.xml.getroot()
+            images_xml = root.find('images')
+
+            if images_xml is None:
+                return False
+
+            # Normalize path for comparison
+            image_path_norm = os.path.normpath(image_path)
+
+            for image_xml in images_xml:
+                # Get stored path and resolve it
+                stored_path = image_xml.get('path')
+                if stored_path:
+                    stored_path = stored_path.replace('/', os.sep)
+                    if not os.path.isabs(stored_path) and self.xml_path:
+                        xml_dir = os.path.dirname(self.xml_path)
+                        stored_path = os.path.join(xml_dir, stored_path)
+                    stored_path_norm = os.path.normpath(stored_path)
+
+                    # Check if paths match
+                    if stored_path_norm == image_path_norm:
+                        # Set bearing attributes
+                        image_xml.set('bearing', f"{bearing_deg:.2f}")
+                        image_xml.set('bearing_source', source)
+                        image_xml.set('bearing_quality', quality)
+                        return True
+
+            self.logger.warning(f"Image not found in XML for bearing update: {image_path}")
+            return False
+
+        except Exception as e:
+            self.logger.error(f"Error setting image bearing: {e}")
+            return False
+
+    def get_image_bearing(self, image_path):
+        """
+        Get bearing metadata for an image from the XML.
+
+        Args:
+            image_path (str): Path to the image.
+
+        Returns:
+            dict or None: Dictionary with 'bearing', 'source', 'quality', or None if not found.
+        """
+        try:
+            root = self.xml.getroot()
+            images_xml = root.find('images')
+
+            if images_xml is None:
+                return None
+
+            # Normalize path for comparison
+            image_path_norm = os.path.normpath(image_path)
+
+            for image_xml in images_xml:
+                # Get stored path and resolve it
+                stored_path = image_xml.get('path')
+                if stored_path:
+                    stored_path = stored_path.replace('/', os.sep)
+                    if not os.path.isabs(stored_path) and self.xml_path:
+                        xml_dir = os.path.dirname(self.xml_path)
+                        stored_path = os.path.join(xml_dir, stored_path)
+                    stored_path_norm = os.path.normpath(stored_path)
+
+                    # Check if paths match
+                    if stored_path_norm == image_path_norm:
+                        if image_xml.get('bearing'):
+                            return {
+                                'bearing': float(image_xml.get('bearing')),
+                                'source': image_xml.get('bearing_source', 'unknown'),
+                                'quality': image_xml.get('bearing_quality', 'unknown')
+                            }
+                        return None
+
+            return None
+
+        except Exception as e:
+            self.logger.error(f"Error getting image bearing: {e}")
+            return None
+
+    def set_multiple_bearings(self, bearing_results):
+        """
+        Set bearing metadata for multiple images efficiently.
+
+        Args:
+            bearing_results (dict): Dictionary mapping image paths to bearing result objects.
+                Each result should have: bearing_deg, source, quality attributes.
+
+        Returns:
+            int: Number of images successfully updated.
+        """
+        try:
+            updated_count = 0
+
+            for image_path, result in bearing_results.items():
+                success = self.set_image_bearing(
+                    image_path,
+                    result.bearing_deg,
+                    result.source,
+                    result.quality
+                )
+                if success:
+                    updated_count += 1
+
+            self.logger.info(f"Updated bearing metadata for {updated_count}/{len(bearing_results)} images")
+            return updated_count
+
+        except Exception as e:
+            self.logger.error(f"Error setting multiple bearings: {e}")
+            return 0
