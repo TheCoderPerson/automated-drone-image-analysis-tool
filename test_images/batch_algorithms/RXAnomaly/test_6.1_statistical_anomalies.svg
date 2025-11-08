@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1200" viewBox="0 0 1600 1200">
+  <!-- Normal background with statistical consistency: random grass/vegetation noise -->
+  <defs>
+    <!-- Create pattern for grass texture -->
+    <pattern id="grassNoise" x="0" y="0" width="40" height="40" patternUnits="userSpaceOnUse">
+      <rect width="40" height="40" fill="rgb(95, 115, 105)"/>
+      <rect x="0" y="0" width="8" height="8" fill="rgb(88, 108, 98)"/>
+      <rect x="8" y="4" width="6" height="6" fill="rgb(102, 122, 112)"/>
+      <rect x="16" y="2" width="7" height="9" fill="rgb(91, 111, 101)"/>
+      <rect x="24" y="6" width="9" height="7" fill="rgb(98, 118, 108)"/>
+      <rect x="34" y="1" width="5" height="8" fill="rgb(85, 105, 95)"/>
+      <rect x="2" y="12" width="7" height="6" fill="rgb(100, 120, 110)"/>
+      <rect x="10" y="14" width="8" height="9" fill="rgb(93, 113, 103)"/>
+      <rect x="20" y="16" width="6" height="7" fill="rgb(97, 117, 107)"/>
+      <rect x="28" y="13" width="9" height="8" fill="rgb(90, 110, 100)"/>
+      <rect x="0" y="24" width="7" height="8" fill="rgb(96, 116, 106)"/>
+      <rect x="9" y="26" width="8" height="7" fill="rgb(89, 109, 99)"/>
+      <rect x="19" y="25" width="6" height="9" fill="rgb(101, 121, 111)"/>
+      <rect x="27" y="28" width="7" height="8" fill="rgb(94, 114, 104)"/>
+      <rect x="36" y="24" width="4" height="6" fill="rgb(87, 107, 97)"/>
+      <rect x="3" y="34" width="8" height="6" fill="rgb(99, 119, 109)"/>
+      <rect x="13" y="35" width="7" height="5" fill="rgb(92, 112, 102)"/>
+      <rect x="22" y="36" width="6" height="4" fill="rgb(86, 106, 96)"/>
+      <rect x="30" y="37" width="9" height="3" fill="rgb(103, 123, 113)"/>
+    </pattern>
+  </defs>
+
+  <!-- Apply grass texture background -->
+  <rect width="1600" height="1200" fill="url(#grassNoise)"/>
+
+  <!-- ANOMALIES -->
+  <!-- Orange object: 100x100px at (400, 300) -->
+  <rect x="400" y="300" width="100" height="100" fill="rgb(255, 165, 0)"/>
+  <text x="405" y="415" font-family="Arial" font-size="12" fill="#000000" font-weight="bold">Orange Anomaly</text>
+  <text x="405" y="430" font-family="Arial" font-size="10" fill="#000000">RGB(255, 165, 0)</text>
+
+  <!-- Purple object: 150x80px at (900, 700) -->
+  <rect x="900" y="700" width="150" height="80" fill="rgb(160, 32, 240)"/>
+  <text x="905" y="795" font-family="Arial" font-size="12" fill="#FFFFFF" font-weight="bold">Purple Anomaly</text>
+  <text x="905" y="810" font-family="Arial" font-size="10" fill="#FFFFFF">RGB(160, 32, 240)</text>
+
+  <!-- Dark anomaly: 120x120px at (1200, 400) -->
+  <rect x="1200" y="400" width="120" height="120" fill="rgb(20, 20, 20)"/>
+  <text x="1205" y="535" font-family="Arial" font-size="12" fill="#FFFFFF" font-weight="bold">Dark Anomaly</text>
+  <text x="1205" y="550" font-family="Arial" font-size="10" fill="#FFFFFF">RGB(20, 20, 20)</text>
+
+  <!-- Test information -->
+  <rect x="0" y="0" width="1600" height="180" fill="#000000" opacity="0.85"/>
+  <text x="20" y="30" font-family="Arial" font-size="16" fill="#FFFFFF" font-weight="bold">RXAnomaly Test 6.1: Statistical Anomalies</text>
+  <text x="20" y="55" font-family="Arial" font-size="12" fill="#FFFFFF">Background: Statistically consistent grass/vegetation noise RGB(80-120, 100-140, 90-130)</text>
+  <text x="20" y="80" font-family="Arial" font-size="12" fill="#00FF00">Expected: All 3 anomalies detected with high chi-squared scores</text>
+  <text x="20" y="100" font-family="Arial" font-size="12" fill="#FFFFFF">Background should have low anomaly scores</text>
+  <text x="20" y="120" font-family="Arial" font-size="12" fill="#FFFFFF">Tests: sensitivity parameter, segments, LAB color space conversion</text>
+  <text x="20" y="140" font-family="Arial" font-size="12" fill="#FFFFFF">Algorithm: RX (Reed-Xiaoli) spectral anomaly detection with chi-squared distribution</text>
+  <text x="20" y="160" font-family="Arial" font-size="11" fill="#FFFF00">Note: LAB color space improves perceptual uniformity for anomaly detection</text>
+</svg>

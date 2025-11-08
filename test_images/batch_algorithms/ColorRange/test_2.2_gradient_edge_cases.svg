@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="800" viewBox="0 0 800 800">
+  <!-- White background -->
+  <rect width="800" height="800" fill="#FFFFFF"/>
+
+  <!-- Horizontal gradient rectangle: 400x200px at (200, 300) -->
+  <defs>
+    <linearGradient id="redGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:rgb(255,0,0);stop-opacity:1" />
+      <stop offset="100%" style="stop-color:rgb(255,100,100);stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <rect x="200" y="300" width="400" height="200" fill="url(#redGradient)"/>
+  <text x="350" y="520" font-family="Arial" font-size="12" fill="#000000">Gradient: RGB(255,0,0) → RGB(255,100,100)</text>
+
+  <!-- Solid target color: 100x100px at (600, 100) - RGB(255, 50, 50) -->
+  <rect x="600" y="100" width="100" height="100" fill="rgb(255, 50, 50)"/>
+  <text x="605" y="220" font-family="Arial" font-size="12" fill="#000000">Solid RGB(255,50,50)</text>
+
+  <!-- Reference markers -->
+  <rect x="200" y="300" width="2" height="200" fill="#0000FF" opacity="0.5"/>
+  <text x="205" y="315" font-family="Arial" font-size="10" fill="#0000FF">Start: RGB(255,0,0)</text>
+
+  <rect x="598" y="300" width="2" height="200" fill="#0000FF" opacity="0.5"/>
+  <text x="520" y="315" font-family="Arial" font-size="10" fill="#0000FF">End: RGB(255,100,100)</text>
+
+  <rect x="398" y="300" width="2" height="200" fill="#00FF00" opacity="0.5"/>
+  <text x="330" y="540" font-family="Arial" font-size="10" fill="#00FF00">Center: ~RGB(255,50,50)</text>
+
+  <!-- Test information -->
+  <text x="10" y="20" font-family="Arial" font-size="14" fill="#000000" font-weight="bold">ColorRange Test 2.2: Gradient Edge Cases</text>
+  <text x="10" y="40" font-family="Arial" font-size="11" fill="#000000">Test with range: [(240,40,40), (255,60,60)]</text>
+  <text x="10" y="55" font-family="Arial" font-size="11" fill="#000000">Expected: Center gradient + solid target detected</text>
+</svg>

@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="800" viewBox="0 0 1000 800">
+  <!-- Gray background -->
+  <rect width="1000" height="800" fill="#808080"/>
+
+  <!-- Target red: RGB(255, 0, 0) → HSV(0°) -->
+  <rect x="400" y="300" width="200" height="200" fill="rgb(255, 0, 0)"/>
+  <text x="450" y="520" font-family="Arial" font-size="12" fill="#FFFFFF" font-weight="bold">Target Red</text>
+  <text x="430" y="540" font-family="Arial" font-size="11" fill="#FFFFFF">RGB(255,0,0)</text>
+  <text x="450" y="555" font-family="Arial" font-size="11" fill="#FFFFFF">HSV(0°)</text>
+
+  <!-- Near-red 1: RGB(255, 0, 50) → HSV(348°) - wraps below 0° -->
+  <rect x="150" y="300" width="100" height="100" fill="rgb(255, 0, 50)"/>
+  <text x="155" y="420" font-family="Arial" font-size="11" fill="#FFFFFF">Near-Red 1</text>
+  <text x="155" y="435" font-family="Arial" font-size="10" fill="#FFFFFF">RGB(255,0,50)</text>
+  <text x="155" y="450" font-family="Arial" font-size="10" fill="#FFFFFF">HSV(348°)</text>
+  <text x="155" y="465" font-family="Arial" font-size="9" fill="#00FF00">Wraps from high</text>
+
+  <!-- Near-red 2: RGB(255, 50, 0) → HSV(12°) - just above 0° -->
+  <rect x="700" y="300" width="100" height="100" fill="rgb(255, 50, 0)"/>
+  <text x="705" y="420" font-family="Arial" font-size="11" fill="#000000">Near-Red 2</text>
+  <text x="705" y="435" font-family="Arial" font-size="10" fill="#000000">RGB(255,50,0)</text>
+  <text x="705" y="450" font-family="Arial" font-size="10" fill="#000000">HSV(12°)</text>
+  <text x="705" y="465" font-family="Arial" font-size="9" fill="#00FF00">Just above 0°</text>
+
+  <!-- Test information -->
+  <text x="10" y="30" font-family="Arial" font-size="14" fill="#FFFFFF" font-weight="bold">HSVColorRange Test 3.2: Hue Wrapping (Red Zone)</text>
+  <text x="10" y="50" font-family="Arial" font-size="11" fill="#FFFFFF">Target: Red (HSV 0°) with hue_threshold=15</text>
+  <text x="10" y="70" font-family="Arial" font-size="11" fill="#00FF00">Expected: All 3 regions detected (tests hue wrapping around 0°/360°)</text>
+
+  <!-- Hue circle illustration -->
+  <circle cx="500" cy="100" r="40" fill="none" stroke="#FFFFFF" stroke-width="2"/>
+  <line x1="500" y1="60" x2="500" y2="50" stroke="#FF0000" stroke-width="3"/>
+  <text x="505" y="55" font-family="Arial" font-size="10" fill="#FF0000">0°</text>
+
+  <line x1="530" y1="75" x2="538" y2="68" stroke="#FFA500" stroke-width="2"/>
+  <text x="540" y="70" font-family="Arial" font-size="9" fill="#FFA500">12°</text>
+
+  <line x1="470" y1="75" x2="462" y2="68" stroke="#FF00AA" stroke-width="2"/>
+  <text x="420" y="70" font-family="Arial" font-size="9" fill="#FF00AA">348°</text>
+
+  <text x="450" y="150" font-family="Arial" font-size="10" fill="#FFFFFF">Hue Wrapping Test</text>
+
+  <!-- Detection indicators -->
+  <rect x="150" y="280" width="100" height="3" fill="#00FF00"/>
+  <rect x="400" y="280" width="200" height="3" fill="#00FF00"/>
+  <rect x="700" y="280" width="100" height="3" fill="#00FF00"/>
+</svg>

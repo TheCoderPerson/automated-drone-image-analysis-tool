@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080" viewBox="0 0 1920 1080">
+  <!-- Camera continues: total (-150, -30) -->
+  <defs>
+    <pattern id="ground" x="0" y="0" width="100" height="100" patternUnits="userSpaceOnUse">
+      <rect width="100" height="100" fill="#8B7355"/>
+      <circle cx="20" cy="30" r="8" fill="#6B5345"/>
+      <circle cx="60" cy="60" r="10" fill="#7B6355"/>
+      <circle cx="80" cy="20" r="6" fill="#9B8365"/>
+      <rect x="10" y="70" width="30" height="5" fill="#7B6355"/>
+      <rect x="50" y="10" width="25" height="4" fill="#6B5345"/>
+    </pattern>
+  </defs>
+
+  <!-- Ground (shifted -150, -30) -->
+  <rect x="-150" y="570" width="1920" height="480" fill="url(#ground)"/>
+
+  <!-- Sky (shifted) -->
+  <rect x="-150" y="-30" width="1920" height="600" fill="#87CEEB"/>
+
+  <!-- Trees (shifted -150, -30) -->
+  <ellipse cx="150" cy="520" rx="80" ry="100" fill="#228B22"/>
+  <rect x="130" y="520" width="40" height="100" fill="#8B4513"/>
+
+  <ellipse cx="550" cy="490" rx="100" ry="120" fill="#228B22"/>
+  <rect x="525" y="490" width="50" height="120" fill="#8B4513"/>
+
+  <ellipse cx="1050" cy="510" rx="90" ry="110" fill="#228B22"/>
+  <rect x="1030" y="510" width="40" height="110" fill="#8B4513"/>
+
+  <ellipse cx="1450" cy="500" rx="95" ry="115" fill="#228B22"/>
+  <rect x="1427" y="500" width="46" height="115" fill="#8B4513"/>
+
+  <!-- Car world position: 800 + 450 = 1250
+       Car frame position: 1250 - 150 = 1100 -->
+  <rect x="1100" y="470" width="150" height="100" fill="rgb(255, 0, 0)" stroke="#000000" stroke-width="2"/>
+  <rect x="1120" y="490" width="40" height="30" fill="#87CEEB"/>
+  <rect x="1180" y="490" width="40" height="30" fill="#87CEEB"/>
+  <circle cx="1130" cy="570" r="20" fill="#000000"/>
+  <circle cx="1220" cy="570" r="20" fill="#000000"/>
+  <text x="1150" y="530" font-family="Arial" font-size="14" fill="#FFFFFF" font-weight="bold">CAR</text>
+
+  <!-- Camera motion indicator -->
+  <line x1="200" y1="950" x2="150" y2="940" stroke="#FF00FF" stroke-width="4" marker-end="url(#cameraArrow)"/>
+  <text x="210" y="955" font-family="Arial" font-size="12" fill="#FF00FF" font-weight="bold">Camera motion: (-50, -10)</text>
+
+  <defs>
+    <marker id="cameraArrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L9,3 z" fill="#FF00FF"/>
+    </marker>
+  </defs>
+
+  <!-- Frame information -->
+  <rect x="0" y="0" width="1920" height="120" fill="#000000" opacity="0.85"/>
+  <text x="20" y="35" font-family="Arial" font-size="18" fill="#FFFFFF" font-weight="bold">RealtimeMotionDetector Test 11.2 - Moving Camera (Drone Flight)</text>
+  <text x="20" y="65" font-family="Arial" font-size="14" fill="#00FF00">Frame 4/5: Cumulative background shift (-150, -30), Car world pos (1250, 500)</text>
+  <text x="20" y="90" font-family="Arial" font-size="13" fill="#FF00FF">Camera total: (+150, +30) | This frame: (+50, +10)</text>
+  <text x="1400" y="65" font-family="Arial" font-size="13" fill="#CCCCCC">Camera: (+150, +30)</text>
+  <text x="1400" y="90" font-family="Arial" font-size="13" fill="#FFFF00">Car frame pos: (1100, 470)</text>
+</svg>

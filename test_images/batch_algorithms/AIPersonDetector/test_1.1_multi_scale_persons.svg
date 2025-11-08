@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2000" height="2000" viewBox="0 0 2000 2000">
+  <!-- White background -->
+  <rect width="2000" height="2000" fill="#FFFFFF"/>
+
+  <!-- Small person: 50x100px at (300, 300) -->
+  <g transform="translate(300, 300)" fill="#333333">
+    <!-- Head -->
+    <circle cx="25" cy="15" r="15"/>
+    <!-- Body -->
+    <rect x="15" y="30" width="20" height="40"/>
+    <!-- Arms -->
+    <rect x="0" y="35" width="15" height="8"/>
+    <rect x="35" y="35" width="15" height="8"/>
+    <!-- Legs -->
+    <rect x="15" y="70" width="8" height="30"/>
+    <rect x="27" y="70" width="8" height="30"/>
+  </g>
+
+  <!-- Medium person: 150x300px at (800, 700) -->
+  <g transform="translate(800, 700)" fill="#333333">
+    <!-- Head -->
+    <circle cx="75" cy="45" r="45"/>
+    <!-- Body -->
+    <rect x="45" y="90" width="60" height="120"/>
+    <!-- Arms -->
+    <rect x="0" y="105" width="45" height="24"/>
+    <rect x="105" y="105" width="45" height="24"/>
+    <!-- Legs -->
+    <rect x="45" y="210" width="24" height="90"/>
+    <rect x="81" y="210" width="24" height="90"/>
+  </g>
+
+  <!-- Large person: 300x600px at (1400, 1200) -->
+  <g transform="translate(1400, 1200)" fill="#333333">
+    <!-- Head -->
+    <circle cx="150" cy="90" r="90"/>
+    <!-- Body -->
+    <rect x="90" y="180" width="120" height="240"/>
+    <!-- Arms -->
+    <rect x="0" y="210" width="90" height="48"/>
+    <rect x="210" y="210" width="90" height="48"/>
+    <!-- Legs -->
+    <rect x="90" y="420" width="48" height="180"/>
+    <rect x="162" y="420" width="48" height="180"/>
+  </g>
+
+  <!-- Labels for reference (optional) -->
+  <text x="300" y="420" font-family="Arial" font-size="14" fill="#666666">Small (50x100px)</text>
+  <text x="800" y="1020" font-family="Arial" font-size="14" fill="#666666">Medium (150x300px)</text>
+  <text x="1400" y="1820" font-family="Arial" font-size="14" fill="#666666">Large (300x600px)</text>
+</svg>

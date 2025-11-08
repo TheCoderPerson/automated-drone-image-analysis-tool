@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="1000" viewBox="0 0 1000 1000">
+  <!-- Varied background regions -->
+  <!-- Region 1: Brownish -->
+  <rect x="0" y="0" width="333" height="1000" fill="rgb(150, 100, 80)"/>
+
+  <!-- Region 2: Greenish -->
+  <rect x="333" y="0" width="334" height="1000" fill="rgb(80, 120, 90)"/>
+
+  <!-- Region 3: Grayish -->
+  <rect x="667" y="0" width="333" height="1000" fill="rgb(120, 120, 140)"/>
+
+  <!-- Target color matches -->
+  <!-- Exact match: RGB(200, 50, 50) -->
+  <rect x="200" y="200" width="150" height="150" fill="rgb(200, 50, 50)"/>
+  <text x="210" y="370" font-family="Arial" font-size="12" fill="#FFFFFF" font-weight="bold">Exact Match</text>
+  <text x="210" y="385" font-family="Arial" font-size="10" fill="#FFFFFF">RGB(200, 50, 50)</text>
+  <text x="210" y="400" font-family="Arial" font-size="10" fill="#00FF00">Should DETECT</text>
+
+  <!-- Close match: RGB(210, 60, 60) -->
+  <rect x="500" y="500" width="150" height="150" fill="rgb(210, 60, 60)"/>
+  <text x="510" y="670" font-family="Arial" font-size="12" fill="#FFFFFF" font-weight="bold">Close Match</text>
+  <text x="510" y="685" font-family="Arial" font-size="10" fill="#FFFFFF">RGB(210, 60, 60)</text>
+  <text x="510" y="700" font-family="Arial" font-size="10" fill="#00FF00">Should DETECT</text>
+
+  <!-- Poor match: RGB(150, 100, 100) -->
+  <rect x="700" y="200" width="150" height="150" fill="rgb(150, 100, 100)"/>
+  <text x="710" y="370" font-family="Arial" font-size="12" fill="#FFFFFF" font-weight="bold">Poor Match</text>
+  <text x="710" y="385" font-family="Arial" font-size="10" fill="#FFFFFF">RGB(150, 100, 100)</text>
+  <text x="710" y="400" font-family="Arial" font-size="10" fill="#FF0000">Should NOT detect</text>
+
+  <!-- Test information -->
+  <rect x="0" y="0" width="1000" height="160" fill="#000000" opacity="0.85"/>
+  <text x="20" y="30" font-family="Arial" font-size="16" fill="#FFFFFF" font-weight="bold">MatchedFilter Test 5.1: Spectral Signature Matching</text>
+  <text x="20" y="55" font-family="Arial" font-size="12" fill="#FFFFFF">Target Color: RGB(200, 50, 50) with match_filter_threshold=0.7</text>
+  <text x="20" y="80" font-family="Arial" font-size="12" fill="#FFFFFF">Background Regions: Brownish (left), Greenish (center), Grayish (right)</text>
+  <text x="20" y="105" font-family="Arial" font-size="12" fill="#00FF00">Expected: Exact and Close matches detected (correlation > 0.7)</text>
+  <text x="20" y="125" font-family="Arial" font-size="12" fill="#FF0000">Expected: Poor match NOT detected (correlation < 0.7)</text>
+  <text x="20" y="145" font-family="Arial" font-size="12" fill="#FFFFFF">Tests: Spectral correlation, threshold discrimination</text>
+</svg>

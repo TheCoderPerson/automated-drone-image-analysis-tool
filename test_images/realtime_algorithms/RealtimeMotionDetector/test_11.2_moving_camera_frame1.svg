@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080" viewBox="0 0 1920 1080">
+  <!-- Landscape background with features -->
+  <defs>
+    <!-- Ground texture -->
+    <pattern id="ground" x="0" y="0" width="100" height="100" patternUnits="userSpaceOnUse">
+      <rect width="100" height="100" fill="#8B7355"/>
+      <circle cx="20" cy="30" r="8" fill="#6B5345"/>
+      <circle cx="60" cy="60" r="10" fill="#7B6355"/>
+      <circle cx="80" cy="20" r="6" fill="#9B8365"/>
+      <rect x="10" y="70" width="30" height="5" fill="#7B6355"/>
+      <rect x="50" y="10" width="25" height="4" fill="#6B5345"/>
+    </pattern>
+  </defs>
+
+  <!-- Ground -->
+  <rect x="0" y="600" width="1920" height="480" fill="url(#ground)"/>
+
+  <!-- Sky -->
+  <rect x="0" y="0" width="1920" height="600" fill="#87CEEB"/>
+
+  <!-- Trees (landmarks) -->
+  <ellipse cx="300" cy="550" rx="80" ry="100" fill="#228B22"/>
+  <rect x="280" y="550" width="40" height="100" fill="#8B4513"/>
+
+  <ellipse cx="700" cy="520" rx="100" ry="120" fill="#228B22"/>
+  <rect x="675" y="520" width="50" height="120" fill="#8B4513"/>
+
+  <ellipse cx="1200" cy="540" rx="90" ry="110" fill="#228B22"/>
+  <rect x="1180" y="540" width="40" height="110" fill="#8B4513"/>
+
+  <ellipse cx="1600" cy="530" rx="95" ry="115" fill="#228B22"/>
+  <rect x="1577" y="530" width="46" height="115" fill="#8B4513"/>
+
+  <!-- Red car (object) at initial position -->
+  <rect x="800" y="500" width="150" height="100" fill="rgb(255, 0, 0)" stroke="#000000" stroke-width="2"/>
+  <rect x="820" y="520" width="40" height="30" fill="#87CEEB"/>
+  <rect x="880" y="520" width="40" height="30" fill="#87CEEB"/>
+  <circle cx="830" cy="600" r="20" fill="#000000"/>
+  <circle cx="920" cy="600" r="20" fill="#000000"/>
+  <text x="850" y="560" font-family="Arial" font-size="14" fill="#FFFFFF" font-weight="bold">CAR</text>
+
+  <!-- Frame information -->
+  <rect x="0" y="0" width="1920" height="100" fill="#000000" opacity="0.85"/>
+  <text x="20" y="35" font-family="Arial" font-size="18" fill="#FFFFFF" font-weight="bold">RealtimeMotionDetector Test 11.2 - Moving Camera (Drone Flight)</text>
+  <text x="20" y="65" font-family="Arial" font-size="14" fill="#00FF00">Frame 1/5: Initial position - Car at (800, 500), Camera at reference position</text>
+  <text x="1400" y="65" font-family="Arial" font-size="13" fill="#CCCCCC">Camera: (0, 0)</text>
+</svg>

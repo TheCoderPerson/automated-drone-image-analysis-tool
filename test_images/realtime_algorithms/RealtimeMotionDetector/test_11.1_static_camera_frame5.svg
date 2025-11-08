@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720">
+  <!-- Same background -->
+  <defs>
+    <pattern id="bricks" x="0" y="0" width="100" height="40" patternUnits="userSpaceOnUse">
+      <rect width="100" height="40" fill="#8B4513"/>
+      <rect x="0" y="0" width="48" height="18" fill="#A0522D" stroke="#654321" stroke-width="1"/>
+      <rect x="52" y="0" width="48" height="18" fill="#A0522D" stroke="#654321" stroke-width="1"/>
+      <rect x="0" y="22" width="48" height="18" fill="#A0522D" stroke="#654321" stroke-width="1"/>
+      <rect x="52" y="22" width="48" height="18" fill="#A0522D" stroke="#654321" stroke-width="1"/>
+    </pattern>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,6 L9,3 z" fill="#00FF00"/>
+    </marker>
+  </defs>
+
+  <rect width="1280" height="720" fill="url(#bricks)"/>
+
+  <!-- Windows -->
+  <rect x="100" y="100" width="80" height="120" fill="#87CEEB" stroke="#000000" stroke-width="2"/>
+  <rect x="300" y="100" width="80" height="120" fill="#87CEEB" stroke="#000000" stroke-width="2"/>
+  <rect x="500" y="100" width="80" height="120" fill="#87CEEB" stroke="#000000" stroke-width="2"/>
+  <rect x="700" y="100" width="80" height="120" fill="#87CEEB" stroke="#000000" stroke-width="2"/>
+  <rect x="900" y="100" width="80" height="120" fill="#87CEEB" stroke="#000000" stroke-width="2"/>
+  <rect x="1100" y="100" width="80" height="120" fill="#87CEEB" stroke="#000000" stroke-width="2"/>
+
+  <rect x="100" y="350" width="80" height="120" fill="#87CEEB" stroke="#000000" stroke-width="2"/>
+  <rect x="300" y="350" width="80" height="120" fill="#87CEEB" stroke="#000000" stroke-width="2"/>
+  <rect x="500" y="350" width="80" height="120" fill="#87CEEB" stroke="#000000" stroke-width="2"/>
+  <rect x="700" y="350" width="80" height="120" fill="#87CEEB" stroke="#000000" stroke-width="2"/>
+  <rect x="900" y="350" width="80" height="120" fill="#87CEEB" stroke="#000000" stroke-width="2"/>
+  <rect x="1100" y="350" width="80" height="120" fill="#87CEEB" stroke="#000000" stroke-width="2"/>
+
+  <!-- Moving object: Red rectangle at position 500 -->
+  <rect x="500" y="300" width="100" height="100" fill="rgb(255, 0, 0)" stroke="#000000" stroke-width="2"/>
+  <circle cx="550" cy="350" r="3" fill="#FFFF00"/>
+  <text x="505" y="420" font-family="Arial" font-size="11" fill="#FFFFFF">Position: 500</text>
+
+  <!-- Motion vector -->
+  <line x1="450" y1="350" x2="550" y2="350" stroke="#00FF00" stroke-width="3" marker-end="url(#arrow)"/>
+  <text x="480" y="340" font-family="Arial" font-size="10" fill="#00FF00">+100px →</text>
+
+  <!-- Full motion path -->
+  <path d="M 250 370 L 350 370 L 450 370 L 550 370" stroke="#FFFF00" stroke-width="2" stroke-dasharray="5,5" fill="none" opacity="0.7"/>
+  <text x="350" y="390" font-family="Arial" font-size="10" fill="#FFFF00">Motion path: 200 → 500 (300px total)</text>
+
+  <!-- Frame information -->
+  <rect x="0" y="0" width="1280" height="120" fill="#000000" opacity="0.85"/>
+  <text x="20" y="30" font-family="Arial" font-size="16" fill="#FFFFFF" font-weight="bold">RealtimeMotionDetector Test 11.1 - Static Camera Motion</text>
+  <text x="20" y="55" font-family="Arial" font-size="13" fill="#00FF00">Frame 5/5: Object at x=500 (Δx=+100)</text>
+  <text x="800" y="55" font-family="Arial" font-size="13" fill="#FFFF00">Expected: Velocity ~100px/frame →</text>
+
+  <text x="20" y="85" font-family="Arial" font-size="12" fill="#FFFFFF">Tests: mode='static', algorithms (frame_diff, mog2, knn, optical_flow)</text>
+  <text x="20" y="105" font-family="Arial" font-size="12" fill="#CCCCCC">Expected: No camera motion detected, object motion with rightward velocity vector</text>
+</svg>

@@ -1,0 +1,77 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1200" viewBox="0 0 1200 1200">
+  <!-- Uniform gray background -->
+  <rect width="1200" height="1200" fill="rgb(128, 128, 128)"/>
+
+  <!-- Slight anomalies with graduated deviations from background -->
+  <!-- Level 1: RGB(148, 128, 128) - slight deviation (+20 in R) -->
+  <rect x="200" y="200" width="100" height="100" fill="rgb(148, 128, 128)"/>
+  <text x="205" y="320" font-family="Arial" font-size="12" fill="#000000" font-weight="bold">Level 1</text>
+  <text x="205" y="335" font-family="Arial" font-size="10" fill="#000000">RGB(148,128,128)</text>
+  <text x="205" y="350" font-family="Arial" font-size="9" fill="#666666">+20 deviation</text>
+
+  <!-- Level 2: RGB(168, 128, 128) - moderate deviation (+40 in R) -->
+  <rect x="400" y="200" width="100" height="100" fill="rgb(168, 128, 128)"/>
+  <text x="405" y="320" font-family="Arial" font-size="12" fill="#000000" font-weight="bold">Level 2</text>
+  <text x="405" y="335" font-family="Arial" font-size="10" fill="#000000">RGB(168,128,128)</text>
+  <text x="405" y="350" font-family="Arial" font-size="9" fill="#666666">+40 deviation</text>
+
+  <!-- Level 3: RGB(188, 128, 128) - strong deviation (+60 in R) -->
+  <rect x="600" y="200" width="100" height="100" fill="rgb(188, 128, 128)"/>
+  <text x="605" y="320" font-family="Arial" font-size="12" fill="#000000" font-weight="bold">Level 3</text>
+  <text x="605" y="335" font-family="Arial" font-size="10" fill="#000000">RGB(188,128,128)</text>
+  <text x="605" y="350" font-family="Arial" font-size="9" fill="#666666">+60 deviation</text>
+
+  <!-- Strong anomaly: RGB(255, 0, 0) - extreme deviation -->
+  <rect x="800" y="200" width="100" height="100" fill="rgb(255, 0, 0)"/>
+  <text x="805" y="320" font-family="Arial" font-size="12" fill="#FFFFFF" font-weight="bold">Strong</text>
+  <text x="805" y="335" font-family="Arial" font-size="10" fill="#FFFFFF">RGB(255,0,0)</text>
+  <text x="805" y="350" font-family="Arial" font-size="9" fill="#FFCCCC">Extreme deviation</text>
+
+  <!-- Expected detection by sensitivity level -->
+  <rect x="150" y="450" width="900" height="600" fill="#FFFFFF" opacity="0.9"/>
+  <text x="200" y="500" font-family="Arial" font-size="14" fill="#000000" font-weight="bold">Expected Detection by Sensitivity Level:</text>
+
+  <!-- Low sensitivity table -->
+  <text x="200" y="540" font-family="Arial" font-size="12" fill="#000000" font-weight="bold">Low Sensitivity (1-3):</text>
+  <rect x="220" y="550" width="15" height="15" fill="rgb(128, 128, 128)"/>
+  <text x="240" y="562" font-family="Arial" font-size="11" fill="#FF0000">Level 1: NOT detected</text>
+  <rect x="220" y="570" width="15" height="15" fill="rgb(128, 128, 128)"/>
+  <text x="240" y="582" font-family="Arial" font-size="11" fill="#FF0000">Level 2: NOT detected</text>
+  <rect x="220" y="590" width="15" height="15" fill="rgb(128, 128, 128)"/>
+  <text x="240" y="602" font-family="Arial" font-size="11" fill="#FF0000">Level 3: NOT detected</text>
+  <rect x="220" y="610" width="15" height="15" fill="rgb(255, 0, 0)"/>
+  <text x="240" y="622" font-family="Arial" font-size="11" fill="#00AA00">Strong: DETECTED ✓</text>
+
+  <!-- Medium sensitivity table -->
+  <text x="200" y="670" font-family="Arial" font-size="12" fill="#000000" font-weight="bold">Medium Sensitivity (4-7):</text>
+  <rect x="220" y="680" width="15" height="15" fill="rgb(128, 128, 128)"/>
+  <text x="240" y="692" font-family="Arial" font-size="11" fill="#FF0000">Level 1: NOT detected</text>
+  <rect x="220" y="700" width="15" height="15" fill="rgb(128, 128, 128)"/>
+  <text x="240" y="712" font-family="Arial" font-size="11" fill="#FF0000">Level 2: NOT detected</text>
+  <rect x="220" y="720" width="15" height="15" fill="rgb(188, 128, 128)"/>
+  <text x="240" y="732" font-family="Arial" font-size="11" fill="#00AA00">Level 3: DETECTED ✓</text>
+  <rect x="220" y="740" width="15" height="15" fill="rgb(255, 0, 0)"/>
+  <text x="240" y="752" font-family="Arial" font-size="11" fill="#00AA00">Strong: DETECTED ✓</text>
+
+  <!-- High sensitivity table -->
+  <text x="200" y="800" font-family="Arial" font-size="12" fill="#000000" font-weight="bold">High Sensitivity (8-10):</text>
+  <rect x="220" y="810" width="15" height="15" fill="rgb(148, 128, 128)"/>
+  <text x="240" y="822" font-family="Arial" font-size="11" fill="#00AA00">Level 1: DETECTED ✓</text>
+  <rect x="220" y="830" width="15" height="15" fill="rgb(168, 128, 128)"/>
+  <text x="240" y="842" font-family="Arial" font-size="11" fill="#00AA00">Level 2: DETECTED ✓</text>
+  <rect x="220" y="850" width="15" height="15" fill="rgb(188, 128, 128)"/>
+  <text x="240" y="862" font-family="Arial" font-size="11" fill="#00AA00">Level 3: DETECTED ✓</text>
+  <rect x="220" y="870" width="15" height="15" fill="rgb(255, 0, 0)"/>
+  <text x="240" y="882" font-family="Arial" font-size="11" fill="#00AA00">Strong: DETECTED ✓</text>
+
+  <text x="200" y="930" font-family="Arial" font-size="11" fill="#666666">Tests: sensitivity parameter tuning (1-10 scale)</text>
+  <text x="200" y="950" font-family="Arial" font-size="11" fill="#666666">Graduated anomaly detection thresholds</text>
+  <text x="200" y="970" font-family="Arial" font-size="11" fill="#666666">Statistical significance levels via chi-squared distribution</text>
+
+  <!-- Test information header -->
+  <rect x="0" y="0" width="1200" height="120" fill="#000000" opacity="0.85"/>
+  <text x="20" y="30" font-family="Arial" font-size="16" fill="#FFFFFF" font-weight="bold">RXAnomaly Test 6.2: Sensitivity Calibration</text>
+  <text x="20" y="55" font-family="Arial" font-size="12" fill="#FFFFFF">Background: Uniform gray RGB(128, 128, 128)</text>
+  <text x="20" y="75" font-family="Arial" font-size="12" fill="#FFFFFF">Anomalies: Graduated deviations from background</text>
+  <text x="20" y="95" font-family="Arial" font-size="12" fill="#FFFF00">Tests sensitivity parameter's effect on detection threshold</text>
+</svg>

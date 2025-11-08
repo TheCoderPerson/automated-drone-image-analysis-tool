@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="800" viewBox="0 0 1200 800">
+  <!-- Neutral gray background -->
+  <rect width="1200" height="800" fill="#888888"/>
+
+  <!-- Pure red: RGB(255, 0, 0) → HSV(0°, 100%, 100%) -->
+  <rect x="100" y="100" width="150" height="150" fill="rgb(255, 0, 0)"/>
+  <text x="110" y="270" font-family="Arial" font-size="11" fill="#FFFFFF">Pure Red</text>
+  <text x="110" y="285" font-family="Arial" font-size="10" fill="#FFFFFF">RGB(255,0,0)</text>
+  <text x="110" y="300" font-family="Arial" font-size="10" fill="#FFFFFF">HSV(0°,100%,100%)</text>
+
+  <!-- Orange-red: RGB(255, 64, 0) → HSV(15°, 100%, 100%) -->
+  <rect x="300" y="100" width="150" height="150" fill="rgb(255, 64, 0)"/>
+  <text x="310" y="270" font-family="Arial" font-size="11" fill="#000000">Orange-Red</text>
+  <text x="310" y="285" font-family="Arial" font-size="10" fill="#000000">RGB(255,64,0)</text>
+  <text x="310" y="300" font-family="Arial" font-size="10" fill="#000000">HSV(15°,100%,100%)</text>
+
+  <!-- Deep red: RGB(200, 0, 0) → HSV(0°, 100%, 78%) -->
+  <rect x="500" y="100" width="150" height="150" fill="rgb(200, 0, 0)"/>
+  <text x="510" y="270" font-family="Arial" font-size="11" fill="#FFFFFF">Deep Red</text>
+  <text x="510" y="285" font-family="Arial" font-size="10" fill="#FFFFFF">RGB(200,0,0)</text>
+  <text x="510" y="300" font-family="Arial" font-size="10" fill="#FFFFFF">HSV(0°,100%,78%)</text>
+
+  <!-- Pink: RGB(255, 128, 128) → HSV(0°, 50%, 100%) -->
+  <rect x="700" y="100" width="150" height="150" fill="rgb(255, 128, 128)"/>
+  <text x="710" y="270" font-family="Arial" font-size="11" fill="#000000">Pink</text>
+  <text x="710" y="285" font-family="Arial" font-size="10" fill="#000000">RGB(255,128,128)</text>
+  <text x="710" y="300" font-family="Arial" font-size="10" fill="#000000">HSV(0°,50%,100%)</text>
+
+  <!-- Purple: RGB(128, 0, 128) → HSV(300°, 100%, 50%) -->
+  <rect x="900" y="100" width="150" height="150" fill="rgb(128, 0, 128)"/>
+  <text x="910" y="270" font-family="Arial" font-size="11" fill="#FFFFFF">Purple</text>
+  <text x="910" y="285" font-family="Arial" font-size="10" fill="#FFFFFF">RGB(128,0,128)</text>
+  <text x="910" y="300" font-family="Arial" font-size="10" fill="#FFFFFF">HSV(300°,100%,50%)</text>
+
+  <!-- Test information -->
+  <text x="10" y="30" font-family="Arial" font-size="14" fill="#FFFFFF" font-weight="bold">HSVColorRange Test 3.1: Hue Variation</text>
+  <text x="10" y="50" font-family="Arial" font-size="11" fill="#FFFFFF">Target: Red with hue_threshold=10, sat_threshold=30, value_threshold=30</text>
+  <text x="10" y="70" font-family="Arial" font-size="11" fill="#00FF00">Expected DETECTED: Pure Red, Orange-Red, Deep Red, Pink</text>
+  <text x="10" y="90" font-family="Arial" font-size="11" fill="#FF0000">Expected NOT DETECTED: Purple (hue 300° too far)</text>
+
+  <!-- Visual indicators -->
+  <rect x="100" y="250" width="150" height="3" fill="#00FF00"/>
+  <rect x="300" y="250" width="150" height="3" fill="#00FF00"/>
+  <rect x="500" y="250" width="150" height="3" fill="#00FF00"/>
+  <rect x="700" y="250" width="150" height="3" fill="#00FF00"/>
+  <rect x="900" y="250" width="150" height="3" fill="#FF0000"/>
+</svg>
