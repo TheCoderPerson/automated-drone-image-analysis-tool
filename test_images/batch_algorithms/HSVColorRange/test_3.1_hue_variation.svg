@@ -34,14 +34,15 @@
 
   <!-- Test information -->
   <text x="10" y="30" font-family="Arial" font-size="14" fill="#FFFFFF" font-weight="bold">HSVColorRange Test 3.1: Hue Variation</text>
-  <text x="10" y="50" font-family="Arial" font-size="11" fill="#FFFFFF">Target: Red with hue_threshold=10, sat_threshold=30, value_threshold=30</text>
-  <text x="10" y="70" font-family="Arial" font-size="11" fill="#00FF00">Expected DETECTED: Pure Red, Orange-Red, Deep Red, Pink</text>
-  <text x="10" y="90" font-family="Arial" font-size="11" fill="#FF0000">Expected NOT DETECTED: Purple (hue 300° too far)</text>
+  <text x="10" y="50" font-family="Arial" font-size="11" fill="#FFFFFF">Target: Red RGB(255,0,0) → OpenCV HSV(0, 255, 255)</text>
+  <text x="10" y="70" font-family="Arial" font-size="11" fill="#FFFFFF">Params: hue_threshold=10 (±20°), sat_threshold=30 (±30 units), value_threshold=30 (±30 units)</text>
+  <text x="10" y="90" font-family="Arial" font-size="11" fill="#00FF00">Expected DETECTED: Pure Red, Orange-Red, Deep Red (3 total)</text>
+  <text x="10" y="110" font-family="Arial" font-size="11" fill="#FF0000">Expected NOT DETECTED: Pink (S=128 outside 255±30), Purple (H too far)</text>
 
   <!-- Visual indicators -->
   <rect x="100" y="250" width="150" height="3" fill="#00FF00"/>
   <rect x="300" y="250" width="150" height="3" fill="#00FF00"/>
   <rect x="500" y="250" width="150" height="3" fill="#00FF00"/>
-  <rect x="700" y="250" width="150" height="3" fill="#00FF00"/>
+  <rect x="700" y="250" width="150" height="3" fill="#FF0000"/>
   <rect x="900" y="250" width="150" height="3" fill="#FF0000"/>
 </svg>
