@@ -38,6 +38,62 @@ except ImportError:
 
 from core.services.XmlService import XmlService
 
+try:
+    import tifffile
+except ImportError:
+    tifffile = None
+
+
+def load_detected_pixels_from_mask(mask_path, aoi):
+    """
+    Load detected pixels from the mask file for an AOI.
+
+    Args:
+        mask_path: Path to the mask TIFF file
+        aoi: AOI dictionary with 'center' and 'radius'
+
+    Returns:
+        list: List of [x, y] pixel coordinates within the AOI
+    """
+    if not mask_path or not os.path.exists(mask_path):
+        return []
+
+    try:
+        # Load mask file (band 0 is the detection mask)
+        if tifffile:
+            mask_data = tifffile.imread(mask_path)
+            if len(mask_data.shape) == 3:  # Multi-band
+                mask = mask_data[0]  # First band is the mask
+            else:
+                mask = mask_data
+        else:
+            # Fallback to OpenCV
+            mask = cv2.imread(mask_path, cv2.IMREAD_GRAYSCALE)
+            if mask is None:
+                return []
+
+        # Get all detected pixels in the mask
+        import numpy as np
+        detected_coords = np.argwhere(mask > 0)
+        detected_pixels = detected_coords[:, [1, 0]].tolist()  # Convert to [x, y] format
+
+        # Filter to only pixels within this AOI's circle
+        center = aoi['center']
+        radius = aoi['radius']
+
+        aoi_pixels = []
+        for px, py in detected_pixels:
+            # Check if pixel is within the AOI circle
+            dist = np.sqrt((px - center[0])**2 + (py - center[1])**2)
+            if dist <= radius:
+                aoi_pixels.append([px, py])
+
+        return aoi_pixels
+
+    except Exception as e:
+        print(f"    Warning: Could not load mask file: {e}")
+        return []
+
 
 def process_xml_file(xml_path: str, overwrite: bool = True, backup: bool = True):
     """
@@ -99,6 +155,19 @@ def process_xml_file(xml_path: str, overwrite: bool = True, backup: bool = True)
                 continue
 
             img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+
+            # Load detected_pixels from mask file if missing
+            mask_path = img_data.get('mask_path', '')
+            if mask_path and not os.path.isabs(mask_path):
+                xml_dir = os.path.dirname(xml_path)
+                mask_path = os.path.join(xml_dir, mask_path)
+
+            missing_pixels_count = sum(1 for aoi in aois if not aoi.get('detected_pixels') or len(aoi.get('detected_pixels', [])) == 0)
+            if missing_pixels_count > 0 and mask_path and os.path.exists(mask_path):
+                print(f"    Loading detected pixels from mask file for {missing_pixels_count} AOI(s)...")
+                for aoi in aois:
+                    if not aoi.get('detected_pixels') or len(aoi.get('detected_pixels', [])) == 0:
+                        aoi['detected_pixels'] = load_detected_pixels_from_mask(mask_path, aoi)
 
             # Add texture analysis
             print(f"  Analyzing {len(aois)} AOIs in {os.path.basename(image_path)}...")

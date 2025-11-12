@@ -38,6 +38,61 @@ except ImportError:
 
 from core.services.XmlService import XmlService
 
+try:
+    import tifffile
+except ImportError:
+    tifffile = None
+
+
+def load_detected_pixels_from_mask(mask_path, aoi):
+    """
+    Load detected pixels from the mask file for an AOI.
+
+    Args:
+        mask_path: Path to the mask TIFF file
+        aoi: AOI dictionary with 'center' and 'radius'
+
+    Returns:
+        list: List of [x, y] pixel coordinates within the AOI
+    """
+    if not mask_path or not os.path.exists(mask_path):
+        return []
+
+    try:
+        # Load mask file (band 0 is the detection mask)
+        if tifffile:
+            mask_data = tifffile.imread(mask_path)
+            if len(mask_data.shape) == 3:  # Multi-band
+                mask = mask_data[0]  # First band is the mask
+            else:
+                mask = mask_data
+        else:
+            # Fallback to OpenCV
+            mask = cv2.imread(mask_path, cv2.IMREAD_GRAYSCALE)
+            if mask is None:
+                return []
+
+        # Get all detected pixels in the mask
+        detected_coords = np.argwhere(mask > 0)
+        detected_pixels = detected_coords[:, [1, 0]].tolist()  # Convert to [x, y] format
+
+        # Filter to only pixels within this AOI's circle
+        center = aoi['center']
+        radius = aoi['radius']
+
+        aoi_pixels = []
+        for px, py in detected_pixels:
+            # Check if pixel is within the AOI circle
+            dist = np.sqrt((px - center[0])**2 + (py - center[1])**2)
+            if dist <= radius:
+                aoi_pixels.append([px, py])
+
+        return aoi_pixels
+
+    except Exception as e:
+        print(f"Warning: Could not load mask file {mask_path}: {e}")
+        return []
+
 
 def find_image_in_xml(xml_service, image_path):
     """
@@ -121,6 +176,32 @@ def analyze_existing_detections(image_path: str, xml_path: str):
 
     print(f"Found {len(aois)} AOIs")
 
+    # Load mask file path
+    mask_path = img_data.get('mask_path', '')
+    if mask_path and not os.path.isabs(mask_path):
+        # Mask path is relative to XML directory
+        xml_dir = os.path.dirname(xml_path)
+        mask_path = os.path.join(xml_dir, mask_path)
+
+    # Check if we need to load detected_pixels from mask file
+    missing_pixels_count = 0
+    for aoi in aois:
+        if not aoi.get('detected_pixels') or len(aoi.get('detected_pixels', [])) == 0:
+            missing_pixels_count += 1
+
+    if missing_pixels_count > 0:
+        print(f"\nNote: {missing_pixels_count} AOI(s) have no detected_pixels in XML (>100 pixels were detected)")
+        if mask_path and os.path.exists(mask_path):
+            print(f"Loading detected pixels from mask file: {os.path.basename(mask_path)}")
+            for aoi in aois:
+                if not aoi.get('detected_pixels') or len(aoi.get('detected_pixels', [])) == 0:
+                    detected_pixels = load_detected_pixels_from_mask(mask_path, aoi)
+                    aoi['detected_pixels'] = detected_pixels
+            print(f"Successfully loaded detected pixels from mask file")
+        else:
+            print(f"Warning: Mask file not found at {mask_path}")
+            print("Texture analysis may be inaccurate for AOIs with missing detected_pixels")
+
     # Initialize texture analysis service
     texture_service = TextureAnalysisService()
 
@@ -130,10 +211,11 @@ def analyze_existing_detections(image_path: str, xml_path: str):
 
     results = []
     for i, aoi in enumerate(aois):
+        detected_pixel_count = len(aoi.get('detected_pixels', []))
         print(f"\nAOI {i + 1}:")
         print(f"  Center: {aoi['center']}")
         print(f"  Radius: {aoi['radius']}")
-        print(f"  Detected pixels: {len(aoi.get('detected_pixels', []))}")
+        print(f"  Detected pixels: {detected_pixel_count}")
 
         # Calculate textures
         texture_data = texture_service.calculate_aoi_textures(img_rgb, aoi)
@@ -267,6 +349,19 @@ def demonstrate_filtering(image_path: str, xml_path: str,
     aois = img_data.get('areas_of_interest', [])
 
     print(f"\nOriginal AOI count: {len(aois)}")
+
+    # Load detected_pixels from mask file if missing
+    mask_path = img_data.get('mask_path', '')
+    if mask_path and not os.path.isabs(mask_path):
+        xml_dir = os.path.dirname(xml_path)
+        mask_path = os.path.join(xml_dir, mask_path)
+
+    missing_pixels_count = sum(1 for aoi in aois if not aoi.get('detected_pixels') or len(aoi.get('detected_pixels', [])) == 0)
+    if missing_pixels_count > 0 and mask_path and os.path.exists(mask_path):
+        print(f"Loading detected pixels from mask file for {missing_pixels_count} AOI(s)...")
+        for aoi in aois:
+            if not aoi.get('detected_pixels') or len(aoi.get('detected_pixels', [])) == 0:
+                aoi['detected_pixels'] = load_detected_pixels_from_mask(mask_path, aoi)
 
     # Add texture data to AOIs
     texture_service = TextureAnalysisService()
