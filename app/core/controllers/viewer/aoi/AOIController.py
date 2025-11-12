@@ -58,6 +58,7 @@ class AOIController:
         self.filter_color_range = None  # ± degrees for color filtering
         self.filter_area_min = None  # Minimum pixel area for filtering
         self.filter_area_max = None  # Maximum pixel area for filtering
+        self.filter_ca_artifacts = False  # Filter chromatic aberration artifacts
 
         # UI elements (will be set by parent)
         self.aoiListWidget = None
@@ -1013,6 +1014,110 @@ class AOIController:
             self.logger.error(f"Error getting AOI hue: {e}")
             return None
 
+    def get_aoi_saturation(self, aoi):
+        """Get the saturation value for an AOI.
+
+        Args:
+            aoi: AOI dictionary
+
+        Returns:
+            float: Saturation value (0-1) or None if cannot be calculated
+        """
+        try:
+            # Use the already-loaded image array
+            if hasattr(self.parent, 'current_image_array') and self.parent.current_image_array is not None:
+                img_array = self.parent.current_image_array
+            else:
+                return None
+
+            center = aoi['center']
+            radius = aoi.get('radius', 0)
+
+            # Collect RGB values within the AOI
+            colors = []
+            cx, cy = center
+            shape = img_array.shape
+
+            # If we have detected pixels, use those
+            if 'detected_pixels' in aoi and aoi['detected_pixels']:
+                for pixel in aoi['detected_pixels']:
+                    if isinstance(pixel, (list, tuple)) and len(pixel) >= 2:
+                        px, py = int(pixel[0]), int(pixel[1])
+                        if 0 <= py < shape[0] and 0 <= px < shape[1]:
+                            colors.append(img_array[py, px])
+            # Otherwise sample within the circle
+            else:
+                for y in range(max(0, cy - radius), min(shape[0], cy + radius + 1)):
+                    for x in range(max(0, cx - radius), min(shape[1], cx + radius + 1)):
+                        if (x - cx) ** 2 + (y - cy) ** 2 <= radius ** 2:
+                            colors.append(img_array[y, x])
+
+            if colors:
+                # Calculate average RGB
+                avg_rgb = np.mean(colors, axis=0).astype(int)
+                # Normalize RGB to 0-1 range
+                r, g, b = avg_rgb[0] / 255.0, avg_rgb[1] / 255.0, avg_rgb[2] / 255.0
+                # Convert to HSV and return saturation
+                _, s, _ = colorsys.rgb_to_hsv(r, g, b)
+                return s
+
+            return None
+        except Exception as e:
+            self.logger.error(f"Error getting AOI saturation: {e}")
+            return None
+
+    def is_likely_ca_artifact(self, aoi):
+        """Determine if an AOI is likely a chromatic aberration artifact.
+
+        Args:
+            aoi: AOI dictionary
+
+        Returns:
+            bool: True if the AOI matches CA characteristics
+        """
+        try:
+            # Skip thermal images (CA only affects optical cameras)
+            if hasattr(self.parent, 'is_thermal') and self.parent.is_thermal:
+                return False
+
+            # Get AOI properties
+            hue = self.get_aoi_hue(aoi)
+            if hue is None:
+                return False
+
+            saturation = self.get_aoi_saturation(aoi)
+            if saturation is None:
+                return False
+
+            area = aoi.get('area', 0)
+
+            # Calculate aspect ratio from contour if available
+            aspect_ratio = 1.0
+            if 'contour' in aoi and aoi['contour']:
+                contour_points = np.array(aoi['contour'])
+                if len(contour_points) > 0:
+                    x_coords = contour_points[:, 0]
+                    y_coords = contour_points[:, 1]
+                    width = np.max(x_coords) - np.min(x_coords) + 1
+                    height = np.max(y_coords) - np.min(y_coords) + 1
+                    if height > 0:
+                        aspect_ratio = width / height
+
+            # Use ChromaticAberrationService to check CA characteristics
+            from core.services.ChromaticAberrationService import ChromaticAberrationService
+            ca_service = ChromaticAberrationService(sensitivity=1.0)
+
+            return ca_service.is_likely_ca_artifact(
+                hue=hue,
+                saturation=saturation,
+                area=area,
+                aspect_ratio=aspect_ratio
+            )
+
+        except Exception as e:
+            self.logger.error(f"Error checking CA artifact: {e}")
+            return False
+
     def sort_aois_with_indices(self, areas_of_interest):
         """Sort AOIs based on current sort method, preserving original indices.
 
@@ -1080,6 +1185,11 @@ class AOIController:
             # Apply flag filter
             if self.filter_flagged_only and original_idx not in flagged_set:
                 continue
+
+            # Apply chromatic aberration filter
+            if self.filter_ca_artifacts:
+                if self.is_likely_ca_artifact(aoi):
+                    continue
 
             # Apply color filter
             if self.filter_color_hue is not None and self.filter_color_range is not None:
@@ -1153,6 +1263,7 @@ class AOIController:
         Args:
             filters: Dict with filter settings {
                 'flagged_only': bool,
+                'filter_ca_artifacts': bool,
                 'color_hue': int or None,
                 'color_range': int or None,
                 'area_min': float or None,
@@ -1160,6 +1271,7 @@ class AOIController:
             }
         """
         self.filter_flagged_only = filters.get('flagged_only', False)
+        self.filter_ca_artifacts = filters.get('filter_ca_artifacts', False)
         self.filter_color_hue = filters.get('color_hue')
         self.filter_color_range = filters.get('color_range')
         self.filter_area_min = filters.get('area_min')
@@ -1168,6 +1280,7 @@ class AOIController:
         # Update button appearance if available
         has_filters = any([
             self.filter_flagged_only,
+            self.filter_ca_artifacts,
             self.filter_color_hue is not None,
             self.filter_area_min is not None,
             self.filter_area_max is not None

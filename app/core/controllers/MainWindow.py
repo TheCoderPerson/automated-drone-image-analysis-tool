@@ -17,6 +17,7 @@ from helpers.PickleHelper import PickleHelper
 from core.controllers.viewer.Viewer import Viewer
 from core.controllers.Perferences import Preferences
 from core.controllers.VideoParser import VideoParser
+from core.controllers.ChromaticAberrationRemoval import ChromaticAberrationRemoval
 from core.controllers.RTMPColorDetectionViewer import RTMPColorDetectionViewer
 from core.controllers.RTMPAnomalyDetectionViewer import RTMPAnomalyDetectionViewer
 from core.controllers.RTMPMotionDetectionViewer import RTMPMotionDetectionViewer
@@ -78,6 +79,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.actionLoadFile.triggered.connect(self._open_load_file)
         self.actionPreferences.triggered.connect(self._open_preferences)
         self.actionVideoParser.triggered.connect(self._open_video_parser)
+        self.actionChromaticAberrationRemoval.triggered.connect(self._open_chromatic_aberration_removal)
 
         # Add RTMP Color Detection functionality
         self.rtmp_viewer = None
@@ -507,6 +509,18 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         """
         parser = VideoParser(self.settings_service.get_setting('Theme'))
         parser.exec()
+
+    def _open_chromatic_aberration_removal(self):
+        """
+        Opens the Chromatic Aberration Removal dialog.
+        """
+        try:
+            ca_removal = ChromaticAberrationRemoval(self, self.settings_service.get_setting('Theme'))
+            ca_removal.exec()
+            self.logger.info("Chromatic Aberration Removal dialog closed")
+        except Exception as e:
+            self.logger.error(f"Error opening Chromatic Aberration Removal dialog: {e}")
+            QMessageBox.critical(self, "Error", f"Failed to open Chromatic Aberration Removal:\n{str(e)}")
 
     def _open_rtmp_detection(self):
         """

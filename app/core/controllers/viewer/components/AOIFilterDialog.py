@@ -35,6 +35,7 @@ class AOIFilterDialog(QDialog):
         self.area_min = current_filters.get('area_min', None)
         self.area_max = current_filters.get('area_max', None)
         self.flagged_only = current_filters.get('flagged_only', False)
+        self.filter_ca_artifacts = current_filters.get('filter_ca_artifacts', False)
 
         self.setupUi()
 
@@ -67,6 +68,26 @@ class AOIFilterDialog(QDialog):
 
         flagged_group.setLayout(flagged_layout)
         layout.addWidget(flagged_group)
+
+        # ===== Chromatic Aberration Filter =====
+        ca_group = QGroupBox("Chromatic Aberration Filter")
+        ca_layout = QVBoxLayout()
+
+        self.ca_filter_enabled = QCheckBox("Filter Chromatic Aberration Artifacts")
+        self.ca_filter_enabled.setChecked(self.filter_ca_artifacts)
+        ca_layout.addWidget(self.ca_filter_enabled)
+
+        ca_info_label = QLabel(
+            "Hide AOIs that match chromatic aberration characteristics:\n"
+            "• Purple/magenta or cyan hues\n"
+            "• High saturation\n"
+            "• Small, elongated shapes along edges"
+        )
+        ca_info_label.setStyleSheet("QLabel { color: gray; font-size: 9pt; }")
+        ca_layout.addWidget(ca_info_label)
+
+        ca_group.setLayout(ca_layout)
+        layout.addWidget(ca_group)
 
         # ===== Color Filter Group =====
         color_group = QGroupBox("Color Filter")
@@ -253,6 +274,7 @@ class AOIFilterDialog(QDialog):
     def clear_all_filters(self):
         """Clear all filter settings."""
         self.flagged_filter_enabled.setChecked(False)
+        self.ca_filter_enabled.setChecked(False)
         self.color_filter_enabled.setChecked(False)
         self.area_filter_enabled.setChecked(False)
         self.color_hue = None
@@ -264,6 +286,7 @@ class AOIFilterDialog(QDialog):
         Returns:
             dict: Filter settings {
                 'flagged_only': bool,
+                'filter_ca_artifacts': bool,
                 'color_hue': int or None,
                 'color_range': int or None,
                 'area_min': float or None,
@@ -272,6 +295,7 @@ class AOIFilterDialog(QDialog):
         """
         filters = {
             'flagged_only': self.flagged_filter_enabled.isChecked(),
+            'filter_ca_artifacts': self.ca_filter_enabled.isChecked(),
             'color_hue': self.color_hue if self.color_filter_enabled.isChecked() else None,
             'color_range': self.color_range if self.color_filter_enabled.isChecked() else None,
             'area_min': float(self.min_area_spin.value()) if self.area_filter_enabled.isChecked() else None,
