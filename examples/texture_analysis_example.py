@@ -2,10 +2,16 @@
 Example script demonstrating texture analysis for AOI false positive filtering.
 
 This script shows how to:
-1. Load an image with existing detections
+1. Load an image with existing detections from ADIAT_Data.xml
 2. Calculate texture features for detected pixels vs. AOI circles
 3. Analyze differences to identify potential false positives
 4. Filter AOIs based on texture criteria
+
+Usage:
+    python examples/texture_analysis_example.py <image_path> <adiat_data_xml_path>
+
+Example:
+    python examples/texture_analysis_example.py input/DJI_0001.JPG output/ADIAT_Results/ADIAT_Data.xml
 """
 
 import sys
@@ -21,43 +27,84 @@ from app.core.services.ImageService import ImageService
 from app.core.services.XmlService import XmlService
 
 
-def analyze_existing_detections(image_path: str, xml_path: str = None):
+def find_image_in_xml(xml_service, image_path):
+    """
+    Find the image entry in ADIAT_Data.xml that matches the given image path.
+
+    Args:
+        xml_service: XmlService instance with loaded ADIAT_Data.xml
+        image_path: Path to the image to find
+
+    Returns:
+        dict: Image data with AOIs, or None if not found
+    """
+    images = xml_service.get_images()
+
+    # Normalize the search path
+    image_path_normalized = os.path.normpath(image_path)
+    image_basename = os.path.basename(image_path)
+
+    for img_data in images:
+        # Check both full path and basename
+        img_path = img_data.get('path', '')
+        img_path_normalized = os.path.normpath(img_path)
+
+        # Match by full path or basename
+        if (img_path_normalized == image_path_normalized or
+            os.path.basename(img_path) == image_basename or
+            img_path == image_path):
+            return img_data
+
+    return None
+
+
+def analyze_existing_detections(image_path: str, xml_path: str):
     """
     Analyze texture features for existing detections.
 
     Args:
         image_path: Path to the source image
-        xml_path: Path to XML file with AOI data (optional, will look in default location)
+        xml_path: Path to ADIAT_Data.xml file with AOI data
     """
     print(f"Loading image: {image_path}")
 
     # Load image
+    if not os.path.exists(image_path):
+        print(f"Error: Image file not found at {image_path}")
+        return
+
     img = cv2.imread(image_path)
     if img is None:
         print(f"Error: Could not load image at {image_path}")
         return
     img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
 
-    # Load AOIs from XML
-    if xml_path is None:
-        # Look for XML in default output location
-        base_name = os.path.splitext(os.path.basename(image_path))[0]
-        output_dir = os.path.join(os.path.dirname(image_path), 'output')
-        xml_path = os.path.join(output_dir, f"{base_name}.xml")
-
+    # Load ADIAT_Data.xml
     if not os.path.exists(xml_path):
-        print(f"Error: XML file not found at {xml_path}")
-        print("Please run detection first or provide correct XML path")
+        print(f"Error: ADIAT_Data.xml file not found at {xml_path}")
+        print("\nPlease provide the correct path to ADIAT_Data.xml")
+        print("Typical location: <output_folder>/ADIAT_Results/ADIAT_Data.xml")
         return
 
-    print(f"Loading AOI data from: {xml_path}")
+    print(f"Loading detection data from: {xml_path}")
 
-    # Load AOIs
+    # Load XML and find this image's data
     xml_service = XmlService(xml_path)
-    aois = xml_service.get_areas_of_interest()
+    img_data = find_image_in_xml(xml_service, image_path)
+
+    if img_data is None:
+        print(f"\nError: Could not find detections for image: {image_path}")
+        print("\nImages found in ADIAT_Data.xml:")
+        images = xml_service.get_images()
+        for i, img in enumerate(images, 1):
+            print(f"  {i}. {img.get('path', 'Unknown')}")
+        print("\nPlease check that the image path matches one of the above.")
+        return
+
+    aois = img_data.get('areas_of_interest', [])
 
     if not aois:
-        print("No AOIs found in XML file")
+        print(f"No AOIs found for this image in the XML file")
         return
 
     print(f"Found {len(aois)} AOIs")
@@ -174,7 +221,7 @@ def analyze_existing_detections(image_path: str, xml_path: str = None):
     print("4. Use TextureAnalysisService.filter_aois_by_texture() to apply filters")
 
 
-def demonstrate_filtering(image_path: str, xml_path: str = None,
+def demonstrate_filtering(image_path: str, xml_path: str,
                          min_difference: float = None,
                          min_ratio: float = None):
     """
@@ -182,7 +229,7 @@ def demonstrate_filtering(image_path: str, xml_path: str = None,
 
     Args:
         image_path: Path to source image
-        xml_path: Path to XML file
+        xml_path: Path to ADIAT_Data.xml file
         min_difference: Minimum texture difference to keep
         min_ratio: Minimum texture ratio to keep
     """
@@ -192,16 +239,20 @@ def demonstrate_filtering(image_path: str, xml_path: str = None,
 
     # Load image
     img = cv2.imread(image_path)
+    if img is None:
+        print(f"Error: Could not load image at {image_path}")
+        return
     img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
 
-    # Load AOIs
-    if xml_path is None:
-        base_name = os.path.splitext(os.path.basename(image_path))[0]
-        output_dir = os.path.join(os.path.dirname(image_path), 'output')
-        xml_path = os.path.join(output_dir, f"{base_name}.xml")
-
+    # Load XML and find this image
     xml_service = XmlService(xml_path)
-    aois = xml_service.get_areas_of_interest()
+    img_data = find_image_in_xml(xml_service, image_path)
+
+    if img_data is None:
+        print(f"Error: Could not find detections for image in XML")
+        return
+
+    aois = img_data.get('areas_of_interest', [])
 
     print(f"\nOriginal AOI count: {len(aois)}")
 
@@ -238,15 +289,23 @@ def demonstrate_filtering(image_path: str, xml_path: str = None,
 
 
 if __name__ == "__main__":
-    if len(sys.argv) < 2:
-        print("Usage: python texture_analysis_example.py <image_path> [xml_path]")
+    if len(sys.argv) < 3:
+        print("Texture Analysis for False Positive Filtering")
+        print("=" * 80)
+        print("\nUsage:")
+        print("  python texture_analysis_example.py <image_path> <adiat_data_xml_path>")
         print("\nExample:")
-        print("  python texture_analysis_example.py input/DJI_0001.JPG")
-        print("  python texture_analysis_example.py input/DJI_0001.JPG output/DJI_0001.xml")
+        print("  python texture_analysis_example.py input/DJI_0001.JPG output/ADIAT_Results/ADIAT_Data.xml")
+        print("\nArguments:")
+        print("  image_path          : Path to the image file to analyze")
+        print("  adiat_data_xml_path : Path to ADIAT_Data.xml (usually in ADIAT_Results folder)")
+        print("\nNote:")
+        print("  The ADIAT_Data.xml file is located in the output folder you selected")
+        print("  when running the detection, typically: <output_folder>/ADIAT_Results/ADIAT_Data.xml")
         sys.exit(1)
 
     image_path = sys.argv[1]
-    xml_path = sys.argv[2] if len(sys.argv) > 2 else None
+    xml_path = sys.argv[2]
 
     # Run analysis
     analyze_existing_detections(image_path, xml_path)

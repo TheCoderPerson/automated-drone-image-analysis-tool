@@ -46,14 +46,18 @@ The system uses GLCM (Gray-Level Co-occurrence Matrix) to calculate several text
 
 ### 1. Analyze Existing Detections
 
-Use the example script to analyze detections from an existing XML file:
+Use the example script to analyze detections from ADIAT_Data.xml:
 
 ```bash
-python examples/texture_analysis_example.py input/DJI_0001.JPG output/DJI_0001.xml
+python examples/texture_analysis_example.py input/DJI_0001.JPG output/ADIAT_Results/ADIAT_Data.xml
 ```
 
+**Arguments:**
+- First: Path to the image file
+- Second: Path to ADIAT_Data.xml (located in `<output_folder>/ADIAT_Results/ADIAT_Data.xml`)
+
 This will:
-- Load the image and AOI data
+- Load the image and AOI data from ADIAT_Data.xml
 - Calculate texture features for each AOI
 - Display detailed texture metrics
 - Identify potential false positives based on statistical analysis
@@ -68,11 +72,11 @@ from app.core.services.XmlService import XmlService
 import cv2
 
 # Load image
-img = cv2.imread('path/to/image.jpg')
+img = cv2.imread('input/DJI_0001.JPG')
 img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
 
-# Load AOIs from XML
-xml_service = XmlService('path/to/output.xml')
+# Load AOIs from ADIAT_Data.xml
+xml_service = XmlService('output/ADIAT_Results/ADIAT_Data.xml')
 images = xml_service.get_images()
 aois = images[0]['areas_of_interest']
 
@@ -136,7 +140,7 @@ if result.areas_of_interest:
 Run the example script on your images to understand the texture characteristics:
 
 ```bash
-python examples/texture_analysis_example.py input/image.jpg
+python examples/texture_analysis_example.py input/DJI_0001.JPG output/ADIAT_Results/ADIAT_Data.xml
 ```
 
 ### Step 2: Review Results
