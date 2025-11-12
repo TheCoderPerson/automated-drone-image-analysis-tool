@@ -103,9 +103,12 @@ class MRMapService(AlgorithmService):
                 if not merged:
                     anomaly_rectangles.append(rect)
 
-        # Draw all combined rectangles
+        # Draw only the actual anomalous pixels within the combined rectangles
         for rect in anomaly_rectangles:
-            mask[rect[1]:rect[3]+1, rect[0]:rect[2]+1] = 255
+            # Extract the region from pixel_anom that corresponds to this rectangle
+            rect_region = pixel_anom[rect[1]:rect[3]+1, rect[0]:rect[2]+1]
+            # Set mask to 255 only where pixel_anom is True within this rectangle
+            mask[rect[1]:rect[3]+1, rect[0]:rect[2]+1] = rect_region.astype(np.uint8) * 255
 
         contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
 
