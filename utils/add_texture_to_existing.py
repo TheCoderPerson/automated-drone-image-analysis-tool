@@ -19,11 +19,24 @@ import glob
 import argparse
 from pathlib import Path
 
-# Add parent directory to path for imports
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+# Add parent and app directories to path for imports
+project_root = os.path.join(os.path.dirname(__file__), '..')
+sys.path.insert(0, project_root)
+sys.path.insert(0, os.path.join(project_root, 'app'))
 
-from app.core.services.TextureAnalysisService import TextureAnalysisService
-from app.core.services.XmlService import XmlService
+# Import using the internal import style (compatible with dev branch)
+try:
+    # Try dev branch import style first
+    from core.services.image.TextureAnalysisService import TextureAnalysisService
+except ImportError:
+    try:
+        # Try current branch location
+        from core.services.TextureAnalysisService import TextureAnalysisService
+    except ImportError:
+        # Fallback to app-prefixed imports
+        from app.core.services.TextureAnalysisService import TextureAnalysisService
+
+from core.services.XmlService import XmlService
 
 
 def process_xml_file(xml_path: str, overwrite: bool = True, backup: bool = True):
