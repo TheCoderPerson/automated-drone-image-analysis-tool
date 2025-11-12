@@ -11,6 +11,7 @@ from pathlib import Path
 from PIL import Image
 from PIL.PngImagePlugin import PngInfo
 from helpers.MetaDataHelper import MetaDataHelper
+from app.core.services.TextureAnalysisService import TextureAnalysisService
 
 
 class AlgorithmService:
@@ -168,6 +169,29 @@ class AlgorithmService:
         areas_of_interest.sort(key=lambda item: (item['center'][1], item['center'][0]))
 
         return areas_of_interest, base_contour_count
+
+    def add_texture_analysis(self, img, areas_of_interest, calculate_texture=True):
+        """
+        Adds texture analysis data to areas of interest.
+
+        Args:
+            img (numpy.ndarray): The full image array
+            areas_of_interest (list): List of AOI dictionaries
+            calculate_texture (bool): Whether to calculate texture features (default: True)
+
+        Returns:
+            list: Updated list of AOIs with texture_data added to each
+        """
+        if not calculate_texture or areas_of_interest is None:
+            return areas_of_interest
+
+        try:
+            texture_service = TextureAnalysisService()
+            areas_of_interest = texture_service.analyze_aoi_batch(img, areas_of_interest)
+        except Exception as e:
+            print(f"Warning: Could not calculate texture features: {e}")
+
+        return areas_of_interest
 
     def _construct_output_path(self, full_path, input_dir, output_dir):
         """

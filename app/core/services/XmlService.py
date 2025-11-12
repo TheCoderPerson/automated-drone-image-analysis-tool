@@ -1,4 +1,5 @@
 import os
+import json
 from ast import literal_eval
 import xml.etree.ElementTree as ET
 from core.services.LoggerService import LoggerService
@@ -124,6 +125,12 @@ class XmlService:
                     area_of_interest['flagged'] = area_of_interest_xml.get('flagged') == 'True'
                     # Load user comment (default to empty string if not present)
                     area_of_interest['user_comment'] = area_of_interest_xml.get('user_comment', '')
+                    # Load texture data if available
+                    if area_of_interest_xml.get('texture_data'):
+                        try:
+                            area_of_interest['texture_data'] = json.loads(area_of_interest_xml.get('texture_data'))
+                        except json.JSONDecodeError:
+                            pass  # If texture data is malformed, skip it
                     areas_of_interest.append(area_of_interest)
                 image['areas_of_interest'] = areas_of_interest
                 images.append(image)
@@ -212,6 +219,12 @@ class XmlService:
             # Save user comment if present
             if 'user_comment' in area and area['user_comment']:
                 area_xml.set('user_comment', str(area['user_comment']))
+            # Save texture data if present
+            if 'texture_data' in area and area['texture_data']:
+                try:
+                    area_xml.set('texture_data', json.dumps(area['texture_data']))
+                except (TypeError, ValueError):
+                    pass  # Skip if texture data can't be serialized
             # Optionally save contour and detected_pixels if available
             # Note: These can be large, so we might want to make this configurable
             if 'contour' in area and area['contour']:
