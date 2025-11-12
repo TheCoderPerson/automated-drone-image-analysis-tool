@@ -103,10 +103,19 @@ class XmlService:
 
                 image = {
                     'xml': image_xml,
-                    'path': path,  # Original image path
+                    'path': path,  # Current/resolved image path
+                    'xml_path': image_xml.get('path'),  # Original path from XML (for legacy cache lookups)
                     'mask_path': mask_path,  # Mask file path (if using new approach)
                     'hidden': image_xml.get('hidden') == "True" if image_xml.get('hidden') else False
                 }
+
+                # Load bearing metadata if present (dev branch compatibility)
+                if image_xml.get('bearing'):
+                    image['bearing'] = float(image_xml.get('bearing'))
+                if image_xml.get('bearing_source'):
+                    image['bearing_source'] = image_xml.get('bearing_source')
+                if image_xml.get('bearing_quality'):
+                    image['bearing_quality'] = image_xml.get('bearing_quality')
 
                 areas_of_interest = []
                 for area_of_interest_xml in image_xml:

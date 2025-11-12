@@ -11,7 +11,18 @@ from pathlib import Path
 from PIL import Image
 from PIL.PngImagePlugin import PngInfo
 from helpers.MetaDataHelper import MetaDataHelper
-from app.core.services.TextureAnalysisService import TextureAnalysisService
+
+# Try both import paths for compatibility between branches
+try:
+    from core.services.image.TextureAnalysisService import TextureAnalysisService
+except ImportError:
+    try:
+        from app.core.services.image.TextureAnalysisService import TextureAnalysisService
+    except ImportError:
+        try:
+            from app.core.services.TextureAnalysisService import TextureAnalysisService
+        except ImportError:
+            TextureAnalysisService = None  # Texture analysis not available
 
 
 class AlgorithmService:
@@ -39,6 +50,44 @@ class AlgorithmService:
         self.combine_aois = combine_aois
         self.options = options
         self.is_thermal = is_thermal
+        self.scale_factor = 1.0  # Default: no scaling (for dev branch compatibility)
+
+    def set_scale_factor(self, scale_factor):
+        """Set the scale factor for coordinate transformation from processing to original resolution.
+
+        Args:
+            scale_factor: The scale factor used when downscaling the image for processing.
+        """
+        self.scale_factor = scale_factor
+
+    def transform_to_original_coords(self, x, y):
+        """Transform coordinates from processing resolution back to original resolution.
+
+        Args:
+            x: X coordinate in processing resolution.
+            y: Y coordinate in processing resolution.
+
+        Returns:
+            Tuple of (x, y) coordinates in original resolution as integers.
+        """
+        if self.scale_factor == 1.0:
+            return int(x), int(y)
+        inverse_scale = 1.0 / self.scale_factor
+        return int(x * inverse_scale), int(y * inverse_scale)
+
+    def transform_contour_to_original(self, contour):
+        """Transform a contour from processing resolution back to original resolution.
+
+        Args:
+            contour: Contour in processing resolution as numpy array.
+
+        Returns:
+            Contour scaled to original resolution as numpy array of int32.
+        """
+        if self.scale_factor == 1.0:
+            return contour
+        inverse_scale = 1.0 / self.scale_factor
+        return (contour * inverse_scale).astype(np.int32)
 
     def process_image(self, img, full_path, input_dir, output_dir):
         """
@@ -174,6 +223,11 @@ class AlgorithmService:
         """
         Adds texture analysis data to areas of interest.
 
+        Uses GLCM (Gray-Level Co-occurrence Matrix) to calculate texture features
+        for detected pixels and compare them to the surrounding AOI area. This helps
+        identify false positives by detecting when the detected region has similar
+        texture to its surroundings.
+
         Args:
             img (numpy.ndarray): The full image array
             areas_of_interest (list): List of AOI dictionaries
@@ -183,6 +237,10 @@ class AlgorithmService:
             list: Updated list of AOIs with texture_data added to each
         """
         if not calculate_texture or areas_of_interest is None:
+            return areas_of_interest
+
+        if TextureAnalysisService is None:
+            print("Warning: TextureAnalysisService not available, skipping texture analysis")
             return areas_of_interest
 
         try:
