@@ -34,6 +34,7 @@ from algorithms.MatchedFilter.controllers.MatchedFilterController import Matched
 from algorithms.MRMap.controllers.MRMapController import MRMapController
 from algorithms.AIPersonDetector.controllers.AIPersonDetectorController import AIPersonDetectorController
 from algorithms.HSVColorRange.controllers.HSVColorRangeController import HSVColorRangeController
+from algorithms.LABColorRange.controllers.LABColorRangeController import LABColorRangeController
 from algorithms.ThermalRange.controllers.ThermalRangeController import ThermalRangeController
 from algorithms.ThermalAnomaly.controllers.ThermalAnomalyController import ThermalAnomalyController
 """****End Algorithm Import****"""

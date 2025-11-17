@@ -91,6 +91,36 @@ class ColorUtils:
             return [(lower_bound, upper_bound)]
 
     @staticmethod
+    def get_lab_color_range(lab, l_range, a_range, b_range):
+        """
+        Calculate LAB color ranges based on a base LAB color and specified thresholds.
+        OpenCV LAB uses: L=0-255, A=0-255, B=0-255 (A and B centered at 128).
+
+        Args:
+            lab (tuple[int, int, int]): The base LAB color (OpenCV range: L=0-255, A=0-255, B=0-255).
+            l_range (int): Allowed lightness deviation.
+            a_range (int): Allowed A channel deviation.
+            b_range (int): Allowed B channel deviation.
+
+        Returns:
+            tuple[np.ndarray, np.ndarray]: A pair of (lower, upper) arrays for use with cv2.inRange.
+        """
+        target_l, target_a, target_b = [int(x) for x in lab]
+
+        # Calculate bounds for each channel (all are 0-255 in OpenCV)
+        lower_l = max(0, target_l - l_range)
+        upper_l = min(255, target_l + l_range)
+        lower_a = max(0, target_a - a_range)
+        upper_a = min(255, target_a + a_range)
+        lower_b = max(0, target_b - b_range)
+        upper_b = min(255, target_b + b_range)
+
+        lower_bound = np.array([lower_l, lower_a, lower_b])
+        upper_bound = np.array([upper_l, upper_a, upper_b])
+
+        return (lower_bound, upper_bound)
+
+    @staticmethod
     def parse_rgb_string(value):
         """Parse RGB values from string like '(0, 85, 255)' or similar formats.
 
