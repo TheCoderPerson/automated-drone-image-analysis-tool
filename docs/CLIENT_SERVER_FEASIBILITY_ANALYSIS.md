@@ -661,6 +661,181 @@ For typical use cases (1000-10000 images on a modern workstation), local process
 
 ---
 
+## 15. Incremental Processing and Real-Time Review
+
+### Current Architecture Limitation
+
+The current ADIAT processing pipeline is **strictly batch-oriented**:
+
+```
+[Queue ALL Images] → [Process ALL] → [pool.join() BLOCKS] → [Write XML] → [View Results]
+```
+
+**Key blocker in AnalyzeService.py (lines 175-176):**
+```python
+self.pool.close()
+self.pool.join()  # Main thread BLOCKS here until ALL workers complete
+```
+
+The "View Results" button is only enabled after `sig_done` is emitted, which occurs only after all processing completes. For a 1000-image dataset taking 30 minutes, reviewers must wait the full 30 minutes before seeing anything.
+
+### Proposed: Incremental Processing Model
+
+```
+[Process Image 1] → [Results Available] → [Reviewer Starts Working]
+[Process Image 2] → [Results Available] → [Reviewer Continues]
+[Process Image 3] → [Results Available] → [New Images Appear]
+...processing continues in background...
+```
+
+**Time to First Review:**
+| Dataset Size | Current (Batch) | Incremental |
+|--------------|-----------------|-------------|
+| 150 images | 5-10 minutes | ~2 seconds |
+| 1000 images | 30-60 minutes | ~2 seconds |
+| 5000 images | 2-4 hours | ~2 seconds |
+
+### Implementation Requirements
+
+#### Changes to AnalyzeService
+
+| Current Behavior | Required Change |
+|------------------|-----------------|
+| `pool.join()` blocks until complete | Use callbacks without blocking |
+| XML written once at end | Incremental XML updates after each image |
+| `sig_done` only signal for completion | Add `sig_image_ready(image_data)` signal |
+
+**Proposed signal additions:**
+```python
+sig_image_ready = Signal(dict)      # Emitted when single image processed
+sig_batch_ready = Signal(int)       # Emitted every N images (for batching)
+sig_processing_complete = Signal()  # Final completion (replaces current sig_done)
+```
+
+#### Changes to XmlService
+
+| Current Behavior | Required Change |
+|------------------|-----------------|
+| Build full XML tree in memory | Support incremental appends |
+| Single atomic file write | Append-safe file updates or use database |
+
+**Option A: Incremental XML**
+```python
+def append_image_to_xml(self, image_data):
+    """Append single image to existing XML file"""
+    # Parse existing, add new image element, save
+```
+
+**Option B: SQLite for Real-Time (Recommended for Client-Server)**
+```python
+def save_image_result(self, image_data):
+    """Insert image result to database immediately"""
+    # Atomic insert, instantly queryable by viewers
+```
+
+#### Changes to Viewer
+
+| Current Behavior | Required Change |
+|------------------|-----------------|
+| Load all images on startup | Support dynamic loading |
+| Static image list | Watch for new images, refresh UI |
+| Gallery loads all AOIs upfront | Incremental gallery population |
+
+**New viewer capabilities needed:**
+- File watcher or WebSocket listener for new results
+- Append new images to thumbnail list without full reload
+- Gallery model that handles growing dataset
+- "Processing in progress" indicator with live count
+
+### Architecture for Client-Server with Incremental Processing
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                      MAIN COMPUTER                              │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  ┌─────────────────┐    ┌──────────────────┐                   │
+│  │ AnalyzeService  │───►│  Results Queue   │                   │
+│  │ (Processing)    │    │  (In-Memory)     │                   │
+│  └─────────────────┘    └────────┬─────────┘                   │
+│                                  │                              │
+│                    ┌─────────────┼─────────────┐               │
+│                    ▼             ▼             ▼               │
+│              ┌──────────┐ ┌──────────┐ ┌──────────────┐        │
+│              │ Database │ │   XML    │ │  WebSocket   │        │
+│              │ (SQLite) │ │ (Backup) │ │   Server     │        │
+│              └──────────┘ └──────────┘ └──────┬───────┘        │
+│                    │                          │                 │
+└────────────────────┼──────────────────────────┼─────────────────┘
+                     │                          │
+                     │              ┌───────────┴───────────┐
+                     │              │    Push: "New image   │
+                     │              │    ready for review"  │
+                     │              └───────────┬───────────┘
+                     │                          │
+        ┌────────────┴────────────┬─────────────┼─────────────┐
+        ▼                         ▼             ▼             ▼
+   ┌─────────┐              ┌─────────┐   ┌─────────┐   ┌─────────┐
+   │  Local  │              │ Browser │   │ Browser │   │ Browser │
+   │ Qt GUI  │              │Client 1 │   │Client 2 │   │Client 3 │
+   └─────────┘              └─────────┘   └─────────┘   └─────────┘
+```
+
+### Batch Assignment with Incremental Processing
+
+This pairs excellently with the batch review system:
+
+```
+Processing:     [Image 1] [Image 2] [Image 3] ... [Image 150] [Image 151] ...
+                    ↓         ↓         ↓            ↓            ↓
+Results DB:     [Ready]   [Ready]   [Ready]  ...  [Ready]     [Ready]   ...
+
+Batch 1 (Images 1-150):     Assigned to Reviewer A
+                            ↓
+                            Reviewer A can start as soon as Image 1 is ready!
+                            New images appear as they're processed.
+
+Batch 2 (Images 151-300):   Assigned to Reviewer B
+                            ↓
+                            Reviewer B waits for Image 151 to be ready,
+                            then can start immediately.
+```
+
+### Complexity Assessment
+
+| Component | Effort | Risk |
+|-----------|--------|------|
+| AnalyzeService refactor | Medium | Low - isolated changes |
+| Database layer addition | Medium | Low - standard patterns |
+| Viewer dynamic loading | Medium-High | Medium - UI complexity |
+| WebSocket push notifications | Low | Low - well-understood |
+| Batch assignment system | Medium | Low - new feature |
+
+**Total Additional Effort:** +2-4 weeks beyond base client-server implementation
+
+### Benefits Summary
+
+| Benefit | Impact |
+|---------|--------|
+| **Immediate productivity** | Reviewers start in seconds, not hours |
+| **Better resource utilization** | Review happens in parallel with processing |
+| **Improved user experience** | Live progress, no waiting |
+| **Natural fit for client-server** | Real-time updates via WebSocket |
+| **Enables larger datasets** | No need to split into smaller batches for processing |
+
+### Recommendation
+
+**Strongly recommended for client-server implementation.** The incremental processing model:
+
+1. Dramatically improves user experience
+2. Is a natural fit for web-based real-time updates
+3. Adds moderate complexity but high value
+4. Solves the current pain point of waiting for large datasets
+
+The batch XML write should be retained as a final step for data persistence and export compatibility, but the real-time viewing should use an in-memory queue or database.
+
+---
+
 ## Appendix A: Alternative Approaches Considered
 
 ### Screen Sharing (Rejected)
