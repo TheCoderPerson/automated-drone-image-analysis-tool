@@ -189,7 +189,7 @@ class GPSMapView(QGraphicsView):
 
     def _update_compass_rotation(self):
         """Update the compass rose to show current rotation."""
-        rotation = -self.current_bearing if self.is_rotated and self.current_bearing else 0
+        rotation = (-self.current_bearing + 180) if self.is_rotated and self.current_bearing else 0
         self._draw_compass_rose(rotation)
 
     def _draw_compass_rose(self, rotation_angle):
@@ -648,7 +648,7 @@ class GPSMapView(QGraphicsView):
         # Update rotation if bearing changed
         if self.is_rotated and self.current_bearing != old_bearing and self.current_bearing is not None:
             self.resetTransform()
-            self.rotate(-self.current_bearing)
+            self.rotate(-self.current_bearing + 180)
             self.scale(self.zoom_scale, self.zoom_scale)
             self._update_compass_rotation()
 
@@ -809,7 +809,7 @@ class GPSMapView(QGraphicsView):
             # All points at same location
             self.resetTransform()
             if self.is_rotated and self.current_bearing is not None:
-                self.rotate(-self.current_bearing)
+                self.rotate(-self.current_bearing + 180)
             self.zoom_scale = 1.0
             self.scale(self.zoom_scale, self.zoom_scale)
             self.centerOn(center_x, center_y)
@@ -821,7 +821,7 @@ class GPSMapView(QGraphicsView):
 
             self.resetTransform()
             if self.is_rotated and self.current_bearing is not None:
-                self.rotate(-self.current_bearing)
+                self.rotate(-self.current_bearing + 180)
 
             self.zoom_scale = target_scale
             self.scale(self.zoom_scale, self.zoom_scale)
@@ -985,7 +985,7 @@ class GPSMapView(QGraphicsView):
         # Reset transform
         self.resetTransform()
         if self.is_rotated and self.current_bearing is not None:
-            self.rotate(-self.current_bearing)
+            self.rotate(-self.current_bearing + 180)
         self.scale(self.zoom_scale, self.zoom_scale)
 
         # Restore view center
@@ -1129,7 +1129,7 @@ class GPSMapView(QGraphicsView):
             # Rotate to bearing
             if self.current_bearing is not None:
                 self.resetTransform()
-                self.rotate(-self.current_bearing)
+                self.rotate(-self.current_bearing + 180)
                 self.scale(self.zoom_scale, self.zoom_scale)
                 self.is_rotated = True
                 self._update_compass_rotation()

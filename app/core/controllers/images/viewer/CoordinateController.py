@@ -20,6 +20,9 @@ from PySide6.QtCore import QThread
 from core.views.images.viewer.widgets.QtImageViewer import QtImageViewer
 from core.services.image.ImageService import ImageService
 from core.services.LoggerService import LoggerService
+from core.services.MagneticDeclinationService import get_declination_service
+from helpers.LocationInfo import LocationInfo
+from helpers.MetaDataHelper import MetaDataHelper
 import qimage2ndarray
 
 
@@ -355,8 +358,9 @@ class CoordinateController:
             img_array = self.parent.current_image_array.copy()
 
             # Calculate rotation angle to orient to north
-            # If drone is facing east (90°), we need to rotate -90° to face north
-            rotation_angle = -direction
+            # Original formula uses -direction, but we add 180° to correct for
+            # the offset between reported yaw and actual camera heading
+            rotation_angle = -direction + 180
 
             # Rotate the image
             h, w = img_array.shape[:2]

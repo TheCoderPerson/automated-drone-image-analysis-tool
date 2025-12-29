@@ -7,6 +7,7 @@ from helpers.LocationInfo import LocationInfo
 from core.services.image.ImageService import ImageService
 from core.services.LoggerService import LoggerService
 from core.services.GSDService import GSDService
+from core.services.MagneticDeclinationService import get_declination_service
 
 
 class AOIService:
@@ -52,6 +53,12 @@ class AOIService:
             if pitch is None:
                 pitch = -90  # assume nadir
             # roll = self.image_service.get_gimbal_roll() or 0.0  # Reserved for future use
+
+            # Apply magnetic declination correction
+            # Gimbal yaw is typically referenced to magnetic north, but GPS calculations
+            # need true north. Convert magnetic heading to true heading.
+            declination_service = get_declination_service()
+            yaw = declination_service.magnetic_to_true(yaw, lat0, lon0)
 
             # Get altitude - use override or get from ImageService
             if agl_override_m and agl_override_m > 0:
@@ -106,13 +113,17 @@ class AOIService:
             ground_offset_x, ground_offset_y = gsd_service.compute_ground_distance(cy, cx, v, u)
 
             # --- Step 5: Rotate to NED coordinates by bearing ---
-            # For a camera at bearing θ (measured clockwise from North):
-            # - Image top points at bearing θ
-            # - Image right points at bearing θ + 90°
-            # - Pixel offset X (right) is along θ + 90°
-            # - Pixel offset Y (down) is along θ + 180° (opposite of top)
+            # For a nadir camera, the gimbal yaw indicates the direction the camera body
+            # is facing (which becomes the image bottom direction when looking straight down).
+            # Image bottom points at bearing θ, so image top points at θ + 180°.
+            # - Image bottom points at bearing θ
+            # - Image right points at bearing θ - 90° (270° clockwise from bottom)
+            # - Pixel offset X (right) is along θ - 90°
+            # - Pixel offset Y (down) is along θ
 
-            yaw_rad = math.radians(yaw)
+            # Adjust yaw by 180° to account for image orientation convention
+            adjusted_yaw = yaw + 180.0
+            yaw_rad = math.radians(adjusted_yaw)
             cos_yaw = math.cos(yaw_rad)
             sin_yaw = math.sin(yaw_rad)
 
