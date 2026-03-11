@@ -1,4 +1,8 @@
 # Set environment variable to avoid numpy._core issues - MUST be first
+import sys
+import os
+os.environ['NUMPY_EXPERIMENTAL_DTYPE_API'] = '0'
+
 from os import path
 import qdarktheme
 import faulthandler
@@ -15,9 +19,6 @@ from PySide6.QtWidgets import QApplication, QDialog, QMessageBox
 from PySide6.QtGui import QIcon
 from PySide6.QtCore import QTranslator, QLocale
 import traceback
-import sys
-import os
-os.environ['NUMPY_EXPERIMENTAL_DTYPE_API'] = '0'
 
 version = '2.0.3_BETA'
 
@@ -368,8 +369,9 @@ def main():
 
 
 if __name__ == "__main__":
-    # Enable faulthandler only if stderr is available (avoid issues in packaged apps)
-    if sys.stderr is not None:
+    # Enable faulthandler for crash tracebacks (skip Windows where it catches
+    # benign COM exceptions like RPC_E_WRONGTHREAD 0x8001010d from Qt internals)
+    if sys.stderr is not None and sys.platform != 'win32':
         faulthandler.enable()
     # Install a global exception hook that exits the app on any uncaught error
 

@@ -136,7 +136,8 @@ class GPSMapController(QObject):
                                 has_flagged = True
                                 break
 
-                    # Don't extract bearing here - do it lazily when needed
+                    # Preserve bearing and AGL from image dict (e.g. injected by WingtraDataController)
+                    # rather than always defaulting to None which wipes out injected values.
                     self.gps_data.append({
                         'index': idx,
                         'latitude': gps_coords['latitude'],
@@ -147,8 +148,9 @@ class GPSMapController(QObject):
                         'aoi_count': aoi_count,
                         'hidden': is_hidden,
                         'has_flagged': has_flagged,
-                        'bearing': None,  # Will be loaded on demand
-                        'image_path': image['path']  # Store path for later bearing extraction
+                        'bearing': image.get('bearing'),
+                        'wingtra_agl_ft': image.get('wingtra_agl_ft'),
+                        'image_path': image['path']
                     })
             except Exception as e:
                 self.logger.error(f"Could not extract GPS from image {idx}: {str(e)}")
@@ -294,6 +296,10 @@ class GPSMapController(QObject):
                     self.parent.custom_agl_altitude_ft and
                     self.parent.custom_agl_altitude_ft > 0):
                 custom_alt_ft = self.parent.custom_agl_altitude_ft
+
+            # Fall back to per-image AGL from Wingtra CSV data
+            if custom_alt_ft is None:
+                custom_alt_ft = current_image.get('wingtra_agl_ft')
 
             # Calculate AOI GPS coordinates with metadata using the convenience method
             aoi_gps = aoi_service.get_aoi_gps_with_metadata(current_image, aoi, aoi_index, custom_alt_ft)

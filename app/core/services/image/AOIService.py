@@ -73,7 +73,8 @@ class AOIService:
         self.image_service = ImageService(
             image['path'],
             image.get('mask_path', ''),
-            img_array=img_array
+            img_array=img_array,
+            calculated_bearing=image.get('bearing')
         )
 
     def estimate_aoi_gps(self, image, aoi, agl_override_m=None, use_terrain=True):
