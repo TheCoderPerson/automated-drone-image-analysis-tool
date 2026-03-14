@@ -37,10 +37,11 @@ class CachePathService:
             # Get the expected cache directory from xml_path
             results_dir = Path(xml_path).parent
             thumbnail_cache_dir = results_dir / '.thumbnails'
+            thumbnail_zip = results_dir / '.thumbnails.zip'
 
-            # Check which caches are missing (only thumbnails now - color/temp data is in XML)
+            # Check which caches are missing (ZIP archive or directory)
             missing_caches = []
-            if not thumbnail_cache_dir.exists():
+            if not thumbnail_zip.exists() and not thumbnail_cache_dir.exists():
                 missing_caches.append('Thumbnails')
 
             # If all caches exist, no need to prompt

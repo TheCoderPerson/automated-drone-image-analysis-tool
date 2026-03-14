@@ -16,19 +16,23 @@ from core.services.ResultsScannerService import ResultsScannerService
 from core.controllers.coordinator.CoordinatorWindow import CoordinatorWindow
 # StreamViewerWindow imported lazily in _open_streaming_detector() to avoid circular dependency
 from core.controllers.images.VideoParser import VideoParser
+from core.controllers.images.ConnectDialog import ConnectDialog
+from core.services.ServerConnectionService import ServerConnectionService
 from core.controllers.Perferences import Preferences
 from core.controllers.images.viewer.Viewer import Viewer
 from helpers.PickleHelper import PickleHelper
 from core.views.images.MainWindow_ui import Ui_MainWindow
 from core.views.images.viewer.dialogs.ResultsFolderDialog import ResultsFolderDialog, ScanWorker, ScanProgressDialog
 from PySide6.QtWidgets import (QApplication, QMainWindow, QColorDialog, QFileDialog,
-                               QMessageBox, QSizePolicy, QAbstractButton, QProgressDialog)
+                               QMessageBox, QPushButton, QSizePolicy, QAbstractButton, QProgressDialog)
 from PySide6.QtCore import QThread, Slot, QSize, Qt, QUrl
 from PySide6.QtGui import QColor, QFont, QIcon, QDesktopServices
 import qtawesome as qta
 import sys
 import platform
 import pathlib
+import tempfile
+import shutil
 from core.views.components.GroupedComboBox import GroupedComboBox
 from core.controllers.images.ImageAnalysisGuide import ImageAnalysisGuide
 from helpers.IconHelper import IconHelper
@@ -74,6 +78,7 @@ class MainWindow(TranslationMixin, QMainWindow, Ui_MainWindow):
         self._load_algorithms()
 
         self.results_path = ''
+        self._serverTempDir = None
         self.settings_service = SettingsService()
 
         # Initialize processing resolution presets (percentage-based for aspect ratio preservation)
@@ -161,6 +166,205 @@ class MainWindow(TranslationMixin, QMainWindow, Ui_MainWindow):
         # Store previous valid values
         self._previous_min_area = self.minAreaSpinBox.value()
         self._previous_max_area = self.maxAreaSpinBox.value()
+
+        # ---- Server connection (client mode) ----
+        self.isClientMode = False
+        self.serverConnection = None
+        self._setup_connect_button()
+
+    def _setup_connect_button(self):
+        """Create the 'Connect to Server' button and add it to the UI."""
+        self.connectButton = QPushButton(self.tr("Connect to Server"))
+        self.connectButton.setStyleSheet("""
+            QPushButton { background-color: rgb(0, 150, 136); color: rgb(228,231,235); }
+            QPushButton:disabled { background-color: transparent; color: palette(button-text); }
+        """)
+        self.connectButton.setMinimumHeight(30)
+
+        # Insert the button into the layout below the existing action buttons
+        # Find the parent layout of startButton and add after viewResultsButton
+        buttonLayout = self.startButton.parentWidget().layout()
+        if buttonLayout is not None:
+            buttonLayout.addWidget(self.connectButton)
+        else:
+            # Fallback: add to the main central layout
+            self.centralWidget().layout().addWidget(self.connectButton)
+
+        self.connectButton.clicked.connect(self._connectButton_clicked)
+
+    def _connectButton_clicked(self):
+        """Open the Connect to Server dialog and initiate connection."""
+        if self.isClientMode:
+            # Already connected - disconnect
+            self._disconnect_from_server()
+            return
+
+        dialog = ConnectDialog(self)
+        if dialog.exec() != ConnectDialog.Accepted:
+            return
+
+        serverUrl = dialog.getServerUrl()
+        username = dialog.getUsername()
+        passphrase = dialog.getPassphrase()
+
+        # Create connection service and connect signals
+        self.serverConnection = ServerConnectionService(self)
+        self.serverConnection.sig_connected.connect(self._on_server_connected)
+        self.serverConnection.sig_disconnected.connect(self._on_server_disconnected)
+        self.serverConnection.sig_message.connect(self._on_server_message)
+        self.serverConnection.sig_binary.connect(self._on_server_binary)
+        self.serverConnection.sig_error.connect(self._on_server_error)
+        self.serverConnection.sig_auth_result.connect(self._on_server_auth_result)
+
+        # Update UI to show connecting state
+        self.connectButton.setText(self.tr("Connecting..."))
+        self.connectButton.setEnabled(False)
+
+        self.serverConnection.enableAutoReconnect()
+        self.serverConnection.connect(serverUrl, username, passphrase)
+
+    def _on_server_auth_result(self, success, resp):
+        """Handle auth result from the server.
+
+        Args:
+            success: True if authentication succeeded.
+            resp: Auth result response dict.
+        """
+        if not success:
+            errorMsg = resp.get("error", "Authentication failed")
+            self.connectButton.setText(self.tr("Connect to Server"))
+            self.connectButton.setEnabled(True)
+            QMessageBox.warning(
+                self,
+                self.tr("Connection Failed"),
+                self.tr("Could not connect to server:\n{error}").format(error=errorMsg),
+            )
+
+    def _on_server_connected(self):
+        """Handle successful server connection."""
+        self.isClientMode = True
+        self.connectButton.setText(self.tr("Disconnect from Server"))
+        self.connectButton.setEnabled(True)
+        self.connectButton.setStyleSheet("""
+            QPushButton { background-color: rgb(136, 80, 0); color: rgb(228,231,235); }
+            QPushButton:disabled { background-color: transparent; color: palette(button-text); }
+        """)
+
+        # Disable processing controls in client mode
+        self.startButton.setEnabled(False)
+        self.cancelButton.setEnabled(False)
+        self.inputFolderButton.setEnabled(False)
+        self.outputFolderButton.setEnabled(False)
+        self.algorithmComboBox.setEnabled(False)
+
+        self._add_log_entry(
+            self.tr("Connected to server as '{username}'").format(
+                username=self.serverConnection.username
+            )
+        )
+
+        # Enable View Results for server image viewing
+        self._set_ViewResultsButton(True)
+
+    def _on_server_disconnected(self, reason):
+        """Handle server disconnection.
+
+        Args:
+            reason: Reason string for the disconnection.
+        """
+        wasClientMode = self.isClientMode
+        self.isClientMode = False
+        self.connectButton.setText(self.tr("Connect to Server"))
+        self.connectButton.setEnabled(True)
+        self.connectButton.setStyleSheet("""
+            QPushButton { background-color: rgb(0, 150, 136); color: rgb(228,231,235); }
+            QPushButton:disabled { background-color: transparent; color: palette(button-text); }
+        """)
+
+        # Re-enable processing controls
+        self.startButton.setEnabled(True)
+        self.inputFolderButton.setEnabled(True)
+        self.outputFolderButton.setEnabled(True)
+        self.algorithmComboBox.setEnabled(True)
+
+        # Reset results_path so a fresh temp XML is created on the
+        # next connection.  Don't delete the temp directory here because
+        # the Viewer window may still be open and referencing image
+        # files in it.  The directory is cleaned up when a new server
+        # connection is made or when the application exits.
+        self.results_path = ''
+
+        if wasClientMode:
+            self._add_log_entry(
+                self.tr("Disconnected from server: {reason}").format(reason=reason)
+            )
+
+    def _on_server_message(self, msg):
+        """Handle an incoming message from the server.
+
+        Args:
+            msg: Parsed message dict from the server.
+        """
+        # Route messages to ReviewController if viewer is active
+        if (hasattr(self, 'viewer') and self.viewer and
+                hasattr(self.viewer, 'review_controller') and
+                self.viewer.review_controller):
+            self.viewer.review_controller.on_server_message(msg)
+
+        # Log notable message types
+        msgType = msg.get("type", "")
+        if msgType == "new_image":
+            imageInfo = msg.get("image", {})
+            self._add_log_entry(
+                self.tr("New image available: {path}").format(
+                    path=imageInfo.get("path", "unknown")
+                )
+            )
+        elif msgType == "flag_notification":
+            self._add_log_entry(
+                self.tr("Flag alert: AOI {aoi_id} flagged as {priority} by {user}").format(
+                    aoi_id=msg.get("aoi_id", "?"),
+                    priority=msg.get("priority", "?"),
+                    user=msg.get("flagged_by", "?"),
+                )
+            )
+
+    def _on_server_binary(self, data):
+        """Handle a binary frame from the server.
+
+        Binary frames are forwarded to the ReviewController which
+        distinguishes between AOI crop data (4-byte AOI ID prefix +
+        JPEG bytes) and full image data (raw JPEG preceded by an
+        ``image_data`` JSON header).
+
+        Args:
+            data: Raw binary frame bytes.
+        """
+        if (hasattr(self, 'viewer') and self.viewer and
+                hasattr(self.viewer, 'review_controller') and
+                self.viewer.review_controller):
+            self.viewer.review_controller.on_binary_frame(data)
+
+    def _on_server_error(self, error):
+        """Handle a server connection error.
+
+        Args:
+            error: Human-readable error string.
+        """
+        self._add_log_entry(self.tr("Server error: {error}").format(error=error))
+
+        # If not connected yet, reset the button state
+        if not self.isClientMode:
+            self.connectButton.setText(self.tr("Connect to Server"))
+            self.connectButton.setEnabled(True)
+
+    def _disconnect_from_server(self):
+        """Disconnect from the server and return to standalone mode."""
+        if self.serverConnection is not None:
+            self.serverConnection.disableAutoReconnect()
+            self.serverConnection.disconnect()
+            self.serverConnection = None
+        self._on_server_disconnected("user_requested")
 
     def setStylesheets(self):
         """
@@ -578,15 +782,34 @@ class MainWindow(TranslationMixin, QMainWindow, Ui_MainWindow):
     def _viewResultsButton_clicked(self):
         """
         Launches the image viewer to display analysis results.
+
+        In client mode, if no local results exist, creates a temporary
+        XML file from the server session info so the Viewer can open
+        and receive images from the server dynamically.
         """
         QApplication.setOverrideCursor(Qt.WaitCursor)
+
+        # In client mode without local results, create a temp XML
+        if self.isClientMode and self.serverConnection and not self.results_path:
+            self._create_server_temp_xml()
+
         file = pathlib.Path(self.results_path)
         if file.is_file():
             position_format = self.settings_service.get_setting('PositionFormat')
             temperature_unit = self.settings_service.get_setting('TemperatureUnit')
             distance_unit = self.settings_service.get_setting('DistanceUnit')
-            self.viewer = Viewer(file, position_format, temperature_unit, distance_unit, False,
-                                 self.settings_service.get_setting('Theme'))
+            theme = self.settings_service.get_setting('Theme')
+
+            if self.isClientMode and self.serverConnection:
+                sessionInfo = self.serverConnection.sessionInfo
+                sessionId = sessionInfo.get("id") if sessionInfo else None
+                self.viewer = Viewer(file, position_format, temperature_unit,
+                                     distance_unit, False, theme,
+                                     server_connection=self.serverConnection,
+                                     session_id=sessionId)
+            else:
+                self.viewer = Viewer(file, position_format, temperature_unit,
+                                     distance_unit, False, theme)
             self.viewer.show()
         else:
             self._show_error(
@@ -595,6 +818,48 @@ class MainWindow(TranslationMixin, QMainWindow, Ui_MainWindow):
                 ).format(file_name="ADIAT_Data.xml")
             )
         QApplication.restoreOverrideCursor()
+
+    def _cleanup_server_temp_dir(self):
+        """Remove the server temp directory if it exists."""
+        if self._serverTempDir and os.path.isdir(self._serverTempDir):
+            shutil.rmtree(self._serverTempDir, ignore_errors=True)
+            self._serverTempDir = None
+
+    def _create_server_temp_xml(self):
+        """Create a minimal ADIAT_Data.xml in a temp directory for server mode.
+
+        The XML contains only settings (no images). The Viewer opens
+        with an empty image list and receives images from the server
+        dynamically via assignments.
+        """
+        # Clean up any previous temp directory before creating a new one
+        self._cleanup_server_temp_dir()
+
+        sessionInfo = self.serverConnection.sessionInfo or {}
+        algorithm = sessionInfo.get("algorithm", "ColorRange")
+        isThermal = algorithm in ("ThermalRange", "ThermalAnomaly")
+
+        self._serverTempDir = tempfile.mkdtemp(prefix="adiat_server_")
+        xmlPath = os.path.join(self._serverTempDir, "ADIAT_Data.xml")
+
+        xmlService = XmlService()
+        xmlService.xml_path = xmlPath
+        xmlService.add_settings_to_xml(
+            input_dir="",
+            output_dir=self._serverTempDir,
+            identifier_color="(255, 0, 0)",
+            aoi_radius=20,
+            algorithm=algorithm,
+            thermal=str(isThermal),
+            num_processes=1,
+            min_area=10,
+            max_area=0,
+            hist_ref_path=None,
+            kmeans_clusters=None,
+            options={},
+        )
+        xmlService.save_xml_file(xmlPath)
+        self.results_path = xmlPath
 
     def _add_log_entry(self, text):
         """
@@ -1176,8 +1441,17 @@ class MainWindow(TranslationMixin, QMainWindow, Ui_MainWindow):
         """
         Closes all top-level windows when the main window is closed.
         """
+        # Clean up server connection if active
+        if self.serverConnection is not None:
+            self.serverConnection.disableAutoReconnect()
+            self.serverConnection.disconnect()
+            self.serverConnection = None
+
         for window in QApplication.topLevelWidgets():
             window.close()
+
+        # Clean up server temp directory now that all windows are closed
+        self._cleanup_server_temp_dir()
 
     def _set_StartButton(self, enabled):
         """

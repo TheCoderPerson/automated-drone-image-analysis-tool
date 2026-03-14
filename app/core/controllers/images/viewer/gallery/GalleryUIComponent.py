@@ -6,7 +6,7 @@ and visual rendering of AOIs from all loaded images.
 """
 
 from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel,
-                               QListView, QPushButton, QFrame,
+                               QListView, QPushButton, QFrame, QTabWidget,
                                QAbstractItemView, QStyledItemDelegate, QStyle,
                                QStyleOptionViewItem, QApplication)
 from PySide6.QtCore import Qt, QSize, QRect, QTimer, Signal, QModelIndex, QEvent, QObject, QPoint
@@ -20,7 +20,7 @@ from helpers.TranslationMixin import TranslationMixin
 class AOIGalleryDelegate(QStyledItemDelegate):
     """Custom delegate for rendering AOI gallery items with overlays."""
 
-    def __init__(self, parent=None):
+    def __init__(self, parent=None, greyed_out=False):
         super().__init__(parent)
         self.thumbnail_size = QSize(180, 180)
         self.item_spacing = 10
@@ -28,6 +28,7 @@ class AOIGalleryDelegate(QStyledItemDelegate):
         # Only thumbnail + spacing, no text overlay needed
         self._cached_size_hint = QSize(190, 190)
         self.gallery_controller = None  # Will be set by GalleryUIComponent
+        self.greyed_out = greyed_out
 
         # Create flag icons (same as single-image mode)
         self.flag_icon_active = qta.icon('fa6s.flag', color='#FF7043').pixmap(16, 16)
@@ -46,6 +47,9 @@ class AOIGalleryDelegate(QStyledItemDelegate):
         painter.save()
 
         try:
+            # Apply greyed-out opacity for hidden items
+            if self.greyed_out:
+                painter.setOpacity(0.4)
             # Get data from model
             icon = index.data(Qt.DecorationRole)
             user_data = index.data(Qt.UserRole)
@@ -185,6 +189,10 @@ class GalleryUIComponent(TranslationMixin, QObject):
         self.gallery_view = None
         self.count_label = None
 
+        # Review mode UI elements
+        self.tab_widget = None
+        self.hidden_gallery_view = None
+
         # Track when the view has a valid geometry and initial thumbnails are queued
         self._initial_thumbnails_loaded = False
 
@@ -213,67 +221,56 @@ class GalleryUIComponent(TranslationMixin, QObject):
         header = self._create_header_widget()
         layout.addWidget(header)
 
-        # Create gallery list view
-        self.gallery_view = QListView()
-        self.gallery_view.setViewMode(QListView.IconMode)
-        self.gallery_view.setResizeMode(QListView.Adjust)
-        self.gallery_view.setUniformItemSizes(True)  # Items have consistent size for better performance
-        self.gallery_view.setSpacing(10)
-        self.gallery_view.setWrapping(True)
-        self.gallery_view.setFlow(QListView.LeftToRight)
-        self.gallery_view.setSelectionMode(QAbstractItemView.SingleSelection)
-        self.gallery_view.setVerticalScrollMode(QAbstractItemView.ScrollPerPixel)
-        self.gallery_view.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        # Enable keyboard focus so keyboard shortcuts work
-        self.gallery_view.setFocusPolicy(Qt.StrongFocus)
+        # Create the active gallery list view
+        self.gallery_view = self._create_gallery_list_view()
 
-        # Override keyPressEvent to forward F key to parent window (like QtImageViewer does)
-        original_keyPressEvent = self.gallery_view.keyPressEvent
+        # Branch on review mode: create tabs or single view
+        if self._is_review_mode():
+            # Review mode: create tab widget with Active and Hidden tabs
+            self.tab_widget = QTabWidget()
+            self.tab_widget.setStyleSheet("""
+                QTabWidget::pane {
+                    border: 1px solid #555;
+                    background-color: #2b2b2b;
+                }
+                QTabBar::tab {
+                    background-color: #3a3a3a;
+                    color: #ccc;
+                    padding: 6px 12px;
+                    border: 1px solid #555;
+                    border-bottom: none;
+                    border-top-left-radius: 4px;
+                    border-top-right-radius: 4px;
+                }
+                QTabBar::tab:selected {
+                    background-color: #2b2b2b;
+                    color: #fff;
+                }
+                QTabBar::tab:hover {
+                    background-color: #454545;
+                }
+            """)
 
-        def keyPressEvent(event):
-            if event.key() == Qt.Key_F and event.modifiers() == Qt.NoModifier:
-                # Forward F key to parent window's keyPressEvent
-                if self.gallery_view.window():
-                    self.gallery_view.window().keyPressEvent(event)
-                return
-            original_keyPressEvent(event)
-        self.gallery_view.keyPressEvent = keyPressEvent
+            # Add active tab
+            self.tab_widget.addTab(self.gallery_view, self.tr("Active (0)"))
 
-        # Set fixed grid size for consistent columns
-        self.gallery_view.setGridSize(QSize(200, 200))  # Width, Height (thumbnail + spacing)
+            # Create hidden gallery list view
+            self.hidden_gallery_view = self._create_gallery_list_view(greyed_out=True)
+            self.hidden_gallery_view.clicked.connect(self._on_hidden_item_clicked)
+            self.tab_widget.addTab(self.hidden_gallery_view, self.tr("Hidden (0)"))
 
-        # Set custom delegate
-        delegate = AOIGalleryDelegate(self.gallery_view)
-        delegate.gallery_controller = self.gallery_controller
-        self.gallery_view.setItemDelegate(delegate)
+            # Create dashboard tab (Step 10)
+            from core.controllers.images.viewer.DashboardWidget import DashboardWidget
+            self.dashboard_widget = DashboardWidget()
+            self.tab_widget.addTab(self.dashboard_widget, self.tr("Dashboard"))
 
-        # Style the view
-        self.gallery_view.setStyleSheet("""
-            QListView {
-                background-color: #2b2b2b;
-                border: 1px solid #555;
-                border-radius: 4px;
-            }
-            QListView::item {
-                background-color: transparent;
-            }
-            QListView::item:hover {
-                background-color: rgba(100, 150, 255, 30);
-            }
-        """)
+            # Connect tab change
+            self.tab_widget.currentChanged.connect(self._on_tab_changed)
 
-        # Connect signals
-        self.gallery_view.clicked.connect(self._on_item_clicked)
-        self.gallery_view.verticalScrollBar().valueChanged.connect(self._on_scroll)
-
-        # Listen for layout/visibility changes and handle flag button clicks
-        self.gallery_view.installEventFilter(self)
-        self.gallery_view.viewport().installEventFilter(self)
-
-        # Connect to view signals to trigger thumbnail loading when view becomes visible
-        # (handled in eventFilter and showEvent)
-
-        layout.addWidget(self.gallery_view)
+            layout.addWidget(self.tab_widget)
+        else:
+            # Standalone mode: single list view (existing behavior)
+            layout.addWidget(self.gallery_view)
 
         self.gallery_widget = widget
         return widget
@@ -290,6 +287,169 @@ class GalleryUIComponent(TranslationMixin, QObject):
         self.count_label.setVisible(False)  # Hidden - we'll update main title instead
 
         return header
+
+    def _create_gallery_list_view(self, greyed_out=False):
+        """
+        Create and configure a QListView for the gallery.
+
+        Args:
+            greyed_out: If True, items are rendered with reduced opacity (for hidden tab).
+
+        Returns:
+            QListView: Configured list view.
+        """
+        view = QListView()
+        view.setViewMode(QListView.IconMode)
+        view.setResizeMode(QListView.Adjust)
+        view.setUniformItemSizes(True)
+        view.setSpacing(10)
+        view.setWrapping(True)
+        view.setFlow(QListView.LeftToRight)
+        view.setSelectionMode(QAbstractItemView.SingleSelection)
+        view.setVerticalScrollMode(QAbstractItemView.ScrollPerPixel)
+        view.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        view.setFocusPolicy(Qt.StrongFocus)
+
+        # Override keyPressEvent to forward keys to parent window
+        originalKeyPress = view.keyPressEvent
+
+        def keyPressEvent(event):
+            if event.key() in (Qt.Key_F, Qt.Key_H) and event.modifiers() == Qt.NoModifier:
+                if view.window():
+                    view.window().keyPressEvent(event)
+                return
+            if event.key() == Qt.Key_H and event.modifiers() == Qt.ShiftModifier:
+                if view.window():
+                    view.window().keyPressEvent(event)
+                return
+            originalKeyPress(event)
+        view.keyPressEvent = keyPressEvent
+
+        # Override wheelEvent for page-at-a-time scrolling
+        gridRowHeight = 200  # Must match setGridSize() below
+
+        def wheelEvent(event):
+            viewportHeight = view.viewport().height()
+            if viewportHeight <= 0 or gridRowHeight <= 0:
+                QListView.wheelEvent(view, event)
+                return
+
+            # Calculate full rows visible, scroll by that many rows
+            rowsPerPage = max(1, viewportHeight // gridRowHeight)
+            scrollAmount = rowsPerPage * gridRowHeight
+
+            scrollBar = view.verticalScrollBar()
+            currentValue = scrollBar.value()
+
+            if event.angleDelta().y() > 0:
+                newValue = max(scrollBar.minimum(), currentValue - scrollAmount)
+            else:
+                newValue = min(scrollBar.maximum(), currentValue + scrollAmount)
+
+            # Snap to row boundary for clean alignment
+            newValue = (newValue // gridRowHeight) * gridRowHeight
+
+            scrollBar.setValue(newValue)
+            event.accept()
+
+        view.wheelEvent = wheelEvent
+
+        # Set fixed grid size for consistent columns
+        view.setGridSize(QSize(200, 200))
+
+        # Set custom delegate
+        delegate = AOIGalleryDelegate(view, greyed_out=greyed_out)
+        delegate.gallery_controller = self.gallery_controller
+        view.setItemDelegate(delegate)
+
+        # Style the view
+        view.setStyleSheet("""
+            QListView {
+                background-color: #2b2b2b;
+                border: 1px solid #555;
+                border-radius: 4px;
+            }
+            QListView::item {
+                background-color: transparent;
+            }
+            QListView::item:hover {
+                background-color: rgba(100, 150, 255, 30);
+            }
+        """)
+
+        # Connect scroll for lazy loading (only for active view)
+        if not greyed_out:
+            view.clicked.connect(self._on_item_clicked)
+            view.verticalScrollBar().valueChanged.connect(self._on_scroll)
+
+        # Listen for layout/visibility changes and handle flag button clicks
+        view.installEventFilter(self)
+        view.viewport().installEventFilter(self)
+
+        return view
+
+    def _is_review_mode(self):
+        """Check if the gallery controller's parent viewer is in client/review mode."""
+        try:
+            return (self.gallery_controller and
+                    hasattr(self.gallery_controller.parent, 'isClientMode') and
+                    self.gallery_controller.parent.isClientMode)
+        except Exception:
+            return False
+
+    def update_tab_counts(self, active_count, hidden_count):
+        """
+        Update the tab labels with current counts.
+
+        Args:
+            active_count: Number of active (visible) AOIs.
+            hidden_count: Number of hidden AOIs.
+        """
+        if self.tab_widget:
+            self.tab_widget.setTabText(0, self.tr("Active ({count})").format(count=active_count))
+            self.tab_widget.setTabText(1, self.tr("Hidden ({count})").format(count=hidden_count))
+
+    def set_hidden_model(self, model):
+        """
+        Set the data model for the hidden gallery view.
+
+        Args:
+            model: AOIGalleryModel for hidden items.
+        """
+        if self.hidden_gallery_view:
+            self.hidden_gallery_view.setModel(model)
+
+    def _on_hidden_item_clicked(self, index):
+        """Handle click on an item in the Hidden tab to unhide it."""
+        try:
+            if not index.isValid():
+                return
+
+            model = self.hidden_gallery_view.model()
+            if not model:
+                return
+
+            aoi_info = model.get_aoi_info(index)
+            if not aoi_info:
+                return
+
+            image_idx, aoi_idx, aoi_data = aoi_info
+
+            # Call review controller to unhide
+            if (self.gallery_controller and
+                    hasattr(self.gallery_controller, 'review_controller') and
+                    self.gallery_controller.review_controller):
+                self.gallery_controller.review_controller.unhide_aoi(image_idx, aoi_idx)
+
+        except Exception as e:
+            self.logger.error(f"Error handling hidden item click: {e}")
+
+    def _on_tab_changed(self, index):
+        """Handle tab switch between Active and Hidden."""
+        if index == 0 and self.gallery_view:
+            self.gallery_view.setFocus()
+        elif index == 1 and self.hidden_gallery_view:
+            self.hidden_gallery_view.setFocus()
 
     def set_model(self, model):
         """Set the data model for the gallery view."""

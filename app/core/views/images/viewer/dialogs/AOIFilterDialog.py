@@ -1,8 +1,9 @@
-"""AOIFilterDialog - Dialog for filtering AOIs by color and pixel area."""
+"""AOIFilterDialog - Dialog for filtering AOIs by color, pixel area, and spatial density."""
 
 from PySide6.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QLabel,
                                QPushButton, QGroupBox, QSlider, QSpinBox,
-                               QCheckBox, QColorDialog, QLineEdit, QDoubleSpinBox)
+                               QCheckBox, QColorDialog, QLineEdit, QDoubleSpinBox,
+                               QRadioButton, QButtonGroup, QFrame)
 from PySide6.QtCore import Qt
 from helpers.TranslationMixin import TranslationMixin
 from PySide6.QtGui import QColor
@@ -10,9 +11,10 @@ import colorsys
 
 
 class AOIFilterDialog(TranslationMixin, QDialog):
-    """Dialog for setting color and pixel area filters for AOIs."""
+    """Dialog for setting color, pixel area, and spatial density filters for AOIs."""
 
-    def __init__(self, parent, current_filters=None, temperature_unit='C', is_thermal=False):
+    def __init__(self, parent, current_filters=None, temperature_unit='C', is_thermal=False,
+                 heatmap_available=False, heatmap_service=None):
         """Initialize the filter dialog.
 
         Args:
@@ -25,10 +27,14 @@ class AOIFilterDialog(TranslationMixin, QDialog):
                 'flagged_only': bool or None,
                 'comment_filter': str or None,
                 'temperature_min': float or None,
-                'temperature_max': float or None
+                'temperature_max': float or None,
+                'heatmap_mode': str ('off'/'filter'/'display') or None,
+                'heatmap_threshold': int (0-100) or None
             }
             temperature_unit: Temperature unit ('F' or 'C') for display
             is_thermal: Whether dataset has thermal data
+            heatmap_available: Whether heatmap data is available for filtering
+            heatmap_service: HeatmapService instance (for the viewer dialog)
         """
         super().__init__(parent)
 
@@ -38,6 +44,7 @@ class AOIFilterDialog(TranslationMixin, QDialog):
 
         self.color_hue = current_filters.get('color_hue', None)
         self.color_range = current_filters.get('color_range', 30)
+        self.color_filter_mode = current_filters.get('color_filter_mode', 'include')
         self.area_min = current_filters.get('area_min', None)
         self.area_max = current_filters.get('area_max', None)
         self.flagged_only = current_filters.get('flagged_only', False)
@@ -46,6 +53,12 @@ class AOIFilterDialog(TranslationMixin, QDialog):
         self.temperature_max = current_filters.get('temperature_max', None)
         self.temperature_unit = temperature_unit
         self.is_thermal = is_thermal
+
+        # Heatmap filter state
+        self.heatmap_available = heatmap_available
+        self.heatmap_service = heatmap_service
+        self.heatmap_mode = current_filters.get('heatmap_mode', 'off')
+        self.heatmap_threshold = current_filters.get('heatmap_threshold', 75)
 
         self.setupUi()
         self._apply_translations()
@@ -123,6 +136,24 @@ class AOIFilterDialog(TranslationMixin, QDialog):
         self.color_filter_enabled.setChecked(self.color_hue is not None)
         self.color_filter_enabled.toggled.connect(self.on_color_filter_toggled)
         color_layout.addWidget(self.color_filter_enabled)
+
+        # Color filter mode radio buttons
+        self.color_mode_group = QButtonGroup(self)
+        self.color_include_radio = QRadioButton(self.tr("Show Only This Color"))
+        self.color_exclude_radio = QRadioButton(self.tr("Exclude This Color"))
+        self.color_mode_group.addButton(self.color_include_radio, 0)
+        self.color_mode_group.addButton(self.color_exclude_radio, 1)
+
+        if self.color_filter_mode == 'exclude':
+            self.color_exclude_radio.setChecked(True)
+        else:
+            self.color_include_radio.setChecked(True)
+
+        color_mode_layout = QHBoxLayout()
+        color_mode_layout.addWidget(self.color_include_radio)
+        color_mode_layout.addWidget(self.color_exclude_radio)
+        color_mode_layout.addStretch()
+        color_layout.addLayout(color_mode_layout)
 
         # Color selection button
         color_select_layout = QHBoxLayout()
@@ -282,6 +313,93 @@ class AOIFilterDialog(TranslationMixin, QDialog):
         temp_group.setLayout(temp_layout)
         layout.addWidget(temp_group)
 
+        # ===== Spatial Filters Separator =====
+        separator = QFrame()
+        separator.setFrameShape(QFrame.HLine)
+        separator.setFrameShadow(QFrame.Sunken)
+        layout.addWidget(separator)
+
+        spatial_header = QLabel(self.tr("Spatial Filters"))
+        spatial_header.setStyleSheet("QLabel { font-weight: bold; font-size: 10pt; }")
+        layout.addWidget(spatial_header)
+
+        # ===== Detection Density Heatmap Filter =====
+        heatmap_group = QGroupBox(self.tr("Detection Density Heatmap"))
+        heatmap_layout = QVBoxLayout()
+
+        # Radio buttons for mode selection
+        self.heatmap_mode_group = QButtonGroup(self)
+
+        self.heatmap_off_radio = QRadioButton(self.tr("Off"))
+        self.heatmap_filter_radio = QRadioButton(self.tr("Filter Hot Zones"))
+        self.heatmap_display_radio = QRadioButton(self.tr("Show Hot Zones Only"))
+
+        self.heatmap_mode_group.addButton(self.heatmap_off_radio, 0)
+        self.heatmap_mode_group.addButton(self.heatmap_filter_radio, 1)
+        self.heatmap_mode_group.addButton(self.heatmap_display_radio, 2)
+
+        # Set current mode
+        if self.heatmap_mode == 'filter':
+            self.heatmap_filter_radio.setChecked(True)
+        elif self.heatmap_mode == 'display':
+            self.heatmap_display_radio.setChecked(True)
+        else:
+            self.heatmap_off_radio.setChecked(True)
+
+        self.heatmap_mode_group.idClicked.connect(self.on_heatmap_mode_changed)
+
+        mode_layout = QHBoxLayout()
+        mode_layout.addWidget(self.heatmap_off_radio)
+        mode_layout.addWidget(self.heatmap_filter_radio)
+        mode_layout.addWidget(self.heatmap_display_radio)
+        mode_layout.addStretch()
+        heatmap_layout.addLayout(mode_layout)
+
+        # Threshold slider
+        threshold_layout = QHBoxLayout()
+        threshold_layout.addWidget(QLabel(self.tr("Threshold:")))
+
+        self.heatmap_threshold_slider = QSlider(Qt.Horizontal)
+        self.heatmap_threshold_slider.setMinimum(0)
+        self.heatmap_threshold_slider.setMaximum(100)
+        self.heatmap_threshold_slider.setValue(self.heatmap_threshold)
+        self.heatmap_threshold_slider.setTickPosition(QSlider.TicksBelow)
+        self.heatmap_threshold_slider.setTickInterval(25)
+        self.heatmap_threshold_slider.valueChanged.connect(self.on_heatmap_threshold_changed)
+        threshold_layout.addWidget(self.heatmap_threshold_slider)
+
+        self.heatmap_threshold_label = QLabel(f"{self.heatmap_threshold}%")
+        self.heatmap_threshold_label.setMinimumWidth(40)
+        threshold_layout.addWidget(self.heatmap_threshold_label)
+
+        heatmap_layout.addLayout(threshold_layout)
+
+        # View Heatmap button
+        self.view_heatmap_button = QPushButton(self.tr("View Heatmap"))
+        self.view_heatmap_button.clicked.connect(self.open_heatmap_viewer)
+        heatmap_layout.addWidget(self.view_heatmap_button)
+
+        # Info label for current mode
+        self.heatmap_info_label = QLabel()
+        self.heatmap_info_label.setStyleSheet("QLabel { color: gray; font-size: 9pt; }")
+        self.heatmap_info_label.setWordWrap(True)
+        heatmap_layout.addWidget(self.heatmap_info_label)
+        self._update_heatmap_info_label()
+
+        # Unavailable message
+        if not self.heatmap_available:
+            unavail_label = QLabel(self.tr("Heatmap filtering unavailable (image dimensions not in dataset)"))
+            unavail_label.setStyleSheet("QLabel { color: #F44336; font-size: 9pt; font-weight: bold; }")
+            heatmap_layout.addWidget(unavail_label)
+            # Disable mode radios and slider, but keep View Heatmap enabled
+            self.heatmap_off_radio.setEnabled(False)
+            self.heatmap_filter_radio.setEnabled(False)
+            self.heatmap_display_radio.setEnabled(False)
+            self.heatmap_threshold_slider.setEnabled(False)
+
+        heatmap_group.setLayout(heatmap_layout)
+        layout.addWidget(heatmap_group)
+
         # Spacer
         layout.addStretch()
 
@@ -312,6 +430,7 @@ class AOIFilterDialog(TranslationMixin, QDialog):
         self.on_color_filter_toggled(self.color_filter_enabled.isChecked())
         self.on_area_filter_toggled(self.area_filter_enabled.isChecked())
         self.on_temperature_filter_toggled(self.temperature_filter_enabled.isChecked())
+        self.on_heatmap_mode_changed(self.heatmap_mode_group.checkedId())
         self.update_color_preview()
 
     def showEvent(self, event):
@@ -370,6 +489,8 @@ class AOIFilterDialog(TranslationMixin, QDialog):
         """Enable/disable color filter controls."""
         self.color_button.setEnabled(checked)
         self.range_slider.setEnabled(checked)
+        self.color_include_radio.setEnabled(checked)
+        self.color_exclude_radio.setEnabled(checked)
 
     def on_area_filter_toggled(self, checked):
         """Enable/disable area filter controls."""
@@ -385,6 +506,50 @@ class AOIFilterDialog(TranslationMixin, QDialog):
         """Enable/disable comment filter controls."""
         self.comment_pattern_input.setEnabled(checked)
 
+    def on_heatmap_mode_changed(self, mode_id):
+        """Handle heatmap mode radio button changes."""
+        enabled = mode_id != 0  # Not "Off"
+        self.heatmap_threshold_slider.setEnabled(enabled and self.heatmap_available)
+        self._update_heatmap_info_label()
+
+    def on_heatmap_threshold_changed(self, value):
+        """Handle heatmap threshold slider changes."""
+        self.heatmap_threshold = value
+        self.heatmap_threshold_label.setText(f"{value}%")
+
+    def _update_heatmap_info_label(self):
+        """Update the heatmap info label based on current mode."""
+        mode_id = self.heatmap_mode_group.checkedId()
+        if mode_id == 1:
+            self.heatmap_info_label.setText(
+                self.tr("AOIs in high-density zones (above threshold) will be hidden"))
+        elif mode_id == 2:
+            self.heatmap_info_label.setText(
+                self.tr("Only AOIs in high-density zones (above threshold) will be shown"))
+        else:
+            self.heatmap_info_label.setText(
+                self.tr("Heatmap spatial filtering is disabled"))
+
+    def open_heatmap_viewer(self):
+        """Open the heatmap viewer dialog."""
+        if self.heatmap_service is None or not self.heatmap_service.is_valid():
+            from PySide6.QtWidgets import QMessageBox
+            QMessageBox.information(self, self.tr("Heatmap"),
+                self.tr("No heatmap data available. Ensure image dimensions are present in the dataset."))
+            return
+
+        from core.views.images.viewer.dialogs.HeatmapViewerDialog import HeatmapViewerDialog
+        viewer = HeatmapViewerDialog(
+            self, self.heatmap_service,
+            currentThreshold=self.heatmap_threshold,
+            currentGridSize=self.heatmap_service._gridSize
+        )
+        if viewer.exec():
+            # Sync threshold back from viewer
+            self.heatmap_threshold = viewer.get_threshold()
+            self.heatmap_threshold_slider.setValue(self.heatmap_threshold)
+            self.heatmap_threshold_label.setText(f"{self.heatmap_threshold}%")
+
     def clear_all_filters(self):
         """Clear all filter settings."""
         self.flagged_filter_enabled.setChecked(False)
@@ -394,7 +559,15 @@ class AOIFilterDialog(TranslationMixin, QDialog):
         self.area_filter_enabled.setChecked(False)
         self.temperature_filter_enabled.setChecked(False)
         self.color_hue = None
+        self.color_include_radio.setChecked(True)
         self.update_color_preview()
+
+        # Reset heatmap filter
+        self.heatmap_off_radio.setChecked(True)
+        self.heatmap_threshold = 75
+        self.heatmap_threshold_slider.setValue(75)
+        self.heatmap_threshold_label.setText("75%")
+        self.on_heatmap_mode_changed(0)
 
     def get_filters(self):
         """Get the current filter settings.
@@ -408,7 +581,9 @@ class AOIFilterDialog(TranslationMixin, QDialog):
                 'area_min': float or None,
                 'area_max': float or None,
                 'temperature_min': float or None (in Celsius),
-                'temperature_max': float or None (in Celsius)
+                'temperature_max': float or None (in Celsius),
+                'heatmap_mode': str ('off', 'filter', or 'display'),
+                'heatmap_threshold': int (0-100)
             }
         """
         # Get comment filter pattern if enabled and not empty
@@ -432,14 +607,26 @@ class AOIFilterDialog(TranslationMixin, QDialog):
                 temp_min = temp_min_value
                 temp_max = temp_max_value
 
+        # Get heatmap mode from radio buttons
+        mode_id = self.heatmap_mode_group.checkedId()
+        if mode_id == 1:
+            heatmap_mode = 'filter'
+        elif mode_id == 2:
+            heatmap_mode = 'display'
+        else:
+            heatmap_mode = 'off'
+
         filters = {
             'flagged_only': self.flagged_filter_enabled.isChecked(),
             'comment_filter': comment_pattern,
             'color_hue': self.color_hue if self.color_filter_enabled.isChecked() else None,
             'color_range': self.color_range if self.color_filter_enabled.isChecked() else None,
+            'color_filter_mode': 'exclude' if self.color_exclude_radio.isChecked() else 'include',
             'area_min': float(self.min_area_spin.value()) if self.area_filter_enabled.isChecked() else None,
             'area_max': float(self.max_area_spin.value()) if self.area_filter_enabled.isChecked() else None,
             'temperature_min': temp_min,
-            'temperature_max': temp_max
+            'temperature_max': temp_max,
+            'heatmap_mode': heatmap_mode,
+            'heatmap_threshold': self.heatmap_threshold
         }
         return filters

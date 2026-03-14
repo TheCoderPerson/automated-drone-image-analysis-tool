@@ -204,6 +204,42 @@ class AOIGalleryModel(QAbstractListModel):
         # which will also queue thumbnails via _get_thumbnail_icon()
         self._queue_visible_thumbnails()
 
+    def append_aoi_items(self, newItems):
+        """Append new AOI items to the model without resetting existing data.
+
+        Used when server images arrive dynamically. Preserves existing
+        thumbnails and caches, and only adds the new rows.
+
+        Args:
+            newItems: List of (image_index, aoi_index, aoi_data) tuples.
+        """
+        if not newItems:
+            return
+
+        startRow = len(self.aoi_items)
+        endRow = startRow + len(newItems) - 1
+
+        self.beginInsertRows(QModelIndex(), startRow, endRow)
+
+        for item in newItems:
+            imgIdx, aoiIdx, aoiData = item
+            self.aoi_items.append(item)
+            row = len(self.aoi_items) - 1
+            key = (imgIdx, aoiIdx)
+            self.row_to_aoi[row] = key
+            self.aoi_to_row[key] = row
+
+        self.endInsertRows()
+
+        # Pre-load temperature info for new items
+        for imgIdx, aoiIdx, aoiData in newItems:
+            cacheKey = (imgIdx, aoiIdx)
+            if 'temperature' in aoiData and aoiData['temperature'] is not None:
+                self._temperature_info_cache[cacheKey] = aoiData['temperature']
+            # Pre-load color info if present
+            if 'color_info' in aoiData and aoiData['color_info']:
+                self._color_info_cache[cacheKey] = aoiData['color_info']
+
     def rowCount(self, parent=QModelIndex()):
         """Return the number of AOIs."""
         if parent.isValid():
@@ -268,6 +304,21 @@ class AOIGalleryModel(QAbstractListModel):
         if cache_key in self.thumbnail_cache:
             return self.thumbnail_cache[cache_key]
 
+        # In client mode, check the ReviewController's crop cache for
+        # server-delivered AOI thumbnails (binary crop frames arrive
+        # before the full image, so these are available immediately)
+        if (self.viewer and
+                getattr(self.viewer, 'isClientMode', False) and
+                getattr(self.viewer, 'review_controller', None)):
+            aoiId = aoi_data.get('server_aoi_id')
+            if aoiId is not None:
+                cropBytes = self.viewer.review_controller.get_cached_crop(aoiId)
+                if cropBytes:
+                    icon = self._icon_from_jpeg_bytes(cropBytes)
+                    if icon:
+                        self.thumbnail_cache[cache_key] = icon
+                        return icon
+
         # Queue for background loading if needed
         # This ensures thumbnails are queued even if _load_visible_thumbnails() hasn't been called yet
         if self.viewer and image_idx < len(self.viewer.images):
@@ -289,6 +340,30 @@ class AOIGalleryModel(QAbstractListModel):
 
         # Return placeholder while loading
         return self.placeholder_icon
+
+    def _icon_from_jpeg_bytes(self, jpegBytes):
+        """Convert raw JPEG bytes to a QIcon scaled to thumbnail size.
+
+        Args:
+            jpegBytes: Raw JPEG bytes.
+
+        Returns:
+            QIcon or None on failure.
+        """
+        try:
+            pixmap = QPixmap()
+            if not pixmap.loadFromData(jpegBytes):
+                return None
+            if (pixmap.width() > self.thumbnail_size.width() or
+                    pixmap.height() > self.thumbnail_size.height()):
+                pixmap = pixmap.scaled(
+                    self.thumbnail_size,
+                    Qt.KeepAspectRatio,
+                    Qt.SmoothTransformation
+                )
+            return QIcon(pixmap)
+        except Exception:
+            return None
 
     def _queue_visible_thumbnails(self):
         """Queue visible thumbnails for priority loading (asynchronously to avoid blocking UI)."""

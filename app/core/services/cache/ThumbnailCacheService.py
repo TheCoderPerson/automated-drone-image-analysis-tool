@@ -2,7 +2,7 @@
 ThumbnailCacheService - Manages persistent caching of AOI thumbnails for performance.
 
 This service handles:
-- Persistent disk caching of thumbnails
+- Persistent disk caching of thumbnails (ZIP archive or loose files)
 - In-memory LRU cache for fast access
 - Background thumbnail generation
 - Smart extraction without loading full images
@@ -25,6 +25,7 @@ from PySide6.QtGui import QPixmap, QIcon, QImage
 import qimage2ndarray
 
 from core.services.LoggerService import LoggerService
+from core.services.cache.ThumbnailZipStore import ThumbnailZipStore
 
 
 class ThumbnailCacheService:
@@ -32,7 +33,8 @@ class ThumbnailCacheService:
     Service for managing thumbnail caching with persistent storage.
 
     Features:
-    - Persistent disk cache in user's home directory
+    - ZIP archive storage for fast file copy (preferred)
+    - Fallback to loose files in .thumbnails directory
     - LRU memory cache for fast access
     - Smart region extraction without loading full images
     - Thread-safe operations
@@ -54,12 +56,15 @@ class ThumbnailCacheService:
         self.cache_dir = Path(cache_dir) if cache_dir else None
         if self.cache_dir:
             self.cache_dir.mkdir(parents=True, exist_ok=True)
-            # self.logger.info(f"Thumbnail cache initialized at {self.cache_dir}")
 
         # Set up per-dataset cache directory (optional)
         self.dataset_cache_dir = Path(dataset_cache_dir) if dataset_cache_dir else None
         if self.dataset_cache_dir:
             self.dataset_cache_dir.mkdir(parents=True, exist_ok=True)
+
+        # ZIP store for per-dataset thumbnails (preferred over loose files)
+        self.zipStore = None
+        self._init_zip_store()
 
         # Thread safety
         self.mutex = QMutex()
@@ -69,6 +74,41 @@ class ThumbnailCacheService:
 
         # Clear the LRU cache to set max size
         self.get_thumbnail_from_memory.cache_clear()
+
+    def _init_zip_store(self):
+        """Detect and open a ZIP store if available, or migrate loose files.
+
+        Migration only happens when a valid ZIP doesn't exist but loose files do.
+        This is safe because it runs at viewing time (after detection is complete),
+        not during detection when multiple processes may be writing thumbnails.
+        """
+        if self.dataset_cache_dir:
+            zipPath = self.dataset_cache_dir.parent / '.thumbnails.zip'
+            if zipPath.exists():
+                store = ThumbnailZipStore(str(zipPath))
+                if store.isValid:
+                    self.zipStore = store
+                else:
+                    # Corrupt ZIP -- remove it so we can migrate from loose files
+                    store.close()
+                    self.logger.warning(f"Removing corrupt ZIP: {zipPath}")
+                    try:
+                        os.remove(str(zipPath))
+                    except OSError:
+                        pass
+
+            # If no valid ZIP exists, check for loose files to migrate
+            if self.zipStore is None and self.dataset_cache_dir.exists():
+                looseFiles = list(self.dataset_cache_dir.glob('*.jpg'))
+                if looseFiles:
+                    try:
+                        count = ThumbnailZipStore.migrateFromDirectory(
+                            str(self.dataset_cache_dir), str(zipPath), removeDir=False
+                        )
+                        if count > 0:
+                            self.zipStore = ThumbnailZipStore(str(zipPath))
+                    except Exception as e:
+                        self.logger.error(f"ZIP migration failed: {e}")
 
     def get_cache_key(self, image_path: str, aoi_data: Dict[str, Any]) -> str:
         """
@@ -244,7 +284,7 @@ class ThumbnailCacheService:
 
     def save_thumbnail_to_disk(self, cache_key: str, thumbnail_array: np.ndarray, cache_dir: Optional[Path] = None) -> bool:
         """
-        Save thumbnail to disk cache.
+        Save thumbnail to cache (ZIP archive preferred, loose file as fallback).
 
         Args:
             cache_key: Unique cache key
@@ -255,22 +295,52 @@ class ThumbnailCacheService:
             True if saved successfully
         """
         try:
-            cache_path = self.get_cache_path(cache_key, cache_dir)
-
-            # Convert RGB to BGR for cv2.imwrite (cv2 expects BGR format)
+            # Convert RGB to BGR for JPEG encoding
             if len(thumbnail_array.shape) == 3 and thumbnail_array.shape[2] == 3:
                 thumbnail_bgr = cv2.cvtColor(thumbnail_array, cv2.COLOR_RGB2BGR)
             else:
                 thumbnail_bgr = thumbnail_array
 
-            # Save as JPEG with balanced quality (80 = good balance of quality and speed)
-            # Reduced from 90 for faster writes with minimal visual difference for thumbnails
-            cv2.imwrite(str(cache_path), thumbnail_bgr, [cv2.IMWRITE_JPEG_QUALITY, 80])
+            # Prefer ZIP store
+            if self.zipStore:
+                success, jpegBytes = cv2.imencode('.jpg', thumbnail_bgr, [cv2.IMWRITE_JPEG_QUALITY, 80])
+                if success:
+                    return self.zipStore.write(cache_key, jpegBytes.tobytes())
+                return False
 
+            # Fallback: write loose file
+            cache_path = self.get_cache_path(cache_key, cache_dir)
+            cv2.imwrite(str(cache_path), thumbnail_bgr, [cv2.IMWRITE_JPEG_QUALITY, 80])
             return True
 
         except Exception as e:
             self.logger.error(f"Error saving thumbnail to disk: {e}")
+            return False
+
+    def save_thumbnail_bytes(self, cache_key: str, jpegBytes: bytes) -> bool:
+        """
+        Save pre-encoded JPEG bytes to cache (ZIP archive preferred).
+
+        Used by callers that already have JPEG bytes (avoids double encode).
+
+        Args:
+            cache_key: Unique cache key
+            jpegBytes: Raw JPEG-encoded bytes
+
+        Returns:
+            True if saved successfully
+        """
+        try:
+            if self.zipStore:
+                return self.zipStore.write(cache_key, jpegBytes)
+
+            # Fallback: write loose file
+            cache_path = self.get_cache_path(cache_key)
+            cache_path.write_bytes(jpegBytes)
+            return True
+
+        except Exception as e:
+            self.logger.error(f"Error saving thumbnail bytes: {e}")
             return False
 
     def save_thumbnail_from_array(self, image_path: str, aoi_data: Dict[str, Any],
@@ -303,11 +373,12 @@ class ThumbnailCacheService:
 
     def load_thumbnail_from_disk(self, cache_key: str) -> Optional[np.ndarray]:
         """
-        Load thumbnail from disk cache.
+        Load thumbnail from cache.
 
         Checks in order:
-        1. Per-dataset cache (if configured)
-        2. Global cache
+        1. ZIP archive (fastest for large datasets)
+        2. Per-dataset loose files
+        3. Global cache
 
         Args:
             cache_key: Unique cache key
@@ -316,7 +387,16 @@ class ThumbnailCacheService:
             Numpy array or None
         """
         try:
-            # Try dataset cache first if available
+            # Try ZIP store first (fast seek + read)
+            if self.zipStore:
+                jpegBytes = self.zipStore.read(cache_key)
+                if jpegBytes:
+                    npArr = np.frombuffer(jpegBytes, dtype=np.uint8)
+                    img = cv2.imdecode(npArr, cv2.IMREAD_COLOR)
+                    if img is not None:
+                        return cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+
+            # Try dataset loose files
             if self.dataset_cache_dir:
                 dataset_cache_path = self.get_cache_path(cache_key, self.dataset_cache_dir)
                 if dataset_cache_path.exists():
@@ -338,7 +418,7 @@ class ThumbnailCacheService:
 
     def is_cached(self, image_path: str, aoi_data: Dict[str, Any]) -> bool:
         """
-        Check if a thumbnail is already cached (memory or disk) without loading it.
+        Check if a thumbnail is already cached (memory, ZIP, or disk) without loading it.
 
         Checks both new (portable) and legacy cache keys for backward compatibility.
 
@@ -357,7 +437,11 @@ class ThumbnailCacheService:
         if cached_icon is not None:
             return True
 
-        # Check per-dataset cache
+        # Check ZIP store (fast in-memory lookup, no disk I/O)
+        if self.zipStore and self.zipStore.contains(cache_key):
+            return True
+
+        # Check per-dataset loose files
         if self.dataset_cache_dir:
             dataset_cache_path = Path(self.dataset_cache_dir) / f"{cache_key}.jpg"
             if dataset_cache_path.exists():
@@ -373,7 +457,11 @@ class ThumbnailCacheService:
         xml_path = aoi_data.get('_xml_path')  # Extract original XML path if provided
         legacy_key = self.get_legacy_cache_key(image_path, aoi_data, xml_path)
         if legacy_key != cache_key:  # Only try if different
-            # Check per-dataset cache with legacy key
+            # Check ZIP store with legacy key
+            if self.zipStore and self.zipStore.contains(legacy_key):
+                return True
+
+            # Check per-dataset loose files with legacy key
             if self.dataset_cache_dir:
                 legacy_dataset_path = Path(self.dataset_cache_dir) / f"{legacy_key}.jpg"
                 if legacy_dataset_path.exists():
@@ -450,15 +538,23 @@ class ThumbnailCacheService:
             return icon
 
     def clear_disk_cache(self):
-        """Clear all thumbnails from disk cache."""
+        """Clear all thumbnails from disk cache (ZIP and loose files)."""
         try:
+            # Clear ZIP store
+            if self.zipStore:
+                self.zipStore.close()
+                try:
+                    os.remove(self.zipStore.zipPath)
+                except OSError:
+                    pass
+                self.zipStore = None
+
             if self.cache_dir:
                 shutil.rmtree(self.cache_dir)
                 self.cache_dir.mkdir(parents=True, exist_ok=True)
             if self.dataset_cache_dir:
                 shutil.rmtree(self.dataset_cache_dir)
                 self.dataset_cache_dir.mkdir(parents=True, exist_ok=True)
-            # self.logger.info("Disk cache cleared")
         except Exception as e:
             self.logger.error(f"Error clearing disk cache: {e}")
 
@@ -469,9 +565,16 @@ class ThumbnailCacheService:
         Returns:
             Dictionary with cache statistics
         """
-        # Count disk cache files
+        # Count disk cache files (ZIP + loose)
         disk_count = 0
         disk_size = 0
+
+        # ZIP store stats
+        if self.zipStore:
+            disk_count += self.zipStore.keyCount()
+            disk_size += self.zipStore.totalSize()
+
+        # Loose files
         if self.cache_dir:
             disk_count += sum(1 for _ in self.cache_dir.rglob("*.jpg"))
             disk_size += sum(f.stat().st_size for f in self.cache_dir.rglob("*.jpg"))
@@ -488,7 +591,8 @@ class ThumbnailCacheService:
             'memory_hits': cache_info.hits,
             'memory_misses': cache_info.misses,
             'memory_current_size': cache_info.currsize,
-            'memory_max_size': cache_info.maxsize
+            'memory_max_size': cache_info.maxsize,
+            'zip_store': self.zipStore is not None
         }
 
 

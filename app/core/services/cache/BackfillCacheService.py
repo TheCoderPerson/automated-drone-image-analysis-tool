@@ -76,7 +76,9 @@ class BackfillCacheService(QObject):
             self.progress_message.emit(f"Creating caches for {len(images)} images...")
 
             # Initialize cache services
+            # Force loose-file writes during backfill (ZIP migration happens at viewing time)
             thumbnail_service = ThumbnailCacheService(dataset_cache_dir=str(thumbnail_cache_dir))
+            thumbnail_service.zipStore = None
             color_service = ColorCacheService()  # In-memory only - will update XML
 
             # Track color info updates for XML
@@ -228,7 +230,7 @@ class BackfillCacheService(QObject):
                     else:
                         thumbnail_rgb = thumbnail_resized
 
-                    # Save thumbnail to cache
+                    # Save thumbnail to cache (loose files, concurrent-safe)
                     thumbnail_service.save_thumbnail_from_array(
                         image_path,
                         aoi,

@@ -1,5 +1,7 @@
 """
 Simple thumbnail loader that runs in a background thread without blocking UI.
+
+Supports reading from ZIP archive (.thumbnails.zip) or loose files (.thumbnails/).
 """
 
 from PySide6.QtCore import QObject, Signal, Slot
@@ -8,6 +10,8 @@ from PySide6.QtCore import QSize
 import hashlib
 import os
 from pathlib import Path
+
+from core.services.cache.ThumbnailZipStore import ThumbnailZipStore
 
 
 class ThumbnailLoader(QObject):
@@ -22,6 +26,16 @@ class ThumbnailLoader(QObject):
         self.loaded_indices = set()
         self.results_dir = results_dir
         self.input_root = input_root
+
+        # Open ZIP store if available
+        self._zipStore = None
+        if results_dir:
+            zipPath = Path(results_dir) / '.thumbnails.zip'
+            if zipPath.exists():
+                try:
+                    self._zipStore = ThumbnailZipStore(str(zipPath))
+                except Exception:
+                    pass
 
     @Slot(int)
     def load_thumbnail(self, index):
@@ -55,12 +69,29 @@ class ThumbnailLoader(QObject):
         except Exception:
             pass  # Skip failed thumbnails
 
+    def _get_path_hash(self, image_path):
+        """Compute the portable MD5 hash for a main image thumbnail key."""
+        key_source = None
+        if getattr(self, 'input_root', None):
+            try:
+                key_source = str(Path(image_path).relative_to(Path(self.input_root)))
+            except Exception:
+                try:
+                    key_source = os.path.relpath(image_path, self.input_root)
+                except Exception:
+                    key_source = None
+
+        if not key_source:
+            key_source = os.path.basename(image_path)
+
+        norm_key = key_source.replace('\\', '/').lower()
+        return hashlib.md5(norm_key.encode()).hexdigest()
+
     def is_cached(self, image_path):
         """
         Check if a thumbnail is cached without loading it.
 
-        Checks both new (portable) and legacy cache keys for backward compatibility.
-        Also checks legacy .image_thumbnails directory for old datasets.
+        Checks ZIP archive first, then loose files, then legacy directories.
 
         Args:
             image_path: Path to the original image
@@ -69,42 +100,32 @@ class ThumbnailLoader(QObject):
             bool: True if cached, False otherwise
         """
         try:
-            # If we don't have a results directory, can't check cache
             if not self.results_dir:
                 return False
 
-            results_path = Path(self.results_dir)
+            path_hash = self._get_path_hash(image_path)
 
-            # Try unified .thumbnails directory first (new format)
+            # Check ZIP store first (fast in-memory lookup)
+            if self._zipStore and self._zipStore.contains(path_hash):
+                return True
+
+            results_path = Path(self.results_dir)
             thumb_dir = results_path / '.thumbnails'
 
-            # Try new (portable) key - relative path to input root when available
-            key_source = None
-            if getattr(self, 'input_root', None):
-                try:
-                    key_source = str(Path(image_path).relative_to(Path(self.input_root)))
-                except Exception:
-                    try:
-                        key_source = os.path.relpath(image_path, self.input_root)
-                    except Exception:
-                        key_source = None
-
-            if not key_source:
-                # Fall back to filename only (legacy)
-                key_source = os.path.basename(image_path)
-
-            norm_key = key_source.replace('\\', '/').lower()
-            path_hash = hashlib.md5(norm_key.encode()).hexdigest()
+            # Check loose files with portable key
             thumb_path = thumb_dir / f"{path_hash}.jpg"
-
             if thumb_path.exists():
                 return True
 
             # Try legacy key - absolute path
             abs_path = os.path.abspath(image_path)
             legacy_hash = hashlib.md5(abs_path.encode()).hexdigest()
-            legacy_thumb_path = thumb_dir / f"{legacy_hash}.jpg"
 
+            # Check ZIP with legacy key
+            if self._zipStore and self._zipStore.contains(legacy_hash):
+                return True
+
+            legacy_thumb_path = thumb_dir / f"{legacy_hash}.jpg"
             if legacy_thumb_path.exists():
                 return True
 
@@ -123,12 +144,23 @@ class ThumbnailLoader(QObject):
         except Exception:
             return False
 
+    def _pixmap_from_zip(self, cacheKey):
+        """Load a QPixmap from the ZIP store by cache key, or return None."""
+        if not self._zipStore:
+            return None
+        jpegBytes = self._zipStore.read(cacheKey)
+        if not jpegBytes:
+            return None
+        pixmap = QPixmap()
+        if pixmap.loadFromData(jpegBytes):
+            return pixmap
+        return None
+
     def _load_cached_thumbnail(self, image_path):
         """
         Load a cached thumbnail if it exists.
 
-        Tries both new (portable) and legacy cache keys for backward compatibility.
-        Also checks legacy .image_thumbnails directory for old datasets.
+        Checks ZIP archive first, then loose files, then legacy directories.
 
         Args:
             image_path: Path to the original image
@@ -137,42 +169,34 @@ class ThumbnailLoader(QObject):
             QPixmap or None
         """
         try:
-            # If we don't have a results directory, can't load cache
             if not self.results_dir:
                 return None
 
-            results_path = Path(self.results_dir)
+            path_hash = self._get_path_hash(image_path)
 
-            # Try unified .thumbnails directory first (new format)
+            # Try ZIP store first (fast seek + read)
+            pixmap = self._pixmap_from_zip(path_hash)
+            if pixmap:
+                return pixmap
+
+            results_path = Path(self.results_dir)
             thumb_dir = results_path / '.thumbnails'
 
-            # Try new (portable) key - relative path to input root when available
-            key_source = None
-            if getattr(self, 'input_root', None):
-                try:
-                    key_source = str(Path(image_path).relative_to(Path(self.input_root)))
-                except Exception:
-                    try:
-                        key_source = os.path.relpath(image_path, self.input_root)
-                    except Exception:
-                        key_source = None
-
-            if not key_source:
-                # Fall back to filename only (legacy)
-                key_source = os.path.basename(image_path)
-
-            norm_key = key_source.replace('\\', '/').lower()
-            path_hash = hashlib.md5(norm_key.encode()).hexdigest()
+            # Try loose file with portable key
             thumb_path = thumb_dir / f"{path_hash}.jpg"
-
             if thumb_path.exists():
                 return QPixmap(str(thumb_path))
 
             # Try legacy key - absolute path
             abs_path = os.path.abspath(image_path)
             legacy_hash = hashlib.md5(abs_path.encode()).hexdigest()
-            legacy_thumb_path = thumb_dir / f"{legacy_hash}.jpg"
 
+            # Try ZIP with legacy key
+            pixmap = self._pixmap_from_zip(legacy_hash)
+            if pixmap:
+                return pixmap
+
+            legacy_thumb_path = thumb_dir / f"{legacy_hash}.jpg"
             if legacy_thumb_path.exists():
                 return QPixmap(str(legacy_thumb_path))
 

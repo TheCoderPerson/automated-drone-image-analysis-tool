@@ -134,7 +134,10 @@ class KMLGeneratorService:
             # Get image GPS coordinates and metadata
             try:
                 # Create ImageService to extract EXIF data
-                image_service = ImageService(image_path, image.get('mask_path', ''))
+                image_service = ImageService(
+                    image_path, image.get('mask_path', ''),
+                    calculated_bearing=image.get('bearing')
+                )
 
                 # Get GPS from EXIF data as a dict (not formatted string)
                 image_gps = LocationInfo.get_gps(exif_data=image_service.exif_data)
@@ -266,7 +269,10 @@ class KMLGeneratorService:
             # Get image GPS coordinates
             try:
                 # Create ImageService to extract EXIF data
-                image_service = ImageService(image_path, image.get('mask_path', ''))
+                image_service = ImageService(
+                    image_path, image.get('mask_path', ''),
+                    calculated_bearing=image.get('bearing')
+                )
 
                 # Get GPS from EXIF data
                 image_gps = LocationInfo.get_gps(exif_data=image_service.exif_data)
@@ -275,8 +281,11 @@ class KMLGeneratorService:
                     continue
 
                 # Get additional metadata for description
-                # Use custom altitude if provided, otherwise get from EXIF
-                if self.custom_altitude_ft is not None and self.custom_altitude_ft > 0:
+                # Use per-image AGL (e.g. Wingtra), then custom altitude, then EXIF
+                wingtra_alt = image.get('wingtra_agl_ft')
+                if wingtra_alt is not None:
+                    altitude = wingtra_alt
+                elif self.custom_altitude_ft is not None and self.custom_altitude_ft > 0:
                     altitude = self.custom_altitude_ft
                 else:
                     altitude = image_service.get_relative_altitude(distance_unit='ft')

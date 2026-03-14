@@ -124,6 +124,23 @@ class XmlService:
                     'hidden': image_xml.get('hidden') == "True" if image_xml.get('hidden') else False
                 }
 
+                # Load image dimensions if present
+                if image_xml.get('width'):
+                    try:
+                        image['width'] = int(image_xml.get('width'))
+                    except (ValueError, TypeError):
+                        image['width'] = None
+                else:
+                    image['width'] = None
+
+                if image_xml.get('height'):
+                    try:
+                        image['height'] = int(image_xml.get('height'))
+                    except (ValueError, TypeError):
+                        image['height'] = None
+                else:
+                    image['height'] = None
+
                 # Load bearing metadata if present
                 if image_xml.get('bearing'):
                     image['bearing'] = float(image_xml.get('bearing'))
@@ -246,6 +263,12 @@ class XmlService:
             # Legacy support - old style with duplicated images
             image.set('path', img["path"])
         image.set('hidden', "False")
+
+        # Store image dimensions if available
+        if 'width' in img and img['width']:
+            image.set('width', str(img['width']))
+        if 'height' in img and img['height']:
+            image.set('height', str(img['height']))
 
         temp_count = 0  # Track AOIs with temperature data
         for area in img["aois"]:

@@ -16,6 +16,7 @@ from PySide6.QtWidgets import QProgressDialog, QApplication
 from PySide6.QtCore import Qt
 from core.services.LoggerService import LoggerService
 from core.services.image.AOIService import AOIService
+from core.services.HeatmapService import HeatmapService
 from .AOIGalleryModel import AOIGalleryModel
 from .GalleryUIComponent import GalleryUIComponent
 
@@ -58,16 +59,26 @@ class GalleryController:
         self.filter_comment_pattern = None
         self.filter_color_hue = None
         self.filter_color_range = None
+        self.filter_color_mode = 'include'
         self.filter_area_min = None
         self.filter_area_max = None
         self.filter_temperature_min = None
         self.filter_temperature_max = None
+        self.filter_heatmap_mode = 'off'
+        self.filter_heatmap_threshold = 75
+
+        # Heatmap service for spatial density filtering
+        self.heatmap_service = HeatmapService()
 
         # Cache for AOIService instances per image
         self._aoi_service_cache = {}
 
         # Progress dialog for color calculation
         self.color_calc_progress_dialog = None
+
+        # Review mode
+        self.review_controller = None
+        self.hidden_model = None
 
         # Gallery column width constants (thumbnail + spacing)
         self.GALLERY_COLUMN_WIDTH = 200  # 190px thumbnail + 10px spacing
@@ -115,6 +126,9 @@ class GalleryController:
             # Collect all AOIs from all images
             all_aois = self._collect_all_aois()
             # self.logger.debug(f"Collected {len(all_aois)} AOIs")
+
+            # Compute heatmap grid for spatial filtering
+            self.heatmap_service.compute_heatmap(self.parent.images)
 
             # Set items without triggering color calculation
             self.model.set_aoi_items(all_aois, skip_color_calc=True)
@@ -403,12 +417,21 @@ class GalleryController:
             # Apply color filter
             if self.filter_color_hue is not None and self.filter_color_range is not None:
                 hue = self._get_aoi_hue(img_idx, aoi_idx)
-                if hue is not None:
-                    distance = self._calculate_hue_distance(hue, self.filter_color_hue)
-                    if distance > self.filter_color_range:
-                        continue
+                if self.filter_color_mode == 'exclude':
+                    # Exclude mode: remove AOIs that match the color, keep the rest
+                    if hue is not None:
+                        distance = self._calculate_hue_distance(hue, self.filter_color_hue)
+                        if distance <= self.filter_color_range:
+                            continue
+                    # AOIs without hue data are kept in exclude mode
                 else:
-                    continue
+                    # Include mode: keep only AOIs that match the color
+                    if hue is not None:
+                        distance = self._calculate_hue_distance(hue, self.filter_color_hue)
+                        if distance > self.filter_color_range:
+                            continue
+                    else:
+                        continue
 
             # Apply area filter
             area = aoi.get('area', 0)
@@ -428,6 +451,22 @@ class GalleryController:
                     continue
                 if self.filter_temperature_max is not None and temp > self.filter_temperature_max:
                     continue
+
+            # Apply heatmap density filter
+            if self.filter_heatmap_mode != 'off' and self.heatmap_service.is_valid():
+                image = self.parent.images[img_idx] if self.parent and hasattr(self.parent, 'images') else None
+                if image:
+                    imgWidth = image.get('width')
+                    imgHeight = image.get('height')
+                    if imgWidth and imgHeight:
+                        inHotZone = self.heatmap_service.is_in_hot_zone(
+                            aoi.get('center', (0, 0)), imgWidth, imgHeight,
+                            self.filter_heatmap_threshold
+                        )
+                        if self.filter_heatmap_mode == 'filter' and inHotZone:
+                            continue
+                        if self.filter_heatmap_mode == 'display' and not inHotZone:
+                            continue
 
             # AOI passed all filters
             filtered.append((img_idx, aoi_idx, aoi))
@@ -546,10 +585,13 @@ class GalleryController:
         self.filter_comment_pattern = filters.get('comment_filter')
         self.filter_color_hue = filters.get('color_hue')
         self.filter_color_range = filters.get('color_range')
+        self.filter_color_mode = filters.get('color_filter_mode', 'include')
         self.filter_area_min = filters.get('area_min')
         self.filter_area_max = filters.get('area_max')
         self.filter_temperature_min = filters.get('temperature_min')
         self.filter_temperature_max = filters.get('temperature_max')
+        self.filter_heatmap_mode = filters.get('heatmap_mode', 'off')
+        self.filter_heatmap_threshold = filters.get('heatmap_threshold', 75)
 
         self.load_all_aois()  # Reload with new filters
 
@@ -570,12 +612,18 @@ class GalleryController:
             self.filter_comment_pattern = aoi_ctrl.filter_comment_pattern
         self.filter_color_hue = aoi_ctrl.filter_color_hue
         self.filter_color_range = aoi_ctrl.filter_color_range
+        if hasattr(aoi_ctrl, 'filter_color_mode'):
+            self.filter_color_mode = aoi_ctrl.filter_color_mode
         self.filter_area_min = aoi_ctrl.filter_area_min
         self.filter_area_max = aoi_ctrl.filter_area_max
         if hasattr(aoi_ctrl, 'filter_temperature_min'):
             self.filter_temperature_min = aoi_ctrl.filter_temperature_min
         if hasattr(aoi_ctrl, 'filter_temperature_max'):
             self.filter_temperature_max = aoi_ctrl.filter_temperature_max
+        if hasattr(aoi_ctrl, 'filter_heatmap_mode'):
+            self.filter_heatmap_mode = aoi_ctrl.filter_heatmap_mode
+        if hasattr(aoi_ctrl, 'filter_heatmap_threshold'):
+            self.filter_heatmap_threshold = aoi_ctrl.filter_heatmap_threshold
 
         # Sync sort settings
         self.sort_method = aoi_ctrl.sort_method
@@ -776,6 +824,212 @@ class GalleryController:
         """Clear cached data to free memory."""
         self.model.clear_cache()
         self._aoi_service_cache.clear()
+
+    def setup_review_mode(self, review_controller):
+        """
+        Set up the gallery for review mode with Active/Hidden tabs.
+
+        Args:
+            review_controller: ReviewController instance
+        """
+        self.review_controller = review_controller
+
+        # Create hidden model for the Hidden tab
+        self.hidden_model = AOIGalleryModel()
+        self.hidden_model.set_viewer(self.parent)
+
+        # Set dataset directory for hidden model caches
+        if hasattr(self.parent, 'alternative_cache_dir') and self.parent.alternative_cache_dir:
+            self.hidden_model.set_dataset_directory(
+                os.path.join(self.parent.alternative_cache_dir, 'ADIAT_Data.xml')
+            )
+        elif hasattr(self.parent, 'xml_path') and self.parent.xml_path:
+            self.hidden_model.set_dataset_directory(self.parent.xml_path)
+
+        # Wire hidden model to the UI component's hidden tab
+        if self.ui_component:
+            self.ui_component.set_hidden_model(self.hidden_model)
+
+    def add_server_image(self, imageIdx):
+        """Add a newly received server image's AOIs to the gallery models.
+
+        Collects AOIs from the image at imageIdx, appends them to the
+        appropriate model (active or hidden), and refreshes the UI.
+
+        Args:
+            imageIdx: Index of the new image in self.parent.images.
+        """
+        if not self.parent or imageIdx >= len(self.parent.images):
+            return
+
+        image = self.parent.images[imageIdx]
+        aois = image.get('areas_of_interest', [])
+        activeItems = []
+        hiddenItems = []
+
+        for aoiIdx, aoiData in enumerate(aois):
+            item = (imageIdx, aoiIdx, aoiData)
+            isHidden = aoiData.get('is_globally_hidden', False)
+            if isHidden and self.hidden_model is not None:
+                hiddenItems.append(item)
+            else:
+                activeItems.append(item)
+
+        # Append to existing active model items
+        if activeItems:
+            self.model.append_aoi_items(activeItems)
+
+        # Append to hidden model if in review mode
+        if hiddenItems and self.hidden_model is not None:
+            self.hidden_model.append_aoi_items(hiddenItems)
+
+        # Update tab counts
+        if self.hidden_model is not None:
+            self._update_tab_counts()
+
+        # Update count label
+        if self.ui_component:
+            self.ui_component._update_count_label(len(self.model.aoi_items))
+
+    def move_aoi_to_hidden(self, image_idx, aoi_idx):
+        """
+        Move an AOI from the active model to the hidden model.
+
+        Args:
+            image_idx: Index of the image containing the AOI.
+            aoi_idx: Index of the AOI within the image.
+        """
+        if not self.hidden_model:
+            return
+
+        try:
+            # Find the item in the active model
+            target_key = (image_idx, aoi_idx)
+            if target_key not in self.model.aoi_to_row:
+                return
+
+            row = self.model.aoi_to_row[target_key]
+            if row < 0 or row >= len(self.model.aoi_items):
+                return
+
+            # Get the item data
+            item = self.model.aoi_items[row]
+
+            # Remove from active model
+            active_items = list(self.model.aoi_items)
+            active_items.pop(row)
+            self.model.set_aoi_items(active_items, skip_color_calc=True, preserve_color_cache=True)
+
+            # Add to hidden model
+            hidden_items = list(self.hidden_model.aoi_items)
+            hidden_items.append(item)
+            self.hidden_model.set_aoi_items(hidden_items, skip_color_calc=True, preserve_color_cache=True)
+
+            # Update tab counts
+            self._update_tab_counts()
+
+        except Exception as e:
+            self.logger.error(f"Error moving AOI to hidden: {e}")
+
+    def move_aoi_to_active(self, image_idx, aoi_idx):
+        """
+        Move an AOI from the hidden model back to the active model.
+
+        Args:
+            image_idx: Index of the image containing the AOI.
+            aoi_idx: Index of the AOI within the image.
+        """
+        if not self.hidden_model:
+            return
+
+        try:
+            # Find the item in the hidden model
+            target_key = (image_idx, aoi_idx)
+            if target_key not in self.hidden_model.aoi_to_row:
+                return
+
+            row = self.hidden_model.aoi_to_row[target_key]
+            if row < 0 or row >= len(self.hidden_model.aoi_items):
+                return
+
+            # Get the item data
+            item = self.hidden_model.aoi_items[row]
+
+            # Remove from hidden model
+            hidden_items = list(self.hidden_model.aoi_items)
+            hidden_items.pop(row)
+            self.hidden_model.set_aoi_items(hidden_items, skip_color_calc=True, preserve_color_cache=True)
+
+            # Add to active model
+            active_items = list(self.model.aoi_items)
+            active_items.append(item)
+            self.model.set_aoi_items(active_items, skip_color_calc=True, preserve_color_cache=True)
+
+            # Update tab counts
+            self._update_tab_counts()
+
+        except Exception as e:
+            self.logger.error(f"Error moving AOI to active: {e}")
+
+    def bulk_move_to_hidden(self, items_to_move):
+        """
+        Move multiple AOIs from active to hidden in a single batch.
+
+        Args:
+            items_to_move: List of (image_idx, aoi_idx) tuples to move.
+        """
+        if not self.hidden_model or not items_to_move:
+            return
+
+        try:
+            move_set = set(items_to_move)
+            active_items = []
+            moved_items = []
+
+            for item in self.model.aoi_items:
+                key = (item[0], item[1])
+                if key in move_set:
+                    moved_items.append(item)
+                else:
+                    active_items.append(item)
+
+            # Update both models in one go
+            hidden_items = list(self.hidden_model.aoi_items) + moved_items
+
+            self.model.set_aoi_items(active_items, skip_color_calc=True, preserve_color_cache=True)
+            self.hidden_model.set_aoi_items(hidden_items, skip_color_calc=True, preserve_color_cache=True)
+
+            # Update tab counts
+            self._update_tab_counts()
+
+        except Exception as e:
+            self.logger.error(f"Error bulk moving AOIs to hidden: {e}")
+
+    def _update_tab_counts(self):
+        """Update the Active/Hidden tab labels with current counts."""
+        if self.ui_component:
+            active_count = len(self.model.aoi_items)
+            hidden_count = len(self.hidden_model.aoi_items) if self.hidden_model else 0
+            self.ui_component.update_tab_counts(active_count, hidden_count)
+
+    def get_current_active_selection(self):
+        """
+        Get the currently selected AOI in the active tab.
+
+        Returns:
+            Tuple of (image_idx, aoi_idx) or None if no selection.
+        """
+        if not self.ui_component or not self.ui_component.gallery_view:
+            return None
+
+        current_index = self.ui_component.gallery_view.currentIndex()
+        if not current_index.isValid():
+            return None
+
+        aoi_info = self.model.get_aoi_info(current_index)
+        if aoi_info:
+            return (aoi_info[0], aoi_info[1])
+        return None
 
     def on_image_loaded(self, image_idx):
         """

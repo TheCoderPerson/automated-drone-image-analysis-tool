@@ -58,11 +58,14 @@ class AOIController(TranslationMixin):
         self.sort_color_hue = None  # Hue value (0-360) for color-based sorting
         self.filter_color_hue = None  # Hue value (0-360) for color filtering
         self.filter_color_range = None  # ± degrees for color filtering
+        self.filter_color_mode = 'include'  # 'include' or 'exclude'
         self.filter_area_min = None  # Minimum pixel area for filtering
         self.filter_area_max = None  # Maximum pixel area for filtering
         self.filter_comment_pattern = None  # Wildcard pattern for comment filtering
         self.filter_temperature_min = None  # Minimum temperature (Celsius) for filtering
         self.filter_temperature_max = None  # Maximum temperature (Celsius) for filtering
+        self.filter_heatmap_mode = 'off'  # 'off', 'filter', or 'display'
+        self.filter_heatmap_threshold = 75  # Percentile threshold (0-100)
 
         # Index mapping from original AOI index to visible container index
         # This is rebuilt when thumbnails are loaded (after sorting and filtering)
@@ -943,13 +946,21 @@ class AOIController(TranslationMixin):
             # Apply color filter
             if self.filter_color_hue is not None and self.filter_color_range is not None:
                 hue = self.get_aoi_hue(aoi)
-                if hue is not None:
-                    distance = self.calculate_hue_distance(hue, self.filter_color_hue)
-                    if distance > self.filter_color_range:
-                        continue
+                if self.filter_color_mode == 'exclude':
+                    # Exclude mode: remove AOIs that match the color, keep the rest
+                    if hue is not None:
+                        distance = self.calculate_hue_distance(hue, self.filter_color_hue)
+                        if distance <= self.filter_color_range:
+                            continue
+                    # AOIs without hue data are kept in exclude mode
                 else:
-                    # Skip AOIs without hue information when color filter is active
-                    continue
+                    # Include mode: keep only AOIs that match the color
+                    if hue is not None:
+                        distance = self.calculate_hue_distance(hue, self.filter_color_hue)
+                        if distance > self.filter_color_range:
+                            continue
+                    else:
+                        continue
 
             # Apply pixel area filter
             area = aoi.get('area', 0)
@@ -975,6 +986,24 @@ class AOIController(TranslationMixin):
                     continue
                 if self.filter_temperature_max is not None and temp > self.filter_temperature_max:
                     continue
+
+            # Apply heatmap density filter
+            if self.filter_heatmap_mode != 'off' and hasattr(self.parent, 'gallery_controller'):
+                hs = self.parent.gallery_controller.heatmap_service
+                if hs.is_valid():
+                    image = self.parent.images[img_idx] if hasattr(self.parent, 'images') else None
+                    if image:
+                        imgWidth = image.get('width')
+                        imgHeight = image.get('height')
+                        if imgWidth and imgHeight:
+                            inHotZone = hs.is_in_hot_zone(
+                                aoi.get('center', (0, 0)), imgWidth, imgHeight,
+                                self.filter_heatmap_threshold
+                            )
+                            if self.filter_heatmap_mode == 'filter' and inHotZone:
+                                continue
+                            if self.filter_heatmap_mode == 'display' and not inHotZone:
+                                continue
 
             # AOI passed all filters
             filtered.append((original_idx, aoi))
@@ -1019,11 +1048,14 @@ class AOIController(TranslationMixin):
         self.filter_flagged_only = filters.get('flagged_only', False)
         self.filter_color_hue = filters.get('color_hue')
         self.filter_color_range = filters.get('color_range')
+        self.filter_color_mode = filters.get('color_filter_mode', 'include')
         self.filter_area_min = filters.get('area_min')
         self.filter_area_max = filters.get('area_max')
         self.filter_comment_pattern = filters.get('comment_filter')
         self.filter_temperature_min = filters.get('temperature_min')
         self.filter_temperature_max = filters.get('temperature_max')
+        self.filter_heatmap_mode = filters.get('heatmap_mode', 'off')
+        self.filter_heatmap_threshold = filters.get('heatmap_threshold', 75)
 
         # Refresh AOI display
         self.refresh_aoi_display()
@@ -1251,18 +1283,30 @@ class AOIController(TranslationMixin):
             'flagged_only': self.filter_flagged_only,
             'color_hue': self.filter_color_hue,
             'color_range': self.filter_color_range if self.filter_color_range is not None else 30,
+            'color_filter_mode': self.filter_color_mode,
             'area_min': self.filter_area_min,
             'area_max': self.filter_area_max,
             'comment_filter': self.filter_comment_pattern,
             'temperature_min': self.filter_temperature_min,
-            'temperature_max': self.filter_temperature_max
+            'temperature_max': self.filter_temperature_max,
+            'heatmap_mode': self.filter_heatmap_mode,
+            'heatmap_threshold': self.filter_heatmap_threshold
         }
 
         # Get temperature unit and thermal flag from parent viewer
         temperature_unit = getattr(self.parent, 'temperature_unit', 'C')
         is_thermal = getattr(self.parent, 'is_thermal', False)
 
-        dialog = AOIFilterDialog(self.parent, current_filters, temperature_unit, is_thermal)
+        # Get heatmap service and availability from gallery controller
+        heatmap_service = None
+        heatmap_available = False
+        if hasattr(self.parent, 'gallery_controller'):
+            gc = self.parent.gallery_controller
+            heatmap_service = gc.heatmap_service
+            heatmap_available = heatmap_service.is_valid()
+
+        dialog = AOIFilterDialog(self.parent, current_filters, temperature_unit, is_thermal,
+                                 heatmap_available=heatmap_available, heatmap_service=heatmap_service)
         if dialog.exec():
             # User clicked Apply
             filters = dialog.get_filters()

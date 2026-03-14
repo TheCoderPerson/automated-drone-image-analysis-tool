@@ -26,6 +26,7 @@ from core.controllers.images.viewer.exports.CalTopoExportController import CalTo
 from core.controllers.images.viewer.exports.ZipExportController import ZipExportController
 from core.controllers.images.viewer.exports.PDFExportController import PDFExportController
 from core.controllers.images.viewer.AltitudeController import AltitudeController
+from core.controllers.images.viewer.WingtraDataController import WingtraDataController
 from core.controllers.images.viewer.image.ImageLoadController import ImageLoadController
 from core.controllers.images.viewer.PixelInfoController import PixelInfoController
 from core.controllers.images.viewer.ThermalDataController import ThermalDataController
@@ -81,7 +82,8 @@ class Viewer(TranslationMixin, QMainWindow, Ui_Viewer):
     and interaction logic for navigating and analyzing drone images.
     """
 
-    def __init__(self, xml_path, position_format, temperature_unit, distance_unit, show_hidden, theme):
+    def __init__(self, xml_path, position_format, temperature_unit, distance_unit,
+                 show_hidden, theme, server_connection=None, session_id=None):
         """Initializes the ADIAT Image Viewer.
 
         Args:
@@ -91,6 +93,8 @@ class Viewer(TranslationMixin, QMainWindow, Ui_Viewer):
             distance_unit (str): The unit in which distance values will be displayed.
             show_hidden (bool): Whether or not to show hidden images by default.
             theme (str): The current active theme.
+            server_connection: Optional ServerConnectionService for client/review mode.
+            session_id: Optional session ID for review mode.
         """
         super().__init__()
         self.settings_service = SettingsService()
@@ -120,24 +124,29 @@ class Viewer(TranslationMixin, QMainWindow, Ui_Viewer):
         self.xml_service = XmlService(xml_path)
         self.images = self.xml_service.get_images()
 
+        # Check for missing image dimensions and offer to backfill
+        self._backfill_image_dimensions_if_needed()
+
         # Initialize controllers needed during early setup
         # (must exist before validation/recovery calls below)
         self.path_validation_controller = PathValidationController(self)
         self.bearing_recovery_controller = BearingRecoveryController(self)
 
-        # Validate and fix paths if needed
-        if not self.path_validation_controller.validate_and_fix_paths(self.images):
-            # User cancelled folder selection - show error and close viewer
-            QMessageBox.critical(
-                self,
-                self.tr("Load Results Failed"),
-                self.tr(
-                    "Cannot load results without valid image and mask locations.\n\n"
-                    "The viewer will now close."
+        # Validate and fix paths if needed (skip in client mode —
+        # images arrive from the server, not from local filesystem)
+        if server_connection is None:
+            if not self.path_validation_controller.validate_and_fix_paths(self.images):
+                # User cancelled folder selection - show error and close viewer
+                QMessageBox.critical(
+                    self,
+                    self.tr("Load Results Failed"),
+                    self.tr(
+                        "Cannot load results without valid image and mask locations.\n\n"
+                        "The viewer will now close."
+                    )
                 )
-            )
-            QTimer.singleShot(0, self.close)  # Close after __init__ completes
-            return
+                QTimer.singleShot(0, self.close)  # Close after __init__ completes
+                return
 
         # Initialize settings service for reviewer name
         self.settings_service = SettingsService()
@@ -169,6 +178,7 @@ class Viewer(TranslationMixin, QMainWindow, Ui_Viewer):
         self.pixel_info_controller = PixelInfoController(self)
         self.image_load_controller = ImageLoadController(self)
         self.altitude_controller = AltitudeController(self)
+        self.wingtra_controller = WingtraDataController(self)
 
         # Initialize services
         self.cache_path_service = CachePathService()
@@ -198,6 +208,27 @@ class Viewer(TranslationMixin, QMainWindow, Ui_Viewer):
         # Defer gallery setup until after viewer is fully initialized
         self.gallery_widget = None
         self._gallery_setup_pending = True
+
+        # Review mode (client/server)
+        self.isClientMode = server_connection is not None
+        self.serverConnection = server_connection
+        self.sessionId = session_id
+        self.review_controller = None
+        self._waitingForNextImage = False
+
+        if self.isClientMode:
+            from core.controllers.images.viewer.review.ReviewController import ReviewController
+            self.review_controller = ReviewController(self, server_connection, session_id)
+            # Messages are routed via MainWindow._on_server_message — no
+            # direct connection here to avoid duplicate processing.
+            self.gallery_controller.setup_review_mode(self.review_controller)
+
+            # Pass temp dir from the XML path's parent directory
+            tempDir = os.path.dirname(str(xml_path))
+            self.review_controller.set_temp_dir(tempDir)
+
+            # Request first image assignment after init completes
+            QTimer.singleShot(500, self.review_controller.request_next_assignment)
 
         # status‑bar helper
         self.messages = StatusDict(callback=self.status_controller.message_listener,
@@ -659,6 +690,42 @@ class Viewer(TranslationMixin, QMainWindow, Ui_Viewer):
                 else:
                     self.main_image.updateViewer()
 
+    def add_server_image(self, imageDict):
+        """Add an image received from the server to the viewer.
+
+        Appends the image to self.images, updates the gallery, and
+        displays the image if it is the first one received.
+
+        Args:
+            imageDict: Viewer-compatible image dict with 'path',
+                'areas_of_interest', and server metadata.
+        """
+        imageIdx = len(self.images)
+        self.images.append(imageDict)
+
+        # Register AOI mappings in review controller
+        if self.review_controller:
+            aois = imageDict.get('areas_of_interest', [])
+            for aoiIdx, aoiData in enumerate(aois):
+                aoiId = aoiData.get('server_aoi_id')
+                if aoiId is not None:
+                    self.review_controller.register_aoi_mapping(aoiId, imageIdx, aoiIdx)
+
+        # Add to gallery
+        if self.gallery_controller:
+            self.gallery_controller.add_server_image(imageIdx)
+
+        # Auto-navigate to the new image if this is the first one
+        # received or the user was waiting for the next image.
+        if imageIdx == 0 or self._waitingForNextImage:
+            self.current_image = imageIdx
+            self._waitingForNextImage = False
+            self._load_image()
+
+        # Update the jump-to validator to reflect the new total
+        if hasattr(self, 'jumpToLine') and self.jumpToLine:
+            self.jumpToLine.setValidator(QIntValidator(1, len(self.images), self))
+
     def keyPressEvent(self, e):
         """Handles key press events for navigation, hiding images, and adjustments.
 
@@ -674,6 +741,18 @@ class Viewer(TranslationMixin, QMainWindow, Ui_Viewer):
                 # Don't consume keyboard events when a dialog is active
                 # This allows text input in dialogs to work properly on macOS
                 super().keyPressEvent(e)
+                return
+
+        # Review mode shortcuts (client mode only)
+        if hasattr(self, 'isClientMode') and self.isClientMode and self.review_controller:
+            if e.key() == Qt.Key_H and e.modifiers() == Qt.NoModifier:
+                self._review_hide_selected_aoi()
+                return
+            if e.key() == Qt.Key_F and e.modifiers() == Qt.NoModifier:
+                self._review_flag_selected_aoi()
+                return
+            if e.key() == Qt.Key_H and e.modifiers() == Qt.ShiftModifier:
+                self._review_bulk_hide()
                 return
 
         if e.key() == Qt.Key_Right:
@@ -767,6 +846,9 @@ class Viewer(TranslationMixin, QMainWindow, Ui_Viewer):
         if e.key() == Qt.Key_O and e.modifiers() == Qt.ShiftModifier:
             # Manual altitude override with 'Shift+O' key
             self._manual_altitude_override()
+        if e.key() == Qt.Key_W and e.modifiers() == Qt.ShiftModifier:
+            # Load Wingtra CSV with 'Shift+W' key
+            self.wingtra_controller.prompt_and_load_csv()
         if e.key() == Qt.Key_E and e.modifiers() == Qt.ShiftModifier:
             # Export coverage extent KML with 'Shift+E' key
             self._export_coverage_extent_kml()
@@ -777,6 +859,132 @@ class Viewer(TranslationMixin, QMainWindow, Ui_Viewer):
             # Track AOI in neighboring images with 'Z' key
             if hasattr(self, 'neighbor_tracking_controller'):
                 self.neighbor_tracking_controller.track_selected_aoi()
+
+    def _review_hide_selected_aoi(self):
+        """Hide the currently selected AOI in review mode."""
+        try:
+            # Get selected AOI from gallery or single-image mode
+            selection = self._get_selected_aoi_for_review()
+            if selection:
+                image_idx, aoi_idx = selection
+                self.review_controller.hide_aoi(image_idx, aoi_idx)
+        except Exception as e:
+            self.logger.error(f"Error hiding AOI in review mode: {e}")
+
+    def _review_flag_selected_aoi(self):
+        """Flag the currently selected AOI in review mode via FlagDialog."""
+        try:
+            selection = self._get_selected_aoi_for_review()
+            if not selection:
+                return
+
+            image_idx, aoi_idx = selection
+
+            # Check if already flagged - if so, unflag
+            aoi_data = None
+            if (hasattr(self, 'images') and
+                    0 <= image_idx < len(self.images)):
+                image = self.images[image_idx]
+                aois = image.get('areas_of_interest', [])
+                if 0 <= aoi_idx < len(aois):
+                    aoi_data = aois[aoi_idx]
+
+            if aoi_data and aoi_data.get('flagged', False):
+                # Already flagged - unflag it
+                self.review_controller.unflag_aoi(image_idx, aoi_idx)
+                return
+
+            # Not flagged - show FlagDialog
+            from core.views.images.viewer.dialogs.FlagDialog import FlagDialog
+            dialog = FlagDialog(self)
+            if dialog.exec() == FlagDialog.Accepted:
+                priority = dialog.getPriority()
+                note = dialog.getNote()
+                self.review_controller.flag_aoi(image_idx, aoi_idx, priority, note)
+
+        except Exception as e:
+            self.logger.error(f"Error flagging AOI in review mode: {e}")
+
+    def _review_bulk_hide(self):
+        """Bulk hide all non-flagged visible AOIs in review mode."""
+        try:
+            self.review_controller.bulk_hide_visible()
+        except Exception as e:
+            self.logger.error(f"Error bulk hiding AOIs in review mode: {e}")
+
+    def _get_selected_aoi_for_review(self):
+        """
+        Get the currently selected AOI for review actions.
+
+        Returns:
+            Tuple of (image_idx, aoi_idx) or None.
+        """
+        # Try gallery mode first
+        if hasattr(self, 'gallery_mode') and self.gallery_mode:
+            return self.gallery_controller.get_current_active_selection()
+
+        # Single-image mode: get from AOI controller
+        if hasattr(self, 'aoi_controller'):
+            selected_aoi_idx = self.aoi_controller.get_selected_aoi_index()
+            if selected_aoi_idx is not None and selected_aoi_idx >= 0:
+                return (self.current_image, selected_aoi_idx)
+
+        return None
+
+    def _backfill_image_dimensions_if_needed(self):
+        """Check if image dimensions are missing and offer to backfill from image files."""
+        if not self.images:
+            return
+
+        missingCount = sum(1 for img in self.images
+            if img.get('width') is None or img.get('height') is None)
+
+        if missingCount == 0:
+            return
+
+        reply = QMessageBox.question(
+            self,
+            self.tr("Update Image Dimensions"),
+            self.tr(
+                "This dataset is missing image dimensions needed for heatmap filtering "
+                "({count} images).\n\n"
+                "Would you like to read dimensions from the image files and update "
+                "the results file?"
+            ).format(count=missingCount),
+            QMessageBox.Yes | QMessageBox.No,
+            QMessageBox.Yes
+        )
+
+        if reply != QMessageBox.Yes:
+            return
+
+        from PIL import Image
+        updatedCount = 0
+        for image in self.images:
+            if image.get('width') is not None and image.get('height') is not None:
+                continue
+
+            imagePath = image.get('path')
+            if not imagePath or not os.path.isfile(imagePath):
+                continue
+
+            try:
+                with Image.open(imagePath) as img:
+                    width, height = img.size
+                    image['width'] = width
+                    image['height'] = height
+
+                    # Also update the XML element
+                    xmlElement = image.get('xml')
+                    if xmlElement is not None:
+                        xmlElement.set('width', str(width))
+                        xmlElement.set('height', str(height))
+                    updatedCount += 1
+            except Exception:
+                continue
+
+        if updatedCount > 0:
+            self.xml_service.save_xml_file(self.xml_path)
 
     def _load_images(self):
         """Loads and validates images from the XML file."""
@@ -792,9 +1000,13 @@ class Viewer(TranslationMixin, QMainWindow, Ui_Viewer):
         self.images = valid_images
 
     def _setupViewer(self):
-        if len(self.images) == 0:
+        # In client mode images arrive from the server after init, so an
+        # empty list is expected.  Only show the error for local mode.
+        if len(self.images) == 0 and not self.isClientMode:
             self._show_no_images_message()
-        else:
+            return
+
+        if len(self.images) > 0:
             # Check for caches and prompt user if missing
             alternative_cache_dir, _ = self.cache_path_service.check_and_prompt_for_caches(
                 self.xml_path, self
@@ -803,83 +1015,92 @@ class Viewer(TranslationMixin, QMainWindow, Ui_Viewer):
                 self.alternative_cache_dir = alternative_cache_dir
                 self.cache_path_service.update_cache_paths(Path(alternative_cache_dir), self)
 
-            self._load_initial_image()
+        # Always initialize the image viewer widget and related components
+        # (in client mode images arrive later via add_server_image)
+        self._load_initial_image()
 
-            # Don't set up gallery here - defer until first use
-            # Gallery will be created when user first toggles to gallery mode
+        # Don't set up gallery here - defer until first use
+        # Gallery will be created when user first toggles to gallery mode
 
-            self.helpButton.clicked.connect(self._show_help_dialog)
-            self.previousImageButton.clicked.connect(self._previousImageButton_clicked)
-            self.nextImageButton.clicked.connect(self._nextImageButton_clicked)
+        self.helpButton.clicked.connect(self._show_help_dialog)
+        self.previousImageButton.clicked.connect(self._previousImageButton_clicked)
+        self.nextImageButton.clicked.connect(self._nextImageButton_clicked)
 
-            self.aoiSortComboBox.currentTextChanged.connect(self.aoi_controller.on_sort_combo_changed)
-            self.filterButton.clicked.connect(self.aoi_controller.open_filter_dialog)
+        self.aoiSortComboBox.currentTextChanged.connect(self.aoi_controller.on_sort_combo_changed)
+        self.filterButton.clicked.connect(self.aoi_controller.open_filter_dialog)
 
-            # Set the buttons in the AOI controller
+        # Set the buttons in the AOI controller
 
-            self.kmlButton.clicked.connect(self._kmlButton_clicked)
-            self.pdfButton.clicked.connect(self._pdfButton_clicked)
-            self.zipButton.clicked.connect(self._zipButton_clicked)
-            self.measureButton.clicked.connect(self._open_measure_dialog)
-            self.adjustmentsButton.clicked.connect(self._open_image_adjustment_dialog)
-            self.magnifyButton.clicked.connect(self._magnifyButton_clicked)
-            self.GPSMapButton.clicked.connect(self._gps_map_button_clicked)
-            self.rotateImageButton.clicked.connect(self._rotate_image_button_clicked)
+        self.kmlButton.clicked.connect(self._kmlButton_clicked)
+        self.pdfButton.clicked.connect(self._pdfButton_clicked)
+        self.zipButton.clicked.connect(self._zipButton_clicked)
+        self.measureButton.clicked.connect(self._open_measure_dialog)
+        self.adjustmentsButton.clicked.connect(self._open_image_adjustment_dialog)
+        self.magnifyButton.clicked.connect(self._magnifyButton_clicked)
+        self.GPSMapButton.clicked.connect(self._gps_map_button_clicked)
+        self.rotateImageButton.clicked.connect(self._rotate_image_button_clicked)
+        # Initialize button styling
+        self._update_magnify_button_style()
+        self.ui_style_controller.update_adjustments_button_style()
+        self.ui_style_controller.update_measure_button_style()
+        self.ui_style_controller.update_gps_map_button_style()
+        self.ui_style_controller.update_rotate_image_button_style()
+
+        # Connect the Gallery Mode button
+        if hasattr(self, 'galleryModeButton'):
+            self.galleryModeButton.setCheckable(True)
+            self.galleryModeButton.clicked.connect(self._on_gallery_mode_clicked)
+            self.galleryModeButton.setToolTip(
+                self.tr(
+                    "Toggle Gallery Mode (G)\n"
+                    "Shows all AOIs from all images in a grid view"
+                )
+            )
             # Initialize button styling
-            self._update_magnify_button_style()
-            self.ui_style_controller.update_adjustments_button_style()
-            self.ui_style_controller.update_measure_button_style()
-            self.ui_style_controller.update_gps_map_button_style()
-            self.ui_style_controller.update_rotate_image_button_style()
+            self._update_gallery_mode_button_style()
 
-            # Connect the Gallery Mode button
-            if hasattr(self, 'galleryModeButton'):
-                self.galleryModeButton.setCheckable(True)
-                self.galleryModeButton.clicked.connect(self._on_gallery_mode_clicked)
-                self.galleryModeButton.setToolTip(
-                    self.tr(
-                        "Toggle Gallery Mode (G)\n"
-                        "Shows all AOIs from all images in a grid view"
-                    )
-                )
-                # Initialize button styling
-                self._update_gallery_mode_button_style()
+        # Connect the POIs button
+        if hasattr(self, 'showPOIsButton'):
+            self.showPOIsButton.clicked.connect(self._on_show_pois_clicked)
+            self.showPOIsButton.setToolTip(
+                self.tr("Show Pixels of Interest (H or Ctrl+I)")
+            )
+            # Initialize button styling
+            self._update_show_pois_button_style()
 
-            # Connect the POIs button
-            if hasattr(self, 'showPOIsButton'):
-                self.showPOIsButton.clicked.connect(self._on_show_pois_clicked)
-                self.showPOIsButton.setToolTip(
-                    self.tr("Show Pixels of Interest (H or Ctrl+I)")
-                )
-                # Initialize button styling
-                self._update_show_pois_button_style()
+        # Connect the AOIs button
+        if hasattr(self, 'showAOIsButton'):
+            self.showAOIsButton.clicked.connect(self._on_show_aois_clicked)
+            self.showAOIsButton.setToolTip(self.tr("Toggle AOI Circles"))
+            # Initialize button styling
+            self._update_show_aois_button_style()
 
-            # Connect the AOIs button
-            if hasattr(self, 'showAOIsButton'):
-                self.showAOIsButton.clicked.connect(self._on_show_aois_clicked)
-                self.showAOIsButton.setToolTip(self.tr("Toggle AOI Circles"))
-                # Initialize button styling
-                self._update_show_aois_button_style()
-
+        if len(self.images) > 0:
             self.jumpToLine.setValidator(QIntValidator(1, len(self.images), self))
-            self.jumpToLine.editingFinished.connect(self._jumpToLine_changed)
-            self.thumbnailScrollArea.horizontalScrollBar().valueChanged.connect(self.thumbnail_controller.on_thumbnail_scroll)
+        self.jumpToLine.editingFinished.connect(self._jumpToLine_changed)
+        self.thumbnailScrollArea.horizontalScrollBar().valueChanged.connect(self.thumbnail_controller.on_thumbnail_scroll)
 
-            # Session variable to store GSD value
-            self.current_gsd = None
-            self.measure_dialog = None
-            self.help_dialog = None
+        # Session variable to store GSD value
+        self.current_gsd = None
+        self.measure_dialog = None
+        self.help_dialog = None
 
-            # Dialog state tracking for button styling
-            self.adjustments_dialog_open = False
-            self.measure_dialog_open = False
-            self.gps_map_open = False
-            self.rotate_image_open = False
+        # Dialog state tracking for button styling
+        self.adjustments_dialog_open = False
+        self.measure_dialog_open = False
+        self.gps_map_open = False
+        self.rotate_image_open = False
 
     def _load_initial_image(self):
-        """Loads the initial image and its areas of interest."""
+        """Loads the initial image and its areas of interest.
+
+        Initializes the image viewer widget, magnifying glass, overlay,
+        export controllers, and splitter layout.  If images are available,
+        also loads the first visible image.  In client mode the list may
+        be empty at init — images arrive from the server later.
+        """
         try:
-            # Find the first visible image
+            # Find the first visible image (default to 0 / None)
             self.current_image = None
             for i in range(0, len(self.images)):
                 if not self.show_hidden and self.images[i]['hidden']:
@@ -929,8 +1150,10 @@ class Viewer(TranslationMixin, QMainWindow, Ui_Viewer):
             self.outerWidget.updateGeometry()
             QApplication.processEvents()
 
-            # Load the image immediately - the widget should be properly sized now
-            self.image_load_controller.load_image()
+            # Load the first image if available (in client mode
+            # images arrive later via add_server_image)
+            if len(self.images) > 0:
+                self.image_load_controller.load_image()
 
         except Exception as e:
             self.logger.error(e)
@@ -970,10 +1193,17 @@ class Viewer(TranslationMixin, QMainWindow, Ui_Viewer):
             self._show_additional_images_message()
 
     def _nextImageButton_clicked(self):
-        """Navigates to the next image in the list, skipping hidden images if applicable."""
+        """Navigates to the next image in the list, skipping hidden images if applicable.
+
+        In client mode, marks the current image as completed on the
+        server when navigating away from it.  If at the end of the
+        list, shows a "no more images" message instead of wrapping.
+        """
         # Prevent race conditions by checking if viewer is still valid
         if not hasattr(self, 'main_image') or self.main_image is None:
             return
+
+        previousImage = self.current_image
 
         found = False
         for i in range(self.current_image + 1, len(self.images)):
@@ -983,20 +1213,37 @@ class Viewer(TranslationMixin, QMainWindow, Ui_Viewer):
             self.current_image = i
             break
 
-        if not found:
+        if found:
+            # Mark the image we're leaving as completed on the server
+            if self.review_controller:
+                self.review_controller.complete_image(previousImage)
+            self._load_image()
+            if hasattr(self.thumbnail_controller, 'ui_component') and self.thumbnail_controller.ui_component:
+                self.thumbnail_controller.ui_component.scroll_thumbnail_into_view()
+        elif self.review_controller:
+            # Client mode, end of list: mark current image completed
+            # and show "no more images" message.  New images will
+            # arrive automatically via auto-advance when available.
+            self.review_controller.complete_image(previousImage)
+            self._waitingForNextImage = True
+            self.status_controller.show_toast(
+                self.tr("No more images to review right now."),
+                msec=5000, color="#1565C0"
+            )
+        else:
+            # Local mode: wrap around
             for i in range(0, self.current_image):
                 if not self.show_hidden and self.images[i]['hidden']:
                     continue
                 self.current_image = i
                 found = True
                 break
-
-        if found:
-            self._load_image()
-            if hasattr(self.thumbnail_controller, 'ui_component') and self.thumbnail_controller.ui_component:
-                self.thumbnail_controller.ui_component.scroll_thumbnail_into_view()
-        else:
-            self._show_additional_images_message()
+            if found:
+                self._load_image()
+                if hasattr(self.thumbnail_controller, 'ui_component') and self.thumbnail_controller.ui_component:
+                    self.thumbnail_controller.ui_component.scroll_thumbnail_into_view()
+            else:
+                self._show_additional_images_message()
 
     def _show_no_images_message(self):
         """Displays an error message when there are no available images."""
@@ -1005,6 +1252,24 @@ class Viewer(TranslationMixin, QMainWindow, Ui_Viewer):
     def _show_additional_images_message(self):
         """Displays an error message when there are no available images."""
         self.status_controller.show_additional_images_message()
+
+    def on_no_assignment(self, isProcessing):
+        """Called by ReviewController when the server has no more images.
+
+        Args:
+            isProcessing: True if the server is still processing images.
+        """
+        self._waitingForNextImage = False
+        if isProcessing:
+            self.status_controller.show_toast(
+                self.tr("No more images to review — waiting for server to process new images..."),
+                msec=10000, color="#F57F17"
+            )
+        else:
+            self.status_controller.show_toast(
+                self.tr("All available images have been reviewed."),
+                msec=10000, color="#1565C0"
+            )
 
     def _hide_image_change(self, state):
         """Toggles visibility of the current image and updates XML.

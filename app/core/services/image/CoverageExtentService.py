@@ -174,8 +174,11 @@ class CoverageExtentService:
             image_lat = gps_coords['latitude']
             image_lon = gps_coords['longitude']
 
-            # Load image service
-            image_service = ImageService(image_path, image.get('mask_path', ''))
+            # Load image service with calculated bearing if available
+            image_service = ImageService(
+                image_path, image.get('mask_path', ''),
+                calculated_bearing=image.get('bearing')
+            )
 
             # Check gimbal angle - must be nadir
             gimbal_pitch = image_service.get_camera_pitch()
@@ -186,8 +189,9 @@ class CoverageExtentService:
                     self.logger.warning(f"Image {image.get('name', 'unknown')} skipped: gimbal not nadir ({gimbal_pitch:.1f}°)")
                     return None
 
-            # Get GSD
-            gsd_cm = image_service.get_average_gsd(custom_altitude_ft=self.custom_altitude_ft)
+            # Get GSD - use per-image AGL (e.g. Wingtra) if available, else global custom
+            custom_alt = image.get('wingtra_agl_ft') or self.custom_altitude_ft
+            gsd_cm = image_service.get_average_gsd(custom_altitude_ft=custom_alt)
             if gsd_cm is None or gsd_cm <= 0:
                 self.logger.warning(f"Image {image.get('name', 'unknown')} skipped: no valid GSD")
                 return None

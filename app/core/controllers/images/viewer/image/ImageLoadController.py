@@ -146,6 +146,11 @@ class ImageLoadController(TranslationMixin):
         mask_path = image.get('mask_path', '')
         calculated_bearing = image.get('bearing', None)  # Get calculated bearing if available
 
+        # Guard against missing file (e.g. temp dir cleaned up after disconnect)
+        if not os.path.exists(image_path):
+            self.logger.error(f"Image file does not exist: {image_path}")
+            return
+
         # Load and process the image
         image_service = ImageService(image_path, mask_path, calculated_bearing=calculated_bearing)
 
@@ -258,28 +263,46 @@ class ImageLoadController(TranslationMixin):
         except RuntimeError:
             return
 
+    def _get_wingtra_alt_ft(self):
+        """Get Wingtra per-image AGL if available.
+
+        Returns:
+            float: AGL altitude in feet, or None if not available
+        """
+        image = self.parent.images[self.parent.current_image]
+        return image.get('wingtra_agl_ft')
+
     def _update_metadata_displays(self, image_service):
         """Update metadata displays in status bar."""
-        # Altitude
-        altitude = image_service.get_relative_altitude(self.parent.distance_unit)
-        if altitude:
-            self.parent.messages['Relative Altitude'] = f"{altitude} {self.parent.distance_unit}"
+        wingtra_alt_ft = self._get_wingtra_alt_ft()
 
-            # Check for negative altitude and prompt for custom AGL
-            if altitude < 0 and hasattr(self.parent, 'altitude_controller'):
-                if self.parent.altitude_controller.custom_agl_altitude_ft is None:
-                    self.parent.altitude_controller.prompt_for_custom_altitude(auto_triggered=True)
+        # Altitude - show Wingtra per-image AGL when available
+        if wingtra_alt_ft is not None:
+            if self.parent.distance_unit == 'ft':
+                self.parent.messages['Relative Altitude'] = f"{round(wingtra_alt_ft, 1)} ft"
+            else:
+                alt_m = wingtra_alt_ft / 3.28084
+                self.parent.messages['Relative Altitude'] = f"{round(alt_m, 1)} m"
+        else:
+            altitude = image_service.get_relative_altitude(self.parent.distance_unit)
+            if altitude:
+                self.parent.messages['Relative Altitude'] = f"{altitude} {self.parent.distance_unit}"
 
-        # Gimbal orientation
+                # Check for negative altitude and prompt for custom AGL
+                if altitude < 0 and hasattr(self.parent, 'altitude_controller'):
+                    if self.parent.altitude_controller.custom_agl_altitude_ft is None:
+                        self.parent.altitude_controller.prompt_for_custom_altitude(auto_triggered=True)
+
+        # Gimbal orientation - from ImageService (includes calculated_bearing fallback)
         direction = image_service.get_camera_yaw()
         if direction is not None:
             self.parent.messages['Gimbal Orientation'] = f"{direction}°"
         else:
             self.parent.messages['Gimbal Orientation'] = None
 
-        # GSD with custom altitude if available
-        custom_alt = None
-        if hasattr(self.parent, 'altitude_controller'):
+        # GSD - use Wingtra per-image AGL, then altitude controller, then XMP
+        custom_alt = wingtra_alt_ft
+        if custom_alt is None and hasattr(self.parent, 'altitude_controller'):
             custom_alt = self.parent.altitude_controller.get_effective_altitude()
         avg_gsd = image_service.get_average_gsd(custom_altitude_ft=custom_alt)
         if avg_gsd is not None:
@@ -314,11 +337,14 @@ class ImageLoadController(TranslationMixin):
 
     def _update_overlay(self, image_service):
         """Update overlay with new image data."""
+        wingtra_alt_ft = self._get_wingtra_alt_ft()
+
+        # Get yaw from ImageService (includes calculated_bearing fallback)
         direction = image_service.get_camera_yaw()
 
-        # Get custom altitude if available
-        custom_alt = None
-        if hasattr(self.parent, 'altitude_controller'):
+        # GSD - use Wingtra per-image AGL, then altitude controller, then XMP
+        custom_alt = wingtra_alt_ft
+        if custom_alt is None and hasattr(self.parent, 'altitude_controller'):
             custom_alt = self.parent.altitude_controller.get_effective_altitude()
         avg_gsd = image_service.get_average_gsd(custom_altitude_ft=custom_alt)
 
