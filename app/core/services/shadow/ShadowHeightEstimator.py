@@ -109,6 +109,7 @@ class ShadowHeightEstimator:
         base_px: Tuple[float, float],
         tip_px: Tuple[float, float],
         allow_azimuth_override: bool = False,
+        context=None,
     ) -> ShadowHeightResult:
         """Compute height of a vertical object from its shadow.
 
@@ -120,6 +121,10 @@ class ShadowHeightEstimator:
                 shadow-azimuth mismatch from rejection to warning. The
                 dialog sets this when the user clicks "Use anyway" on a
                 previously-rejected measurement.
+            context: an optional ShadowImageContext. When supplied, its
+                already-loaded EXIF/XMP and AOIService are reused instead of
+                re-reading the file — used by the batch annotation pass so it
+                does not re-decode each image once per AOI.
 
         Returns:
             ShadowHeightResult — always returned, even on rejection.
@@ -127,32 +132,37 @@ class ShadowHeightEstimator:
         """
         result = ShadowHeightResult(confidence='rejected')
 
+        # --- Acquire image data (reuse a context, or read it now) ---
+        if context is not None and getattr(context, 'aoi_service', None) is not None:
+            exif_data = context.exif_data
+            xmp_data = context.xmp_data
+            aoi_service = context.aoi_service
+        else:
+            try:
+                exif_data = MetaDataHelper.get_exif_data_piexif(image['path'])
+            except Exception as exc:
+                return _reject(result, f"Could not read EXIF: {exc}")
+
+            # XMP carries the capture-time offset that DJI (and most modern
+            # cameras) omit from OffsetTimeOriginal. Read it lazily here so the
+            # resolver can fall back to it without re-parsing the file.
+            try:
+                xmp_data = MetaDataHelper.get_xmp_data(image['path'], parse=True)
+            except Exception:
+                xmp_data = None
+
+            try:
+                aoi_service = AOIService(image)
+            except Exception as exc:
+                return _reject(result, f"Could not load image for projection: {exc}")
+
         # --- Capture-time → UTC ---
-        try:
-            exif_data = MetaDataHelper.get_exif_data_piexif(image['path'])
-        except Exception as exc:
-            return _reject(result, f"Could not read EXIF: {exc}")
-
-        # XMP carries the capture-time offset that DJI (and most modern
-        # cameras) omit from OffsetTimeOriginal. Read it lazily here so the
-        # resolver can fall back to it without re-parsing the file.
-        try:
-            xmp_data = MetaDataHelper.get_xmp_data(image['path'], parse=True)
-        except Exception:
-            xmp_data = None
-
         try:
             utc_dt, time_source = resolve_capture_utc(exif_data, xmp_data)
         except SolarTimeUnresolvable as exc:
             return _reject(result, str(exc))
         result.utc_used = utc_dt
         result.time_source = time_source
-
-        # --- Project both pixels to the ground ---
-        try:
-            aoi_service = AOIService(image)
-        except Exception as exc:
-            return _reject(result, f"Could not load image for projection: {exc}")
 
         base_gps = aoi_service.estimate_aoi_gps(image, {'center': tuple(base_px)})
         if base_gps is None:

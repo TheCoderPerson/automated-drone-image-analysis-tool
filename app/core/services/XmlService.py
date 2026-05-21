@@ -198,6 +198,17 @@ class XmlService:
                     if team_value:
                         area_of_interest['team'] = team_value
 
+                    # Load shadow descriptor attributes if present. Kept as a
+                    # raw attribute dict so XmlService stays decoupled from
+                    # ShadowDescriptor; callers rebuild it via from_xml_attribs.
+                    shadow_attribs = {
+                        key: value
+                        for key, value in area_of_interest_xml.attrib.items()
+                        if key.startswith('shadow_')
+                    }
+                    if shadow_attribs:
+                        area_of_interest['shadow'] = shadow_attribs
+
                     areas_of_interest.append(area_of_interest)
                 image['areas_of_interest'] = areas_of_interest
                 images.append(image)
@@ -324,6 +335,16 @@ class XmlService:
                 # Full pixel data is preserved in the image XMP metadata
                 if len(area['detected_pixels']) <= 100:
                     area_xml.set('detected_pixels', str(area['detected_pixels']))
+            # Save shadow descriptor attributes if present. Accepts either a
+            # ShadowDescriptor or an already-serialised attribute dict.
+            if 'shadow' in area and area['shadow']:
+                shadow = area['shadow']
+                shadow_attribs = (
+                    shadow.to_xml_attribs()
+                    if hasattr(shadow, 'to_xml_attribs') else shadow
+                )
+                for key, value in shadow_attribs.items():
+                    area_xml.set(key, str(value))
 
         # Debug logging for temperature save
         if temp_count > 0:
