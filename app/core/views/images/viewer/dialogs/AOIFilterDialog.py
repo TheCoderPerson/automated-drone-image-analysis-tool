@@ -12,11 +12,16 @@ from PySide6.QtGui import QColor
 from helpers.TranslationMixin import TranslationMixin
 
 
+# Metres per foot, for shadow-filter height/tolerance unit conversion.
+M_PER_FT = 0.3048
+
+
 class AOIFilterDialog(TranslationMixin, QDialog):
     """Dialog for setting color, pixel area, and spatial density filters for AOIs."""
 
     def __init__(self, parent, current_filters=None, temperature_unit='C', is_thermal=False,
-                 heatmap_available=False, heatmap_service=None):
+                 heatmap_available=False, heatmap_service=None,
+                 distance_unit='ft', shadow_data_available=False):
         """Initialize the filter dialog.
 
         Args:
@@ -65,6 +70,14 @@ class AOIFilterDialog(TranslationMixin, QDialog):
         # Mask filter state
         self.mask_filter_path = current_filters.get('mask_filter_path', None)
         self.mask_filter_mode = current_filters.get('mask_filter_mode', 'include')
+
+        # Shadow filter state
+        self.distance_unit = distance_unit
+        self.shadow_data_available = shadow_data_available
+        self.shadow_enabled = current_filters.get('shadow_enabled', False)
+        self.shadow_height_m = current_filters.get('shadow_height_m', 1.7)
+        self.shadow_tolerance_m = current_filters.get('shadow_tolerance_m', 0.3)
+        self.shadow_postures = current_filters.get('shadow_postures', ['standing', 'sitting'])
 
         self.setupUi()
         self._apply_translations()
@@ -470,6 +483,92 @@ class AOIFilterDialog(TranslationMixin, QDialog):
         mask_group.setLayout(mask_layout)
         layout.addWidget(mask_group)
 
+        # ===== Shadow Filter =====
+        shadow_group = QGroupBox(self.tr("Shadow Filter"))
+        shadow_layout = QVBoxLayout()
+
+        self.shadow_filter_enabled = QCheckBox(self.tr("Enable Shadow Filter"))
+        self.shadow_filter_enabled.setChecked(self.shadow_enabled)
+        self.shadow_filter_enabled.toggled.connect(self.on_shadow_filter_toggled)
+        shadow_layout.addWidget(self.shadow_filter_enabled)
+
+        # Shadow-data status line
+        self.shadow_status_label = QLabel()
+        self.shadow_status_label.setWordWrap(True)
+        if self.shadow_data_available:
+            self.shadow_status_label.setText(self.tr("Shadow data: computed."))
+            self.shadow_status_label.setStyleSheet("QLabel { color: gray; font-size: 9pt; }")
+        else:
+            self.shadow_status_label.setText(self.tr(
+                "Shadow data not computed yet - it is computed when you apply this filter."))
+            self.shadow_status_label.setStyleSheet(
+                "QLabel { color: #F57C00; font-size: 9pt; }")
+        shadow_layout.addWidget(self.shadow_status_label)
+
+        is_feet = self.distance_unit == 'ft'
+        unit_label = 'ft' if is_feet else 'm'
+
+        # Subject height
+        height_layout = QHBoxLayout()
+        height_layout.addWidget(QLabel(self.tr("Subject Height:")))
+        self.shadow_height_spin = QDoubleSpinBox()
+        self.shadow_height_spin.setDecimals(2)
+        if is_feet:
+            self.shadow_height_spin.setRange(1.0, 8.0)
+            self.shadow_height_spin.setSingleStep(0.1)
+            self.shadow_height_spin.setValue(self.shadow_height_m / M_PER_FT)
+        else:
+            self.shadow_height_spin.setRange(0.3, 2.5)
+            self.shadow_height_spin.setSingleStep(0.05)
+            self.shadow_height_spin.setValue(self.shadow_height_m)
+        self.shadow_height_spin.setSuffix(f" {unit_label}")
+        height_layout.addWidget(self.shadow_height_spin)
+        height_layout.addStretch()
+        shadow_layout.addLayout(height_layout)
+
+        # Postures to match
+        shadow_layout.addWidget(QLabel(self.tr("Postures to match:")))
+        posture_row = QHBoxLayout()
+        self.shadow_standing_check = QCheckBox(self.tr("Standing"))
+        self.shadow_sitting_check = QCheckBox(self.tr("Sitting"))
+        self.shadow_lying_check = QCheckBox(self.tr("Lying down"))
+        self.shadow_standing_check.setChecked('standing' in self.shadow_postures)
+        self.shadow_sitting_check.setChecked('sitting' in self.shadow_postures)
+        self.shadow_lying_check.setChecked('lying' in self.shadow_postures)
+        posture_row.addWidget(self.shadow_standing_check)
+        posture_row.addWidget(self.shadow_sitting_check)
+        posture_row.addWidget(self.shadow_lying_check)
+        posture_row.addStretch()
+        shadow_layout.addLayout(posture_row)
+
+        # Tolerance
+        tol_layout = QHBoxLayout()
+        tol_layout.addWidget(QLabel(self.tr("Tolerance (+/-):")))
+        self.shadow_tolerance_spin = QDoubleSpinBox()
+        self.shadow_tolerance_spin.setDecimals(2)
+        if is_feet:
+            self.shadow_tolerance_spin.setRange(0.1, 4.0)
+            self.shadow_tolerance_spin.setSingleStep(0.1)
+            self.shadow_tolerance_spin.setValue(self.shadow_tolerance_m / M_PER_FT)
+        else:
+            self.shadow_tolerance_spin.setRange(0.05, 1.2)
+            self.shadow_tolerance_spin.setSingleStep(0.05)
+            self.shadow_tolerance_spin.setValue(self.shadow_tolerance_m)
+        self.shadow_tolerance_spin.setSuffix(f" {unit_label}")
+        tol_layout.addWidget(self.shadow_tolerance_spin)
+        tol_layout.addStretch()
+        shadow_layout.addLayout(tol_layout)
+
+        shadow_info = QLabel(self.tr(
+            "Shows only AOIs whose cast shadow matches a subject of this size. "
+            "AOIs with no shadow data are always shown."))
+        shadow_info.setStyleSheet("QLabel { color: gray; font-size: 9pt; }")
+        shadow_info.setWordWrap(True)
+        shadow_layout.addWidget(shadow_info)
+
+        shadow_group.setLayout(shadow_layout)
+        layout.addWidget(shadow_group)
+
         # Spacer
         layout.addStretch()
 
@@ -506,6 +605,7 @@ class AOIFilterDialog(TranslationMixin, QDialog):
         self.on_temperature_filter_toggled(self.temperature_filter_enabled.isChecked())
         self.on_heatmap_mode_changed(self.heatmap_mode_group.checkedId())
         self.on_mask_filter_toggled(self.mask_filter_enabled.isChecked())
+        self.on_shadow_filter_toggled(self.shadow_filter_enabled.isChecked())
         self.update_color_preview()
 
     def showEvent(self, event):
@@ -600,6 +700,14 @@ class AOIFilterDialog(TranslationMixin, QDialog):
         self.mask_clear_button.setEnabled(checked)
         self.mask_path_display.setEnabled(checked)
 
+    def on_shadow_filter_toggled(self, checked):
+        """Enable/disable shadow filter controls."""
+        self.shadow_height_spin.setEnabled(checked)
+        self.shadow_tolerance_spin.setEnabled(checked)
+        self.shadow_standing_check.setEnabled(checked)
+        self.shadow_sitting_check.setEnabled(checked)
+        self.shadow_lying_check.setEnabled(checked)
+
     def browse_mask_image(self):
         """Open file dialog to select a mask image."""
         file_path, _ = QFileDialog.getOpenFileName(
@@ -690,6 +798,10 @@ class AOIFilterDialog(TranslationMixin, QDialog):
         self.mask_path_display.setPlaceholderText(self.tr("No mask image selected"))
         self.on_mask_filter_toggled(False)
 
+        # Reset shadow filter
+        self.shadow_filter_enabled.setChecked(False)
+        self.on_shadow_filter_toggled(False)
+
     def get_filters(self):
         """Get the current filter settings.
 
@@ -737,6 +849,16 @@ class AOIFilterDialog(TranslationMixin, QDialog):
         else:
             heatmap_mode = 'off'
 
+        # Shadow filter: gather postures and convert height/tolerance to metres.
+        shadow_postures = []
+        if self.shadow_standing_check.isChecked():
+            shadow_postures.append('standing')
+        if self.shadow_sitting_check.isChecked():
+            shadow_postures.append('sitting')
+        if self.shadow_lying_check.isChecked():
+            shadow_postures.append('lying')
+        to_metres = M_PER_FT if self.distance_unit == 'ft' else 1.0
+
         filters = {
             'flagged_only': self.flagged_filter_enabled.isChecked(),
             'comment_filter': comment_pattern,
@@ -750,6 +872,10 @@ class AOIFilterDialog(TranslationMixin, QDialog):
             'heatmap_mode': heatmap_mode,
             'heatmap_threshold': self.heatmap_threshold,
             'mask_filter_path': self.mask_filter_path if self.mask_filter_enabled.isChecked() else None,
-            'mask_filter_mode': 'exclude' if self.mask_exclude_radio.isChecked() else 'include'
+            'mask_filter_mode': 'exclude' if self.mask_exclude_radio.isChecked() else 'include',
+            'shadow_enabled': self.shadow_filter_enabled.isChecked(),
+            'shadow_height_m': self.shadow_height_spin.value() * to_metres,
+            'shadow_tolerance_m': self.shadow_tolerance_spin.value() * to_metres,
+            'shadow_postures': shadow_postures,
         }
         return filters

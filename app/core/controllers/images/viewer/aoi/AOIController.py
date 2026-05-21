@@ -15,7 +15,8 @@ import traceback
 import xml.etree.ElementTree as ET
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QListWidgetItem, QPushButton,
-    QMenu, QApplication, QAbstractItemView, QColorDialog, QMessageBox
+    QMenu, QApplication, QAbstractItemView, QColorDialog, QMessageBox,
+    QProgressDialog
 )
 from shiboken6 import isValid as _qt_is_valid
 from PySide6.QtCore import Qt, QSize, QPoint
@@ -27,6 +28,11 @@ from core.controllers.images.viewer.aoi.AOIUIComponent import AOIUIComponent
 from helpers.LocationInfo import LocationInfo
 from core.views.images.viewer.dialogs.AOICommentDialog import AOICommentDialog
 from core.views.images.viewer.dialogs.AOIFilterDialog import AOIFilterDialog
+from core.services.shadow.ShadowDescriptor import (
+    ShadowDescriptor, shadow_matches,
+    STATUS_NO_SHADOW, STATUS_OK, STATUS_UNMEASURABLE,
+)
+from core.services.shadow.ShadowAnnotationService import ShadowAnnotationService
 from helpers.TranslationMixin import TranslationMixin
 
 
@@ -68,6 +74,12 @@ class AOIController(TranslationMixin):
         self.filter_heatmap_threshold = 75  # Percentile threshold (0-100)
         self.filter_mask_path = None  # File path to mask image
         self.filter_mask_mode = 'include'  # 'include' or 'exclude'
+
+        # Shadow filter state
+        self.filter_shadow_enabled = False
+        self.filter_shadow_height_m = 1.7  # subject standing height (metres)
+        self.filter_shadow_tolerance_m = 0.3  # +/- search tolerance (metres)
+        self.filter_shadow_postures = ['standing', 'sitting']
 
         # Mask cache for image mask filter
         self._mask_image_raw = None  # Raw grayscale mask (loaded once from file)
@@ -1087,6 +1099,24 @@ class AOIController(TranslationMixin):
                             if self.filter_mask_mode == 'exclude' and in_mask:
                                 continue
 
+            # Apply shadow filter. AOIs with no shadow data, or descriptors
+            # flagged 'unmeasurable', are always shown - the filter never hides
+            # an AOI just because its shadow could not be determined.
+            if self.filter_shadow_enabled and self.filter_shadow_postures:
+                shadow_attribs = aoi.get('shadow')
+                if shadow_attribs:
+                    descriptor = ShadowDescriptor.from_xml_attribs(shadow_attribs)
+                    if descriptor.status == STATUS_NO_SHADOW:
+                        continue
+                    if descriptor.status == STATUS_OK:
+                        matched, _ = shadow_matches(
+                            descriptor, self.filter_shadow_height_m,
+                            self.filter_shadow_postures,
+                            self.filter_shadow_tolerance_m,
+                        )
+                        if not matched:
+                            continue
+
             # AOI passed all filters
             filtered.append((original_idx, aoi))
 
@@ -1185,6 +1215,12 @@ class AOIController(TranslationMixin):
             self._invalidate_mask_cache()
         self.filter_mask_path = new_mask_path
         self.filter_mask_mode = filters.get('mask_filter_mode', 'include')
+
+        # Shadow filter
+        self.filter_shadow_enabled = filters.get('shadow_enabled', False)
+        self.filter_shadow_height_m = filters.get('shadow_height_m', 1.7)
+        self.filter_shadow_tolerance_m = filters.get('shadow_tolerance_m', 0.3)
+        self.filter_shadow_postures = filters.get('shadow_postures', ['standing', 'sitting'])
 
         # Refresh AOI display
         self.refresh_aoi_display()
@@ -1421,12 +1457,17 @@ class AOIController(TranslationMixin):
             'heatmap_mode': self.filter_heatmap_mode,
             'heatmap_threshold': self.filter_heatmap_threshold,
             'mask_filter_path': self.filter_mask_path,
-            'mask_filter_mode': self.filter_mask_mode
+            'mask_filter_mode': self.filter_mask_mode,
+            'shadow_enabled': self.filter_shadow_enabled,
+            'shadow_height_m': self.filter_shadow_height_m,
+            'shadow_tolerance_m': self.filter_shadow_tolerance_m,
+            'shadow_postures': self.filter_shadow_postures,
         }
 
         # Get temperature unit and thermal flag from parent viewer
         temperature_unit = getattr(self.parent, 'temperature_unit', 'C')
         is_thermal = getattr(self.parent, 'is_thermal', False)
+        distance_unit = getattr(self.parent, 'distance_unit', 'ft')
 
         # Get heatmap service and availability from gallery controller
         heatmap_service = None
@@ -1440,11 +1481,86 @@ class AOIController(TranslationMixin):
             heatmap_available = heatmap_service.has_data()
 
         dialog = AOIFilterDialog(self.parent, current_filters, temperature_unit, is_thermal,
-                                 heatmap_available=heatmap_available, heatmap_service=heatmap_service)
+                                 heatmap_available=heatmap_available, heatmap_service=heatmap_service,
+                                 distance_unit=distance_unit,
+                                 shadow_data_available=self._shadow_data_available())
         if dialog.exec():
             # User clicked Apply
             filters = dialog.get_filters()
+            # The shadow filter needs per-AOI shadow data; compute it on first use.
+            if filters.get('shadow_enabled') and not self._shadow_data_available():
+                self.run_shadow_annotation()
             self.set_filters(filters)
+
+    def _shadow_data_available(self):
+        """True if any AOI in the open project already has shadow data."""
+        for image in getattr(self.parent, 'images', None) or []:
+            for aoi in image.get('areas_of_interest', []):
+                if aoi.get('shadow'):
+                    return True
+        return False
+
+    def run_shadow_annotation(self):
+        """Compute shadow descriptors for every AOI in the open project.
+
+        Runs the shadow matcher over all images with a cancellable progress
+        dialog and writes the descriptors back to the results XML.
+        """
+        images = getattr(self.parent, 'images', None)
+        if not images:
+            return
+        progress = QProgressDialog(
+            self.tr("Computing shadow data..."), self.tr("Cancel"),
+            0, len(images), self.parent,
+        )
+        progress.setWindowTitle(self.tr("Shadow Data"))
+        progress.setWindowModality(Qt.WindowModal)
+        progress.setMinimumDuration(0)
+        progress.setValue(0)
+
+        def on_progress(done, total):
+            progress.setValue(done)
+            QApplication.processEvents()
+
+        summary = None
+        try:
+            service = ShadowAnnotationService()
+            summary = service.annotate_images(
+                images, progress_callback=on_progress,
+                should_cancel=progress.wasCanceled,
+            )
+            if hasattr(self.parent, 'xml_service') and hasattr(self.parent, 'xml_path'):
+                self.parent.xml_service.save_xml_file(self.parent.xml_path)
+        except Exception as e:
+            self.logger.error(f"Shadow annotation failed: {e}")
+            QMessageBox.warning(
+                self.parent, self.tr("Shadow Data"),
+                self.tr("Could not compute shadow data: ") + str(e),
+            )
+            return
+        finally:
+            progress.close()
+
+        if summary.get('cancelled'):
+            QMessageBox.information(
+                self.parent, self.tr("Shadow Data"),
+                self.tr("Shadow data computation was cancelled."),
+            )
+            return
+        QMessageBox.information(
+            self.parent, self.tr("Shadow Data"),
+            self.tr(
+                "Shadow data computed for {aois} area(s) of interest:\n"
+                "  {ok} with a usable shadow\n"
+                "  {none} with no shadow\n"
+                "  {unknown} could not be measured"
+            ).format(
+                aois=summary.get('aois', 0),
+                ok=summary.get(STATUS_OK, 0),
+                none=summary.get(STATUS_NO_SHADOW, 0),
+                unknown=summary.get(STATUS_UNMEASURABLE, 0),
+            ),
+        )
 
     def create_aoi_from_circle(self, center_x, center_y, radius):
         """Create a new AOI from a user-drawn circle.
