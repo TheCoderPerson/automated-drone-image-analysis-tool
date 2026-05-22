@@ -261,6 +261,19 @@ class AOIUIComponent(TranslationMixin):
         info_layout.setContentsMargins(4, 2, 4, 2)
         info_layout.setSpacing(2)
 
+        # Run-wide AOI number badge — the stable identifier the reviewer can
+        # return to regardless of the current sort order or view mode.
+        number = area_of_interest.get('number')
+        if number is not None:
+            number_label = QLabel(f"#{number}")
+            number_label.setStyleSheet(
+                "QLabel { color: #4FC3F7; font-size: 10px; font-weight: bold; }"
+            )
+            info_layout.addWidget(number_label)
+            number_separator = QLabel("|")
+            number_separator.setStyleSheet("QLabel { color: #666; font-size: 10px; }")
+            info_layout.addWidget(number_separator)
+
         coord_label = QLabel(coord_text)
         coord_label.setAlignment(Qt.AlignCenter)
         coord_label.setStyleSheet("""

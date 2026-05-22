@@ -367,3 +367,33 @@ def test_generate_thumbnail_swallows_exceptions():
     AnalyzeService._generate_main_image_thumbnail(
         None, image_path="/input/test.jpg", output_dir="/no/such/path"
     )
+
+
+# ---------------------------------------------------------------------------
+# assign_aoi_numbers
+# ---------------------------------------------------------------------------
+
+def test_assign_aoi_numbers_sequential_across_images():
+    """AOI numbers run 1..N across images in order, then within each image."""
+    images_with_aois = [
+        {"path": "a.jpg", "aois": [{"center": (1, 1)}, {"center": (2, 2)}]},
+        {"path": "b.jpg", "aois": [{"center": (3, 3)}]},
+        {"path": "c.jpg", "aois": [{"center": (4, 4)}, {"center": (5, 5)}]},
+    ]
+    AnalyzeService.assign_aoi_numbers(images_with_aois)
+
+    numbers = [aoi["number"] for img in images_with_aois for aoi in img["aois"]]
+    assert numbers == [1, 2, 3, 4, 5]
+
+
+def test_assign_aoi_numbers_handles_empty_and_missing_aois():
+    """assign_aoi_numbers tolerates empty input and images with no AOIs."""
+    AnalyzeService.assign_aoi_numbers([])
+    AnalyzeService.assign_aoi_numbers(None)
+
+    images_with_aois = [
+        {"path": "a.jpg", "aois": []},
+        {"path": "b.jpg", "aois": [{"center": (1, 1)}]},
+    ]
+    AnalyzeService.assign_aoi_numbers(images_with_aois)
+    assert images_with_aois[1]["aois"][0]["number"] == 1

@@ -790,6 +790,31 @@ class GalleryController:
             self.logger.error(f"Error handling AOI click: {e}")
             self.logger.error(traceback.format_exc())
 
+    def go_to_aoi(self, image_index, aoi_index):
+        """Select and reveal a specific AOI in the gallery by its location.
+
+        Args:
+            image_index (int): Index of the parent image.
+            aoi_index (int): Index of the AOI within that image.
+
+        Returns:
+            bool: True if the AOI is present in the (possibly filtered)
+                gallery and was revealed; False if it is filtered out.
+        """
+        if not self.model:
+            return False
+        row = self.model.aoi_to_row.get((image_index, aoi_index))
+        if row is None:
+            # The model can be stale (for example right after a new AOI was
+            # created); rebuild the gallery once and retry before reporting
+            # the AOI as filtered out.
+            self.load_all_aois()
+            row = self.model.aoi_to_row.get((image_index, aoi_index))
+        if row is None:
+            return False
+        self._select_and_activate_aoi(row)
+        return True
+
     def navigate_gallery_aoi(self, direction):
         """Navigate to the next or previous AOI in the gallery.
 
@@ -854,6 +879,11 @@ class GalleryController:
                 # self.logger.info(f"Successfully zoomed to AOI at {center}")
             else:
                 self.logger.warning("Viewer does not have zoomToArea method")
+
+            # Show the on-image number badge + ruler for this AOI.
+            overlay = getattr(self.parent, 'aoi_overlay_controller', None)
+            if overlay is not None:
+                overlay.show_for_aoi(aoi_data)
 
         except Exception as e:
             self.logger.error(f"Error zooming to AOI: {e}")

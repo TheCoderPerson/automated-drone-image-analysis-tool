@@ -400,6 +400,21 @@ class Ui_Viewer(object):
 
         self.ButtonLayout.addWidget(self.jumpToLine)
 
+        self.aoiJumpLabel = QLabel(self.imageWidget)
+        self.aoiJumpLabel.setObjectName(u"aoiJumpLabel")
+        self.aoiJumpLabel.setFont(font2)
+
+        self.ButtonLayout.addWidget(self.aoiJumpLabel)
+
+        self.aoiJumpLine = QLineEdit(self.imageWidget)
+        self.aoiJumpLine.setObjectName(u"aoiJumpLine")
+        sizePolicy4.setHeightForWidth(self.aoiJumpLine.sizePolicy().hasHeightForWidth())
+        self.aoiJumpLine.setSizePolicy(sizePolicy4)
+        self.aoiJumpLine.setMinimumSize(QSize(50, 0))
+        self.aoiJumpLine.setMaximumSize(QSize(50, 16777215))
+
+        self.ButtonLayout.addWidget(self.aoiJumpLine)
+
         self.previousImageButton = QPushButton(self.imageWidget)
         self.previousImageButton.setObjectName(u"previousImageButton")
         self.previousImageButton.setFont(font2)
@@ -690,6 +705,15 @@ class Ui_Viewer(object):
         self.jumpToLine.setToolTip(QCoreApplication.translate("Viewer", u"Enter an image number (1 to total) and press Enter.\n"
 "Quickly navigate to any image in the analysis results.\n"
 "Example: Type \"25\" and press Enter to jump to image #25", None))
+#endif // QT_CONFIG(tooltip)
+#if QT_CONFIG(tooltip)
+        self.aoiJumpLabel.setToolTip(QCoreApplication.translate("Viewer", u"Jump to a specific AOI by its run-wide number.\n"
+"Enter an AOI number and press Enter to select and scroll to it.", None))
+#endif // QT_CONFIG(tooltip)
+        self.aoiJumpLabel.setText(QCoreApplication.translate("Viewer", u"Go to AOI #:", None))
+#if QT_CONFIG(tooltip)
+        self.aoiJumpLine.setToolTip(QCoreApplication.translate("Viewer", u"Enter an AOI number and press Enter.\n"
+"Selects that AOI and scrolls it into view in the gallery or single-image list.", None))
 #endif // QT_CONFIG(tooltip)
         self.previousImageButton.setText(QCoreApplication.translate("Viewer", u"Previous Image", None))
         self.previousImageButton.setProperty(u"iconName", QCoreApplication.translate("Viewer", u"previous.png", None))

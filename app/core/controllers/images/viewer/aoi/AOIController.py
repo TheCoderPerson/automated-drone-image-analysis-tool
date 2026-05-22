@@ -302,6 +302,116 @@ class AOIController(TranslationMixin):
                     self.parent.current_image, aoi_index
                 )
 
+        # Update the on-image selected-AOI overlay (number badge + ruler).
+        overlay = getattr(self.parent, 'aoi_overlay_controller', None)
+        if overlay is not None:
+            selected = self.get_selected_aoi()
+            if selected is not None:
+                overlay.show_for_aoi(selected[0])
+            else:
+                overlay.clear()
+
+    def find_aoi_by_number(self, number):
+        """Resolve a run-wide AOI number to its (image_index, aoi_index).
+
+        Args:
+            number (int): The run-wide unique AOI number.
+
+        Returns:
+            tuple | None: (image_index, aoi_index), or None if no AOI in the
+                project carries that number.
+        """
+        for image_index, image in enumerate(getattr(self.parent, 'images', None) or []):
+            for aoi_index, aoi in enumerate(image.get('areas_of_interest', [])):
+                if aoi.get('number') == number:
+                    return (image_index, aoi_index)
+        return None
+
+    def go_to_aoi_number(self, number):
+        """Select and scroll to the AOI with the given run-wide number.
+
+        Works in both gallery mode and single-image mode. Shows a transient
+        status message when no AOI carries the requested number or when the
+        AOI exists but is hidden by the active filter.
+
+        Args:
+            number (int): The run-wide unique AOI number to navigate to.
+
+        Returns:
+            bool: True if the AOI was found and revealed.
+        """
+        location = self.find_aoi_by_number(number)
+        if location is None:
+            self._show_aoi_jump_message(
+                self.tr("No AOI #{number} in this analysis.").format(number=number)
+            )
+            return False
+
+        image_index, aoi_index = location
+
+        # Gallery mode: the gallery controller owns the flattened model and
+        # knows how to reveal a specific row.
+        if (getattr(self.parent, 'gallery_mode', False)
+                and hasattr(self.parent, 'gallery_controller')):
+            if self.parent.gallery_controller.go_to_aoi(image_index, aoi_index):
+                return True
+            self._show_aoi_jump_message(
+                self.tr("AOI #{number} is hidden by the current filter.").format(number=number)
+            )
+            return False
+
+        # Single-image mode: load the parent image, then select the AOI.
+        if self.parent.current_image != image_index:
+            self.parent.current_image = image_index
+            self.parent._load_image()
+        if not self._select_and_reveal_aoi(aoi_index):
+            self._show_aoi_jump_message(
+                self.tr("AOI #{number} is hidden by the current filter.").format(number=number)
+            )
+            return False
+        return True
+
+    def _select_and_reveal_aoi(self, aoi_index):
+        """Select an AOI in single-image mode and zoom the main image to it.
+
+        Args:
+            aoi_index (int): Index of the AOI within the current image.
+
+        Returns:
+            bool: True if the AOI is visible (not filtered out) and was selected.
+        """
+        visible_index = self.aoi_index_to_visible_index.get(aoi_index)
+        if visible_index is None and self.ui_component is not None:
+            # The visible-index map can be stale (for example right after a
+            # new AOI was created); rebuild the AOI list once and retry.
+            self.ui_component.refresh_aoi_display()
+            visible_index = self.aoi_index_to_visible_index.get(aoi_index)
+        if visible_index is None:
+            return False
+        self.select_aoi(aoi_index, visible_index)
+        try:
+            image = self.parent.images[self.parent.current_image]
+            aois = image.get('areas_of_interest', [])
+            if 0 <= aoi_index < len(aois):
+                center = aois[aoi_index].get('center')
+                if center and hasattr(self.parent, 'main_image'):
+                    self.parent.main_image.zoomToArea(center, 6)
+        except Exception as e:
+            self.logger.error(f"Error zooming to AOI during jump: {e}")
+        return True
+
+    def _show_aoi_jump_message(self, message):
+        """Show a transient status message about an AOI jump.
+
+        Args:
+            message (str): The already-translated message to display.
+        """
+        status_controller = getattr(self.parent, 'status_controller', None)
+        if status_controller is not None and hasattr(status_controller, 'show_toast'):
+            status_controller.show_toast(message, 3000, color="#FFA500")
+        else:
+            self.logger.info(message)
+
     def find_aoi_at_position(self, x, y):
         """Find the AOI at the given cursor position.
 
@@ -1446,6 +1556,24 @@ class AOIController(TranslationMixin):
             filters = dialog.get_filters()
             self.set_filters(filters)
 
+    def _next_aoi_number(self):
+        """Return the next unused run-wide AOI number.
+
+        User-created AOIs get a number one past the current maximum so the
+        identifier never collides with an existing AOI or one that was
+        previously deleted.
+
+        Returns:
+            int: The number to assign to a newly created AOI.
+        """
+        highest = 0
+        for image in getattr(self.parent, 'images', None) or []:
+            for aoi in image.get('areas_of_interest', []):
+                number = aoi.get('number')
+                if isinstance(number, int) and number > highest:
+                    highest = number
+        return highest + 1
+
     def create_aoi_from_circle(self, center_x, center_y, radius):
         """Create a new AOI from a user-drawn circle.
 
@@ -1489,6 +1617,7 @@ class AOIController(TranslationMixin):
                 'center': (center_x, center_y),
                 'radius': radius,
                 'area': aoi_area,
+                'number': self._next_aoi_number(),
                 'flagged': False,
                 'user_comment': '',
                 'user_created': True  # Mark as manually created
@@ -1509,6 +1638,7 @@ class AOIController(TranslationMixin):
                 aoi_xml.set('center', str((center_x, center_y)))
                 aoi_xml.set('radius', str(radius))
                 aoi_xml.set('area', str(aoi_area))
+                aoi_xml.set('number', str(new_aoi['number']))
                 aoi_xml.set('flagged', 'False')
                 aoi_xml.set('user_created', 'True')
 

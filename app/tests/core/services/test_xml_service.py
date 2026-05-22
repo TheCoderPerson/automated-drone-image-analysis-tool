@@ -177,3 +177,111 @@ def test_malformed_fov_corners_treated_as_unrefined(tmp_path):
     images = XmlService(xml_path).get_images()
     assert "fov_alignment" not in images[0]
     assert len(images[0]["areas_of_interest"]) == 1
+
+
+# ---------------------------------------------------------------------------
+# Run-wide AOI numbers
+# ---------------------------------------------------------------------------
+
+def test_aoi_number_round_trips_through_xml(tmp_path):
+    """A persisted AOI 'number' survives add_image_to_xml -> save -> reload."""
+    service = XmlService()
+    service.add_image_to_xml({
+        "path": "img.jpg",
+        "aois": [
+            {"center": (10, 10), "radius": 5, "area": 20, "number": 1},
+            {"center": (30, 30), "radius": 6, "area": 25, "number": 2},
+        ],
+    })
+    out_path = tmp_path / "numbered.xml"
+    service.save_xml_file(out_path)
+
+    aois = XmlService(out_path).get_images()[0]["areas_of_interest"]
+    assert aois[0]["number"] == 1
+    assert aois[1]["number"] == 2
+
+
+def test_add_image_to_xml_omits_number_when_absent(tmp_path):
+    """AOIs without a number must not gain a 'number' attribute."""
+    service = XmlService()
+    service.add_image_to_xml({
+        "path": "img.jpg",
+        "aois": [{"center": (10, 10), "radius": 5, "area": 20}],
+    })
+    out_path = tmp_path / "unnumbered.xml"
+    service.save_xml_file(out_path)
+
+    assert "number" not in XmlService(out_path).get_images()[0]["areas_of_interest"][0]
+
+
+def test_legacy_xml_loads_without_number(sample_xml):
+    """Legacy result files (no 'number' attribute) load with no 'number' key."""
+    images = XmlService(sample_xml).get_images()
+    for image in images:
+        for aoi in image["areas_of_interest"]:
+            assert "number" not in aoi
+
+
+def test_ensure_aoi_numbers_backfills_legacy_file(sample_xml):
+    """ensure_aoi_numbers assigns sequential numbers to an unnumbered file."""
+    service = XmlService(sample_xml)
+    images = service.get_images()
+
+    assert service.ensure_aoi_numbers(images) is True
+    assert images[0]["areas_of_interest"][0]["number"] == 1
+    assert images[1]["areas_of_interest"][0]["number"] == 2
+
+
+def test_ensure_aoi_numbers_is_idempotent(sample_xml):
+    """A second ensure_aoi_numbers pass changes nothing and returns False."""
+    service = XmlService(sample_xml)
+    images = service.get_images()
+    service.ensure_aoi_numbers(images)
+
+    assert service.ensure_aoi_numbers(images) is False
+    assert images[0]["areas_of_interest"][0]["number"] == 1
+    assert images[1]["areas_of_interest"][0]["number"] == 2
+
+
+def test_ensure_aoi_numbers_persists_to_xml(tmp_path, sample_xml):
+    """Backfilled numbers are written to the XML elements and survive reload."""
+    service = XmlService(sample_xml)
+    images = service.get_images()
+    service.ensure_aoi_numbers(images)
+
+    out_path = tmp_path / "backfilled.xml"
+    service.save_xml_file(out_path)
+
+    reloaded = XmlService(out_path).get_images()
+    assert reloaded[0]["areas_of_interest"][0]["number"] == 1
+    assert reloaded[1]["areas_of_interest"][0]["number"] == 2
+
+
+def test_ensure_aoi_numbers_fills_gaps_above_existing_max(tmp_path):
+    """Partially numbered files keep existing numbers; gaps get max+1 upward."""
+    xml_content = """
+    <data>
+        <images>
+            <image path="a.jpg">
+                <areas_of_interest center="(10,10)" radius="5" area="20" number="7"/>
+                <areas_of_interest center="(20,20)" radius="5" area="20"/>
+            </image>
+            <image path="b.jpg">
+                <areas_of_interest center="(30,30)" radius="5" area="20"/>
+            </image>
+        </images>
+    </data>
+    """.strip()
+    xml_path = tmp_path / "partial.xml"
+    with open(xml_path, "w") as f:
+        f.write(xml_content)
+
+    service = XmlService(xml_path)
+    images = service.get_images()
+    assert service.ensure_aoi_numbers(images) is True
+
+    # The already-numbered AOI keeps its number.
+    assert images[0]["areas_of_interest"][0]["number"] == 7
+    # Unnumbered AOIs get unique numbers above the existing maximum.
+    assert images[0]["areas_of_interest"][1]["number"] == 8
+    assert images[1]["areas_of_interest"][0]["number"] == 9

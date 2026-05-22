@@ -163,6 +163,15 @@ class XmlService:
                         'radius': int(area_of_interest_xml.get('radius', "0")),
                         'xml': area_of_interest_xml  # Store XML element reference for updating
                     }
+                    # Load the persisted run-wide unique AOI number when present.
+                    # Legacy result files omit it; XmlService.ensure_aoi_numbers
+                    # backfills numbers the first time such a file is opened.
+                    number_attr = area_of_interest_xml.get('number')
+                    if number_attr is not None:
+                        try:
+                            area_of_interest['number'] = int(number_attr)
+                        except (ValueError, TypeError):
+                            pass
                     # Add optional fields if they exist (for backward compatibility)
                     if area_of_interest_xml.get('contour'):
                         area_of_interest['contour'] = literal_eval(area_of_interest_xml.get('contour'))
@@ -203,6 +212,48 @@ class XmlService:
                 images.append(image)
 
         return images
+
+    def ensure_aoi_numbers(self, images):
+        """Backfill run-wide unique AOI numbers onto legacy result files.
+
+        Every AOI carries a persistent 'number' that is unique across the
+        whole run, letting reviewers track a specific AOI even after the
+        gallery is re-sorted or filtered. Result files produced before this
+        feature lack the number; this method walks every AOI in
+        viewer/display order and assigns one to any AOI missing it. AOIs
+        that already have a number keep it, so numbers stay stable across
+        sessions and survive AOI deletion. New numbers are written onto
+        both the AOI dict and its backing XML element; the caller is
+        responsible for saving the file.
+
+        Args:
+            images: The images list returned by get_images().
+
+        Returns:
+            bool: True if at least one number was assigned, meaning the
+                file should be saved to persist the change.
+        """
+        highest = 0
+        for image in images or []:
+            for aoi in image.get('areas_of_interest', []):
+                number = aoi.get('number')
+                if isinstance(number, int) and number > highest:
+                    highest = number
+
+        next_number = highest + 1
+        changed = False
+        for image in images or []:
+            for aoi in image.get('areas_of_interest', []):
+                if isinstance(aoi.get('number'), int):
+                    continue
+                aoi['number'] = next_number
+                xml_element = aoi.get('xml')
+                if xml_element is not None:
+                    xml_element.set('number', str(next_number))
+                next_number += 1
+                changed = True
+
+        return changed
 
     def add_settings_to_xml(self, **kwargs):
         """
@@ -287,6 +338,9 @@ class XmlService:
             area_xml.set('center', str(area['center']))
             area_xml.set('radius', str(area['radius']))
             area_xml.set('area', str(area['area']))
+            # Persist the run-wide unique AOI number when present
+            if area.get('number') is not None:
+                area_xml.set('number', str(area['number']))
             # Add flagged status if present
             if 'flagged' in area:
                 area_xml.set('flagged', str(area['flagged']))

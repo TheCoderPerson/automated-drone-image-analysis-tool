@@ -260,3 +260,40 @@ def test_clear_cache_clears_aoi_cache(controller):
     controller._aoi_service_cache = {0: MagicMock(), 1: MagicMock()}
     controller.clear_cache()
     assert controller._aoi_service_cache == {}
+
+
+# ---------------------------------------------------------------------------
+# go_to_aoi
+# ---------------------------------------------------------------------------
+
+def test_go_to_aoi_found(controller):
+    controller.model.aoi_to_row = {(0, 0): 5, (1, 2): 9}
+    controller.load_all_aois = MagicMock()
+    controller._select_and_activate_aoi = MagicMock()
+
+    assert controller.go_to_aoi(1, 2) is True
+    controller._select_and_activate_aoi.assert_called_once_with(9)
+    controller.load_all_aois.assert_not_called()
+
+
+def test_go_to_aoi_not_in_gallery(controller):
+    controller.model.aoi_to_row = {(0, 0): 5}
+    controller.load_all_aois = MagicMock()
+    controller._select_and_activate_aoi = MagicMock()
+
+    assert controller.go_to_aoi(3, 3) is False
+    controller._select_and_activate_aoi.assert_not_called()
+
+
+def test_go_to_aoi_rebuilds_stale_model(controller):
+    """A stale gallery model is rebuilt once before the AOI is reported missing."""
+    controller.model.aoi_to_row = {}
+
+    def populate():
+        controller.model.aoi_to_row = {(2, 1): 7}
+    controller.load_all_aois = MagicMock(side_effect=populate)
+    controller._select_and_activate_aoi = MagicMock()
+
+    assert controller.go_to_aoi(2, 1) is True
+    controller.load_all_aois.assert_called_once()
+    controller._select_and_activate_aoi.assert_called_once_with(7)

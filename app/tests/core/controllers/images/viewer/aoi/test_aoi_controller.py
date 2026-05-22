@@ -389,3 +389,96 @@ def test_toggle_flag_ignores_invalid_index(controller):
     controller.toggle_aoi_flag_by_index(-1)
     controller.toggle_aoi_flag_by_index(None)
     controller.save_flagged_aoi_to_xml.assert_not_called()
+
+
+# ---------------------------------------------------------------------------
+# find_aoi_by_number / go_to_aoi_number
+# ---------------------------------------------------------------------------
+
+def test_find_aoi_by_number_found(controller):
+    controller.parent.images = [
+        {"areas_of_interest": [_aoi(number=1), _aoi(number=2)]},
+        {"areas_of_interest": [_aoi(number=3)]},
+    ]
+    assert controller.find_aoi_by_number(1) == (0, 0)
+    assert controller.find_aoi_by_number(2) == (0, 1)
+    assert controller.find_aoi_by_number(3) == (1, 0)
+
+
+def test_find_aoi_by_number_missing(controller):
+    controller.parent.images = [{"areas_of_interest": [_aoi(number=1)]}]
+    assert controller.find_aoi_by_number(99) is None
+
+
+def test_find_aoi_by_number_no_images(controller):
+    controller.parent.images = []
+    assert controller.find_aoi_by_number(1) is None
+
+
+def test_go_to_aoi_number_not_found(controller):
+    controller.parent.images = [{"areas_of_interest": [_aoi(number=1)]}]
+    assert controller.go_to_aoi_number(999) is False
+
+
+def test_go_to_aoi_number_single_image_selects(controller):
+    controller.parent.images = [
+        {"areas_of_interest": [_aoi(number=1)]},
+        {"areas_of_interest": [_aoi(number=2, center=(40, 60))]},
+    ]
+    controller.parent.gallery_mode = False
+    controller.parent.current_image = 0
+    controller.aoi_index_to_visible_index = {0: 0}
+    controller.select_aoi = MagicMock()
+
+    result = controller.go_to_aoi_number(2)
+
+    assert result is True
+    # The parent image is loaded and the AOI selected.
+    assert controller.parent.current_image == 1
+    controller.parent._load_image.assert_called_once()
+    controller.select_aoi.assert_called_once_with(0, 0)
+
+
+def test_go_to_aoi_number_single_image_filtered_out(controller):
+    controller.parent.images = [{"areas_of_interest": [_aoi(number=1)]}]
+    controller.parent.gallery_mode = False
+    controller.parent.current_image = 0
+    controller.aoi_index_to_visible_index = {}  # AOI hidden by the active filter
+    controller.select_aoi = MagicMock()
+
+    assert controller.go_to_aoi_number(1) is False
+    controller.select_aoi.assert_not_called()
+
+
+def test_go_to_aoi_number_gallery_delegates(controller):
+    controller.parent.images = [{"areas_of_interest": [_aoi(number=5)]}]
+    controller.parent.gallery_mode = True
+    controller.parent.gallery_controller.go_to_aoi.return_value = True
+
+    assert controller.go_to_aoi_number(5) is True
+    controller.parent.gallery_controller.go_to_aoi.assert_called_once_with(0, 0)
+
+
+def test_go_to_aoi_number_gallery_filtered_out(controller):
+    controller.parent.images = [{"areas_of_interest": [_aoi(number=5)]}]
+    controller.parent.gallery_mode = True
+    controller.parent.gallery_controller.go_to_aoi.return_value = False
+
+    assert controller.go_to_aoi_number(5) is False
+
+
+def test_go_to_aoi_number_single_image_rebuilds_stale_map(controller):
+    """A freshly created AOI is found after the stale visible-index map rebuilds."""
+    controller.parent.images = [{"areas_of_interest": [_aoi(number=1)]}]
+    controller.parent.gallery_mode = False
+    controller.parent.current_image = 0
+    controller.aoi_index_to_visible_index = {}  # stale: missing the new AOI
+    controller.select_aoi = MagicMock()
+
+    def rebuild():
+        controller.aoi_index_to_visible_index = {0: 0}
+    controller.ui_component.refresh_aoi_display = MagicMock(side_effect=rebuild)
+
+    assert controller.go_to_aoi_number(1) is True
+    controller.ui_component.refresh_aoi_display.assert_called_once()
+    controller.select_aoi.assert_called_once_with(0, 0)

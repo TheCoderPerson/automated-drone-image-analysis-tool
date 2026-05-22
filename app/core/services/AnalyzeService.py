@@ -183,6 +183,9 @@ class AnalyzeService(QObject):
             file_path = os.path.join(self.output, "ADIAT_Data.xml")
             self.xmlService.xml_path = file_path
 
+            # Assign persisted run-wide unique AOI numbers before serialisation.
+            self.assign_aoi_numbers(self.images_with_aois)
+
             for img in self.images_with_aois:
                 self.xmlService.add_image_to_xml(img)
 
@@ -205,6 +208,24 @@ class AnalyzeService(QObject):
         except Exception as e:
             self.logger.error(traceback.format_exc())
             self.logger.error(f"An error occurred during processing: {e}")
+
+    @staticmethod
+    def assign_aoi_numbers(images_with_aois):
+        """Assign run-wide unique AOI numbers across all analyzed images.
+
+        Numbers are 1-based and increase in image order, then in the order
+        AOIs appear within each image, matching the sequence the viewer
+        displays them. The number is persisted with each AOI so reviewers
+        can track a specific AOI across sort changes and view switches.
+
+        Args:
+            images_with_aois: List of image dicts, each carrying an 'aois' list.
+        """
+        aoi_number = 1
+        for image in images_with_aois or []:
+            for aoi in image.get('aois', []):
+                aoi['number'] = aoi_number
+                aoi_number += 1
 
     @staticmethod
     def _resolve_algorithm_service_class(algorithm):

@@ -31,6 +31,7 @@ from core.controllers.images.viewer.WingtraDataController import WingtraDataCont
 from core.controllers.images.viewer.AlignImageController import AlignImageController
 from core.controllers.images.viewer.WaldoPrePassController import WaldoPrePassController
 from core.controllers.images.viewer.image.ImageLoadController import ImageLoadController
+from core.controllers.images.viewer.AOIOverlayController import AOIOverlayController
 from core.controllers.images.viewer.PixelInfoController import PixelInfoController
 from core.controllers.images.viewer.ThermalDataController import ThermalDataController
 from core.controllers.images.viewer.ThermalHistogramController import ThermalHistogramController
@@ -143,6 +144,13 @@ class Viewer(TranslationMixin, QMainWindow, Ui_Viewer):
         self.xml_path = xml_path
         self.xml_service = XmlService(xml_path)
         self.images = self.xml_service.get_images()
+        # Backfill persistent run-wide AOI numbers on legacy result files so
+        # every AOI has a stable identifier the reviewer can return to.
+        if self.xml_service.ensure_aoi_numbers(self.images):
+            try:
+                self.xml_service.save_xml_file(self.xml_path)
+            except Exception as e:
+                self.logger.error(f"Could not persist backfilled AOI numbers: {e}")
         # Settings parsed early so the WALDO pre-pass and source-folder enumeration
         # can both see settings['input_dir'] (the original capture folder).
         self.settings, _ = self.xml_service.get_settings()
@@ -1158,6 +1166,8 @@ class Viewer(TranslationMixin, QMainWindow, Ui_Viewer):
 
             self.jumpToLine.setValidator(QIntValidator(1, len(self.images), self))
             self.jumpToLine.editingFinished.connect(self._jumpToLine_changed)
+            self.aoiJumpLine.setValidator(QIntValidator(1, 9999999, self))
+            self.aoiJumpLine.editingFinished.connect(self._aoiJumpLine_changed)
             self.thumbnailScrollArea.horizontalScrollBar().valueChanged.connect(self.thumbnail_controller.on_thumbnail_scroll)
 
             # Session variable to store GSD value
@@ -1206,6 +1216,9 @@ class Viewer(TranslationMixin, QMainWindow, Ui_Viewer):
 
             # Initialize overlay widget
             self.overlay = OverlayWidget(self.main_image, self.scaleBar, self.theme, self.logger)
+
+            # Selected-AOI on-image decoration (number badge + real-world ruler)
+            self.aoi_overlay_controller = AOIOverlayController(self)
 
             # Connect signals
             self.main_image.zoomChanged.connect(self._update_scale_bar)
@@ -1385,6 +1398,9 @@ class Viewer(TranslationMixin, QMainWindow, Ui_Viewer):
         """
         # Simply reload the image with current settings
         self._reload_current_image_preserving_view()
+        # The selected-AOI overlay (number + ruler) follows the circle toggle.
+        if hasattr(self, 'aoi_overlay_controller'):
+            self.aoi_overlay_controller.refresh()
 
     def _reload_current_image_preserving_view(self):
         """Reloads the current image while preserving zoom and pan state.
@@ -1537,6 +1553,18 @@ class Viewer(TranslationMixin, QMainWindow, Ui_Viewer):
             if hasattr(self.thumbnail_controller, 'ui_component') and self.thumbnail_controller.ui_component:
                 self.thumbnail_controller.ui_component.scroll_thumbnail_into_view()
             self.jumpToLine.setText("")
+
+    def _aoiJumpLine_changed(self):
+        """Selects and scrolls to the AOI whose run-wide number was entered."""
+        text = self.aoiJumpLine.text().strip()
+        if text == "":
+            return
+        try:
+            number = int(text)
+        except ValueError:
+            return
+        self.aoiJumpLine.setText("")
+        self.aoi_controller.go_to_aoi_number(number)
 
     def _kmlButton_clicked(self):
         """Handles clicks on the Map Export button to show unified export options."""

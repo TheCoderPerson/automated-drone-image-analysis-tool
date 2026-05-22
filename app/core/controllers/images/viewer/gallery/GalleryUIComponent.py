@@ -97,6 +97,11 @@ class AOIGalleryDelegate(QStyledItemDelegate):
             painter.setPen(QPen(QColor(100, 100, 100), 1))
             painter.drawRect(thumbnail_rect)
 
+            # Draw the run-wide AOI number badge in the top-left corner.
+            number = aoi_data.get('number')
+            if number is not None:
+                self._draw_number_badge(painter, thumbnail_rect, number)
+
             # Draw bottom-right icon cluster: flag | comment | location.
             # Positions are reflowed from the original flag/location pair so
             # the new comment icon can slot between them without overlap.
@@ -135,6 +140,35 @@ class AOIGalleryDelegate(QStyledItemDelegate):
             # Fallback to default rendering on error
             pass
 
+        painter.restore()
+
+    def _draw_number_badge(self, painter, thumbnail_rect, number):
+        """Draw the run-wide AOI number badge in the thumbnail's top-left corner.
+
+        Args:
+            painter: The active QPainter.
+            thumbnail_rect: The thumbnail's QRect.
+            number: The AOI's run-wide unique number.
+        """
+        painter.save()
+        text = f"#{number}"
+        font = QFont()
+        font.setPointSize(9)
+        font.setBold(True)
+        painter.setFont(font)
+        metrics = QFontMetrics(font)
+        padding_x, padding_y = 5, 2
+        badge_rect = QRect(
+            thumbnail_rect.left() + 4,
+            thumbnail_rect.top() + 4,
+            metrics.horizontalAdvance(text) + padding_x * 2,
+            metrics.height() + padding_y * 2,
+        )
+        painter.setPen(Qt.NoPen)
+        painter.setBrush(QColor(0, 0, 0, 180))
+        painter.drawRoundedRect(badge_rect, 4, 4)
+        painter.setPen(QPen(QColor(255, 255, 255)))
+        painter.drawText(badge_rect, Qt.AlignCenter, text)
         painter.restore()
 
     def _get_confidence_color(self, confidence):

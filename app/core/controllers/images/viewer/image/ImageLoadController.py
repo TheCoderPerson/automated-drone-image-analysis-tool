@@ -56,6 +56,12 @@ class ImageLoadController(TranslationMixin):
 
             image = self.parent.images[self.parent.current_image]
 
+            # A freshly loaded image invalidates the previous image's
+            # selected-AOI overlay; the gallery re-shows it after zooming.
+            overlay = getattr(self.parent, 'aoi_overlay_controller', None)
+            if overlay is not None:
+                overlay.clear()
+
             # Always sync the active thumbnail/index
             self._sync_thumbnail_state(image)
 

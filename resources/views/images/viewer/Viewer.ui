@@ -766,6 +766,48 @@ Example: Type &quot;25&quot; and press Enter to jump to image #25</string>
               </widget>
              </item>
              <item>
+              <widget class="QLabel" name="aoiJumpLabel">
+               <property name="font">
+                <font>
+                 <pointsize>10</pointsize>
+                </font>
+               </property>
+               <property name="toolTip">
+                <string>Jump to a specific AOI by its run-wide number.
+Enter an AOI number and press Enter to select and scroll to it.</string>
+               </property>
+               <property name="text">
+                <string>Go to AOI #:</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QLineEdit" name="aoiJumpLine">
+               <property name="sizePolicy">
+                <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                 <horstretch>0</horstretch>
+                 <verstretch>0</verstretch>
+                </sizepolicy>
+               </property>
+               <property name="minimumSize">
+                <size>
+                 <width>50</width>
+                 <height>0</height>
+                </size>
+               </property>
+               <property name="maximumSize">
+                <size>
+                 <width>50</width>
+                 <height>16777215</height>
+                </size>
+               </property>
+               <property name="toolTip">
+                <string>Enter an AOI number and press Enter.
+Selects that AOI and scrolls it into view in the gallery or single-image list.</string>
+               </property>
+              </widget>
+             </item>
+             <item>
               <widget class="QPushButton" name="previousImageButton">
                <property name="font">
                 <font>
