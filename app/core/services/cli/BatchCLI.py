@@ -1,12 +1,18 @@
 """
-BatchCLI.py -- command-line entry point for ADIAT batch image analysis.
+BatchCLI.py -- command-line entry points for headless ADIAT image analysis.
 
-Lets ADIAT run headless: point it at a parent folder and it analyzes every
-subfolder containing images as a separate batch. Algorithm settings can be
-supplied with command-line flags, taken from a previous run's ADIAT_Data.xml
-(via --config), or both. It is invoked from __main__.py as:
+Lets ADIAT run without its GUI. Two subcommands, both invoked from
+__main__.py:
 
-    python app batch --input <parent> --output <root> [options]
+    python app batch   --input <parent> --output <root> [options]
+        Analyze every subfolder of <parent> that contains images as a
+        separate batch (run_batch_cli).
+
+    python app analyze --input <folder> --output <dir>  [options]
+        Analyze a single folder of images as one run (run_analyze_cli).
+
+Algorithm settings can be supplied with command-line flags, taken from a
+previous run's ADIAT_Data.xml (via --config), or both.
 """
 
 import argparse
@@ -103,6 +109,36 @@ def _parse_color(text):
         raise ValueError(f"Identifier color must be three integers, got '{text}'")
 
 
+def _add_common_analysis_args(parser):
+    """Add the analysis arguments shared by the batch and analyze subcommands.
+
+    Args:
+        parser: The argparse parser to extend.
+    """
+    parser.add_argument('--config',
+                        help='Previous ADIAT_Data.xml whose settings are used as a template.')
+    parser.add_argument('--algorithm',
+                        help='Algorithm name, e.g. ColorRange, RXAnomaly, ThermalRange.')
+    parser.add_argument('--min-area', type=int,
+                        help='Minimum area in pixels for an area of interest.')
+    parser.add_argument('--max-area', type=int,
+                        help='Maximum area in pixels (0 = no maximum).')
+    parser.add_argument('--processes', type=int,
+                        help='Number of parallel worker processes.')
+    parser.add_argument('--identifier-color',
+                        help="AOI highlight color as 'R,G,B', e.g. 0,255,0.")
+    parser.add_argument('--aoi-radius', type=int,
+                        help='Radius in pixels added around each area of interest.')
+    parser.add_argument('--max-aois', type=int,
+                        help='Area-of-interest count that triggers a warning.')
+    parser.add_argument('--resolution', choices=sorted(RESOLUTION_PRESETS.keys()),
+                        help='Processing resolution as a percentage of original size.')
+    parser.add_argument('--histogram-ref',
+                        help='Histogram reference image path.')
+    parser.add_argument('--option', action='append', default=[], metavar='NAME=VALUE',
+                        help='Algorithm-specific option; repeatable.')
+
+
 def _build_parser():
     """Build the argparse parser for the batch subcommand.
 
@@ -117,28 +153,7 @@ def _build_parser():
                         help='Parent folder; each subfolder containing images is one batch.')
     parser.add_argument('--output', required=True,
                         help='Output root for the per-batch results.')
-    parser.add_argument('--config',
-                        help='Previous ADIAT_Data.xml whose settings are used as a template.')
-    parser.add_argument('--algorithm',
-                        help='Algorithm name, e.g. ColorRange, RXAnomaly, ThermalRange.')
-    parser.add_argument('--min-area', type=int,
-                        help='Minimum area in pixels for an area of interest.')
-    parser.add_argument('--max-area', type=int,
-                        help='Maximum area in pixels (0 = no maximum).')
-    parser.add_argument('--processes', type=int,
-                        help='Number of parallel worker processes per batch.')
-    parser.add_argument('--identifier-color',
-                        help="AOI highlight color as 'R,G,B', e.g. 0,255,0.")
-    parser.add_argument('--aoi-radius', type=int,
-                        help='Radius in pixels added around each area of interest.')
-    parser.add_argument('--max-aois', type=int,
-                        help='Area-of-interest count that triggers a warning.')
-    parser.add_argument('--resolution', choices=sorted(RESOLUTION_PRESETS.keys()),
-                        help='Processing resolution as a percentage of original size.')
-    parser.add_argument('--histogram-ref',
-                        help='Histogram reference image path.')
-    parser.add_argument('--option', action='append', default=[], metavar='NAME=VALUE',
-                        help='Algorithm-specific option; repeatable.')
+    _add_common_analysis_args(parser)
     parser.add_argument('--no-coordinator', action='store_true',
                         help='Do not create a Search Coordinator project for the batches.')
     parser.add_argument('--resume', action='store_true',
@@ -147,6 +162,24 @@ def _build_parser():
                         help='Name for the generated Search Coordinator project.')
     parser.add_argument('--coordinator-name', default='',
                         help='Name recorded as the project creator.')
+    return parser
+
+
+def _build_analyze_parser():
+    """Build the argparse parser for the analyze (single-folder) subcommand.
+
+    Returns:
+        argparse.ArgumentParser: The configured parser.
+    """
+    parser = argparse.ArgumentParser(
+        prog='app analyze',
+        description='Analyze a single folder of images as one ADIAT run.'
+    )
+    parser.add_argument('--input', required=True,
+                        help='Folder of images to analyze.')
+    parser.add_argument('--output', required=True,
+                        help='Output folder; results are written under <output>/ADIAT_Results.')
+    _add_common_analysis_args(parser)
     return parser
 
 
@@ -306,3 +339,80 @@ def run_batch_cli(argv):
         print(f"Search project: {summary['project_path']}")
 
     return 0 if failed == 0 else 1
+
+
+def run_analyze_cli(argv):
+    """Run a single-folder ADIAT analysis from the command line.
+
+    Analyzes one folder of images as a single run -- the shape an external
+    caller wants when it has already split its images into batches.
+
+    Args:
+        argv: Argument list excluding the leading 'analyze' subcommand token.
+
+    Returns:
+        int: Process exit code -- 0 on success, 1 if an error prevented the run.
+    """
+    args = _build_analyze_parser().parse_args(argv)
+
+    try:
+        analysis_config = _build_analysis_config(args)
+    except ValueError as e:
+        print(f"Error: {e}", file=sys.stderr)
+        return 1
+
+    input_dir = os.path.abspath(args.input)
+    output_dir = os.path.abspath(args.output)
+    if not os.path.isdir(input_dir):
+        print(f"Error: input folder does not exist: {input_dir}", file=sys.stderr)
+        return 1
+
+    # A QCoreApplication backs the QObject-based services for a headless run.
+    from PySide6.QtCore import QCoreApplication
+    QCoreApplication.instance() or QCoreApplication([])
+
+    from core.services.AnalyzeService import AnalyzeService
+
+    service = AnalyzeService(
+        1,
+        analysis_config['algorithm'],
+        input_dir,
+        output_dir,
+        analysis_config['identifier_color'],
+        analysis_config['min_area'],
+        analysis_config['num_processes'],
+        analysis_config['max_aois'],
+        analysis_config['aoi_radius'],
+        analysis_config['hist_ref_path'],
+        analysis_config['kmeans_clusters'],
+        analysis_config['options'],
+        analysis_config['max_area'],
+        analysis_config['processing_resolution'],
+        recursive=False,
+    )
+
+    result = {}
+    service.sig_msg.connect(lambda text: print(text, flush=True))
+    service.sig_done.connect(
+        lambda _id, count, path: result.update(count=count, path=path)
+    )
+
+    print("ADIAT image analysis")
+    print(f"  Input:     {input_dir}")
+    print(f"  Output:    {output_dir}")
+    print(f"  Algorithm: {analysis_config['algorithm'].get('name')}")
+    print('')
+
+    # Runs synchronously in this thread; AnalyzeService manages its own pool.
+    try:
+        service.process_files()
+    except Exception as e:
+        print(f"Error: analysis failed: {e}", file=sys.stderr)
+        return 1
+
+    count = result.get('count', 0)
+    print('')
+    print(f"Done: {count} image(s) with areas of interest.")
+    if result.get('path'):
+        print(f"Results: {result['path']}")
+    return 0

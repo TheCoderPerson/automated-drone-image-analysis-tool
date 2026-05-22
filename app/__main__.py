@@ -371,10 +371,16 @@ if __name__ == "__main__":
 
     freeze_support()
 
-    # Headless batch mode: "python app batch --input <parent> --output <root>".
-    # Falls through to the normal GUI startup when no batch subcommand is given.
+    # Headless CLI modes; fall through to the normal GUI startup when no
+    # subcommand is given.
+    #   python app batch   --input <parent> --output <root>  (folder of folders)
+    #   python app analyze --input <folder> --output <dir>   (single folder)
     if len(sys.argv) > 1 and sys.argv[1] == 'batch':
         from core.services.cli.BatchCLI import run_batch_cli
         sys.exit(run_batch_cli(sys.argv[2:]))
+
+    if len(sys.argv) > 1 and sys.argv[1] == 'analyze':
+        from core.services.cli.BatchCLI import run_analyze_cli
+        sys.exit(run_analyze_cli(sys.argv[2:]))
 
     main()
