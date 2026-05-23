@@ -391,7 +391,6 @@ def run_analyze_cli(argv):
         analysis_config['options'],
         analysis_config['max_area'],
         analysis_config['processing_resolution'],
-        recursive=False,
     )
 
     result = {}
