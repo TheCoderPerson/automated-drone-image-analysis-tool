@@ -251,7 +251,7 @@ class HelpDialog(TranslationMixin, QDialog):
                     </tr>
                     <tr>
                         <td>Shift + S</td>
-                        <td>Open Grid Review settings (grid size, auto-mark, GSD-based suggestion)</td>
+                        <td>Open Grid Review settings (grid size, auto-mark, 3×3 focus guide, GSD-based suggestion)</td>
                     </tr>
                     <tr>
                         <td>Shift + O</td>

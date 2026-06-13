@@ -3,16 +3,19 @@ GridOverlayItem - On-image grid decoration for grid review mode.
 
 Draws the review grid on top of the main image: thin cell borders, a
 translucent green tint over cells already reviewed, and a highlighted
-border around the cell the reviewer is currently sweeping. The item
-lives in the image scene in image-pixel coordinates, so it pans and
-zooms with the photo for free; line widths are cosmetic (constant
+border around the cell the reviewer is currently sweeping. Inside the
+active cell it can also draw an N x N focus guide (3x3 by default) in
+the grid-line color — a purely visual aid that breaks the cell into
+sub-regions so the reviewer scans each in turn before advancing. The
+item lives in the image scene in image-pixel coordinates, so it pans
+and zooms with the photo for free; line widths are cosmetic (constant
 on-screen thickness at any zoom).
 
 Cell geometry comes from GridReviewService.cell_rects so the painted
 grid always matches the persisted reviewed-cell indices.
 """
 
-from PySide6.QtCore import Qt, QRectF
+from PySide6.QtCore import Qt, QRectF, QLineF
 from PySide6.QtGui import QColor, QPen, QBrush
 from PySide6.QtWidgets import QGraphicsItem
 
@@ -27,6 +30,10 @@ _REVIEWED_FILL = QColor(0, 200, 83, 50)
 _CURRENT_BORDER_COLOR = QColor(255, 179, 0)   # amber
 _CURRENT_BORDER_WIDTH = 3       # cosmetic px
 
+# Focus-guide subdivisions per side inside the active cell (3 -> nine
+# sub-regions). 1 disables the guide.
+_DEFAULT_SUBDIVISIONS = 3
+
 
 class GridOverlayItem(QGraphicsItem):
     """QGraphicsItem that paints the review grid over the main image."""
@@ -38,6 +45,7 @@ class GridOverlayItem(QGraphicsItem):
         self._rects = []            # (x, y, w, h) per cell, row-major
         self._reviewed = set()      # row-major indices
         self._current_index = None  # row-major index or None
+        self._subdivisions = _DEFAULT_SUBDIVISIONS  # focus guide per side
         # Below the selected-AOI decoration (1000) but above the pixmap
         # and the AOI circles.
         self.setZValue(950)
@@ -46,7 +54,8 @@ class GridOverlayItem(QGraphicsItem):
         self.setAcceptedMouseButtons(Qt.NoButton)
         self.hide()
 
-    def configure(self, image_w, image_h, rows, cols, reviewed, current_index):
+    def configure(self, image_w, image_h, rows, cols, reviewed, current_index,
+                  subdivisions=_DEFAULT_SUBDIVISIONS):
         """Set the grid to draw.
 
         Args:
@@ -56,6 +65,8 @@ class GridOverlayItem(QGraphicsItem):
             cols: Number of grid columns.
             reviewed: Set of reviewed row-major cell indices.
             current_index: Row-major index of the active cell, or None.
+            subdivisions: Focus-guide subdivisions per side inside the
+                active cell (3 -> nine sub-regions; 1 disables the guide).
         """
         self.prepareGeometryChange()
         self._image_w = int(image_w or 0)
@@ -66,6 +77,7 @@ class GridOverlayItem(QGraphicsItem):
             self._rects = []
         self._reviewed = set(reviewed or ())
         self._current_index = current_index
+        self._subdivisions = max(1, int(subdivisions))
         self.update()
 
     def set_reviewed(self, reviewed):
@@ -76,6 +88,11 @@ class GridOverlayItem(QGraphicsItem):
     def set_current_index(self, current_index):
         """Update only the active-cell highlight."""
         self._current_index = current_index
+        self.update()
+
+    def set_subdivisions(self, subdivisions):
+        """Update only the focus-guide subdivision count (1 disables it)."""
+        self._subdivisions = max(1, int(subdivisions))
         self.update()
 
     def cell_rect(self, index):
@@ -108,9 +125,21 @@ class GridOverlayItem(QGraphicsItem):
         for rect in self._rects:
             painter.drawRect(QRectF(*rect))
 
-        # Active-cell highlight on top.
+        # Active cell: optional focus guide, then the highlight border.
         current_rect = self.cell_rect(self._current_index)
         if current_rect is not None:
+            x, y, w, h = current_rect
+
+            # Focus guide: an N x N subdivision drawn inside the active cell
+            # in the grid-line color. Purely a visual scan aid, no state.
+            if self._subdivisions > 1:
+                painter.setPen(grid_pen)
+                for k in range(1, self._subdivisions):
+                    gx = x + (w * k / self._subdivisions)
+                    painter.drawLine(QLineF(gx, y, gx, y + h))
+                    gy = y + (h * k / self._subdivisions)
+                    painter.drawLine(QLineF(x, gy, x + w, gy))
+
             current_pen = QPen(_CURRENT_BORDER_COLOR)
             current_pen.setWidth(_CURRENT_BORDER_WIDTH)
             current_pen.setCosmetic(True)

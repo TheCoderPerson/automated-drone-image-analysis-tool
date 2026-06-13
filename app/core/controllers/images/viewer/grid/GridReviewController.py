@@ -45,6 +45,8 @@ _SAVE_DEBOUNCE_MS = 2000
 
 _DEFAULT_GRID_SIZE = 4
 _DEFAULT_MIN_PERSON_PX = 60
+# Focus-guide subdivisions per side inside the active cell (3 -> nine).
+_DEFAULT_SUBDIVISIONS = 3
 
 
 class GridReviewController(TranslationMixin, QObject):
@@ -232,12 +234,18 @@ class GridReviewController(TranslationMixin, QObject):
             current_rows=self._rows,
             current_cols=self._cols,
             auto_mark=self._auto_mark_enabled(),
+            sub_guide=self._sub_guide_enabled(),
             suggestion=suggestion,
             person_px=person_px,
         )
         if dialog.exec():
             rows, cols, _ = dialog.values()
             self._apply_grid_size(rows, cols)
+            # Pick up a focus-guide toggle even when the grid size is
+            # unchanged (_apply_grid_size may have returned without redraw).
+            image = self._current_image()
+            if self.active and image is not None and self._overlay_item is not None:
+                self._refresh_overlay(image)
 
     def _apply_grid_size(self, rows, cols):
         """Resize the active sweep's grid when that is safe.
@@ -455,6 +463,20 @@ class GridReviewController(TranslationMixin, QObject):
         except Exception:
             return True
 
+    def _sub_guide_enabled(self):
+        """Whether the in-cell focus guide is shown (defaults on)."""
+        service = getattr(self.parent, 'settings_service', None)
+        if service is None:
+            return True
+        try:
+            return service.get_bool_setting('GridReviewSubGuide', True)
+        except Exception:
+            return True
+
+    def _subdivisions(self):
+        """Focus-guide subdivisions per side (1 = guide off)."""
+        return _DEFAULT_SUBDIVISIONS if self._sub_guide_enabled() else 1
+
     def _int_setting(self, name, default):
         service = getattr(self.parent, 'settings_service', None)
         if service is None:
@@ -472,7 +494,8 @@ class GridReviewController(TranslationMixin, QObject):
         self._overlay_item.configure(
             scene_rect.width(), scene_rect.height(),
             self._rows, self._cols,
-            self._reviewed_cells(image), self.current_cell
+            self._reviewed_cells(image), self.current_cell,
+            self._subdivisions()
         )
         self._overlay_item.show()
 

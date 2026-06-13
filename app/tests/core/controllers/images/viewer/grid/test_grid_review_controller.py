@@ -169,6 +169,21 @@ def test_escape_deactivates_and_restores_view(controller):
     assert controller.parent.messages['Grid Review'] is None
 
 
+def test_sub_guide_setting_controls_subdivisions(controller):
+    """The focus guide maps to 3 subdivisions when on, 1 when off."""
+    controller.parent.settings_service.get_bool_setting.return_value = True
+    assert controller._subdivisions() == 3
+    controller.parent.settings_service.get_bool_setting.return_value = False
+    assert controller._subdivisions() == 1
+
+
+def test_activate_configures_overlay_with_subdivisions(controller):
+    """The overlay is configured with the focus-guide subdivision count."""
+    controller.activate()
+    subdivisions = controller._overlay_item.configure.call_args.args[6]
+    assert subdivisions == 3
+
+
 def test_status_message_reports_progress(controller):
     controller.activate()
     message = controller.parent.messages['Grid Review']

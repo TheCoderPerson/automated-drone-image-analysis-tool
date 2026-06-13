@@ -79,6 +79,19 @@
     </widget>
    </item>
    <item>
+    <widget class="QCheckBox" name="subGuideCheckBox">
+     <property name="toolTip">
+      <string>Draw a 3×3 guide inside the active cell to focus your scan. Visual only — it does not change what gets reviewed.</string>
+     </property>
+     <property name="text">
+      <string>Show 3×3 focus guide inside each cell</string>
+     </property>
+     <property name="checked">
+      <bool>true</bool>
+     </property>
+    </widget>
+   </item>
+   <item>
     <layout class="QHBoxLayout" name="suggestionLayout">
      <item>
       <widget class="QLabel" name="suggestionLabel">

@@ -386,15 +386,24 @@ def test_zip_export_dialog_initialization(app):
 
 def test_grid_review_dialog_initialization(app):
     """Test GridReviewDialog initialization with current values."""
-    dialog = GridReviewDialog(None, current_rows=6, current_cols=8, auto_mark=False)
+    dialog = GridReviewDialog(None, current_rows=6, current_cols=8,
+                              auto_mark=False, sub_guide=False)
     assert dialog.rowsSpinBox.value() == 6
     assert dialog.colsSpinBox.value() == 8
     assert not dialog.autoMarkCheckBox.isChecked()
+    assert not dialog.subGuideCheckBox.isChecked()
     # Spinboxes are bounded to a sane grid range.
     assert dialog.rowsSpinBox.minimum() == 1
     assert dialog.rowsSpinBox.maximum() == 12
     # No suggestion provided -> the button stays disabled.
     assert not dialog.useSuggestionButton.isEnabled()
+
+
+def test_grid_review_dialog_focus_guide_defaults_on(app):
+    """The focus-guide toggle defaults on."""
+    dialog = GridReviewDialog(None)
+    assert dialog.subGuideCheckBox.isChecked()
+    assert dialog.sub_guide_enabled()
 
 
 def test_grid_review_dialog_suggestion(app):
@@ -418,3 +427,4 @@ def test_grid_review_dialog_accept_persists_settings(app):
     settings.set_setting.assert_any_call("GridReviewRows", 5)
     settings.set_setting.assert_any_call("GridReviewCols", 7)
     settings.set_setting.assert_any_call("GridReviewAutoMark", True)
+    settings.set_setting.assert_any_call("GridReviewSubGuide", True)

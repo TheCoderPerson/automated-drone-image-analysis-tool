@@ -5318,22 +5318,22 @@ De schuifregelaar is ingesteld op {recommended} processen.</translation>
 <context>
     <name>GridReviewController</name>
     <message>
-        <location filename="../app/core/controllers/images/viewer/grid/GridReviewController.py" line="149"/>
+        <location filename="../app/core/controllers/images/viewer/grid/GridReviewController.py" line="151"/>
         <source>Grid review works in single-image mode — exit the gallery first.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/grid/GridReviewController.py" line="262"/>
+        <location filename="../app/core/controllers/images/viewer/grid/GridReviewController.py" line="270"/>
         <source>This image keeps its existing grid — the new size applies to unstarted images.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/grid/GridReviewController.py" line="316"/>
+        <location filename="../app/core/controllers/images/viewer/grid/GridReviewController.py" line="324"/>
         <source>Image fully reviewed — advancing</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/grid/GridReviewController.py" line="539"/>
+        <location filename="../app/core/controllers/images/viewer/grid/GridReviewController.py" line="562"/>
         <source>cell {cell}/{cells} — image {image}/{images} — run {percent}% reviewed</source>
         <translation type="unfinished"></translation>
     </message>
@@ -5341,12 +5341,12 @@ De schuifregelaar is ingesteld op {recommended} processen.</translation>
 <context>
     <name>GridReviewDialog</name>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/GridReviewDialog.py" line="50"/>
+        <location filename="../app/core/views/images/viewer/dialogs/GridReviewDialog.py" line="53"/>
         <source>Suggested: {rows}×{cols} (person ≈ {px} px on screen at cell zoom)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/GridReviewDialog.py" line="52"/>
+        <location filename="../app/core/views/images/viewer/dialogs/GridReviewDialog.py" line="55"/>
         <source>Suggested: {rows}×{cols}</source>
         <translation type="unfinished"></translation>
     </message>
@@ -5376,12 +5376,22 @@ De schuifregelaar is ingesteld op {recommended} processen.</translation>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../resources/views/images/viewer/GridReviewDialog.ui" line="89"/>
+        <location filename="../resources/views/images/viewer/GridReviewDialog.ui" line="84"/>
+        <source>Draw a 3×3 guide inside the active cell to focus your scan. Visual only — it does not change what gets reviewed.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../resources/views/images/viewer/GridReviewDialog.ui" line="87"/>
+        <source>Show 3×3 focus guide inside each cell</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../resources/views/images/viewer/GridReviewDialog.ui" line="102"/>
         <source>No grid suggestion available (image GSD unknown).</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../resources/views/images/viewer/GridReviewDialog.ui" line="96"/>
+        <location filename="../resources/views/images/viewer/GridReviewDialog.ui" line="109"/>
         <source>Use Suggestion</source>
         <translation type="unfinished"></translation>
     </message>

@@ -57,6 +57,39 @@ def test_grid_overlay_paint_smoke(app):
         painter.end()
 
 
+def test_grid_overlay_focus_guide_defaults_and_paints(app):
+    """The 3x3 focus guide defaults on and paints inside the active cell."""
+    item = GridOverlayItem()
+    item.configure(400, 300, 4, 4, set(), 5)
+    assert item._subdivisions == 3
+
+    pixmap = QPixmap(400, 300)
+    painter = QPainter(pixmap)
+    try:
+        item.paint(painter, QStyleOptionGraphicsItem(), None)
+    finally:
+        painter.end()
+
+
+def test_grid_overlay_focus_guide_can_be_disabled(app):
+    """subdivisions=1 disables the guide; painting still succeeds."""
+    item = GridOverlayItem()
+    item.configure(400, 300, 4, 4, set(), 5, subdivisions=1)
+    assert item._subdivisions == 1
+    item.set_subdivisions(3)
+    assert item._subdivisions == 3
+    # Clamps degenerate values up to 1.
+    item.set_subdivisions(0)
+    assert item._subdivisions == 1
+
+    pixmap = QPixmap(400, 300)
+    painter = QPainter(pixmap)
+    try:
+        item.paint(painter, QStyleOptionGraphicsItem(), None)
+    finally:
+        painter.end()
+
+
 def test_grid_overlay_paint_unconfigured_is_noop(app):
     item = GridOverlayItem()
     pixmap = QPixmap(50, 50)
