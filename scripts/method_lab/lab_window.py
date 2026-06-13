@@ -95,6 +95,9 @@ METHODS = {
 class MethodLabWindow(QMainWindow):
     """Main window: image canvas, method tabs and overlay toggles."""
 
+    # Image extensions offered by the file/folder pickers and folder scan.
+    IMAGE_EXTS = ('.jpg', '.jpeg', '.png', '.tif', '.tiff', '.dng')
+
     def __init__(self, image_path=None):
         super().__init__()
         self.setWindowTitle("ADIAT Method Test Lab")
@@ -104,11 +107,14 @@ class MethodLabWindow(QMainWindow):
         self.results = {}        # method name -> LabResult
         self.param_widgets = {}  # method name -> {key: widget}
         self.result_rows = {}    # method name -> {'show', 'heat', 'label'}
+        # Sibling images of the loaded file, for Prev/Next folder traversal.
+        self.folder_images = []
+        self.folder_index = -1
 
         self._build_ui()
         self.resize(1500, 950)
         if image_path:
-            self.load_image(image_path)
+            self.open_path(image_path)
 
     # ------------------------------------------------------------------ #
     #  UI construction
@@ -126,11 +132,30 @@ class MethodLabWindow(QMainWindow):
         open_row = QHBoxLayout()
         open_button = QPushButton("Open Image…")
         open_button.clicked.connect(self._open_image_dialog)
+        folder_button = QPushButton("Open Folder…")
+        folder_button.clicked.connect(self._open_folder_dialog)
+        open_row.addWidget(open_button)
+        open_row.addWidget(folder_button)
+        panel_layout.addLayout(open_row)
+
+        # Step through every image in the loaded file's folder.
+        nav_row = QHBoxLayout()
+        self.prev_button = QPushButton("◀ Prev")
+        self.prev_button.clicked.connect(lambda: self._navigate(-1))
+        self.prev_button.setEnabled(False)
+        self.next_button = QPushButton("Next ▶")
+        self.next_button.clicked.connect(lambda: self._navigate(1))
+        self.next_button.setEnabled(False)
+        self.position_label = QLabel("—")
+        self.position_label.setAlignment(Qt.AlignCenter)
+        nav_row.addWidget(self.prev_button)
+        nav_row.addWidget(self.position_label, 1)
+        nav_row.addWidget(self.next_button)
+        panel_layout.addLayout(nav_row)
+
         self.image_label = QLabel("No image loaded")
         self.image_label.setWordWrap(True)
-        open_row.addWidget(open_button)
-        open_row.addWidget(self.image_label, 1)
-        panel_layout.addLayout(open_row)
+        panel_layout.addWidget(self.image_label)
 
         common_group = QGroupBox("Common AOI parameters")
         common_form = QFormLayout(common_group)
@@ -227,7 +252,82 @@ class MethodLabWindow(QMainWindow):
             "Images (*.jpg *.jpeg *.png *.tif *.tiff *.dng)"
         )
         if path:
-            self.load_image(path)
+            self.open_path(path)
+
+    def _open_folder_dialog(self):
+        """Pick a folder and load its first image, enabling Prev/Next."""
+        folder = QFileDialog.getExistingDirectory(self, "Open image folder")
+        if not folder:
+            return
+        images = self._list_folder_images(folder)
+        if not images:
+            self.image_label.setText(f"No images found in: {folder}")
+            return
+        self.folder_images = images
+        self.folder_index = 0
+        self.load_image(images[0])
+        self._update_nav_state()
+
+    def open_path(self, path):
+        """Load an image and sync the folder list to its directory.
+
+        Loading a single file still enables Prev/Next across its siblings,
+        so a one-file open behaves like opening that file's folder.
+        """
+        self._set_folder_context(path)
+        self.load_image(path)
+        self._update_nav_state()
+
+    def _set_folder_context(self, path):
+        """Populate the folder image list and index from a chosen file."""
+        abspath = os.path.abspath(path)
+        folder = os.path.dirname(abspath)
+        self.folder_images = self._list_folder_images(folder)
+        target = os.path.normcase(abspath)
+        self.folder_index = next(
+            (i for i, p in enumerate(self.folder_images)
+             if os.path.normcase(p) == target), -1)
+        if self.folder_index < 0:
+            # The file's extension may be outside the scan list; show it alone.
+            self.folder_images = [abspath]
+            self.folder_index = 0
+
+    def _list_folder_images(self, folder):
+        """Return sorted absolute paths of supported images in a folder."""
+        try:
+            names = sorted(os.listdir(folder))
+        except OSError:
+            return []
+        return [os.path.join(folder, n) for n in names
+                if n.lower().endswith(self.IMAGE_EXTS)]
+
+    def _navigate(self, delta):
+        """Move to the previous/next image in the current folder."""
+        if not self.folder_images:
+            return
+        new_index = self.folder_index + delta
+        if 0 <= new_index < len(self.folder_images):
+            self.folder_index = new_index
+            self.load_image(self.folder_images[new_index])
+            self._update_nav_state()
+
+    def _update_nav_state(self):
+        """Sync the Prev/Next buttons and position label to the folder list."""
+        count = len(self.folder_images)
+        self.prev_button.setEnabled(count > 0 and self.folder_index > 0)
+        self.next_button.setEnabled(count > 0 and self.folder_index < count - 1)
+        self.position_label.setText(
+            f"{self.folder_index + 1} / {count}" if count else "—"
+        )
+
+    def keyPressEvent(self, event):
+        """Left/Right arrows step through the folder, like Prev/Next."""
+        if event.key() == Qt.Key_Right:
+            self._navigate(1)
+        elif event.key() == Qt.Key_Left:
+            self._navigate(-1)
+        else:
+            super().keyPressEvent(event)
 
     def load_image(self, path):
         img = cv2.imread(path, cv2.IMREAD_COLOR)

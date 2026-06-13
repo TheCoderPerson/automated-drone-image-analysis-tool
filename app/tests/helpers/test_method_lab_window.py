@@ -44,3 +44,44 @@ def test_lab_window_runs_in_process_method(app, qtbot, tmp_path):
     window._refresh_display()
     window.result_rows['Edge/Texture']['show'].setChecked(False)
     window._refresh_display()
+
+
+def test_lab_window_folder_navigation(app, qtbot, tmp_path):
+    from method_lab.lab_window import MethodLabWindow
+
+    # Three images with distinct sizes so we can tell which one is loaded.
+    sizes = [(100, 120), (140, 160), (180, 200)]
+    paths = []
+    for i, (h, w) in enumerate(sizes):
+        p = tmp_path / f"img_{i}.png"
+        cv2.imwrite(str(p), np.full((h, w, 3), 100 + (i * 30), np.uint8))
+        paths.append(p)
+
+    # Opening one file syncs the folder list to all three siblings.
+    window = MethodLabWindow(str(paths[0]))
+    qtbot.addWidget(window)
+    assert len(window.folder_images) == 3
+    assert window.folder_index == 0
+    assert window.img_bgr.shape[:2] == sizes[0]
+    assert window.position_label.text() == "1 / 3"
+    assert not window.prev_button.isEnabled()
+    assert window.next_button.isEnabled()
+
+    # Next advances; the loaded image and label track the index.
+    window._navigate(1)
+    assert window.folder_index == 1
+    assert window.img_bgr.shape[:2] == sizes[1]
+    assert window.position_label.text() == "2 / 3"
+    assert window.prev_button.isEnabled()
+
+    # Navigation clamps at the last image.
+    window._navigate(1)
+    assert window.folder_index == 2
+    assert window.next_button.isEnabled() is False
+    window._navigate(1)
+    assert window.folder_index == 2
+
+    # Prev walks back.
+    window._navigate(-1)
+    assert window.folder_index == 1
+    assert window.img_bgr.shape[:2] == sizes[1]
