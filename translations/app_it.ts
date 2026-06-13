@@ -125,12 +125,12 @@ L&apos;accelerazione GPU migliora significativamente la velocità di elaborazion
 <context>
     <name>AIPersonDetectorController</name>
     <message>
-        <location filename="../app/algorithms/images/AIPersonDetector/controllers/AIPersonDetectorController.py" line="81"/>
+        <location filename="../app/algorithms/images/AIPersonDetector/controllers/AIPersonDetectorController.py" line="82"/>
         <source>GPU Not Available</source>
         <translation>GPU non disponibile</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/images/AIPersonDetector/controllers/AIPersonDetectorController.py" line="87"/>
+        <location filename="../app/algorithms/images/AIPersonDetector/controllers/AIPersonDetectorController.py" line="88"/>
         <source>GPU Available</source>
         <translation>GPU disponibile</translation>
     </message>
@@ -198,7 +198,7 @@ Permissivo</translation>
         <translation>Commento AOI</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/AOICommentDialog.py" line="37"/>
+        <location filename="../app/core/views/images/viewer/dialogs/AOICommentDialog.py" line="38"/>
         <source>Add a comment for this flagged AOI (max 256 characters):</source>
         <translation>Aggiungi un commento per questa AOI contrassegnata (max 256 caratteri):</translation>
     </message>
@@ -221,67 +221,78 @@ Permissivo</translation>
 <context>
     <name>AOIController</name>
     <message>
-        <location filename="../app/core/controllers/images/viewer/aoi/AOIController.py" line="462"/>
+        <location filename="../app/core/controllers/images/viewer/aoi/AOIController.py" line="346"/>
+        <source>No AOI #{number} in this analysis.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/controllers/images/viewer/aoi/AOIController.py" line="359"/>
+        <location filename="../app/core/controllers/images/viewer/aoi/AOIController.py" line="369"/>
+        <source>AOI #{number} is hidden by the current filter.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/controllers/images/viewer/aoi/AOIController.py" line="572"/>
         <source>Comment saved</source>
         <translation>Commento salvato</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/aoi/AOIController.py" line="464"/>
+        <location filename="../app/core/controllers/images/viewer/aoi/AOIController.py" line="574"/>
         <source>Comment cleared</source>
         <translation>Commento cancellato</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/aoi/AOIController.py" line="553"/>
+        <location filename="../app/core/controllers/images/viewer/aoi/AOIController.py" line="663"/>
         <source>Copy Data</source>
         <translation>Copia Dati</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/aoi/AOIController.py" line="654"/>
+        <location filename="../app/core/controllers/images/viewer/aoi/AOIController.py" line="764"/>
         <source>AOI data copied</source>
         <translation>Dati AOI copiati</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/aoi/AOIController.py" line="741"/>
+        <location filename="../app/core/controllers/images/viewer/aoi/AOIController.py" line="851"/>
         <source>Invalid image index</source>
         <translation>Indice immagine non valido</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/aoi/AOIController.py" line="746"/>
+        <location filename="../app/core/controllers/images/viewer/aoi/AOIController.py" line="856"/>
         <source>Invalid AOI index</source>
         <translation>Indice AOI non valido</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/aoi/AOIController.py" line="809"/>
+        <location filename="../app/core/controllers/images/viewer/aoi/AOIController.py" line="919"/>
         <source>Could not calculate AOI location. Diagnostic info copied to clipboard!</source>
         <translation>Impossibile calcolare la posizione dell&apos;AOI. Informazioni diagnostiche copiate negli appunti!</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/aoi/AOIController.py" line="815"/>
+        <location filename="../app/core/controllers/images/viewer/aoi/AOIController.py" line="925"/>
         <source>Could not calculate AOI location</source>
         <translation>Impossibile calcolare la posizione dell&apos;AOI</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/aoi/AOIController.py" line="1270"/>
+        <location filename="../app/core/controllers/images/viewer/aoi/AOIController.py" line="1381"/>
         <source>Temperature sorting unavailable (no thermal data)</source>
         <translation>Ordinamento per temperatura non disponibile (nessun dato termico)</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/aoi/AOIController.py" line="1602"/>
+        <location filename="../app/core/controllers/images/viewer/aoi/AOIController.py" line="1732"/>
         <source>Cannot Delete AOI</source>
         <translation>Impossibile eliminare l&apos;AOI</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/aoi/AOIController.py" line="1604"/>
+        <location filename="../app/core/controllers/images/viewer/aoi/AOIController.py" line="1737"/>
         <source>Only manually created AOIs can be deleted. Algorithm-detected AOIs cannot be deleted.</source>
         <translation>Solo le AOI create manualmente possono essere eliminate. Le AOI rilevate dagli algoritmi non possono essere eliminate.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/aoi/AOIController.py" line="1613"/>
+        <location filename="../app/core/controllers/images/viewer/aoi/AOIController.py" line="1743"/>
         <source>Delete AOI</source>
         <translation>Elimina AOI</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/aoi/AOIController.py" line="1615"/>
+        <location filename="../app/core/controllers/images/viewer/aoi/AOIController.py" line="1746"/>
         <source>Are you sure you want to delete this AOI? This action cannot be undone.</source>
         <translation>Sei sicuro di voler eliminare questa AOI? Questa azione non può essere annullata.</translation>
     </message>
@@ -555,7 +566,7 @@ Permissivo</translation>
         <translation>Seleziona Maschera Immagine</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/AOIFilterDialog.py" line="609"/>
+        <location filename="../app/core/views/images/viewer/dialogs/AOIFilterDialog.py" line="610"/>
         <source>Images (*.png *.jpg *.jpeg *.bmp *.tiff);;All Files (*)</source>
         <translation>Immagini (*.png *.jpg *.jpeg *.bmp *.tiff);;Tutti i file (*)</translation>
     </message>
@@ -565,7 +576,7 @@ Permissivo</translation>
         <translation>Immagine Non Valida</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/AOIFilterDialog.py" line="619"/>
+        <location filename="../app/core/views/images/viewer/dialogs/AOIFilterDialog.py" line="620"/>
         <source>Could not load the selected image. Please choose a valid image file.</source>
         <translation>Impossibile caricare l&apos;immagine selezionata. Scegli un file immagine valido.</translation>
     </message>
@@ -626,7 +637,7 @@ Permissivo</translation>
         <translation>Nessuna AOI selezionata</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/neighbor/AOINeighborTrackingController.py" line="121"/>
+        <location filename="../app/core/controllers/images/viewer/neighbor/AOINeighborTrackingController.py" line="122"/>
         <source>Please select an AOI first by clicking on it in the thumbnail panel.</source>
         <translation>Seleziona prima un&apos;AOI cliccandoci sopra nel pannello delle miniature.</translation>
     </message>
@@ -636,7 +647,7 @@ Permissivo</translation>
         <translation>Impossibile calcolare il GPS</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/neighbor/AOINeighborTrackingController.py" line="155"/>
+        <location filename="../app/core/controllers/images/viewer/neighbor/AOINeighborTrackingController.py" line="158"/>
         <source>Unable to calculate GPS coordinates for this AOI.
 
 This may be due to missing image metadata (GPS, altitude, or camera info).</source>
@@ -677,7 +688,7 @@ Ciò potrebbe essere dovuto alla mancanza di metadati dell&apos;immagine (GPS, a
         <translation>Nessuna immagine vicina trovata</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/neighbor/AOINeighborTrackingController.py" line="233"/>
+        <location filename="../app/core/controllers/images/viewer/neighbor/AOINeighborTrackingController.py" line="234"/>
         <source>The AOI was not found in any neighboring images.</source>
         <translation>L&apos;AOI non è stata trovata in nessuna delle immagini vicine.</translation>
     </message>
@@ -709,15 +720,15 @@ Ciò potrebbe essere dovuto alla mancanza di metadati dell&apos;immagine (GPS, a
 <context>
     <name>AOIUIComponent</name>
     <message>
-        <location filename="../app/core/controllers/images/viewer/aoi/AOIUIComponent.py" line="250"/>
-        <location filename="../app/core/controllers/images/viewer/aoi/AOIUIComponent.py" line="333"/>
+        <location filename="../app/core/controllers/images/viewer/aoi/AOIUIComponent.py" line="251"/>
+        <location filename="../app/core/controllers/images/viewer/aoi/AOIUIComponent.py" line="347"/>
         <source>AOI Information
 Right-click to copy data to clipboard</source>
         <translation>Informazioni AOI
 Fai clic destro per copiare i dati negli appunti</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/aoi/AOIUIComponent.py" line="256"/>
+        <location filename="../app/core/controllers/images/viewer/aoi/AOIUIComponent.py" line="257"/>
         <source>
 
 Score Type: {type}
@@ -728,22 +739,22 @@ Tipo Punteggio: {type}
 Punteggio Grezzo: {score} ({method})</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/aoi/AOIUIComponent.py" line="307"/>
+        <location filename="../app/core/controllers/images/viewer/aoi/AOIUIComponent.py" line="320"/>
         <source>Confidence Score: {score:.1f}%</source>
         <translation>Punteggio di Confidenza: {score:.1f}%</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/aoi/AOIUIComponent.py" line="373"/>
+        <location filename="../app/core/controllers/images/viewer/aoi/AOIUIComponent.py" line="386"/>
         <source>Unflag AOI</source>
         <translation>Rimuovi contrassegno AOI</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/aoi/AOIUIComponent.py" line="373"/>
+        <location filename="../app/core/controllers/images/viewer/aoi/AOIUIComponent.py" line="387"/>
         <source>Flag AOI</source>
         <translation>Contrassegna AOI</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/aoi/AOIUIComponent.py" line="390"/>
+        <location filename="../app/core/controllers/images/viewer/aoi/AOIUIComponent.py" line="403"/>
         <source>Comment:
 {comment}
 
@@ -754,7 +765,7 @@ Click to edit comment</source>
 Clicca per modificare il commento</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/aoi/AOIUIComponent.py" line="398"/>
+        <location filename="../app/core/controllers/images/viewer/aoi/AOIUIComponent.py" line="415"/>
         <source>No comment yet.
 Click to add a comment for this AOI.
 
@@ -767,52 +778,52 @@ Usa i commenti per annotare dettagli importanti, osservazioni,
 o azioni necessarie per questo rilevamento.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/aoi/AOIUIComponent.py" line="415"/>
+        <location filename="../app/core/controllers/images/viewer/aoi/AOIUIComponent.py" line="429"/>
         <source>Calculate and show GPS location for this AOI</source>
         <translation>Calcola e mostra la posizione GPS per questa AOI</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/aoi/AOIUIComponent.py" line="433"/>
+        <location filename="../app/core/controllers/images/viewer/aoi/AOIUIComponent.py" line="446"/>
         <source>Delete this AOI</source>
         <translation>Elimina questa AOI</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/aoi/AOIUIComponent.py" line="471"/>
+        <location filename="../app/core/controllers/images/viewer/aoi/AOIUIComponent.py" line="484"/>
         <source>Area</source>
         <translation>Area</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/aoi/AOIUIComponent.py" line="471"/>
+        <location filename="../app/core/controllers/images/viewer/aoi/AOIUIComponent.py" line="485"/>
         <source>Areas</source>
         <translation>Aree</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/aoi/AOIUIComponent.py" line="473"/>
+        <location filename="../app/core/controllers/images/viewer/aoi/AOIUIComponent.py" line="486"/>
         <source>{filtered} of {total} {label}</source>
         <translation>{filtered} di {total} {label}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/aoi/AOIUIComponent.py" line="482"/>
+        <location filename="../app/core/controllers/images/viewer/aoi/AOIUIComponent.py" line="496"/>
         <source>Area of Interest</source>
         <translation>Area di Interesse</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/aoi/AOIUIComponent.py" line="484"/>
+        <location filename="../app/core/controllers/images/viewer/aoi/AOIUIComponent.py" line="498"/>
         <source>Areas of Interest</source>
         <translation>Aree di Interesse</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/aoi/AOIUIComponent.py" line="487"/>
+        <location filename="../app/core/controllers/images/viewer/aoi/AOIUIComponent.py" line="500"/>
         <source>{count} {label}</source>
         <translation>{count} {label}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/aoi/AOIUIComponent.py" line="630"/>
+        <location filename="../app/core/controllers/images/viewer/aoi/AOIUIComponent.py" line="643"/>
         <source>Loading AOIs...</source>
         <translation>Caricamento AOI...</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/aoi/AOIUIComponent.py" line="671"/>
+        <location filename="../app/core/controllers/images/viewer/aoi/AOIUIComponent.py" line="684"/>
         <source>Loading AOIs... ({current}/{total})</source>
         <translation>Caricamento AOI... ({current}/{total})</translation>
     </message>
@@ -820,7 +831,7 @@ o azioni necessarie per questo rilevamento.</translation>
 <context>
     <name>AlertManager</name>
     <message>
-        <location filename="../app/core/services/AlertService.py" line="294"/>
+        <location filename="../app/core/services/AlertService.py" line="295"/>
         <source>ADIAT - Color Detection Alerts</source>
         <translation>ADIAT - Avvisi Rilevamento Colore</translation>
     </message>
@@ -830,7 +841,7 @@ o azioni necessarie per questo rilevamento.</translation>
         <translation>ADIAT - Avviso Rilevamento Colore</translation>
     </message>
     <message>
-        <location filename="../app/core/services/AlertService.py" line="610"/>
+        <location filename="../app/core/services/AlertService.py" line="613"/>
         <source>Detected {count} object(s)
 Average confidence: {avg_confidence:.2f}
 Total area: {area:.0f} pixels
@@ -841,7 +852,7 @@ Area totale: {area:.0f} pixel
 </translation>
     </message>
     <message>
-        <location filename="../app/core/services/AlertService.py" line="620"/>
+        <location filename="../app/core/services/AlertService.py" line="621"/>
         <source>
 Details:
 </source>
@@ -850,7 +861,7 @@ Dettagli:
 </translation>
     </message>
     <message>
-        <location filename="../app/core/services/AlertService.py" line="624"/>
+        <location filename="../app/core/services/AlertService.py" line="625"/>
         <source>  #{index}: ({x},{y}) {w}x{h} conf:{confidence:.2f}
 </source>
         <translation>  #{index}: ({x},{y}) {w}x{h} conf:{confidence:.2f}
@@ -878,7 +889,7 @@ Dettagli:
         <translation>Stai usando immagini termiche?</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/guidePages/AlgorithmSelectionPage.py" line="156"/>
+        <location filename="../app/core/controllers/images/guidePages/AlgorithmSelectionPage.py" line="157"/>
         <source>Are you looking for anomalies within a specific temperature range?</source>
         <translation>Stai cercando anomalie entro un intervallo di temperatura specifico?</translation>
     </message>
@@ -888,7 +899,7 @@ Dettagli:
         <translation>Vuoi rilevare specificamente persone?</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/guidePages/AlgorithmSelectionPage.py" line="168"/>
+        <location filename="../app/core/controllers/images/guidePages/AlgorithmSelectionPage.py" line="169"/>
         <source>Do you want to detect anomalies relative to local surroundings?</source>
         <translation>Vuoi rilevare anomalie rispetto alle aree circostanti locali?</translation>
     </message>
@@ -903,12 +914,12 @@ Dettagli:
         <translation>Vuoi regolare manualmente l&apos;intervallo di colore?</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/guidePages/AlgorithmSelectionPage.py" line="193"/>
+        <location filename="../app/core/controllers/images/guidePages/AlgorithmSelectionPage.py" line="194"/>
         <source>Do your images contain complex backgrounds or structures?</source>
         <translation>Le tue immagini contengono sfondi o strutture complesse?</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/guidePages/AlgorithmSelectionPage.py" line="200"/>
+        <location filename="../app/core/controllers/images/guidePages/AlgorithmSelectionPage.py" line="201"/>
         <source>Do your images include shadows or areas with uneven lighting?</source>
         <translation>Le tue immagini includono ombre o aree con illuminazione non uniforme?</translation>
     </message>
@@ -919,6 +930,118 @@ Dettagli:
     </message>
 </context>
 <context>
+    <name>AlignImageController</name>
+    <message>
+        <location filename="../app/core/controllers/images/viewer/AlignImageController.py" line="46"/>
+        <source>No image available to align</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/controllers/images/viewer/AlignImageController.py" line="52"/>
+        <source>This image has no GPS data and cannot be aligned</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/controllers/images/viewer/AlignImageController.py" line="81"/>
+        <source>Could not save the alignment</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/controllers/images/viewer/AlignImageController.py" line="92"/>
+        <source>Image alignment saved</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
+    <name>AlignImageDialog</name>
+    <message>
+        <location filename="../app/core/views/images/viewer/dialogs/AlignImageDialog.py" line="56"/>
+        <source>This saved alignment looks mirrored - re-place each corner handle on its matching photo corner (coloured squares).</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/views/images/viewer/dialogs/AlignImageDialog.py" line="61"/>
+        <source>Align Image</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/views/images/viewer/dialogs/AlignImageDialog.py" line="137"/>
+        <source>Rotate the drone image to line it up with the map. The small coloured squares mark the photo&apos;s corners - drag each corner handle onto the map where its matching-coloured photo corner belongs. For extra accuracy, add tie points: put the IMAGE end on a feature in the drone photo and the MAP end on the same feature on the map.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/views/images/viewer/dialogs/AlignImageDialog.py" line="138"/>
+        <source>Rotation:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/views/images/viewer/dialogs/AlignImageDialog.py" line="139"/>
+        <source>Map opacity:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/views/images/viewer/dialogs/AlignImageDialog.py" line="140"/>
+        <source>FOV overlay opacity:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/views/images/viewer/dialogs/AlignImageDialog.py" line="141"/>
+        <location filename="../app/core/views/images/viewer/dialogs/AlignImageDialog.py" line="193"/>
+        <source>Show Street Map</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/views/images/viewer/dialogs/AlignImageDialog.py" line="142"/>
+        <source>Add Tie Point</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/views/images/viewer/dialogs/AlignImageDialog.py" line="143"/>
+        <source>Reset</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/views/images/viewer/dialogs/AlignImageDialog.py" line="196"/>
+        <source>Show Satellite</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/views/images/viewer/dialogs/AlignImageDialog.py" line="220"/>
+        <source>Corners look mirrored</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/views/images/viewer/dialogs/AlignImageDialog.py" line="227"/>
+        <source>The four corners appear mirrored - the drone image would map to the ground flipped.
+
+Each corner handle is colour-matched to a corner of the drone photo (the small coloured squares). Make sure every handle sits where its matching photo corner belongs.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/views/images/viewer/dialogs/AlignImageDialog.py" line="232"/>
+        <source>Go Back and Fix</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
+    <name>AlignImageView</name>
+    <message>
+        <location filename="../app/core/views/images/viewer/widgets/AlignImageView.py" line="372"/>
+        <source>IMAGE</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/views/images/viewer/widgets/AlignImageView.py" line="374"/>
+        <source>MAP</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/views/images/viewer/widgets/AlignImageView.py" line="603"/>
+        <source>Remove Tie Point</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
     <name>AltitudeController</name>
     <message>
         <location filename="../app/core/controllers/images/viewer/AltitudeController.py" line="98"/>
@@ -926,7 +1049,7 @@ Dettagli:
         <translation>metri</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/AltitudeController.py" line="98"/>
+        <location filename="../app/core/controllers/images/viewer/AltitudeController.py" line="100"/>
         <source>feet</source>
         <translation>piedi</translation>
     </message>
@@ -936,7 +1059,7 @@ Dettagli:
         <translation>Rilevata altitudine negativa</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/AltitudeController.py" line="111"/>
+        <location filename="../app/core/controllers/images/viewer/AltitudeController.py" line="113"/>
         <source>WARNING! Relative Altitude is negative. Enter an AGL altitude to be used for GSD calculations (in {unit}):</source>
         <translation>ATTENZIONE! L&apos;altitudine relativa è negativa. Inserisci un&apos;altitudine AGL da utilizzare per i calcoli GSD (in {unit}):</translation>
     </message>
@@ -946,7 +1069,7 @@ Dettagli:
         <translation>Forza Altitudine</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/AltitudeController.py" line="132"/>
+        <location filename="../app/core/controllers/images/viewer/AltitudeController.py" line="133"/>
         <source>Enter a custom AGL altitude to be used for GSD calculations for all images (in {unit}):</source>
         <translation>Inserisci un&apos;altitudine AGL personalizzata da utilizzare per i calcoli GSD per tutte le immagini (in {unit}):</translation>
     </message>
@@ -974,37 +1097,37 @@ Dettagli:
         <translation>Tutte le {count} immagini in coda, elaborazione avviata...</translation>
     </message>
     <message>
-        <location filename="../app/core/services/AnalyzeService.py" line="193"/>
+        <location filename="../app/core/services/AnalyzeService.py" line="196"/>
         <source>{images} images with {aois} areas of interest identified</source>
         <translation>{images} immagini con {aois} aree di interesse identificate</translation>
     </message>
     <message>
-        <location filename="../app/core/services/AnalyzeService.py" line="199"/>
+        <location filename="../app/core/services/AnalyzeService.py" line="202"/>
         <source>Total Processing Time: {seconds} seconds</source>
         <translation>Tempo totale di elaborazione: {seconds} secondi</translation>
     </message>
     <message>
-        <location filename="../app/core/services/AnalyzeService.py" line="202"/>
+        <location filename="../app/core/services/AnalyzeService.py" line="205"/>
         <source>Total Images Processed: {count}</source>
         <translation>Totale immagini elaborate: {count}</translation>
     </message>
     <message>
-        <location filename="../app/core/services/AnalyzeService.py" line="387"/>
+        <location filename="../app/core/services/AnalyzeService.py" line="408"/>
         <source>Unable to process {file} :: {error}</source>
         <translation>Impossibile elaborare {file} :: {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/services/AnalyzeService.py" line="412"/>
+        <location filename="../app/core/services/AnalyzeService.py" line="433"/>
         <source>{count} areas of interest identified in {file} ({percent}%)</source>
         <translation>{count} aree di interesse identificate in {file} ({percent}%)</translation>
     </message>
     <message>
-        <location filename="../app/core/services/AnalyzeService.py" line="429"/>
+        <location filename="../app/core/services/AnalyzeService.py" line="450"/>
         <source>No areas of interest identified in {file} ({percent}%)</source>
         <translation>Nessuna area di interesse identificata in {file} ({percent}%)</translation>
     </message>
     <message>
-        <location filename="../app/core/services/AnalyzeService.py" line="442"/>
+        <location filename="../app/core/services/AnalyzeService.py" line="463"/>
         <source>--- Cancelling Image Processing ---</source>
         <translation>--- Annullamento elaborazione immagini ---</translation>
     </message>
@@ -1018,7 +1141,7 @@ Dettagli:
         <translation>Rilevati Orientamenti Mancanti</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/BearingRecoveryDialog.py" line="132"/>
+        <location filename="../app/core/views/images/viewer/dialogs/BearingRecoveryDialog.py" line="135"/>
         <source>Some images are missing bearing/heading information. We can estimate bearings from a flight track file (KML/GPX/CSV) or calculate them automatically from image GPS coordinates.</source>
         <translation>Alcune immagini mancano di informazioni sull&apos;orientamento/prua. Possiamo stimare gli orientamenti da un file di traccia di volo (KML/GPX/CSV) o calcolarli automaticamente dalle coordinate GPS dell&apos;immagine.</translation>
     </message>
@@ -1053,7 +1176,7 @@ Dettagli:
         <translation>Seleziona File Traccia</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/BearingRecoveryDialog.py" line="261"/>
+        <location filename="../app/core/views/images/viewer/dialogs/BearingRecoveryDialog.py" line="262"/>
         <source>Track Files (*.kml *.gpx *.csv);;KML Files (*.kml);;GPX Files (*.gpx);;CSV Files (*.csv);;All Files (*.*)</source>
         <translation>File Traccia (*.kml *.gpx *.csv);;File KML (*.kml);;File GPX (*.gpx);;File CSV (*.csv);;Tutti i File (*.*)</translation>
     </message>
@@ -1093,7 +1216,7 @@ Dettagli:
         <translation>Calcolo Orientamento Fallito</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/BearingRecoveryDialog.py" line="391"/>
+        <location filename="../app/core/views/images/viewer/dialogs/BearingRecoveryDialog.py" line="393"/>
         <source>An error occurred during bearing calculation:
 
 {error}
@@ -1121,7 +1244,7 @@ Controlla i file di input e riprova.</translation>
         <translation>Recupero Orientamento Non Necessario</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/BearingRecoveryDialog.py" line="437"/>
+        <location filename="../app/core/views/images/viewer/dialogs/BearingRecoveryDialog.py" line="440"/>
         <source>Bearing recovery requires multiple images to calculate direction of travel.
 
 With only one image, bearing recovery cannot be performed.</source>
@@ -1130,7 +1253,7 @@ With only one image, bearing recovery cannot be performed.</source>
 Con una sola immagine, il recupero dell&apos;orientamento non può essere eseguito.</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/BearingRecoveryDialog.py" line="452"/>
+        <location filename="../app/core/views/images/viewer/dialogs/BearingRecoveryDialog.py" line="482"/>
         <source>
 &lt;h3&gt;What is Bearing Recovery?&lt;/h3&gt;
 
@@ -1209,14 +1332,14 @@ Procedi senza il recupero dell&apos;orientamento. Alcune funzioni potrebbero non
         <translation>Dati memorizzati nella cache non trovati</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/CacheLocationDialog.py" line="56"/>
+        <location filename="../app/core/views/images/viewer/dialogs/CacheLocationDialog.py" line="57"/>
         <source>The following cached items were not found:
 </source>
         <translation>I seguenti elementi memorizzati nella cache non sono stati trovati:
 </translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/CacheLocationDialog.py" line="66"/>
+        <location filename="../app/core/views/images/viewer/dialogs/CacheLocationDialog.py" line="71"/>
         <source>Without cached data, thumbnails and colors will be generated on-demand, which may cause delays when viewing results.
 
 If you have previously processed this dataset and have an ADIAT_Results folder with cached data, you can locate it now to improve performance.</source>
@@ -1245,7 +1368,7 @@ Se hai precedentemente elaborato questo set di dati e hai una cartella ADIAT_Res
         <translation>Cartella Cache Non Valida</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/CacheLocationDialog.py" line="138"/>
+        <location filename="../app/core/views/images/viewer/dialogs/CacheLocationDialog.py" line="143"/>
         <source>The selected folder does not contain thumbnail cache directory.
 
 Expected to find:
@@ -1309,7 +1432,7 @@ Seleziona una cartella ADIAT_Results valida.</translation>
         <translation>Credenziali Aggiornate</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/CalTopoAPIMapDialog.py" line="516"/>
+        <location filename="../app/core/views/images/viewer/dialogs/CalTopoAPIMapDialog.py" line="517"/>
         <source>Credentials have been updated and the map list has been refreshed.</source>
         <translation>Le credenziali sono state aggiornate e l&apos;elenco delle mappe è stato aggiornato.</translation>
     </message>
@@ -1319,7 +1442,7 @@ Seleziona una cartella ADIAT_Results valida.</translation>
         <translation>Aggiornamento Fallito</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/CalTopoAPIMapDialog.py" line="523"/>
+        <location filename="../app/core/views/images/viewer/dialogs/CalTopoAPIMapDialog.py" line="526"/>
         <source>Failed to refresh account data with new credentials.
 
 Please check your credentials and try again.</source>
@@ -1342,7 +1465,7 @@ Controlla le tue credenziali e riprova.</translation>
 {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/CalTopoAPIMapDialog.py" line="542"/>
+        <location filename="../app/core/views/images/viewer/dialogs/CalTopoAPIMapDialog.py" line="544"/>
         <source>Credentials have been updated. Please close and reopen this dialog to refresh the map list.</source>
         <translation>Le credenziali sono state aggiornate. Chiudi e riapri questa finestra per aggiornare l&apos;elenco delle mappe.</translation>
     </message>
@@ -1352,7 +1475,7 @@ Controlla le tue credenziali e riprova.</translation>
         <translation>Nessuna Mappa Selezionata</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/CalTopoAPIMapDialog.py" line="560"/>
+        <location filename="../app/core/views/images/viewer/dialogs/CalTopoAPIMapDialog.py" line="561"/>
         <source>Please select a map from the list.</source>
         <translation>Seleziona una mappa dall&apos;elenco.</translation>
     </message>
@@ -1407,7 +1530,7 @@ Controlla le tue credenziali e riprova.</translation>
         <translation>Caricamento Fallito</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/CalTopoAuthDialog.py" line="310"/>
+        <location filename="../app/core/views/images/viewer/dialogs/CalTopoAuthDialog.py" line="312"/>
         <source>Failed to load CalTopo. Please check your internet connection and try again.</source>
         <translation>Impossibile caricare CalTopo. Controlla la tua connessione internet e riprova.</translation>
     </message>
@@ -1422,7 +1545,7 @@ Controlla le tue credenziali e riprova.</translation>
         <translation>Nessuna Mappa Selezionata</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/CalTopoAuthDialog.py" line="360"/>
+        <location filename="../app/core/views/images/viewer/dialogs/CalTopoAuthDialog.py" line="363"/>
         <source>Please navigate to a CalTopo map before capturing the session.
 
 The map URL should contain a map ID (e.g., /m/ABC123 or #id=ABC123).</source>
@@ -1436,7 +1559,7 @@ L&apos;URL della mappa deve contenere un ID mappa (es., /m/ABC123 o #id=ABC123).
         <translation>Browser non pronto</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/CalTopoAuthDialog.py" line="370"/>
+        <location filename="../app/core/views/images/viewer/dialogs/CalTopoAuthDialog.py" line="371"/>
         <source>The CalTopo browser is still loading. Please wait a moment and try again.</source>
         <translation>Il browser CalTopo è ancora in fase di caricamento. Attendi un momento e riprova.</translation>
     </message>
@@ -1452,12 +1575,12 @@ L&apos;URL della mappa deve contenere un ID mappa (es., /m/ABC123 o #id=ABC123).
         <translation>Autenticazione Fallita</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/CalTopoAuthDialog.py" line="395"/>
+        <location filename="../app/core/views/images/viewer/dialogs/CalTopoAuthDialog.py" line="396"/>
         <source>Browser not initialized. Please try again.</source>
         <translation>Browser non inizializzato. Riprova.</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/CalTopoAuthDialog.py" line="559"/>
+        <location filename="../app/core/views/images/viewer/dialogs/CalTopoAuthDialog.py" line="566"/>
         <source>Could not capture session cookies. Please ensure you are logged in to CalTopo.
 
 Try:
@@ -1492,7 +1615,7 @@ Prova:
         <translation>Credenziali API Team CalTopo</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/CalTopoCredentialDialog.py" line="85"/>
+        <location filename="../app/core/views/images/viewer/dialogs/CalTopoCredentialDialog.py" line="87"/>
         <source>Enter your CalTopo Team API credentials.
 These can be found in the Team Admin page under Service Accounts.</source>
         <translation>Inserisci le tue credenziali API Team CalTopo.
@@ -1608,7 +1731,7 @@ Queste possono essere trovate nella pagina Team Admin sotto Service Accounts.</t
         <translation>Credenziali Valide</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/CalTopoCredentialDialog.py" line="283"/>
+        <location filename="../app/core/views/images/viewer/dialogs/CalTopoCredentialDialog.py" line="284"/>
         <source>The credentials are valid and successfully authenticated with CalTopo API.</source>
         <translation>Le credenziali sono valide e l&apos;autenticazione con l&apos;API CalTopo è riuscita.</translation>
     </message>
@@ -1618,7 +1741,7 @@ Queste possono essere trovate nella pagina Team Admin sotto Service Accounts.</t
         <translation>Credenziali Non Valide</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/CalTopoCredentialDialog.py" line="290"/>
+        <location filename="../app/core/views/images/viewer/dialogs/CalTopoCredentialDialog.py" line="297"/>
         <source>The credentials failed to authenticate with CalTopo API.
 
 Please check:
@@ -1658,8 +1781,8 @@ Controlla:
         <translation>Modalità Offline Abilitata</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="443"/>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1509"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="448"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1514"/>
         <source>Offline Only is turned on in Preferences:
 
 • Map tiles will not be retrieved.
@@ -1680,8 +1803,8 @@ Disattiva Solo Offline per esportare su CalTopo.</translation>
         <translation>Nessuna Selezione</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="456"/>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1522"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="458"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1524"/>
         <source>Select at least one data type (flagged AOIs, drone/image locations, or coverage area) to export.</source>
         <translation>Seleziona almeno un tipo di dati (AOI contrassegnate, posizioni drone/immagini o area di copertura) da esportare.</translation>
     </message>
@@ -1706,7 +1829,7 @@ Disattiva Solo Offline per esportare su CalTopo.</translation>
         <translation>Errore di Preparazione</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="514"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="515"/>
         <source>An error occurred while preparing export data:
 
 {error}</source>
@@ -1730,14 +1853,14 @@ Disattiva Solo Offline per esportare su CalTopo.</translation>
         <translation>area di copertura</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="531"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="534"/>
         <source>No flagged AOIs, geotagged image locations, or coverage areas are available.
 Flag some AOIs with the &apos;F&apos; key or ensure your images have GPS metadata.</source>
         <translation>Non sono disponibili AOI contrassegnate, posizioni di immagini georeferenziate o aree di copertura.
 Contrassegna alcune AOI con il tasto &apos;F&apos; o assicurati che le tue immagini abbiano metadati GPS.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="537"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="542"/>
         <source>Found {count} flagged AOI(s), but could not extract GPS coordinates.
 
 This usually means:
@@ -1754,14 +1877,14 @@ Questo di solito significa:
 Assicurati che le tue immagini abbiano le coordinate GPS incorporate.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="545"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="548"/>
         <source>No geotagged drone/image locations were found.
 Ensure your images contain GPS metadata and try again.</source>
         <translation>Non sono state trovate posizioni di droni/immagini georeferenziate.
 Assicurati che le tue immagini contengano metadati GPS e riprova.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="550"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="557"/>
         <source>No coverage area polygons could be calculated.
 
 This usually means:
@@ -1780,7 +1903,7 @@ Questo di solito significa:
 Assicurati che le tue immagini abbiano le coordinate GPS e siano scatti nadirali.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="559"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="560"/>
         <source>No {types} are available to export.</source>
         <translation>Nessun {types} disponibile per l&apos;esportazione.</translation>
     </message>
@@ -1795,7 +1918,7 @@ Assicurati che le tue immagini abbiano le coordinate GPS e siano scatti nadirali
         <translation>Nessuna Mappa Selezionata</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="587"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="591"/>
         <source>Please navigate to a CalTopo map before clicking &apos;I&apos;m Logged In&apos;.
 
 The map URL should look like:
@@ -1827,7 +1950,7 @@ https://caltopo.com/map.html#...&amp;id=ABC123</translation>
         <translation>Esportazione Riuscita</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="663"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="665"/>
         <source>Successfully exported all {items} to CalTopo map {map_id}.
 
 The items should now be visible on your map.</source>
@@ -1842,7 +1965,7 @@ Gli elementi dovrebbero ora essere visibili sulla tua mappa.</translation>
         <translation>Successo Parziale</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="672"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="674"/>
         <source>Exported {success} of {total} item(s) ({items}) to CalTopo map {map_id}.
 
 {failed} item(s) failed. Check console for details.</source>
@@ -1857,8 +1980,8 @@ Gli elementi dovrebbero ora essere visibili sulla tua mappa.</translation>
         <translation>Esportazione Fallita</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="688"/>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1740"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="691"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1743"/>
         <source>Failed to export items to CalTopo.
 
 Please check the console output for error details.</source>
@@ -1874,7 +1997,7 @@ Controlla l&apos;output della console per i dettagli dell&apos;errore.</translat
         <translation>Errore di Esportazione</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="700"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="701"/>
         <source>An error occurred during CalTopo export:
 
 {error}</source>
@@ -1883,7 +2006,7 @@ Controlla l&apos;output della console per i dettagli dell&apos;errore.</translat
 {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1001"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1004"/>
         <source>Coverage area: {sqkm:.3f} km² ({acres:.2f} acres)
 Area in square meters: {sqm:.0f} m²
 Number of corners: {count}</source>
@@ -1909,7 +2032,7 @@ Numero di angoli: {count}</translation>
         <translation>Preparazione all&apos;esportazione di {count} marcatore/i...</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1295"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1296"/>
         <source>Export complete: {success} of {total} marker(s) exported</source>
         <translation>Esportazione completata: {success} di {total} marcatore/i esportati</translation>
     </message>
@@ -1924,7 +2047,7 @@ Numero di angoli: {count}</translation>
         <translation>Preparazione all&apos;esportazione di {count} poligono/i...</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1461"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1462"/>
         <source>Export complete: {success} of {total} polygon(s) exported</source>
         <translation>Esportazione completata: {success} di {total} poligono/i esportati</translation>
     </message>
@@ -1934,7 +2057,7 @@ Numero di angoli: {count}</translation>
         <translation>Disconnesso</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1480"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1481"/>
         <source>Successfully logged out from CalTopo.</source>
         <translation>Disconnessione da CalTopo riuscita.</translation>
     </message>
@@ -1959,7 +2082,7 @@ Numero di angoli: {count}</translation>
         <translation>Errore di Connessione</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1589"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1590"/>
         <source>An error occurred while connecting to CalTopo API:
 
 {error}</source>
@@ -1973,7 +2096,7 @@ Numero di angoli: {count}</translation>
         <translation>Autenticazione Fallita</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1599"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1602"/>
         <source>Failed to authenticate with CalTopo API.
 
 Please check your credentials and try again.</source>
@@ -1982,8 +2105,8 @@ Please check your credentials and try again.</source>
 Controlla le tue credenziali e riprova.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1648"/>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1753"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1649"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1754"/>
         <source>An error occurred during CalTopo API export:
 
 {error}</source>
@@ -2002,7 +2125,7 @@ Controlla le tue credenziali e riprova.</translation>
         <translation>Preparazione dati ed esportazione...</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1718"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1720"/>
         <source>Successfully exported all {total} item(s) to CalTopo map.
 
 The items should now be visible on your map.</source>
@@ -2011,7 +2134,7 @@ The items should now be visible on your map.</source>
 Gli elementi dovrebbero ora essere visibili sulla tua mappa.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1727"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1729"/>
         <source>Exported {success} of {total} item(s) to CalTopo map.
 
 {failed} item(s) failed. Check console for details.</source>
@@ -2066,7 +2189,7 @@ Gli elementi dovrebbero ora essere visibili sulla tua mappa.</translation>
         <translation>Seleziona Metodo di Esportazione CalTopo</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/CalTopoMethodDialog.py" line="61"/>
+        <location filename="../app/core/views/images/viewer/dialogs/CalTopoMethodDialog.py" line="62"/>
         <source>Choose how you want to authenticate with CalTopo:</source>
         <translation>Scegli come vuoi autenticarti con CalTopo:</translation>
     </message>
@@ -2081,7 +2204,7 @@ Gli elementi dovrebbero ora essere visibili sulla tua mappa.</translation>
         <translation>API (Consigliato per Account Team CalTopo)</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/CalTopoMethodDialog.py" line="75"/>
+        <location filename="../app/core/views/images/viewer/dialogs/CalTopoMethodDialog.py" line="77"/>
         <source>Use CalTopo Team API with service account credentials.
 Best for Teams accounts with service accounts configured.</source>
         <translation>Usa l&apos;API Team CalTopo con le credenziali dell&apos;account di servizio.
@@ -2093,14 +2216,14 @@ Ideale per gli account Team con account di servizio configurati.</translation>
         <translation>Accesso tramite Browser</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/CalTopoMethodDialog.py" line="81"/>
+        <location filename="../app/core/views/images/viewer/dialogs/CalTopoMethodDialog.py" line="83"/>
         <source>Use browser-based authentication.
 Log in through an embedded browser window.</source>
         <translation>Usa l&apos;autenticazione basata su browser.
 Accedi tramite una finestra del browser integrata.</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/CalTopoMethodDialog.py" line="96"/>
+        <location filename="../app/core/views/images/viewer/dialogs/CalTopoMethodDialog.py" line="98"/>
         <source>API method requires Team ID and Credential Secret from your
 CalTopo Team Admin page. Browser method uses your regular login.</source>
         <translation>Il metodo API richiede l&apos;ID Team e il Segreto Credenziale dalla tua
@@ -2130,7 +2253,7 @@ pagina Admin Team CalTopo. Il metodo Browser utilizza il tuo normale accesso.</t
         <translation>Abilita Voto Temporale (riduce lo sfarfallio)</translation>
     </message>
     <message>
-        <location filename="../app/core/views/streaming/components/CleanupTab.py" line="38"/>
+        <location filename="../app/core/views/streaming/components/CleanupTab.py" line="42"/>
         <source>Smooths detections across frames using temporal consistency.
 Detections must appear in N out of M consecutive frames to be confirmed.
 Significantly reduces flickering false positives.
@@ -2146,7 +2269,7 @@ Consigliato: ON in tutti i casi d&apos;uso (predefinito).</translation>
         <translation>Frame Finestra (M):</translation>
     </message>
     <message>
-        <location filename="../app/core/views/streaming/components/CleanupTab.py" line="53"/>
+        <location filename="../app/core/views/streaming/components/CleanupTab.py" line="58"/>
         <source>Size of temporal voting window (2-30 frames).
 Detections must appear in N out of M consecutive frames.
 Larger values = longer memory, more stable, slower response to new objects.
@@ -2164,7 +2287,7 @@ Consigliato: 5 per 30 fps (finestra ~167 ms), 7 per 60 fps.</translation>
         <translation>Soglia (N su M):</translation>
     </message>
     <message>
-        <location filename="../app/core/views/streaming/components/CleanupTab.py" line="66"/>
+        <location filename="../app/core/views/streaming/components/CleanupTab.py" line="71"/>
         <source>Number of frames within window where detection must appear (N of M).
 Higher values = more stringent, filters transient false positives.
 Lower values = more lenient, faster response to new objects.
@@ -2187,7 +2310,7 @@ Consigliato: 3 su 5 (rilevamento nel 60% dei frame).</translation>
         <translation>Abilita Filtro Rapporto d&apos;Aspetto</translation>
     </message>
     <message>
-        <location filename="../app/core/views/streaming/components/CleanupTab.py" line="85"/>
+        <location filename="../app/core/views/streaming/components/CleanupTab.py" line="88"/>
         <source>Filter out very thin or stretched detections based on width/height.
 Useful for removing wires, long shadows, or other non-object shapes.
 Most users can leave this OFF unless you see many long skinny false detections.</source>
@@ -2201,7 +2324,7 @@ La maggior parte degli utenti può lasciarlo OFF, a meno di rilevare molti falsi
         <translation>Rapporto Min:</translation>
     </message>
     <message>
-        <location filename="../app/core/views/streaming/components/CleanupTab.py" line="100"/>
+        <location filename="../app/core/views/streaming/components/CleanupTab.py" line="104"/>
         <source>Minimum width/height ratio to keep (0.1-10.0).
 Lower values = allow taller, thinner detections.
 Higher values = require detections to be more square.
@@ -2217,7 +2340,7 @@ Esempio: 0,2 = rifiuta se l&apos;altezza è più di 5x la larghezza.</translatio
         <translation>Rapporto Max:</translation>
     </message>
     <message>
-        <location filename="../app/core/views/streaming/components/CleanupTab.py" line="113"/>
+        <location filename="../app/core/views/streaming/components/CleanupTab.py" line="116"/>
         <source>Maximum width/height ratio to keep (0.1-20.0).
 Lower values = reject very wide, thin detections.
 Higher values = allow wider objects such as vehicles or long equipment.</source>
@@ -2236,7 +2359,7 @@ Valori più alti = consente oggetti più larghi come veicoli o attrezzature lung
         <translation>Abilita Clustering Rilevamenti</translation>
     </message>
     <message>
-        <location filename="../app/core/views/streaming/components/CleanupTab.py" line="128"/>
+        <location filename="../app/core/views/streaming/components/CleanupTab.py" line="131"/>
         <source>Optionally merge nearby detections into a single, larger detection.
 Useful when one object appears as many small adjacent detections.
 Most users can leave this OFF unless objects look fragmented.</source>
@@ -2250,7 +2373,7 @@ La maggior parte degli utenti può lasciarlo OFF, a meno che gli oggetti non app
         <translation>Distanza Clustering (px):</translation>
     </message>
     <message>
-        <location filename="../app/core/views/streaming/components/CleanupTab.py" line="142"/>
+        <location filename="../app/core/views/streaming/components/CleanupTab.py" line="145"/>
         <source>Maximum distance between detection centers to merge them (0-500 pixels).
 Lower values = only merge very close detections.
 Higher values = merge detections that are farther apart (may over-merge).</source>
@@ -2279,7 +2402,7 @@ Click to change color</source>
 Clicca per cambiare colore</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/Shared/views/HSVColorRowWidget.py" line="78"/>
+        <location filename="../app/algorithms/Shared/views/HSVColorRowWidget.py" line="79"/>
         <source>HSV: ({h}°, {s}%, {v}%)
 RGB: ({r}, {g}, {b})
 Click to change color</source>
@@ -2326,7 +2449,7 @@ Clicca per cambiare colore</translation>
         <translation>Abilita Rilevamento Movimento</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/streaming/ColorAnomalyAndMotionDetection/views/ColorAnomalyAndMotionDetectionControlWidget.py" line="149"/>
+        <location filename="../app/algorithms/streaming/ColorAnomalyAndMotionDetection/views/ColorAnomalyAndMotionDetectionControlWidget.py" line="153"/>
         <source>Turn ON to highlight moving objects in the scene.
 Most users can leave all other settings at their defaults.
 Works best for stationary or slow-moving cameras and can be combined
@@ -2362,7 +2485,7 @@ con il Rilevamento Anomalie Basato sul Colore per risultati più affidabili.</tr
         <translation>KNN</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/streaming/ColorAnomalyAndMotionDetection/views/ColorAnomalyAndMotionDetectionControlWidget.py" line="174"/>
+        <location filename="../app/algorithms/streaming/ColorAnomalyAndMotionDetection/views/ColorAnomalyAndMotionDetectionControlWidget.py" line="179"/>
         <source>Motion detection algorithm (advanced setting):
 
 • FRAME_DIFF – Fast and simple; very sensitive to any motion.
@@ -2389,7 +2512,7 @@ In caso di dubbi, lascia impostato MOG2.</translation>
         <translation>Soglia Movimento:</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/streaming/ColorAnomalyAndMotionDetection/views/ColorAnomalyAndMotionDetectionControlWidget.py" line="196"/>
+        <location filename="../app/algorithms/streaming/ColorAnomalyAndMotionDetection/views/ColorAnomalyAndMotionDetectionControlWidget.py" line="200"/>
         <source>Minimum pixel intensity change to consider as motion (1-255).
 Lower values = more sensitive, detects subtle motion, more false positives.
 Higher values = less sensitive, only strong motion, fewer false positives.
@@ -2405,7 +2528,7 @@ Consigliato: 10 per uso generale, 5 per movimenti sottili, 15-20 per scene ad al
         <translation>Kernel Sfocatura (dispari):</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/streaming/ColorAnomalyAndMotionDetection/views/ColorAnomalyAndMotionDetectionControlWidget.py" line="210"/>
+        <location filename="../app/algorithms/streaming/ColorAnomalyAndMotionDetection/views/ColorAnomalyAndMotionDetectionControlWidget.py" line="215"/>
         <source>Gaussian blur kernel size (must be odd: 1, 3, 5, 7, etc.).
 Smooths the frame before motion detection to reduce noise.
 Larger values = more smoothing, less noise, less detail.
@@ -2423,7 +2546,7 @@ Consigliato: 5 per uso generale, 1 per nessuna sfocatura, 7-9 per video rumorosi
         <translation>Kernel Morfologia:</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/streaming/ColorAnomalyAndMotionDetection/views/ColorAnomalyAndMotionDetectionControlWidget.py" line="225"/>
+        <location filename="../app/algorithms/streaming/ColorAnomalyAndMotionDetection/views/ColorAnomalyAndMotionDetectionControlWidget.py" line="230"/>
         <source>Morphological operation kernel size (odd numbers: 1, 3, 5, etc.).
 Removes small noise and fills holes in detections.
 Larger values = remove more noise, merge nearby detections.
@@ -2446,7 +2569,7 @@ Consigliato: 3 per uso generale, 1 per bordi precisi, 5-7 per video rumorosi.</t
         <translation>Frame Finestra (M):</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/streaming/ColorAnomalyAndMotionDetection/views/ColorAnomalyAndMotionDetectionControlWidget.py" line="246"/>
+        <location filename="../app/algorithms/streaming/ColorAnomalyAndMotionDetection/views/ColorAnomalyAndMotionDetectionControlWidget.py" line="251"/>
         <source>Size of temporal window for persistence filtering (2-30 frames).
 Motion must appear in N out of M consecutive frames to be confirmed.
 Larger values = longer memory, more stable, slower response.
@@ -2464,7 +2587,7 @@ Consigliato: 3 per video a 30 fps (finestra di 100 ms), 5 per 60 fps.</translati
         <translation>Soglia (N su M):</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/streaming/ColorAnomalyAndMotionDetection/views/ColorAnomalyAndMotionDetectionControlWidget.py" line="259"/>
+        <location filename="../app/algorithms/streaming/ColorAnomalyAndMotionDetection/views/ColorAnomalyAndMotionDetectionControlWidget.py" line="264"/>
         <source>Number of frames within window where motion must appear (N of M).
 Higher values = more stringent, filters flickering false positives.
 Lower values = more lenient, detects brief/intermittent motion.
@@ -2487,7 +2610,7 @@ Consigliato: 2 (movimento in 2 degli ultimi 3 frame).</translation>
         <translation>Frame Cronologia:</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/streaming/ColorAnomalyAndMotionDetection/views/ColorAnomalyAndMotionDetectionControlWidget.py" line="280"/>
+        <location filename="../app/algorithms/streaming/ColorAnomalyAndMotionDetection/views/ColorAnomalyAndMotionDetectionControlWidget.py" line="285"/>
         <source>Number of frames to learn background model (10-500).
 Only applies to MOG2 and KNN algorithms.
 Longer history = adapts slower to lighting changes, more stable.
@@ -2505,7 +2628,7 @@ Consigliato: 50 (~1,7 sec a 30 fps) per uso generale.</translation>
         <translation>Soglia Varianza:</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/streaming/ColorAnomalyAndMotionDetection/views/ColorAnomalyAndMotionDetectionControlWidget.py" line="293"/>
+        <location filename="../app/algorithms/streaming/ColorAnomalyAndMotionDetection/views/ColorAnomalyAndMotionDetectionControlWidget.py" line="298"/>
         <source>Variance threshold for background/foreground classification (1.0-100.0).
 Only applies to MOG2 and KNN algorithms.
 Lower values = more sensitive, detects subtle changes, more false positives.
@@ -2523,7 +2646,7 @@ Consigliato: 10,0 per interni, 15-20 per esterni con illuminazione variabile.</t
         <translation>Rileva Ombre (più lento)</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/streaming/ColorAnomalyAndMotionDetection/views/ColorAnomalyAndMotionDetectionControlWidget.py" line="303"/>
+        <location filename="../app/algorithms/streaming/ColorAnomalyAndMotionDetection/views/ColorAnomalyAndMotionDetectionControlWidget.py" line="307"/>
         <source>Enables shadow detection in MOG2 background subtractor.
 Helps distinguish shadows from actual objects (reduces false positives).
 Adds ~10-20% processing overhead.
@@ -2545,7 +2668,7 @@ Consigliato: ON per scene esterne con ombre marcate, OFF per la velocità.</tran
         <translation>Area Min Oggetto (px):</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/streaming/ColorAnomalyAndMotionDetection/views/ColorAnomalyAndMotionDetectionControlWidget.py" line="323"/>
+        <location filename="../app/algorithms/streaming/ColorAnomalyAndMotionDetection/views/ColorAnomalyAndMotionDetectionControlWidget.py" line="328"/>
         <source>Minimum detection area in pixels (1-100000).
 Filters out very small detections such as noise, insects, or raindrops.
 Lower values = detect smaller objects (more noise).
@@ -2564,7 +2687,7 @@ Consigliato: 5-10 per soggetti delle dimensioni di una persona, 50-100 per i vei
         <translation>Area Max Oggetto (px):</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/streaming/ColorAnomalyAndMotionDetection/views/ColorAnomalyAndMotionDetectionControlWidget.py" line="336"/>
+        <location filename="../app/algorithms/streaming/ColorAnomalyAndMotionDetection/views/ColorAnomalyAndMotionDetectionControlWidget.py" line="341"/>
         <source>Maximum detection area in pixels (10-1000000).
 Filters out very large regions such as full-frame lighting changes or giant shadows.
 Lower values = only small/medium objects.
@@ -2587,7 +2710,7 @@ Consigliato: 1000 per le persone, 10000 per i veicoli, valori più alti per ogge
         <translation>Metti in Pausa Durante il Movimento della Telecamera</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/streaming/ColorAnomalyAndMotionDetection/views/ColorAnomalyAndMotionDetectionControlWidget.py" line="353"/>
+        <location filename="../app/algorithms/streaming/ColorAnomalyAndMotionDetection/views/ColorAnomalyAndMotionDetectionControlWidget.py" line="357"/>
         <source>Automatically pauses motion detection when camera is moving/panning.
 Prevents false positives caused by camera movement (entire scene appears to move).
 Detects camera movement by measuring percentage of frame with motion.
@@ -2603,7 +2726,7 @@ Consigliato: ON per riprese a mano libera o da drone, OFF per telecamere su trep
         <translation>Soglia:</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/streaming/ColorAnomalyAndMotionDetection/views/ColorAnomalyAndMotionDetectionControlWidget.py" line="366"/>
+        <location filename="../app/algorithms/streaming/ColorAnomalyAndMotionDetection/views/ColorAnomalyAndMotionDetectionControlWidget.py" line="371"/>
         <source>Percentage of frame with motion to consider as camera movement (1-100%).
 If more than this % of pixels show motion, pause detection.
 Lower values = detect camera movement sooner (more pauses).
@@ -2621,7 +2744,7 @@ Consigliato: 15% per drone/mano libera, 30% per treppiedi instabili.</translatio
         <translation>Mostra Impostazioni Avanzate Movimento</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/streaming/ColorAnomalyAndMotionDetection/views/ColorAnomalyAndMotionDetectionControlWidget.py" line="383"/>
+        <location filename="../app/algorithms/streaming/ColorAnomalyAndMotionDetection/views/ColorAnomalyAndMotionDetectionControlWidget.py" line="386"/>
         <source>Advanced users can expand this to adjust the motion algorithm
 and detailed thresholds (sensitivity, filters, background model).
 If you are unsure, leave this unchecked and use the defaults.</source>
@@ -2635,7 +2758,7 @@ In caso di dubbi, lascia disattivata questa opzione e usa le impostazioni predef
         <translation>Abilita Rilevamento Anomalie Basato sul Colore</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/streaming/ColorAnomalyAndMotionDetection/views/ColorAnomalyAndMotionDetectionControlWidget.py" line="405"/>
+        <location filename="../app/algorithms/streaming/ColorAnomalyAndMotionDetection/views/ColorAnomalyAndMotionDetectionControlWidget.py" line="409"/>
         <source>Detects pixels whose colors are statistically rare in the frame.
 Conceptually similar to MRMap&apos;s rarity-based detection for images.
 Works well for: bright colored clothing, vehicles, equipment in natural scenes.
@@ -2656,7 +2779,7 @@ Può essere combinato con il Rilevamento Movimento per un rilevamento più robus
         <translation>Risoluzione Colore (bin):</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/streaming/ColorAnomalyAndMotionDetection/views/ColorAnomalyAndMotionDetectionControlWidget.py" line="424"/>
+        <location filename="../app/algorithms/streaming/ColorAnomalyAndMotionDetection/views/ColorAnomalyAndMotionDetectionControlWidget.py" line="430"/>
         <source>Controls how finely colors are grouped into histogram bins (3-8 bits).
 Analogous to MRMap&apos;s color binning.
 Lower values (3-4) = fewer bins → faster, more grouping, fewer but stronger detections.
@@ -2681,7 +2804,7 @@ e più alti solo quando devi cogliere differenze di colore molto sottili.</trans
         <translation>Soglia Rarità (% dei colori):</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/streaming/ColorAnomalyAndMotionDetection/views/ColorAnomalyAndMotionDetectionControlWidget.py" line="442"/>
+        <location filename="../app/algorithms/streaming/ColorAnomalyAndMotionDetection/views/ColorAnomalyAndMotionDetectionControlWidget.py" line="448"/>
         <source>Sensitivity threshold for how rare a color must be to be flagged (0-100%).
 Computed from the distribution of color-bin counts in the frame, similar in role
 to MRMap&apos;s detection threshold.
@@ -2696,7 +2819,7 @@ Valori medi (25-40%) = bilanciato (consigliato per uso generale).
 Valori più alti (40-60%) = più sensibile: include colori più comuni (più rilevamenti).</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/streaming/ColorAnomalyAndMotionDetection/views/ColorAnomalyAndMotionDetectionControlWidget.py" line="459"/>
+        <location filename="../app/algorithms/streaming/ColorAnomalyAndMotionDetection/views/ColorAnomalyAndMotionDetectionControlWidget.py" line="464"/>
         <source>Minimum area in pixels for a color anomaly to be treated as an object of interest.
 Conceptually matches MRMap&apos;s minimum AOI area.
 Lower values = detect smaller colored objects (more noise).
@@ -2709,7 +2832,7 @@ Valori più alti = solo regioni colorate più grandi (meno rumore).
 Consigliato: 15 per soggetti delle dimensioni di una persona, 50+ per veicoli o oggetti grandi.</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/streaming/ColorAnomalyAndMotionDetection/views/ColorAnomalyAndMotionDetectionControlWidget.py" line="472"/>
+        <location filename="../app/algorithms/streaming/ColorAnomalyAndMotionDetection/views/ColorAnomalyAndMotionDetectionControlWidget.py" line="477"/>
         <source>Maximum area in pixels for a color anomaly to be treated as an object of interest.
 Conceptually matches MRMap&apos;s maximum AOI area.
 Lower values = only detect smaller colored objects.
@@ -2737,7 +2860,7 @@ Consigliato: 50000 per uso generale, 10000 per ricerche di soli oggetti piccoli.
         <translation>Componenti Connesse</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/streaming/ColorAnomalyAndMotionDetection/views/ColorAnomalyAndMotionDetectionControlWidget.py" line="486"/>
+        <location filename="../app/algorithms/streaming/ColorAnomalyAndMotionDetection/views/ColorAnomalyAndMotionDetectionControlWidget.py" line="491"/>
         <source>Method for extracting blob regions from the detection mask:
 
 Find Contours: Traditional OpenCV contour detection (default).
@@ -2779,7 +2902,7 @@ Componenti Connesse: usa cv2.connectedComponentsWithStats.
         <translation>LAB</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/streaming/ColorAnomalyAndMotionDetection/views/ColorAnomalyAndMotionDetectionControlWidget.py" line="509"/>
+        <location filename="../app/algorithms/streaming/ColorAnomalyAndMotionDetection/views/ColorAnomalyAndMotionDetectionControlWidget.py" line="518"/>
         <source>Color space for histogram-based anomaly detection:
 
 RGB: Uses all 3 color channels. Fast, but sensitive to lighting.
@@ -2811,7 +2934,7 @@ LAB (cromaticità a,b): usa i canali a,b, invariante alla luce, percettivamente 
         <translation>Saturazione Min HSV:</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/streaming/ColorAnomalyAndMotionDetection/views/ColorAnomalyAndMotionDetectionControlWidget.py" line="529"/>
+        <location filename="../app/algorithms/streaming/ColorAnomalyAndMotionDetection/views/ColorAnomalyAndMotionDetectionControlWidget.py" line="535"/>
         <source>Minimum saturation for HSV mode (0-255).
 Pixels below this saturation are ignored (grays, whites, blacks).
 These have undefined/noisy hue values.
@@ -2831,7 +2954,7 @@ Consigliato: 30-50 per uso generale.</translation>
         <translation>Croma Min LAB:</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/streaming/ColorAnomalyAndMotionDetection/views/ColorAnomalyAndMotionDetectionControlWidget.py" line="549"/>
+        <location filename="../app/algorithms/streaming/ColorAnomalyAndMotionDetection/views/ColorAnomalyAndMotionDetectionControlWidget.py" line="555"/>
         <source>Minimum chroma (color intensity) for LAB mode (0-128).
 Chroma = distance from neutral gray in a,b plane.
 Pixels below this are ignored (near-neutral grays).
@@ -2856,7 +2979,7 @@ Consigliato: 10-20 per uso generale.</translation>
         <translation>Consenti Colori Simili (Espansione Tonalità)</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/streaming/ColorAnomalyAndMotionDetection/views/ColorAnomalyAndMotionDetectionControlWidget.py" line="573"/>
+        <location filename="../app/algorithms/streaming/ColorAnomalyAndMotionDetection/views/ColorAnomalyAndMotionDetectionControlWidget.py" line="577"/>
         <source>Lets the detector treat similar colors as the same object.
 For example, a red jacket that looks slightly orange in some frames will still be grouped together.
 Turn this OFF if you only care about one very specific color shade.
@@ -2872,7 +2995,7 @@ Attivalo se vuoi un&apos;intera famiglia di colori (es. tutti i rossi/aranci cal
         <translation>Intervallo Corrispondenza Colore:</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/streaming/ColorAnomalyAndMotionDetection/views/ColorAnomalyAndMotionDetectionControlWidget.py" line="586"/>
+        <location filename="../app/algorithms/streaming/ColorAnomalyAndMotionDetection/views/ColorAnomalyAndMotionDetectionControlWidget.py" line="590"/>
         <source>How wide to stretch the color match around each detected color.
 Smaller values = stay very close to the original color (more specific).
 Larger values = include a wider range of similar colors (more forgiving).
@@ -2898,7 +3021,7 @@ Consigliato: valori bassi per colori precisi, valori più alti quando la luce o 
         <translation>Abilita Esclusione Colori</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/streaming/ColorAnomalyAndMotionDetection/views/ColorAnomalyAndMotionDetectionControlWidget.py" line="605"/>
+        <location filename="../app/algorithms/streaming/ColorAnomalyAndMotionDetection/views/ColorAnomalyAndMotionDetectionControlWidget.py" line="609"/>
         <source>Exclude specific background colors from color anomaly detection.
 Useful for ignoring dominant scene colors such as grass, sky, or buildings.
 Click on the color wheel below to choose colors to ignore.
@@ -2914,7 +3037,7 @@ I colori selezionati sono evidenziati con un bordo scuro.</translation>
         <translation>Clicca sulla ruota dei colori per escludere colori (passi di 20°, 0-360°):</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/streaming/ColorAnomalyAndMotionDetection/views/ColorAnomalyAndMotionDetectionControlWidget.py" line="618"/>
+        <location filename="../app/algorithms/streaming/ColorAnomalyAndMotionDetection/views/ColorAnomalyAndMotionDetectionControlWidget.py" line="621"/>
         <source>Click on any color segment to toggle exclusion on/off.
 Segments represent broad color ranges (e.g., blues, greens, reds).
 Use this to teach the system which background colors to ignore.</source>
@@ -2933,7 +3056,7 @@ Usa questa funzione per indicare al sistema quali colori di sfondo ignorare.</tr
         <translation>Abilita Fusione (quando movimento e colore sono entrambi attivi)</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/streaming/ColorAnomalyAndMotionDetection/views/ColorAnomalyAndMotionDetectionControlWidget.py" line="641"/>
+        <location filename="../app/algorithms/streaming/ColorAnomalyAndMotionDetection/views/ColorAnomalyAndMotionDetectionControlWidget.py" line="645"/>
         <source>Combines motion and color detections when both are enabled.
 Only active when both Motion and Color detection are ON.
 Different modes control how detections are merged.
@@ -2969,7 +3092,7 @@ Consigliato: ON per un rilevamento multi-modale affidabile.</translation>
         <translation>PRIORITÀ_MOVIMENTO</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/streaming/ColorAnomalyAndMotionDetection/views/ColorAnomalyAndMotionDetectionControlWidget.py" line="657"/>
+        <location filename="../app/algorithms/streaming/ColorAnomalyAndMotionDetection/views/ColorAnomalyAndMotionDetectionControlWidget.py" line="666"/>
         <source>How to combine motion and color detections:
 
 • UNION: Show all detections from both (most detections).
@@ -3124,7 +3247,7 @@ Aggressivo</translation>
         <translation>Aggiungi Colore</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/streaming/ColorDetection/views/ColorDetectionControlWidget.py" line="111"/>
+        <location filename="../app/algorithms/streaming/ColorDetection/views/ColorDetectionControlWidget.py" line="115"/>
         <source>Add a new color range to detect.
 Choose from HSV Color Picker, Image, List, or Recent Colors.
 You can add multiple color ranges to detect different colors simultaneously.</source>
@@ -3138,7 +3261,7 @@ Puoi aggiungere più intervalli di colori per rilevare diversi colori contempora
         <translation>Visualizza Intervallo</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/streaming/ColorDetection/views/ColorDetectionControlWidget.py" line="134"/>
+        <location filename="../app/algorithms/streaming/ColorDetection/views/ColorDetectionControlWidget.py" line="139"/>
         <source>View HSV color ranges for all configured colors.
 Opens a viewer dialog for each color range showing
 the hue, saturation, and value ranges that will be detected.
@@ -3159,7 +3282,7 @@ Utile per comprendere e perfezionare il rilevamento multicolore.</translation>
         <translation>Area Min Oggetto (px):</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/streaming/ColorDetection/views/ColorDetectionControlWidget.py" line="184"/>
+        <location filename="../app/algorithms/streaming/ColorDetection/views/ColorDetectionControlWidget.py" line="190"/>
         <source>Minimum detection area in pixels (10-50000).
 Filters out very small detections (noise, small objects, fragments).
 Lower values = detect smaller objects, more detections, more noise.
@@ -3177,7 +3300,7 @@ Consigliato: 100 per uso generale, 50 per piccoli oggetti, 200-500 per grandi og
         <translation>Area Max Oggetto (px):</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/streaming/ColorDetection/views/ColorDetectionControlWidget.py" line="199"/>
+        <location filename="../app/algorithms/streaming/ColorDetection/views/ColorDetectionControlWidget.py" line="205"/>
         <source>Maximum detection area in pixels (100-500000).
 Filters out very large detections (shadows, lighting changes, entire scene).
 Lower values = only small/medium objects.
@@ -3195,7 +3318,7 @@ Consigliato: 100000 per uso generale, 50000 per piccoli oggetti, 200000+ per gra
         <translation>Soglia di Confidenza:</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/streaming/ColorDetection/views/ColorDetectionControlWidget.py" line="215"/>
+        <location filename="../app/algorithms/streaming/ColorDetection/views/ColorDetectionControlWidget.py" line="224"/>
         <source>Minimum confidence score to accept a detection (0-100%).
 Confidence is calculated from:
 • Size score: area relative to max area
@@ -3268,7 +3391,7 @@ Consigliato: 50% per un filtraggio bilanciato, 30% per più rilevamenti, 70% per
         <translation>Intervalli Colore: {count} colori</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/streaming/ColorDetection/controllers/ColorDetectionWizardController.py" line="329"/>
+        <location filename="../app/algorithms/streaming/ColorDetection/controllers/ColorDetectionWizardController.py" line="330"/>
         <source>Please add at least one color to detect.</source>
         <translation>Aggiungi almeno un colore da rilevare.</translation>
     </message>
@@ -3281,7 +3404,7 @@ Consigliato: 50% per un filtraggio bilanciato, 30% per più rilevamenti, 70% per
         <translation>Istogramma della tonalita non disponibile</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/ColorHistogramController.py" line="43"/>
+        <location filename="../app/core/controllers/images/viewer/ColorHistogramController.py" line="46"/>
         <source>No color image data is available for the current image.</source>
         <translation>Nessun dato dell&apos;immagine a colori e disponibile per l&apos;immagine corrente.</translation>
     </message>
@@ -3319,8 +3442,8 @@ Consigliato: 50% per un filtraggio bilanciato, 30% per più rilevamenti, 70% per
         <translation>Intervallo di tonalita visibile</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/ColorHistogramDialog.py" line="62"/>
-        <location filename="../app/core/views/images/viewer/dialogs/ColorHistogramDialog.py" line="146"/>
+        <location filename="../app/core/views/images/viewer/dialogs/ColorHistogramDialog.py" line="63"/>
+        <location filename="../app/core/views/images/viewer/dialogs/ColorHistogramDialog.py" line="147"/>
         <location filename="../resources/views/images/viewer/ColorHistogramDialog.ui" line="127"/>
         <source>Hover over the histogram to inspect a hue band.</source>
         <translation>Passa sull&apos;istogramma per ispezionare una banda di tonalita.</translation>
@@ -3343,7 +3466,7 @@ Consigliato: 50% per un filtraggio bilanciato, 30% per più rilevamenti, 70% per
         <translation>Reimposta intervallo</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/ColorHistogramDialog.py" line="30"/>
+        <location filename="../app/core/views/images/viewer/dialogs/ColorHistogramDialog.py" line="31"/>
         <source>No hue histogram data available</source>
         <translation>Nessun dato disponibile per l&apos;istogramma della tonalita</translation>
     </message>
@@ -3406,10 +3529,10 @@ Consigliato: 50% per un filtraggio bilanciato, 30% per più rilevamenti, 70% per
         <translation>HSV</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/images/Shared/views/ColorListDialog.py" line="56"/>
-        <location filename="../app/algorithms/images/Shared/views/ColorListDialog.py" line="61"/>
-        <location filename="../app/algorithms/Shared/views/ColorListDialog.py" line="56"/>
-        <location filename="../app/algorithms/Shared/views/ColorListDialog.py" line="61"/>
+        <location filename="../app/algorithms/images/Shared/views/ColorListDialog.py" line="57"/>
+        <location filename="../app/algorithms/images/Shared/views/ColorListDialog.py" line="62"/>
+        <location filename="../app/algorithms/Shared/views/ColorListDialog.py" line="57"/>
+        <location filename="../app/algorithms/Shared/views/ColorListDialog.py" line="62"/>
         <source>Uses</source>
         <translation>Utilizzi</translation>
     </message>
@@ -3492,8 +3615,8 @@ Consigliato: 50% per un filtraggio bilanciato, 30% per più rilevamenti, 70% per
         <translation>RGB: ({r}, {g}, {b}) {hex} | HSV: ({h}°, {s}%, {v}%)</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/images/Shared/views/ColorPickerImageViewer.py" line="445"/>
-        <location filename="../app/algorithms/Shared/views/ColorPickerImageViewer.py" line="445"/>
+        <location filename="../app/algorithms/images/Shared/views/ColorPickerImageViewer.py" line="446"/>
+        <location filename="../app/algorithms/Shared/views/ColorPickerImageViewer.py" line="446"/>
         <source>RGB: ({r}, {g}, {b}) {hex} | HSV: {h}°, {s}%, {v}% (hover)</source>
         <translation>RGB: ({r}, {g}, {b}) {hex} | HSV: {h}°, {s}%, {v}% (passaggio mouse)</translation>
     </message>
@@ -3554,7 +3677,7 @@ Usa questo per vedere quali colori verranno rilevati e ottimizzare gli intervall
         <translation>Nessun Colore Selezionato</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/images/ColorRange/controllers/ColorRangeController.py" line="324"/>
+        <location filename="../app/algorithms/images/ColorRange/controllers/ColorRangeController.py" line="325"/>
         <source>Please add at least one color to detect.</source>
         <translation>Aggiungi almeno un colore da rilevare.</translation>
     </message>
@@ -3582,7 +3705,7 @@ Usa questo per vedere quali colori verranno rilevati e ottimizzare gli intervall
         <translation>Immagine Originale</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/Shared/views/ColorRangeDialog.py" line="216"/>
+        <location filename="../app/algorithms/Shared/views/ColorRangeDialog.py" line="219"/>
         <source>Original image preview.
 Shows the unmodified input image for reference.
 Use this to compare with the filtered result below.</source>
@@ -3596,7 +3719,7 @@ Usala per confrontarla con il risultato filtrato qui sotto.</translation>
         <translation>Risultato Filtrato</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/Shared/views/ColorRangeDialog.py" line="228"/>
+        <location filename="../app/algorithms/Shared/views/ColorRangeDialog.py" line="232"/>
         <source>Filtered result preview.
 Shows pixels that match your current HSV color range settings.
 Updates in real-time as you adjust the color and range values.
@@ -3612,7 +3735,7 @@ I pixel corrispondenti vengono mostrati, gli altri appaiono in nero.</translatio
         <translation>Mostra solo la maschera</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/Shared/views/ColorRangeDialog.py" line="237"/>
+        <location filename="../app/algorithms/Shared/views/ColorRangeDialog.py" line="241"/>
         <source>Toggle between masked color result and grayscale mask.
 • Unchecked (default): Shows the original image with matching colors visible
 • Checked: Shows a black and white mask where white = matching pixels
@@ -3643,7 +3766,7 @@ Usa la vista a maschera per vedere chiaramente quali pixel vengono rilevati.</tr
         <translation>Prova sull&apos;Immagine</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/Shared/views/ColorRangeDialog.py" line="270"/>
+        <location filename="../app/algorithms/Shared/views/ColorRangeDialog.py" line="273"/>
         <source>Test current HSV range settings on the loaded image.
 Manually triggers a preview update to see detection results.
 Preview updates automatically as you adjust settings.</source>
@@ -3657,7 +3780,7 @@ L&apos;anteprima si aggiorna automaticamente mentre modifichi le impostazioni.</
         <translation>Annulla</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/Shared/views/ColorRangeDialog.py" line="282"/>
+        <location filename="../app/algorithms/Shared/views/ColorRangeDialog.py" line="284"/>
         <source>Cancel color selection.
 Discards all changes and closes the dialog without applying the color range.</source>
         <translation>Annulla la selezione del colore.
@@ -3669,7 +3792,7 @@ Scarta tutte le modifiche e chiude la finestra senza applicare l&apos;intervallo
         <translation>OK</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/Shared/views/ColorRangeDialog.py" line="289"/>
+        <location filename="../app/algorithms/Shared/views/ColorRangeDialog.py" line="292"/>
         <source>Apply color selection.
 Saves the current HSV color range settings and closes the dialog.
 The selected color range will be used for image analysis.</source>
@@ -3755,7 +3878,7 @@ Fai clic sulle immagini per spostarle nella sezione Selezionate in alto.</transl
         <translation>Visualizza Intervallo</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/images/ColorRange/controllers/ColorRangeWizardController.py" line="258"/>
+        <location filename="../app/algorithms/images/ColorRange/controllers/ColorRangeWizardController.py" line="259"/>
         <source>Please add at least one color to detect.</source>
         <translation>Aggiungi almeno un colore da rilevare.</translation>
     </message>
@@ -3839,7 +3962,7 @@ Fai clic sulle immagini per spostarle nella sezione Selezionate in alto.</transl
         <translation>Vista orientata a Nord (Ruotata di {angle:.1f}°)</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/CoordinateController.py" line="444"/>
+        <location filename="../app/core/controllers/images/viewer/CoordinateController.py" line="445"/>
         <source>Original bearing: {bearing:.1f}° | Rotation applied: {rotation:.1f}°</source>
         <translation>Orientamento originale: {bearing:.1f}° | Rotazione applicata: {rotation:.1f}°</translation>
     </message>
@@ -3887,7 +4010,7 @@ Fai clic sulle immagini per spostarle nella sezione Selezionate in alto.</transl
         <translation>Aggiungi Batch alla Ricerca</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="69"/>
+        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="70"/>
         <source>Add more batch XML files to the current search project</source>
         <translation>Aggiungi altri file XML batch al progetto di ricerca corrente</translation>
     </message>
@@ -4021,7 +4144,7 @@ Fai clic sulle immagini per spostarle nella sezione Selezionate in alto.</transl
         <translation>Ancora nessun revisore</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="292"/>
+        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="293"/>
         <source>Batch review status and assignments. Load reviewer XMLs to update progress.</source>
         <translation>Stato della revisione batch e assegnazioni. Carica gli XML dei revisori per aggiornare il progresso.</translation>
     </message>
@@ -4046,12 +4169,12 @@ Fai clic sulle immagini per spostarle nella sezione Selezionate in alto.</transl
         <translation>Revisioni</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="306"/>
+        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="307"/>
         <source>Status</source>
         <translation>Stato</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="325"/>
+        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="326"/>
         <source>Consolidated AOI data from all reviews. Shows flag counts and reviewer comments.</source>
         <translation>Dati AOI consolidati da tutte le revisioni. Mostra il numero di contrassegni e i commenti dei revisori.</translation>
     </message>
@@ -4071,7 +4194,7 @@ Fai clic sulle immagini per spostarle nella sezione Selezionate in alto.</transl
         <translation>Conteggio Contrassegni</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="338"/>
+        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="339"/>
         <source>Comments</source>
         <translation>Commenti</translation>
     </message>
@@ -4081,7 +4204,7 @@ Fai clic sulle immagini per spostarle nella sezione Selezionate in alto.</transl
         <translation>Nuovo Progetto di Ricerca</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="356"/>
+        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="357"/>
         <source>Enter project name:</source>
         <translation>Inserisci il nome del progetto:</translation>
     </message>
@@ -4091,7 +4214,7 @@ Fai clic sulle immagini per spostarle nella sezione Selezionate in alto.</transl
         <translation>Informazioni Coordinatore</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="366"/>
+        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="367"/>
         <source>Enter your name:</source>
         <translation>Inserisci il tuo nome:</translation>
     </message>
@@ -4106,7 +4229,7 @@ Fai clic sulle immagini per spostarle nella sezione Selezionate in alto.</transl
         <translation>Seleziona i File XML Batch Iniziali</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="379"/>
+        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="385"/>
         <source>You can select multiple ADIAT_Data.xml files from different folders.
 
 Tips:
@@ -4126,11 +4249,11 @@ Suggerimenti:
         <translation>Seleziona i File ADIAT_Data.xml Batch (Tieni premuto Ctrl per selezionarne più di uno)</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="395"/>
-        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="410"/>
-        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="510"/>
-        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="557"/>
-        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="612"/>
+        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="396"/>
+        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="411"/>
+        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="511"/>
+        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="558"/>
+        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="613"/>
         <source>XML Files (*.xml)</source>
         <translation>File XML (*.xml)</translation>
     </message>
@@ -4165,7 +4288,7 @@ Suggerimenti:
         <translation>Errore</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="429"/>
+        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="430"/>
         <source>Failed to save project file.</source>
         <translation>Impossibile salvare il file di progetto.</translation>
     </message>
@@ -4180,22 +4303,22 @@ Suggerimenti:
         <translation>Apri Progetto di Ricerca</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="440"/>
+        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="441"/>
         <source>Search Project Files (ADIAT_Search_*.xml);;All XML Files (*.xml)</source>
         <translation>File Progetto di Ricerca (ADIAT_Search_*.xml);;Tutti i File XML (*.xml)</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="454"/>
+        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="455"/>
         <source>Project loaded successfully!</source>
         <translation>Progetto caricato con successo!</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="460"/>
+        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="461"/>
         <source>Failed to load project file.</source>
         <translation>Impossibile caricare il file di progetto.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="470"/>
+        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="471"/>
         <source>Project saved successfully!</source>
         <translation>Progetto salvato con successo!</translation>
     </message>
@@ -4210,7 +4333,7 @@ Suggerimenti:
         <translation>Nessun Progetto</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="481"/>
+        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="482"/>
         <source>Please create or open a project first.</source>
         <translation>Crea o apri prima un progetto.</translation>
     </message>
@@ -4225,7 +4348,7 @@ Suggerimenti:
         <translation>Aggiungi Altri File XML Batch</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="492"/>
+        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="499"/>
         <source>Select additional ADIAT_Data.xml batch files to add to this search.
 
 Tips:
@@ -4247,7 +4370,7 @@ Suggerimenti:
         <translation>Seleziona i File ADIAT_Data.xml Batch da Aggiungere (Tieni premuto Ctrl per selezionarne più di uno)</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="531"/>
+        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="533"/>
         <source>Successfully added {count} batch(es) to the project!
 Total batches: {total}</source>
         <translation>Aggiunti con successo {count} batch al progetto!
@@ -4259,7 +4382,7 @@ Batch totali: {total}</translation>
         <translation>Nessun Batch Aggiunto</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="543"/>
+        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="545"/>
         <source>No batches were added. Check that the XML files are valid ADIAT_Data.xml files.</source>
         <translation>Nessun batch aggiunto. Controlla che i file XML siano file ADIAT_Data.xml validi.</translation>
     </message>
@@ -4274,7 +4397,7 @@ Batch totali: {total}</translation>
         <translation>Nessun Batch</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="569"/>
+        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="570"/>
         <source>No batches found in project.</source>
         <translation>Nessun batch trovato nel progetto.</translation>
     </message>
@@ -4289,12 +4412,12 @@ Batch totali: {total}</translation>
         <translation>A quale batch appartiene questa revisione?</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="594"/>
+        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="595"/>
         <source>Review data loaded and merged successfully!</source>
         <translation>Dati di revisione caricati e uniti con successo!</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="600"/>
+        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="601"/>
         <source>Failed to load review data.</source>
         <translation>Impossibile caricare i dati di revisione.</translation>
     </message>
@@ -4324,7 +4447,7 @@ Batch totali: {total}</translation>
         <translation>Genera KML Estensione Copertura</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/CoverageExtentExportController.py" line="131"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CoverageExtentExportController.py" line="134"/>
         <source>Generate a KML file showing the geographic coverage extent of all images?
 
 This will create polygon(s) representing the area covered by all images. Overlapping image areas will be merged into a single polygon.</source>
@@ -4338,7 +4461,7 @@ Questo creerà dei poligoni che rappresentano l&apos;area coperta da tutte le im
         <translation>Salva KML Estensione Copertura</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/CoverageExtentExportController.py" line="147"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CoverageExtentExportController.py" line="148"/>
         <source>KML files (*.kml)</source>
         <translation>File KML (*.kml)</translation>
     </message>
@@ -4392,7 +4515,7 @@ Questo creerà dei poligoni che rappresentano l&apos;area coperta da tutte le im
         <translation>Estensione della Copertura</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/CoverageExtentExportController.py" line="275"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CoverageExtentExportController.py" line="282"/>
         <source>Could not calculate coverage extent.
 
 Images processed: {processed}
@@ -4430,7 +4553,7 @@ Le immagini possono essere saltate per i seguenti motivi:
         <translation>KML dell&apos;estensione della copertura salvato: {area}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/CoverageExtentExportController.py" line="315"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CoverageExtentExportController.py" line="321"/>
         <source>
 
 Images may be skipped for:
@@ -4450,7 +4573,7 @@ Le immagini possono essere saltate per:
         <translation>KML dell&apos;Estensione della Copertura Generato</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/CoverageExtentExportController.py" line="325"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CoverageExtentExportController.py" line="331"/>
         <source>Coverage extent KML file created successfully!
 
 File: {file}
@@ -4606,173 +4729,137 @@ thumb</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../resources/views/flight/flight_pairing.ui" line="87"/>
+        <location filename="../resources/views/flight/flight_pairing.ui" line="85"/>
         <source>Pairing…</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../resources/views/flight/flight_pairing.ui" line="100"/>
+        <location filename="../resources/views/flight/flight_pairing.ui" line="98"/>
         <source>Looking up code, exchanging keys, gathering ICE candidates.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../resources/views/flight/flight_pairing.ui" line="137"/>
-        <source>Confirm pairing phrase</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../resources/views/flight/flight_pairing.ui" line="150"/>
-        <source>Both screens should show the same four words. Only accept if they match exactly.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../resources/views/flight/flight_pairing.ui" line="160"/>
-        <source>----</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../resources/views/flight/flight_pairing.ui" line="195"/>
-        <source>Do Not Match</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../resources/views/flight/flight_pairing.ui" line="202"/>
-        <source>Words Match</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../resources/views/flight/flight_pairing.ui" line="231"/>
+        <location filename="../resources/views/flight/flight_pairing.ui" line="135"/>
         <source>Pairing failed</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/core/views/flight/FlightPairingDialog.py" line="75"/>
-        <location filename="../app/core/views/flight/FlightPairingDialog.py" line="79"/>
-        <location filename="../resources/views/flight/flight_pairing.ui" line="296"/>
+        <location filename="../app/core/views/flight/FlightPairingDialog.py" line="69"/>
+        <location filename="../resources/views/flight/flight_pairing.ui" line="200"/>
         <source>Cancel</source>
         <translation type="unfinished">Annulla</translation>
     </message>
     <message>
-        <location filename="../resources/views/flight/flight_pairing.ui" line="303"/>
+        <location filename="../resources/views/flight/flight_pairing.ui" line="207"/>
         <source>Connect</source>
         <translation type="unfinished">Connetti</translation>
     </message>
     <message>
-        <location filename="../app/core/views/flight/FlightPairingDialog.py" line="77"/>
+        <location filename="../app/core/views/flight/FlightPairingDialog.py" line="67"/>
         <source>Close</source>
         <translation type="unfinished">Chiudi</translation>
     </message>
     <message>
-        <location filename="../app/core/views/flight/FlightPairingDialog.py" line="102"/>
+        <location filename="../app/core/views/flight/FlightPairingDialog.py" line="85"/>
         <source>drone has {current}/{limit} viewers</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/core/views/flight/FlightPairingDialog.py" line="118"/>
+        <location filename="../app/core/views/flight/FlightPairingDialog.py" line="99"/>
         <source>known device — same fingerprint as last pair</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/core/views/flight/FlightPairingDialog.py" line="121"/>
-        <source>new device — verify SAS carefully</source>
+        <location filename="../app/core/views/flight/FlightPairingDialog.py" line="101"/>
+        <source>new device</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
     <name>FlightTile</name>
     <message>
-        <location filename="../app/core/views/flight/FlightTile.py" line="56"/>
+        <location filename="../app/core/views/flight/FlightTile.py" line="65"/>
         <source>Feed {code}</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/core/views/flight/FlightTile.py" line="173"/>
+        <location filename="../app/core/views/flight/FlightTile.py" line="235"/>
         <source>Choose recording directory</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/core/views/flight/FlightTile.py" line="203"/>
+        <location filename="../app/core/views/flight/FlightTile.py" line="265"/>
         <source>REC ● {filename}</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/core/views/flight/FlightTile.py" line="208"/>
+        <location filename="../app/core/views/flight/FlightTile.py" line="270"/>
         <source>REC error: {msg}</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/core/views/flight/FlightTile.py" line="216"/>
+        <location filename="../app/core/views/flight/FlightTile.py" line="278"/>
         <source>REC failed to start</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/core/views/flight/FlightTile.py" line="231"/>
+        <location filename="../app/core/views/flight/FlightTile.py" line="292"/>
         <source>Recording saved</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/core/views/flight/FlightTile.py" line="239"/>
-        <location filename="../app/core/views/flight/FlightTile.py" line="254"/>
+        <location filename="../app/core/views/flight/FlightTile.py" line="300"/>
+        <location filename="../app/core/views/flight/FlightTile.py" line="315"/>
         <source>Network: {state}</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/core/views/flight/FlightTile.py" line="249"/>
+        <location filename="../app/core/views/flight/FlightTile.py" line="310"/>
         <source>latency: {ms:.0f}ms</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/core/views/flight/FlightTile.py" line="251"/>
+        <location filename="../app/core/views/flight/FlightTile.py" line="312"/>
         <source>latency: --</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/core/views/flight/FlightTile.py" line="258"/>
-        <source>SAS: --</source>
+        <location filename="../app/core/views/flight/FlightTile.py" line="339"/>
+        <source>Restore</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/core/views/flight/FlightTile.py" line="260"/>
-        <source>SAS: {phrase}</source>
+        <location filename="../app/core/views/flight/FlightTile.py" line="343"/>
+        <source>Maximize</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/core/views/flight/FlightTile.py" line="292"/>
+        <location filename="../app/core/views/flight/FlightTile.py" line="328"/>
         <source>Full Screen</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/core/views/flight/FlightTile.py" line="297"/>
-        <source>Dock</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../app/core/views/flight/FlightTile.py" line="297"/>
-        <source>Float</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../app/core/views/flight/FlightTile.py" line="305"/>
+        <location filename="../app/core/views/flight/FlightTile.py" line="349"/>
         <source>Mute Detections in Gallery</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/core/views/flight/FlightTile.py" line="321"/>
+        <location filename="../app/core/views/flight/FlightTile.py" line="365"/>
         <source>Stop Recording</source>
         <translation type="unfinished">Interrompi Registrazione</translation>
     </message>
     <message>
-        <location filename="../app/core/views/flight/FlightTile.py" line="325"/>
+        <location filename="../app/core/views/flight/FlightTile.py" line="369"/>
         <source>Start Recording…</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/core/views/flight/FlightTile.py" line="329"/>
+        <location filename="../app/core/views/flight/FlightTile.py" line="373"/>
         <source>Reconnect</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/core/views/flight/FlightTile.py" line="335"/>
+        <location filename="../app/core/views/flight/FlightTile.py" line="379"/>
         <source>Close</source>
         <translation type="unfinished">Chiudi</translation>
     </message>
@@ -4780,83 +4867,78 @@ thumb</source>
 <context>
     <name>FlightTileContents</name>
     <message>
-        <location filename="../resources/views/flight/flight_tile.ui" line="42"/>
+        <location filename="../resources/views/flight/flight_tile.ui" line="44"/>
         <source>Waiting for video…</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../resources/views/flight/flight_tile.ui" line="83"/>
-        <source>Detections</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../resources/views/flight/flight_tile.ui" line="127"/>
+        <location filename="../resources/views/flight/flight_tile.ui" line="90"/>
         <source>Network: new</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../resources/views/flight/flight_tile.ui" line="134"/>
+        <location filename="../resources/views/flight/flight_tile.ui" line="97"/>
         <source>0x0</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../resources/views/flight/flight_tile.ui" line="141"/>
+        <location filename="../resources/views/flight/flight_tile.ui" line="104"/>
         <source>0 fps</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../resources/views/flight/flight_tile.ui" line="148"/>
+        <location filename="../resources/views/flight/flight_tile.ui" line="111"/>
         <source>0 kbps</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../resources/views/flight/flight_tile.ui" line="155"/>
+        <location filename="../resources/views/flight/flight_tile.ui" line="118"/>
         <source>latency: --</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../resources/views/flight/flight_tile.ui" line="175"/>
-        <source>SAS: --</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
     <name>FlightTileController</name>
     <message>
-        <location filename="../app/core/controllers/flight/FlightTileController.py" line="111"/>
+        <location filename="../app/core/controllers/flight/FlightTileController.py" line="115"/>
         <source>Looking up code {code} and connecting to the drone.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/flight/FlightTileController.py" line="190"/>
+        <location filename="../app/core/controllers/flight/FlightTileController.py" line="182"/>
         <source>Name this device</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/flight/FlightTileController.py" line="192"/>
+        <location filename="../app/core/controllers/flight/FlightTileController.py" line="186"/>
         <source>Give this publisher a name so you can recognise it next time (e.g. &apos;Operator A&apos;s M4E&apos;).</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/flight/FlightTileController.py" line="210"/>
+        <location filename="../app/core/controllers/flight/FlightTileController.py" line="207"/>
         <source>Device &apos;{label}&apos; presented a different DTLS fingerprint than the last time you paired with it. This could mean the tablet was reset, a different tablet is using the label, or somebody is impersonating it.
 
 Reject if you weren&apos;t expecting this.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/flight/FlightTileController.py" line="218"/>
+        <location filename="../app/core/controllers/flight/FlightTileController.py" line="210"/>
         <source>Fingerprint mismatch — &apos;{label}&apos;</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/flight/FlightTileController.py" line="227"/>
+        <location filename="../app/core/controllers/flight/FlightTileController.py" line="221"/>
         <source>Fingerprint changed on {ts}; previous identity was overwritten after operator review.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/flight/FlightTileController.py" line="311"/>
+        <location filename="../app/core/controllers/flight/FlightTileController.py" line="295"/>
         <source>This drone already has {current} viewers connected (maximum {limit}). Ask one to disconnect, or try again later.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/controllers/flight/FlightTileController.py" line="344"/>
+        <source>Pairing ended before video could start. Ask the operator to generate a new code and try again.</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -4883,47 +4965,47 @@ Reject if you weren&apos;t expecting this.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../resources/views/flight/flight_viewer.ui" line="80"/>
+        <location filename="../resources/views/flight/flight_viewer.ui" line="86"/>
         <source>+ Add Feed</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../resources/views/flight/flight_viewer.ui" line="83"/>
+        <location filename="../resources/views/flight/flight_viewer.ui" line="89"/>
         <source>Pair with an ADIAT Mobile drone tablet using a 6-character code.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../resources/views/flight/flight_viewer.ui" line="88"/>
+        <location filename="../resources/views/flight/flight_viewer.ui" line="94"/>
         <source>Mission Gallery</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../resources/views/flight/flight_viewer.ui" line="97"/>
+        <location filename="../resources/views/flight/flight_viewer.ui" line="103"/>
         <source>Show or hide the aggregate Mission Gallery panel.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../resources/views/flight/flight_viewer.ui" line="102"/>
+        <location filename="../resources/views/flight/flight_viewer.ui" line="108"/>
         <source>Save Layout</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../resources/views/flight/flight_viewer.ui" line="105"/>
+        <location filename="../resources/views/flight/flight_viewer.ui" line="111"/>
         <source>Save the current dock arrangement for next session.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../resources/views/flight/flight_viewer.ui" line="110"/>
+        <location filename="../resources/views/flight/flight_viewer.ui" line="116"/>
         <source>Restore Layout</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../resources/views/flight/flight_viewer.ui" line="113"/>
+        <location filename="../resources/views/flight/flight_viewer.ui" line="119"/>
         <source>Apply the last saved dock arrangement.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../resources/views/flight/flight_viewer.ui" line="118"/>
+        <location filename="../resources/views/flight/flight_viewer.ui" line="124"/>
         <source>Close Viewer</source>
         <translation type="unfinished"></translation>
     </message>
@@ -4936,7 +5018,7 @@ Reject if you weren&apos;t expecting this.</source>
         <translation>Abilita Maschera Regione di Elaborazione</translation>
     </message>
     <message>
-        <location filename="../app/core/views/streaming/components/FrameTab.py" line="55"/>
+        <location filename="../app/core/views/streaming/components/FrameTab.py" line="58"/>
         <source>Enable to restrict detection processing to a specific region of the video.
 Useful for excluding edges, UI overlays, or focusing on specific areas.
 Improves performance by not processing masked regions.</source>
@@ -4950,7 +5032,7 @@ Migliora le prestazioni evitando di elaborare le aree mascherate.</translation>
         <translation>Abilita Frame Buffer</translation>
     </message>
     <message>
-        <location filename="../app/core/views/streaming/components/FrameTab.py" line="69"/>
+        <location filename="../app/core/views/streaming/components/FrameTab.py" line="72"/>
         <source>Exclude a uniform border from all edges of the video.
 Enter the number of pixels to exclude from each edge.
 The inner area will be processed for detections.</source>
@@ -4969,7 +5051,7 @@ L&apos;area interna verrà elaborata per il rilevamento.</translation>
         <translation>Buffer (pixel):</translation>
     </message>
     <message>
-        <location filename="../app/core/views/streaming/components/FrameTab.py" line="87"/>
+        <location filename="../app/core/views/streaming/components/FrameTab.py" line="91"/>
         <source>Number of pixels to exclude from all edges (0-1000).
 A value of 50 excludes 50 pixels from top, bottom, left, and right.
 Useful for removing UI overlays or camera lens distortion at edges.
@@ -4985,7 +5067,7 @@ Il valore è riferito alla risoluzione originale del video.</translation>
         <translation>Abilita Maschera Immagine</translation>
     </message>
     <message>
-        <location filename="../app/core/views/streaming/components/FrameTab.py" line="99"/>
+        <location filename="../app/core/views/streaming/components/FrameTab.py" line="102"/>
         <source>Load a black/white image as a custom mask.
 White areas will be processed, black areas excluded.
 The mask will be scaled to match the video resolution.</source>
@@ -5041,7 +5123,7 @@ La maschera verrà ridimensionata in base alla risoluzione del video.</translati
         <translation>Mostra overlay della maschera sul video</translation>
     </message>
     <message>
-        <location filename="../app/core/views/streaming/components/FrameTab.py" line="142"/>
+        <location filename="../app/core/views/streaming/components/FrameTab.py" line="145"/>
         <source>Display the processing region on the rendered video.
 Frame mode: Shows a cyan rectangle outline of the processed area.
 Image mask: Shows a semi-transparent overlay of excluded regions.</source>
@@ -5060,7 +5142,7 @@ Maschera immagine: mostra un overlay semitrasparente delle aree escluse.</transl
         <translation>{error}</translation>
     </message>
     <message>
-        <location filename="../app/core/views/streaming/components/FrameTab.py" line="229"/>
+        <location filename="../app/core/views/streaming/components/FrameTab.py" line="231"/>
         <source>Could not load the selected image. Please choose a valid image file.</source>
         <translation>Impossibile caricare l&apos;immagine selezionata. Scegli un file immagine valido.</translation>
     </message>
@@ -5070,7 +5152,7 @@ Maschera immagine: mostra un overlay semitrasparente delle aree escluse.</transl
         <translation>Mancata Corrispondenza Proporzioni</translation>
     </message>
     <message>
-        <location filename="../app/core/views/streaming/components/FrameTab.py" line="240"/>
+        <location filename="../app/core/views/streaming/components/FrameTab.py" line="243"/>
         <source>{error}
 
 The mask will be scaled to fit, which may cause distortion.
@@ -5091,7 +5173,7 @@ Vuoi continuare?</translation>
         <translation>Nessun dato GPS trovato nelle immagini</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="363"/>
+        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="366"/>
         <source>GPS coordinate not in any images</source>
         <translation>Coordinata GPS non presente in nessuna immagine</translation>
     </message>
@@ -5150,7 +5232,7 @@ Vuoi continuare?</translation>
         <translation>Problema di Caricamento Tasselli Mappa</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="248"/>
+        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="249"/>
         <source>{error}
 
 The map will continue to work with cached tiles where available.</source>
@@ -5162,12 +5244,13 @@ La mappa continuerà a funzionare con i tasselli memorizzati nella cache, ove di
 <context>
     <name>GPSMapView</name>
     <message>
-        <location filename="../app/core/views/images/viewer/widgets/GPSMapView.py" line="1128"/>
+        <location filename="../app/core/views/images/viewer/widgets/GPSMapView.py" line="1129"/>
         <source>Copy Data</source>
         <translation>Copia Dati</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/widgets/GPSMapView.py" line="1708"/>
+        <location filename="../app/core/views/images/viewer/widgets/GPSMapView.py" line="1669"/>
+        <location filename="../app/core/views/images/viewer/widgets/GPSMapView.py" line="1770"/>
         <source>Zoom FOV</source>
         <translation>Zoom FOV</translation>
     </message>
@@ -5175,33 +5258,33 @@ La mappa continuerà a funzionare con i tasselli memorizzati nella cache, ove di
 <context>
     <name>GalleryUIComponent</name>
     <message>
-        <location filename="../app/core/controllers/images/viewer/gallery/GalleryUIComponent.py" line="306"/>
+        <location filename="../app/core/controllers/images/viewer/gallery/GalleryUIComponent.py" line="340"/>
         <source>0 AOIs</source>
         <translation>0 AOI</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/gallery/GalleryUIComponent.py" line="347"/>
+        <location filename="../app/core/controllers/images/viewer/gallery/GalleryUIComponent.py" line="381"/>
         <source>AOI</source>
         <translation>AOI</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/gallery/GalleryUIComponent.py" line="347"/>
+        <location filename="../app/core/controllers/images/viewer/gallery/GalleryUIComponent.py" line="382"/>
         <source>AOIs</source>
         <translation>AOI</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/gallery/GalleryUIComponent.py" line="349"/>
-        <location filename="../app/core/controllers/images/viewer/gallery/GalleryUIComponent.py" line="372"/>
+        <location filename="../app/core/controllers/images/viewer/gallery/GalleryUIComponent.py" line="383"/>
+        <location filename="../app/core/controllers/images/viewer/gallery/GalleryUIComponent.py" line="406"/>
         <source>{count} {label}</source>
         <translation>{count} {label}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/gallery/GalleryUIComponent.py" line="367"/>
+        <location filename="../app/core/controllers/images/viewer/gallery/GalleryUIComponent.py" line="402"/>
         <source>Area of Interest</source>
         <translation>Area di Interesse</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/gallery/GalleryUIComponent.py" line="369"/>
+        <location filename="../app/core/controllers/images/viewer/gallery/GalleryUIComponent.py" line="404"/>
         <source>Areas of Interest</source>
         <translation>Aree di Interesse</translation>
     </message>
@@ -5209,7 +5292,7 @@ La mappa continuerà a funzionare con i tasselli memorizzati nella cache, ove di
 <context>
     <name>GeneralSettingsPage</name>
     <message>
-        <location filename="../app/core/controllers/images/guidePages/GeneralSettingsPage.py" line="121"/>
+        <location filename="../app/core/controllers/images/guidePages/GeneralSettingsPage.py" line="122"/>
         <source>Select AOI Highlight Color</source>
         <translation>Seleziona Colore Evidenziazione AOI</translation>
     </message>
@@ -5219,7 +5302,7 @@ La mappa continuerà a funzionare con i tasselli memorizzati nella cache, ove di
         <translation>Benchmark Completato</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/guidePages/GeneralSettingsPage.py" line="161"/>
+        <location filename="../app/core/controllers/images/guidePages/GeneralSettingsPage.py" line="164"/>
         <source>Detected {count} CPU core(s).
 
 Recommended number of processes: {recommended}
@@ -5230,6 +5313,77 @@ The slider has been set to {recommended} processes.</source>
 Numero consigliato di processi: {recommended}
 
 Il cursore è stato impostato su {recommended} processi.</translation>
+    </message>
+</context>
+<context>
+    <name>GridReviewController</name>
+    <message>
+        <location filename="../app/core/controllers/images/viewer/grid/GridReviewController.py" line="149"/>
+        <source>Grid review works in single-image mode — exit the gallery first.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/controllers/images/viewer/grid/GridReviewController.py" line="262"/>
+        <source>This image keeps its existing grid — the new size applies to unstarted images.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/controllers/images/viewer/grid/GridReviewController.py" line="316"/>
+        <source>Image fully reviewed — advancing</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/controllers/images/viewer/grid/GridReviewController.py" line="539"/>
+        <source>cell {cell}/{cells} — image {image}/{images} — run {percent}% reviewed</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
+    <name>GridReviewDialog</name>
+    <message>
+        <location filename="../app/core/views/images/viewer/dialogs/GridReviewDialog.py" line="50"/>
+        <source>Suggested: {rows}×{cols} (person ≈ {px} px on screen at cell zoom)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/views/images/viewer/dialogs/GridReviewDialog.py" line="52"/>
+        <source>Suggested: {rows}×{cols}</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../resources/views/images/viewer/GridReviewDialog.ui" line="14"/>
+        <source>Grid Review Settings</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../resources/views/images/viewer/GridReviewDialog.ui" line="23"/>
+        <source>Choose how many cells the review grid divides each image into. Smaller cells mean a higher zoom per cell.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../resources/views/images/viewer/GridReviewDialog.ui" line="32"/>
+        <source>Rows</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../resources/views/images/viewer/GridReviewDialog.ui" line="52"/>
+        <source>Columns</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../resources/views/images/viewer/GridReviewDialog.ui" line="74"/>
+        <source>Mark cells reviewed when advancing (Space)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../resources/views/images/viewer/GridReviewDialog.ui" line="89"/>
+        <source>No grid suggestion available (image GSD unknown).</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../resources/views/images/viewer/GridReviewDialog.ui" line="96"/>
+        <source>Use Suggestion</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
@@ -5451,7 +5605,7 @@ Usa questo per vedere quali colori verranno rilevati e ottimizzare gli intervall
         <translation>Assistente Intervallo Colore HSV - Selezione con Clic</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/images/HSVColorRange/views/HSVColorRangeAssistant.py" line="694"/>
+        <location filename="../app/algorithms/images/HSVColorRange/views/HSVColorRangeAssistant.py" line="709"/>
         <source>Interactive image viewer with color selection.
 
 NAVIGATION:
@@ -5495,7 +5649,7 @@ VISUALIZZAZIONE:
         <translation>Sfoglia...</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/images/HSVColorRange/views/HSVColorRangeAssistant.py" line="743"/>
+        <location filename="../app/algorithms/images/HSVColorRange/views/HSVColorRangeAssistant.py" line="748"/>
         <source>Browse for an image file to load.
 Opens a file dialog to select an image from your computer.
 • Supported formats: PNG, JPG, JPEG, BMP
@@ -5513,7 +5667,7 @@ L&apos;immagine verrà mostrata nel visualizzatore principale a sinistra.</trans
         <translation>Reimposta</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/images/HSVColorRange/views/HSVColorRangeAssistant.py" line="755"/>
+        <location filename="../app/algorithms/images/HSVColorRange/views/HSVColorRangeAssistant.py" line="761"/>
         <source>Reset all selections and start over.
 • Clears all selected pixels (white overlay)
 • Resets HSV ranges to defaults
@@ -5533,14 +5687,14 @@ Utile per ripartire da zero senza ricaricare l&apos;immagine.</translation>
         <translation>Raggio di Selezione:</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/images/HSVColorRange/views/HSVColorRangeAssistant.py" line="768"/>
+        <location filename="../app/algorithms/images/HSVColorRange/views/HSVColorRangeAssistant.py" line="770"/>
         <source>Size of the circular selection cursor.
 Determines how many pixels are sampled when you CTRL+Click.</source>
         <translation>Dimensione del cursore circolare di selezione.
 Determina quanti pixel vengono campionati con CTRL+Clic.</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/images/HSVColorRange/views/HSVColorRangeAssistant.py" line="777"/>
+        <location filename="../app/algorithms/images/HSVColorRange/views/HSVColorRangeAssistant.py" line="788"/>
         <source>Set the selection cursor radius in pixels.
 • Range: 1-50 pixels
 • Default: 1 pixel (single pixel selection)
@@ -5570,14 +5724,14 @@ Scorciatoie da tastiera: [ diminuisce, ] aumenta di 2 pixel.</translation>
         <translation>Tolleranza Colore:</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/images/HSVColorRange/views/HSVColorRangeAssistant.py" line="795"/>
+        <location filename="../app/algorithms/images/HSVColorRange/views/HSVColorRangeAssistant.py" line="797"/>
         <source>HSV color matching tolerance.
 Controls how similar colors must be to get selected.</source>
         <translation>Tolleranza di corrispondenza dei colori HSV.
 Controlla quanto i colori devono essere simili per essere selezionati.</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/images/HSVColorRange/views/HSVColorRangeAssistant.py" line="803"/>
+        <location filename="../app/algorithms/images/HSVColorRange/views/HSVColorRangeAssistant.py" line="817"/>
         <source>Set color tolerance for similar pixel detection.
 • Range: 0-50
 • Default: 2
@@ -5608,7 +5762,7 @@ Tolleranza più bassa:
 • Può non rilevare alcuni pixel del colore target.</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/images/HSVColorRange/views/HSVColorRangeAssistant.py" line="825"/>
+        <location filename="../app/algorithms/images/HSVColorRange/views/HSVColorRangeAssistant.py" line="826"/>
         <source>CTRL+Click: Select similar colors | CTRL+SHIFT+Click: Remove | [ ] : Radius</source>
         <translation>CTRL+Clic: seleziona colori simili | CTRL+MAIUSC+Clic: rimuovi | [ ] : raggio</translation>
     </message>
@@ -5618,7 +5772,7 @@ Tolleranza più bassa:
         <translation>Aiuto</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/images/HSVColorRange/views/HSVColorRangeAssistant.py" line="833"/>
+        <location filename="../app/algorithms/images/HSVColorRange/views/HSVColorRangeAssistant.py" line="840"/>
         <source>Show detailed help and instructions.
 Opens a dialog with:
 • Step-by-step usage instructions
@@ -5640,7 +5794,7 @@ Clicca qui se non sei sicuro di come usare questo strumento.</translation>
         <translation>Colore Selezionato</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/images/HSVColorRange/views/HSVColorRangeAssistant.py" line="861"/>
+        <location filename="../app/algorithms/images/HSVColorRange/views/HSVColorRangeAssistant.py" line="863"/>
         <source>Average color of all selected pixels.
 Shows the center/mean color that will be used for HSV range detection.</source>
         <translation>Colore medio di tutti i pixel selezionati.
@@ -5652,14 +5806,14 @@ Mostra il colore centrale/medio che verrà usato per il rilevamento dell&apos;in
         <translation>Colore:</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/images/HSVColorRange/views/HSVColorRangeAssistant.py" line="868"/>
+        <location filename="../app/algorithms/images/HSVColorRange/views/HSVColorRangeAssistant.py" line="870"/>
         <source>Visual preview of the average selected color.
 This is the center color calculated from all selected pixels.</source>
         <translation>Anteprima visiva del colore medio selezionato.
 È il colore centrale calcolato da tutti i pixel selezionati.</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/images/HSVColorRange/views/HSVColorRangeAssistant.py" line="876"/>
+        <location filename="../app/algorithms/images/HSVColorRange/views/HSVColorRangeAssistant.py" line="878"/>
         <source>Color swatch showing the average of all selected pixels.
 This becomes the center color for HSV range detection.</source>
         <translation>Campione che mostra la media di tutti i pixel selezionati.
@@ -5671,14 +5825,14 @@ Diventa il colore centrale per il rilevamento dell&apos;intervallo HSV.</transla
         <translation>HEX:</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/images/HSVColorRange/views/HSVColorRangeAssistant.py" line="883"/>
+        <location filename="../app/algorithms/images/HSVColorRange/views/HSVColorRangeAssistant.py" line="885"/>
         <source>Hexadecimal representation of the selected color.
 Format: #RRGGBB</source>
         <translation>Rappresentazione esadecimale del colore selezionato.
 Formato: #RRGGBB</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/images/HSVColorRange/views/HSVColorRangeAssistant.py" line="889"/>
+        <location filename="../app/algorithms/images/HSVColorRange/views/HSVColorRangeAssistant.py" line="891"/>
         <source>Hex color code of the average selected color.
 Can be used to identify the exact RGB color value.</source>
         <translation>Codice esadecimale del colore medio selezionato.
@@ -5690,14 +5844,14 @@ Può essere usato per identificare l&apos;esatto valore RGB.</translation>
         <translation>HSV:</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/images/HSVColorRange/views/HSVColorRangeAssistant.py" line="896"/>
+        <location filename="../app/algorithms/images/HSVColorRange/views/HSVColorRangeAssistant.py" line="898"/>
         <source>HSV values of the selected color.
 H = Hue (0-360°), S = Saturation (0-100%), V = Value (0-100%)</source>
         <translation>Valori HSV del colore selezionato.
 H = Tonalità (0-360°), S = Saturazione (0-100%), V = Valore (0-100%)</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/images/HSVColorRange/views/HSVColorRangeAssistant.py" line="902"/>
+        <location filename="../app/algorithms/images/HSVColorRange/views/HSVColorRangeAssistant.py" line="904"/>
         <source>HSV color values of the average selected color.
 This is the center point of your color range.</source>
         <translation>Valori di colore HSV del colore medio selezionato.
@@ -5709,7 +5863,7 @@ This is the center point of your color range.</source>
         <translation>Intervalli HSV</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/images/HSVColorRange/views/HSVColorRangeAssistant.py" line="912"/>
+        <location filename="../app/algorithms/images/HSVColorRange/views/HSVColorRangeAssistant.py" line="916"/>
         <source>HSV color range configuration.
 Defines the detection range for each HSV channel.
 Center values are calculated from selected pixels.
@@ -5780,7 +5934,7 @@ I valori di buffer aggiungono tolleranza per catturare le variazioni cromatiche.
         <translation>Canale Tonalità (tipo di colore): 0-360 gradi sulla ruota dei colori</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/images/HSVColorRange/views/HSVColorRangeAssistant.py" line="947"/>
+        <location filename="../app/algorithms/images/HSVColorRange/views/HSVColorRangeAssistant.py" line="950"/>
         <source>Center hue value (average of selected pixels).
 Automatically calculated from your selection.
 Range: 0-360° (red=0°, green=120°, blue=240°)</source>
@@ -5789,7 +5943,7 @@ Calcolato automaticamente dalla tua selezione.
 Intervallo: 0-360° (rosso=0°, verde=120°, blu=240°)</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/images/HSVColorRange/views/HSVColorRangeAssistant.py" line="957"/>
+        <location filename="../app/algorithms/images/HSVColorRange/views/HSVColorRangeAssistant.py" line="963"/>
         <source>Hue lower bound buffer (subtract from center).
 • Range: 0-360°
 • Adds tolerance below the center hue
@@ -5804,7 +5958,7 @@ WARNING: Total hue range (minus + plus) &gt; 60° may cause false positives</sou
 AVVISO: un intervallo totale di tonalità (meno + più) &gt; 60° può causare falsi positivi</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/images/HSVColorRange/views/HSVColorRangeAssistant.py" line="971"/>
+        <location filename="../app/algorithms/images/HSVColorRange/views/HSVColorRangeAssistant.py" line="977"/>
         <source>Hue upper bound buffer (add to center).
 • Range: 0-360°
 • Adds tolerance above the center hue
@@ -5819,7 +5973,7 @@ WARNING: Total hue range (minus + plus) &gt; 60° may cause false positives</sou
 AVVISO: un intervallo totale di tonalità (meno + più) &gt; 60° può causare falsi positivi</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/images/HSVColorRange/views/HSVColorRangeAssistant.py" line="983"/>
+        <location filename="../app/algorithms/images/HSVColorRange/views/HSVColorRangeAssistant.py" line="986"/>
         <source>Final hue detection range.
 Shows the complete min-max hue range that will be detected.
 Calculated as: (center - minus buffer) to (center + plus buffer)</source>
@@ -5833,7 +5987,7 @@ Calcolato come: (centro - buffer meno) fino a (centro + buffer più).</translati
         <translation>AVVISO: un intervallo di Tonalità troppo ampio può causare falsi positivi!</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/images/HSVColorRange/views/HSVColorRangeAssistant.py" line="994"/>
+        <location filename="../app/algorithms/images/HSVColorRange/views/HSVColorRangeAssistant.py" line="998"/>
         <source>Hue range warning.
 Your total hue range exceeds 60°.
 Wide hue ranges may detect many different colors.
@@ -5854,7 +6008,7 @@ Considera di restringere i buffer per un rilevamento più accurato.</translation
         <translation>Canale Saturazione (intensità del colore): 0-100%</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/images/HSVColorRange/views/HSVColorRangeAssistant.py" line="1008"/>
+        <location filename="../app/algorithms/images/HSVColorRange/views/HSVColorRangeAssistant.py" line="1011"/>
         <source>Center saturation value (average of selected pixels).
 Automatically calculated from your selection.
 Range: 0-100% (0%=gray, 100%=vivid color)</source>
@@ -5863,7 +6017,7 @@ Calcolato automaticamente dalla tua selezione.
 Intervallo: 0-100% (0%=grigio, 100%=colore vivido)</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/images/HSVColorRange/views/HSVColorRangeAssistant.py" line="1018"/>
+        <location filename="../app/algorithms/images/HSVColorRange/views/HSVColorRangeAssistant.py" line="1024"/>
         <source>Saturation lower bound buffer (subtract from center).
 • Range: 0-100%
 • Adds tolerance below the center saturation
@@ -5878,7 +6032,7 @@ WARNING: Lower bound &lt; 25% may include unwanted gray/desaturated colors</sour
 AVVISO: un limite inferiore &lt; 25% può includere colori grigi/desaturati indesiderati</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/images/HSVColorRange/views/HSVColorRangeAssistant.py" line="1032"/>
+        <location filename="../app/algorithms/images/HSVColorRange/views/HSVColorRangeAssistant.py" line="1037"/>
         <source>Saturation upper bound buffer (add to center).
 • Range: 0-100%
 • Adds tolerance above the center saturation
@@ -5891,7 +6045,7 @@ AVVISO: un limite inferiore &lt; 25% può includere colori grigi/desaturati inde
 • Aumentare la saturazione superiore è in genere sicuro.</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/images/HSVColorRange/views/HSVColorRangeAssistant.py" line="1043"/>
+        <location filename="../app/algorithms/images/HSVColorRange/views/HSVColorRangeAssistant.py" line="1046"/>
         <source>Final saturation detection range.
 Shows the complete min-max saturation range that will be detected.
 Calculated as: (center - minus buffer) to (center + plus buffer)</source>
@@ -5905,7 +6059,7 @@ Calcolato come: (centro - buffer meno) fino a (centro + buffer più).</translati
         <translation>AVVISO: un livello di Saturazione troppo basso può causare falsi positivi!</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/images/HSVColorRange/views/HSVColorRangeAssistant.py" line="1054"/>
+        <location filename="../app/algorithms/images/HSVColorRange/views/HSVColorRangeAssistant.py" line="1058"/>
         <source>Saturation range warning.
 Your lower saturation bound is below 25%.
 Low saturation includes grayish/washed out colors.
@@ -5926,7 +6080,7 @@ Potrebbe rilevare oggetti grigi o desaturati indesiderati.</translation>
         <translation>Canale Valore (luminosità): 0-100%</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/images/HSVColorRange/views/HSVColorRangeAssistant.py" line="1068"/>
+        <location filename="../app/algorithms/images/HSVColorRange/views/HSVColorRangeAssistant.py" line="1071"/>
         <source>Center value/brightness (average of selected pixels).
 Automatically calculated from your selection.
 Range: 0-100% (0%=black, 100%=bright)</source>
@@ -5935,7 +6089,7 @@ Calcolato automaticamente dalla tua selezione.
 Intervallo: 0-100% (0%=nero, 100%=luminoso)</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/images/HSVColorRange/views/HSVColorRangeAssistant.py" line="1078"/>
+        <location filename="../app/algorithms/images/HSVColorRange/views/HSVColorRangeAssistant.py" line="1084"/>
         <source>Value lower bound buffer (subtract from center).
 • Range: 0-100%
 • Adds tolerance below the center brightness
@@ -5950,7 +6104,7 @@ WARNING: Lower bound &lt; 25% may include unwanted shadows or dark objects</sour
 AVVISO: un limite inferiore &lt; 25% può includere ombre o oggetti scuri indesiderati</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/images/HSVColorRange/views/HSVColorRangeAssistant.py" line="1092"/>
+        <location filename="../app/algorithms/images/HSVColorRange/views/HSVColorRangeAssistant.py" line="1097"/>
         <source>Value upper bound buffer (add to center).
 • Range: 0-100%
 • Adds tolerance above the center brightness
@@ -5963,7 +6117,7 @@ AVVISO: un limite inferiore &lt; 25% può includere ombre o oggetti scuri indesi
 • Aumentare la luminosità è in genere sicuro.</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/images/HSVColorRange/views/HSVColorRangeAssistant.py" line="1103"/>
+        <location filename="../app/algorithms/images/HSVColorRange/views/HSVColorRangeAssistant.py" line="1106"/>
         <source>Final value/brightness detection range.
 Shows the complete min-max brightness range that will be detected.
 Calculated as: (center - minus buffer) to (center + plus buffer)</source>
@@ -5977,7 +6131,7 @@ Calcolato come: (centro - buffer meno) fino a (centro + buffer più).</translati
         <translation>AVVISO: un livello di Valore troppo basso può causare falsi positivi!</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/images/HSVColorRange/views/HSVColorRangeAssistant.py" line="1114"/>
+        <location filename="../app/algorithms/images/HSVColorRange/views/HSVColorRangeAssistant.py" line="1118"/>
         <source>Value range warning.
 Your lower value bound is below 25%.
 Low value includes very dark colors.
@@ -5993,7 +6147,7 @@ Potrebbe rilevare ombre o oggetti scuri indesiderati.</translation>
         <translation>Statistiche</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/images/HSVColorRange/views/HSVColorRangeAssistant.py" line="1126"/>
+        <location filename="../app/algorithms/images/HSVColorRange/views/HSVColorRangeAssistant.py" line="1128"/>
         <source>Statistics about your current selection.
 Shows how many pixels are selected and what percentage of the image they represent.</source>
         <translation>Statistiche sulla selezione corrente.
@@ -6006,7 +6160,7 @@ Mostra quanti pixel sono selezionati e quale percentuale dell&apos;immagine rapp
         <translation>Pixel Selezionati: 0</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/images/HSVColorRange/views/HSVColorRangeAssistant.py" line="1132"/>
+        <location filename="../app/algorithms/images/HSVColorRange/views/HSVColorRangeAssistant.py" line="1135"/>
         <source>Number of pixels currently selected.
 Shows the total count of white-highlighted pixels in the main viewer.
 Updates in real-time as you select colors.</source>
@@ -6021,7 +6175,7 @@ Si aggiorna in tempo reale mentre selezioni i colori.</translation>
         <translation>Copertura: 0%</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/images/HSVColorRange/views/HSVColorRangeAssistant.py" line="1139"/>
+        <location filename="../app/algorithms/images/HSVColorRange/views/HSVColorRangeAssistant.py" line="1143"/>
         <source>Percentage of image covered by selection.
 Shows what portion of the total image is selected.
 • Low %: Precise selection, may miss some target pixels
@@ -6037,14 +6191,14 @@ Mostra quale porzione dell&apos;immagine totale è selezionata.
         <translation>Anteprima Maschera</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/images/HSVColorRange/views/HSVColorRangeAssistant.py" line="1150"/>
+        <location filename="../app/algorithms/images/HSVColorRange/views/HSVColorRangeAssistant.py" line="1152"/>
         <source>Black and white preview of the detection mask.
 Shows what pixels will be detected with current HSV ranges and buffers.</source>
         <translation>Anteprima in bianco e nero della maschera di rilevamento.
 Mostra quali pixel verranno rilevati con gli attuali intervalli HSV e buffer.</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/images/HSVColorRange/views/HSVColorRangeAssistant.py" line="1161"/>
+        <location filename="../app/algorithms/images/HSVColorRange/views/HSVColorRangeAssistant.py" line="1166"/>
         <source>Grayscale mask preview.
 • White pixels: Will be detected with current settings
 • Black pixels: Will NOT be detected
@@ -6062,7 +6216,7 @@ Usala per verificare che il tuo intervallo HSV catturi il target senza falsi pos
         <translation>Seleziona Immagine</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/images/HSVColorRange/views/HSVColorRangeAssistant.py" line="1180"/>
+        <location filename="../app/algorithms/images/HSVColorRange/views/HSVColorRangeAssistant.py" line="1181"/>
         <source>Images (*.png *.jpg *.jpeg *.bmp)</source>
         <translation>Immagini (*.png *.jpg *.jpeg *.bmp)</translation>
     </message>
@@ -6077,7 +6231,7 @@ Usala per verificare che il tuo intervallo HSV catturi il target senza falsi pos
         <translation>Copertura: {0:.1f}%</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/images/HSVColorRange/views/HSVColorRangeAssistant.py" line="1476"/>
+        <location filename="../app/algorithms/images/HSVColorRange/views/HSVColorRangeAssistant.py" line="1503"/>
         <source>
 &lt;h2&gt;HSV Color Range Assistant - Help&lt;/h2&gt;
 
@@ -6145,8 +6299,8 @@ Clicca sul pulsante SFOGLIA per aprire un&apos;immagine.&lt;/p&gt;
         <translation>Nessun Colore Selezionato</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/images/HSVColorRange/controllers/HSVColorRangeController.py" line="120"/>
-        <location filename="../app/algorithms/images/HSVColorRange/controllers/HSVColorRangeController.py" line="125"/>
+        <location filename="../app/algorithms/images/HSVColorRange/controllers/HSVColorRangeController.py" line="121"/>
+        <location filename="../app/algorithms/images/HSVColorRange/controllers/HSVColorRangeController.py" line="126"/>
         <source>Add Color</source>
         <translation>Aggiungi Colore</translation>
     </message>
@@ -6156,7 +6310,7 @@ Clicca sul pulsante SFOGLIA per aprire un&apos;immagine.&lt;/p&gt;
         <translation>Espansione per Tonalità</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/images/HSVColorRange/controllers/HSVColorRangeController.py" line="178"/>
+        <location filename="../app/algorithms/images/HSVColorRange/controllers/HSVColorRangeController.py" line="181"/>
         <source>When enabled, expand each AOI through neighbors whose hue is within +/- {0}
 (OpenCV units) of the mean hue of the original detected pixels.
 Pixels with saturation below {1}% or value below {2}% are excluded.</source>
@@ -6165,7 +6319,7 @@ Pixels with saturation below {1}% or value below {2}% are excluded.</source>
 I pixel con saturazione inferiore al {1}% o valore inferiore al {2}% vengono esclusi.</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/images/HSVColorRange/controllers/HSVColorRangeController.py" line="468"/>
+        <location filename="../app/algorithms/images/HSVColorRange/controllers/HSVColorRangeController.py" line="469"/>
         <source>Please add at least one color to detect.</source>
         <translation>Aggiungi almeno un colore da rilevare.</translation>
     </message>
@@ -6196,7 +6350,7 @@ I pixel con saturazione inferiore al {1}% o valore inferiore al {2}% vengono esc
         <translation>Espansione per Tonalità</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/images/HSVColorRange/controllers/HSVColorRangeWizardController.py" line="98"/>
+        <location filename="../app/algorithms/images/HSVColorRange/controllers/HSVColorRangeWizardController.py" line="101"/>
         <source>When enabled, expand each AOI through neighbors whose hue is within +/- {0}
 (OpenCV units) of the mean hue of the original detected pixels.
 Pixels with saturation below {1}% or value below {2}% are excluded.</source>
@@ -6205,7 +6359,7 @@ Pixels with saturation below {1}% or value below {2}% are excluded.</source>
 I pixel con saturazione inferiore al {1}% o valore inferiore al {2}% vengono esclusi.</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/images/HSVColorRange/controllers/HSVColorRangeWizardController.py" line="385"/>
+        <location filename="../app/algorithms/images/HSVColorRange/controllers/HSVColorRangeWizardController.py" line="386"/>
         <source>Please add at least one color to detect.</source>
         <translation>Aggiungi almeno un colore da rilevare.</translation>
     </message>
@@ -6234,14 +6388,14 @@ Corrispondenza:</translation>
         <translation>HEX:</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/images/HSVColorRange/views/HSVRangePickerWidget.py" line="92"/>
+        <location filename="../app/algorithms/images/HSVColorRange/views/HSVRangePickerWidget.py" line="94"/>
         <source>Hexadecimal color code input.
 Enter colors as hex codes (e.g., #FF0000 for red).</source>
         <translation>Inserimento codice colore esadecimale.
 Inserisci i colori come codici esadecimali (es. #FF0000 per il rosso).</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/images/HSVColorRange/views/HSVRangePickerWidget.py" line="101"/>
+        <location filename="../app/algorithms/images/HSVColorRange/views/HSVRangePickerWidget.py" line="106"/>
         <source>Enter a hexadecimal color code.
 • Format: #RRGGBB (e.g., #FF0000 for red, #00FF00 for green)
 • Also accepts short format: #RGB (e.g., #F00 for red)
@@ -6259,7 +6413,7 @@ Il colore verrà convertito automaticamente in HSV.</translation>
         <translation>Ripristina Predefiniti</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/images/HSVColorRange/views/HSVRangePickerWidget.py" line="113"/>
+        <location filename="../app/algorithms/images/HSVColorRange/views/HSVRangePickerWidget.py" line="119"/>
         <source>Reset to default color and ranges.
 • Color: Pure red (H:0°, S:100%, V:100%)
 • Hue range: ±20° (total 40° range)
@@ -6279,7 +6433,7 @@ Usalo per ripartire dalle impostazioni standard.</translation>
         <translation>Saturazione / Valore</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/images/HSVColorRange/views/HSVRangePickerWidget.py" line="140"/>
+        <location filename="../app/algorithms/images/HSVColorRange/views/HSVRangePickerWidget.py" line="143"/>
         <source>Saturation and Value (brightness) selector.
 Saturation controls color intensity (left=gray, right=vivid).
 Value controls brightness (bottom=dark, top=bright).</source>
@@ -6288,7 +6442,7 @@ La Saturazione controlla l&apos;intensità del colore (sinistra=grigio, destra=v
 Il Valore controlla la luminosità (basso=scuro, alto=luminoso).</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/images/HSVColorRange/views/HSVRangePickerWidget.py" line="148"/>
+        <location filename="../app/algorithms/images/HSVColorRange/views/HSVRangePickerWidget.py" line="156"/>
         <source>Interactive Saturation/Value selector.
 • Click anywhere to set the center color&apos;s saturation and brightness
 • White circle = current center color position
@@ -6312,14 +6466,14 @@ Intervalli più ampi rilevano più variazioni di colore ma possono includere col
         <translation>Tonalità</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/images/HSVColorRange/views/HSVRangePickerWidget.py" line="168"/>
+        <location filename="../app/algorithms/images/HSVColorRange/views/HSVRangePickerWidget.py" line="170"/>
         <source>Hue (color type) selector.
 Hue represents the actual color: red, orange, yellow, green, cyan, blue, purple, magenta.</source>
         <translation>Selettore di Tonalità (tipo di colore).
 La Tonalità rappresenta il colore effettivo: rosso, arancione, giallo, verde, ciano, blu, viola, magenta.</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/images/HSVColorRange/views/HSVRangePickerWidget.py" line="175"/>
+        <location filename="../app/algorithms/images/HSVColorRange/views/HSVRangePickerWidget.py" line="183"/>
         <source>Interactive Hue color ring selector.
 • Click on the ring to select a hue (color type)
 • White line = current center hue
@@ -6343,7 +6497,7 @@ Avviso: intervalli di tonalità superiori a 60° possono rilevare troppi colori.
         <translation>Usa Immagine</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/images/HSVColorRange/views/HSVRangePickerWidget.py" line="207"/>
+        <location filename="../app/algorithms/images/HSVColorRange/views/HSVRangePickerWidget.py" line="214"/>
         <source>Open HSV Color Range Assistant.
 Advanced tool for selecting colors from an image:
 • Load an image from your input folder
@@ -6365,7 +6519,7 @@ Consigliato per trovare l&apos;intervallo cromatico migliore per il tuo target.<
         <translation>Preleva Colore dallo Schermo</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/images/HSVColorRange/views/HSVRangePickerWidget.py" line="221"/>
+        <location filename="../app/algorithms/images/HSVColorRange/views/HSVRangePickerWidget.py" line="227"/>
         <source>Pick a color from anywhere on your screen.
 Opens a color picker that lets you:
 • Click anywhere on your screen to sample a color
@@ -6385,7 +6539,7 @@ Gli intervalli restano invariati: regolali manualmente dopo il prelievo.</transl
         <translation>Aggiungi ai Colori Personalizzati</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/images/HSVColorRange/views/HSVRangePickerWidget.py" line="234"/>
+        <location filename="../app/algorithms/images/HSVColorRange/views/HSVRangePickerWidget.py" line="240"/>
         <source>Save current color to Custom Colors palette.
 Adds the current center color to the first empty slot in Custom Colors.
 • Only saves the color, not the ranges
@@ -6405,7 +6559,7 @@ Utile per costruire una tavolozza dei colori usati di frequente.</translation>
         <translation>Colori di Base:</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/images/HSVColorRange/views/HSVRangePickerWidget.py" line="255"/>
+        <location filename="../app/algorithms/images/HSVColorRange/views/HSVRangePickerWidget.py" line="258"/>
         <source>Preset basic color palette.
 Quick access to common colors like red, orange, yellow, green, cyan, blue, purple, and grayscale.
 Click any color swatch to set it as the center color.</source>
@@ -6414,7 +6568,7 @@ Accesso rapido ai colori comuni come rosso, arancione, giallo, verde, ciano, blu
 Clicca su un campione di colore per impostarlo come colore centrale.</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/images/HSVColorRange/views/HSVRangePickerWidget.py" line="263"/>
+        <location filename="../app/algorithms/images/HSVColorRange/views/HSVRangePickerWidget.py" line="268"/>
         <source>Basic color swatches.
 Click any color to quickly set it as your center color.
 • Top row: Primary colors and tints
@@ -6432,7 +6586,7 @@ Utile per selezionare velocemente i colori standard.</translation>
         <translation>Colori Personalizzati:</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/images/HSVColorRange/views/HSVRangePickerWidget.py" line="276"/>
+        <location filename="../app/algorithms/images/HSVColorRange/views/HSVRangePickerWidget.py" line="279"/>
         <source>Your saved custom color palette.
 Colors you&apos;ve saved using &apos;Add to Custom Colors&apos; button.
 Click any saved color to reuse it.</source>
@@ -6441,7 +6595,7 @@ Colori che hai salvato con il pulsante &quot;Aggiungi ai Colori Personalizzati&q
 Clicca su un colore salvato per riutilizzarlo.</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/images/HSVColorRange/views/HSVRangePickerWidget.py" line="284"/>
+        <location filename="../app/algorithms/images/HSVColorRange/views/HSVRangePickerWidget.py" line="290"/>
         <source>Custom color swatches.
 Click any color to set it as your center color.
 • Empty slots shown as gray
@@ -6456,7 +6610,7 @@ Clicca su un colore per impostarlo come colore centrale.
 Costruisci la tua tavolozza di colori usati di frequente.</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/images/HSVColorRange/views/HSVRangePickerWidget.py" line="460"/>
+        <location filename="../app/algorithms/images/HSVColorRange/views/HSVRangePickerWidget.py" line="463"/>
         <source>Current HSV color range summary.
 Shows the center color and detection ranges in real-time.
 Warning indicators appear when ranges may cause detection issues.</source>
@@ -6480,7 +6634,7 @@ Gli indicatori di avviso compaiono quando gli intervalli possono causare problem
         <translation>Intervallo Sat:</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/images/HSVColorRange/views/HSVRangePickerWidget.py" line="469"/>
+        <location filename="../app/algorithms/images/HSVColorRange/views/HSVRangePickerWidget.py" line="470"/>
         <source>Val Range:</source>
         <translation>Intervallo Val:</translation>
     </message>
@@ -6506,7 +6660,7 @@ Warning shown if lower bound &lt; 25%.</source>
 L&apos;avviso appare se il limite inferiore &lt; 25%.</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/images/HSVColorRange/views/HSVRangePickerWidget.py" line="474"/>
+        <location filename="../app/algorithms/images/HSVColorRange/views/HSVRangePickerWidget.py" line="476"/>
         <source>Value detection range (minus/plus from center).
 Warning shown if lower bound &lt; 25%.</source>
         <translation>Intervallo di rilevamento valore (meno/più dal centro).
@@ -6518,7 +6672,7 @@ L&apos;avviso appare se il limite inferiore &lt; 25%.</translation>
         <translation>⚠ Troppo ampio!</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/images/HSVColorRange/views/HSVRangePickerWidget.py" line="501"/>
+        <location filename="../app/algorithms/images/HSVColorRange/views/HSVRangePickerWidget.py" line="505"/>
         <source>Hue range warning.
 Your hue range is wider than 60° total.
 Wide hue ranges may detect too many different colors.
@@ -6535,7 +6689,7 @@ Considera di restringere l&apos;intervallo per un rilevamento più accurato.</tr
         <translation>⚠ Troppo basso!</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/images/HSVColorRange/views/HSVRangePickerWidget.py" line="514"/>
+        <location filename="../app/algorithms/images/HSVColorRange/views/HSVRangePickerWidget.py" line="518"/>
         <source>Saturation range warning.
 Your saturation lower bound is below 25%.
 Low saturation includes grayish/washed out colors.
@@ -6546,7 +6700,7 @@ Una saturazione bassa include colori grigiastri/sbiaditi.
 Potrebbe rilevare colori grigi o desaturati indesiderati.</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/images/HSVColorRange/views/HSVRangePickerWidget.py" line="527"/>
+        <location filename="../app/algorithms/images/HSVColorRange/views/HSVRangePickerWidget.py" line="531"/>
         <source>Value range warning.
 Your value lower bound is below 25%.
 Low value includes very dark colors.
@@ -6595,7 +6749,7 @@ Potrebbe rilevare ombre o oggetti scuri indesiderati.</translation>
         <translation>Alta (400)</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/HeatmapViewerDialog.py" line="114"/>
+        <location filename="../app/core/views/images/viewer/dialogs/HeatmapViewerDialog.py" line="117"/>
         <source>Hot zones (colored) show high-density detection areas. Gray zones are below the threshold. Adjust the threshold to control what counts as a hot zone.</source>
         <translation>Le zone calde (colorate) mostrano aree con alta densità di rilevamenti. Le zone grigie sono sotto la soglia. Regola la soglia per controllare cosa viene considerato una zona calda.</translation>
     </message>
@@ -6964,7 +7118,7 @@ li.checked::marker { content: &quot;\2612&quot;; }
         <translation>• È richiesta la lunghezza focale (disponibile nei metadati EXIF delle immagini)</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/guidePages/ImageCapturePage.py" line="485"/>
+        <location filename="../app/core/controllers/images/guidePages/ImageCapturePage.py" line="486"/>
         <source>GSD calculation requires an actual image file to extract focal length.</source>
         <translation>Il calcolo del GSD richiede un file immagine reale da cui estrarre la lunghezza focale.</translation>
     </message>
@@ -6984,7 +7138,7 @@ li.checked::marker { content: &quot;\2612&quot;; }
         <translation>Principale</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/guidePages/ImageCapturePage.py" line="527"/>
+        <location filename="../app/core/controllers/images/guidePages/ImageCapturePage.py" line="529"/>
         <source>Sensor</source>
         <translation>Sensore</translation>
     </message>
@@ -6992,12 +7146,12 @@ li.checked::marker { content: &quot;\2612&quot;; }
 <context>
     <name>ImageLoadController</name>
     <message>
-        <location filename="../app/core/controllers/images/viewer/image/ImageLoadController.py" line="112"/>
+        <location filename="../app/core/controllers/images/viewer/image/ImageLoadController.py" line="118"/>
         <source>(Image {current} of {total})</source>
         <translation>(Immagine {current} di {total})</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/image/ImageLoadController.py" line="426"/>
+        <location filename="../app/core/controllers/images/viewer/image/ImageLoadController.py" line="438"/>
         <source>Error Loading Image</source>
         <translation>Errore durante il caricamento dell&apos;immagine</translation>
     </message>
@@ -7025,7 +7179,7 @@ li.checked::marker { content: &quot;\2612&quot;; }
         <translation>Personalizzata</translation>
     </message>
     <message>
-        <location filename="../app/core/views/streaming/components/InputProcessingTab.py" line="61"/>
+        <location filename="../app/core/views/streaming/components/InputProcessingTab.py" line="65"/>
         <source>Select a preset resolution for processing. Lower resolutions are faster but less detailed.
 &apos;Original&apos; uses the video&apos;s native resolution (no downsampling).
 720P (1280x720) provides excellent balance between speed and detection accuracy.
@@ -7041,7 +7195,7 @@ Seleziona &quot;Personalizzata&quot; per impostare manualmente larghezza e altez
         <translation>Larghezza:</translation>
     </message>
     <message>
-        <location filename="../app/core/views/streaming/components/InputProcessingTab.py" line="78"/>
+        <location filename="../app/core/views/streaming/components/InputProcessingTab.py" line="81"/>
         <source>Custom processing width in pixels (320-3840).
 Only enabled when &apos;Custom&apos; resolution is selected.
 Lower values = faster processing, less detail.</source>
@@ -7055,7 +7209,7 @@ Valori più bassi = elaborazione più rapida, meno dettaglio.</translation>
         <translation>Altezza:</translation>
     </message>
     <message>
-        <location filename="../app/core/views/streaming/components/InputProcessingTab.py" line="91"/>
+        <location filename="../app/core/views/streaming/components/InputProcessingTab.py" line="94"/>
         <source>Custom processing height in pixels (240-2160).
 Only enabled when &apos;Custom&apos; resolution is selected.
 Lower values = faster processing, less detail.</source>
@@ -7079,7 +7233,7 @@ Valori più bassi = elaborazione più rapida, meno dettaglio.</translation>
         <translation>FPS della Sorgente</translation>
     </message>
     <message>
-        <location filename="../app/core/views/streaming/components/InputProcessingTab.py" line="133"/>
+        <location filename="../app/core/views/streaming/components/InputProcessingTab.py" line="143"/>
         <source>Limit the frame rate for processing.
 
 • Source FPS - Follow the source cadence (live sources may apply a safety cap)
@@ -7111,7 +7265,7 @@ I rilevamenti persistono tra i frame saltati per garantire continuità visiva.</
         <translation>Renderizza alla Risoluzione di Elaborazione (più veloce per alte risoluzioni)</translation>
     </message>
     <message>
-        <location filename="../app/core/views/streaming/components/InputProcessingTab.py" line="151"/>
+        <location filename="../app/core/views/streaming/components/InputProcessingTab.py" line="155"/>
         <source>Renders detection overlays at processing resolution instead of original video resolution.
 Significantly faster for high-resolution videos (1080p+) with minimal visual impact.
 Example: Processing at 720p but video is 4K - renders at 720p then upscales.
@@ -7361,7 +7515,7 @@ Valori più bassi = rilevamento più sensibile.</translation>
         <translation>Espansione per Soglia</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/images/MRMap/controllers/MRMapController.py" line="50"/>
+        <location filename="../app/algorithms/images/MRMap/controllers/MRMapController.py" line="53"/>
         <source>When enabled, expand each AOI to also include pixels with histogram bin-counts
 below (threshold + {0}). Pixels inside the cluster rectangle are added unconditionally;
 pixels outside are added if they are connected through other qualifying pixels.</source>
@@ -7375,7 +7529,7 @@ quelli esterni vengono aggiunti se collegati tramite altri pixel idonei.</transl
         <translation>Espansione per Tonalità</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/images/MRMap/controllers/MRMapController.py" line="59"/>
+        <location filename="../app/algorithms/images/MRMap/controllers/MRMapController.py" line="62"/>
         <source>When enabled, expand each AOI through neighbors whose hue is within +/- {0}
 (OpenCV units) of the mean hue of the original detected pixels.
 Pixels with saturation below {1}% or value below {2}% are excluded.</source>
@@ -7454,7 +7608,7 @@ Aggressivo</translation>
         <translation>Espansione per Soglia</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/images/MRMap/controllers/MRMapWizardController.py" line="69"/>
+        <location filename="../app/algorithms/images/MRMap/controllers/MRMapWizardController.py" line="72"/>
         <source>When enabled, expand each AOI to also include pixels with histogram bin-counts
 below (threshold + {0}). Pixels inside the cluster rectangle are added unconditionally;
 pixels outside are added if they are connected through other qualifying pixels.</source>
@@ -7468,7 +7622,7 @@ quelli esterni vengono aggiunti se collegati tramite altri pixel idonei.</transl
         <translation>Espansione per Tonalità</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/images/MRMap/controllers/MRMapWizardController.py" line="78"/>
+        <location filename="../app/algorithms/images/MRMap/controllers/MRMapWizardController.py" line="81"/>
         <source>When enabled, expand each AOI through neighbors whose hue is within +/- {0}
 (OpenCV units) of the mean hue of the original detected pixels.
 Pixels with saturation below {1}% or value below {2}% are excluded.</source>
@@ -7722,12 +7876,12 @@ Risoluzioni più basse = elaborazione più veloce ma possono perdere oggetti pic
         <translation>Risoluzione Elaborazione:</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="75"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="76"/>
         <source>Automated Drone Image Analysis Tool v{version} - Sponsored by TEXSAR</source>
         <translation>Strumento Automatico di Analisi Immagini Drone v{version} - Sponsorizzato da TEXSAR</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="538"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="539"/>
         <source>Please set the input and output directories.</source>
         <translation>Imposta le cartelle di input e output.</translation>
     </message>
@@ -7826,12 +7980,12 @@ Risoluzioni più basse = elaborazione più veloce ma possono perdere oggetti pic
         <translation>Valore Non Valido</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="327"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="328"/>
         <source>Select AOI Highlight Color</source>
         <translation>Seleziona Colore Evidenziazione AOI</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="248"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="286"/>
         <source>Select the detection algorithm for your image analysis task:
 
 HSV COLOR RANGE: Detects brightly colored objects (clothing, vehicles, tents)
@@ -7919,7 +8073,7 @@ AI PERSON DETECTOR: modello di deep learning per il rilevamento accurato di pers
         <translation>Seleziona un&apos;Immagine di Riferimento</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="378"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="379"/>
         <source>Images (*.png *.jpg)</source>
         <translation>Immagini (*.png *.jpg)</translation>
     </message>
@@ -7930,21 +8084,21 @@ AI PERSON DETECTOR: modello di deep learning per il rilevamento accurato di pers
         <translation>Valore Regolato</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="428"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="430"/>
         <source>Maximum area has been adjusted to {value} pixels to maintain valid range.
 (Minimum area must be less than maximum area)</source>
         <translation>L&apos;area massima è stata regolata a {value} pixel per mantenere un intervallo valido.
 (L&apos;area minima deve essere inferiore all&apos;area massima)</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="460"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="462"/>
         <source>Minimum area has been adjusted to {value} pixels to maintain valid range.
 (Maximum area must be greater than minimum area)</source>
         <translation>L&apos;area minima è stata regolata a {value} pixel per mantenere un intervallo valido.
 (L&apos;area massima deve essere maggiore dell&apos;area minima)</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="634"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="635"/>
         <source>Area of Interest Limit ({limit}) exceeded. Continue?</source>
         <translation>Limite Area di Interesse ({limit}) superato. Continuare?</translation>
     </message>
@@ -7959,7 +8113,7 @@ AI PERSON DETECTOR: modello di deep learning per il rilevamento accurato di pers
         <translation>Seleziona File</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="699"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="700"/>
         <source>XML Files (*.xml);;All Files (*)</source>
         <translation>File XML (*.xml);;Tutti i File (*)</translation>
     </message>
@@ -7979,7 +8133,7 @@ AI PERSON DETECTOR: modello di deep learning per il rilevamento accurato di pers
         <translation>Nessun Risultato Trovato</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="776"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="777"/>
         <source>No ADIAT_DATA.XML files were found in the selected folder.</source>
         <translation>Nessun file ADIAT_DATA.XML trovato nella cartella selezionata.</translation>
     </message>
@@ -8763,7 +8917,7 @@ Fai domande, segnala problemi e suggerisci nuove funzionalità.</translation>
         <translation>Canale YouTube</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="611"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="612"/>
         <source>Could not parse XML file. Check file paths in &quot;{file_name}&quot;</source>
         <translation>Impossibile analizzare il file XML. Controlla i percorsi dei file in &quot;{file_name}&quot;</translation>
     </message>
@@ -8771,12 +8925,12 @@ Fai domande, segnala problemi e suggerisci nuove funzionalità.</translation>
 <context>
     <name>MapDock</name>
     <message>
-        <location filename="../app/core/views/flight/MapDock.py" line="172"/>
+        <location filename="../app/core/views/flight/MapDock.py" line="235"/>
         <source>Map</source>
         <translation type="unfinished">Mappa</translation>
     </message>
     <message>
-        <location filename="../app/core/views/flight/MapDock.py" line="264"/>
+        <location filename="../app/core/views/flight/MapDock.py" line="335"/>
         <source>QtWebEngine not available — install PySide6-Addons for the interactive map. Showing list view instead.</source>
         <translation type="unfinished"></translation>
     </message>
@@ -8939,7 +9093,7 @@ Usalo per vedere quali colori verranno rilevati e ottimizzare le soglie prima de
         <translation>Nessun Colore Selezionato</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/images/MatchedFilter/controllers/MatchedFilterController.py" line="299"/>
+        <location filename="../app/algorithms/images/MatchedFilter/controllers/MatchedFilterController.py" line="300"/>
         <source>Please add at least one color to detect.</source>
         <translation>Aggiungi almeno un colore da rilevare.</translation>
     </message>
@@ -8965,7 +9119,7 @@ Usalo per vedere quali colori verranno rilevati e ottimizzare le soglie prima de
         <translation>Visualizza Intervallo</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/images/MatchedFilter/controllers/MatchedFilterWizardController.py" line="218"/>
+        <location filename="../app/algorithms/images/MatchedFilter/controllers/MatchedFilterWizardController.py" line="219"/>
         <source>Please add at least one target color to detect.</source>
         <translation>Aggiungi almeno un colore obiettivo da rilevare.</translation>
     </message>
@@ -8973,64 +9127,112 @@ Usalo per vedere quali colori verranno rilevati e ottimizzare le soglie prima de
 <context>
     <name>MeasureDialog</name>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/MeasureDialog.py" line="62"/>
+        <location filename="../app/core/views/images/viewer/dialogs/MeasureDialog.py" line="71"/>
+        <location filename="../app/core/views/images/viewer/dialogs/MeasureDialog.py" line="228"/>
         <source>Measure Distance</source>
         <translation>Misura Distanza</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/MeasureDialog.py" line="75"/>
+        <location filename="../app/core/views/images/viewer/dialogs/MeasureDialog.py" line="85"/>
+        <source>Measure Shadow</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/views/images/viewer/dialogs/MeasureDialog.py" line="90"/>
+        <source>When checked, the two clicks estimate the height of a vertical object from its shadow. Click the base of the object first, then the tip of its shadow.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/views/images/viewer/dialogs/MeasureDialog.py" line="94"/>
         <source>Ground Sample Distance</source>
         <translation>Distanza di Campionamento al Suolo</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/MeasureDialog.py" line="78"/>
+        <location filename="../app/core/views/images/viewer/dialogs/MeasureDialog.py" line="97"/>
         <source>GSD:</source>
         <translation>GSD:</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/MeasureDialog.py" line="80"/>
+        <location filename="../app/core/views/images/viewer/dialogs/MeasureDialog.py" line="99"/>
         <source>Enter GSD value</source>
         <translation>Inserisci valore GSD</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/MeasureDialog.py" line="84"/>
+        <location filename="../app/core/views/images/viewer/dialogs/MeasureDialog.py" line="103"/>
         <source>cm/px</source>
         <translation>cm/px</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/MeasureDialog.py" line="92"/>
+        <location filename="../app/core/views/images/viewer/dialogs/MeasureDialog.py" line="111"/>
         <source>Measurement</source>
         <translation>Misurazione</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/MeasureDialog.py" line="95"/>
+        <location filename="../app/core/views/images/viewer/dialogs/MeasureDialog.py" line="114"/>
         <source>Distance:</source>
         <translation>Distanza:</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/MeasureDialog.py" line="96"/>
+        <location filename="../app/core/views/images/viewer/dialogs/MeasureDialog.py" line="115"/>
+        <location filename="../app/core/views/images/viewer/dialogs/MeasureDialog.py" line="126"/>
         <source>--</source>
         <translation>--</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/MeasureDialog.py" line="107"/>
+        <location filename="../app/core/views/images/viewer/dialogs/MeasureDialog.py" line="124"/>
+        <source>Shadow Height Estimate</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/views/images/viewer/dialogs/MeasureDialog.py" line="135"/>
+        <source>Use Anyway</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/views/images/viewer/dialogs/MeasureDialog.py" line="140"/>
+        <source>Force the estimate with the current base/tip clicks even though the drawn line doesn&apos;t match the expected shadow direction. Use only when you&apos;re confident the geometry is correct.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/views/images/viewer/dialogs/MeasureDialog.py" line="182"/>
+        <source>Click the BASE of the object first, then the TIP of its shadow.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/views/images/viewer/dialogs/MeasureDialog.py" line="187"/>
         <source>Click on the image to place the first point,
 then click again to place the second point.</source>
         <translation>Clicca sull&apos;immagine per posizionare il primo punto,
 poi clicca di nuovo per posizionare il secondo punto.</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/MeasureDialog.py" line="115"/>
+        <location filename="../app/core/views/images/viewer/dialogs/MeasureDialog.py" line="158"/>
         <source>Clear</source>
         <translation>Cancella</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/MeasureDialog.py" line="117"/>
+        <location filename="../app/core/views/images/viewer/dialogs/MeasureDialog.py" line="160"/>
         <source>Close</source>
         <translation>Chiudi</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/MeasureDialog.py" line="269"/>
+        <location filename="../app/core/views/images/viewer/dialogs/MeasureDialog.py" line="228"/>
+        <source>Measure Shadow Height</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/views/images/viewer/dialogs/MeasureDialog.py" line="415"/>
+        <source>Image metadata unavailable</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/views/images/viewer/dialogs/MeasureDialog.py" line="464"/>
+        <location filename="../app/core/views/images/viewer/dialogs/MeasureDialog.py" line="551"/>
+        <source>Rejected</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/views/images/viewer/dialogs/MeasureDialog.py" line="574"/>
         <source>No GSD value</source>
         <translation>Nessun valore GSD</translation>
     </message>
@@ -9087,12 +9289,12 @@ poi clicca di nuovo per posizionare il secondo punto.</translation>
     </message>
     <message>
         <location filename="../resources/views/flight/mission_gallery_dock.ui" line="48"/>
-        <source>Class</source>
+        <source>Detector</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../resources/views/flight/mission_gallery_dock.ui" line="58"/>
-        <source>Min confidence</source>
+        <source>Min score</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -9119,22 +9321,22 @@ poi clicca di nuovo per posizionare il secondo punto.</translation>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/core/views/flight/MissionGalleryDock.py" line="50"/>
+        <location filename="../app/core/views/flight/MissionGalleryDock.py" line="53"/>
         <source>All feeds</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/core/views/flight/MissionGalleryDock.py" line="51"/>
-        <source>All classes</source>
+        <location filename="../app/core/views/flight/MissionGalleryDock.py" line="59"/>
+        <source>All detectors</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/core/views/flight/MissionGalleryDock.py" line="104"/>
+        <location filename="../app/core/views/flight/MissionGalleryDock.py" line="112"/>
         <source>0 detections</source>
         <translation type="unfinished">0 rilevamenti</translation>
     </message>
     <message>
-        <location filename="../app/core/views/flight/MissionGalleryDock.py" line="119"/>
+        <location filename="../app/core/views/flight/MissionGalleryDock.py" line="127"/>
         <source>{n} detections</source>
         <translation type="unfinished"></translation>
     </message>
@@ -9231,7 +9433,7 @@ poi clicca di nuovo per posizionare il secondo punto.</translation>
         <translation>Nessuna Immagine da Esportare</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/PDFExportController.py" line="153"/>
+        <location filename="../app/core/controllers/images/viewer/exports/PDFExportController.py" line="156"/>
         <source>There are no images available to include in the PDF report.
 
 All images may be hidden or there are no images in the dataset.</source>
@@ -9240,7 +9442,7 @@ All images may be hidden or there are no images in the dataset.</source>
 Tutte le immagini potrebbero essere nascoste oppure non ci sono immagini nel dataset.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/PDFExportController.py" line="162"/>
+        <location filename="../app/core/controllers/images/viewer/exports/PDFExportController.py" line="166"/>
         <source>There are no images with flagged AOIs to include in the PDF report.
 
 Please flag at least one AOI, or check &apos;Include images without flagged AOIs&apos; to include all images in the report.</source>
@@ -9254,7 +9456,7 @@ Contrassegna almeno una AOI oppure seleziona &apos;Includi immagini senza AOI co
         <translation>Salva File PDF</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/PDFExportController.py" line="174"/>
+        <location filename="../app/core/controllers/images/viewer/exports/PDFExportController.py" line="175"/>
         <source>PDF files (*.pdf)</source>
         <translation>File PDF (*.pdf)</translation>
     </message>
@@ -9279,7 +9481,7 @@ Contrassegna almeno una AOI oppure seleziona &apos;Includi immagini senza AOI co
         <translation>Successo</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/PDFExportController.py" line="277"/>
+        <location filename="../app/core/controllers/images/viewer/exports/PDFExportController.py" line="278"/>
         <source>PDF report generated successfully!</source>
         <translation>Report PDF generato con successo!</translation>
     </message>
@@ -9337,7 +9539,7 @@ Contrassegna almeno una AOI oppure seleziona &apos;Includi immagini senza AOI co
         <translation>Includi immagini senza AOI contrassegnate</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/PDFExportDialog.py" line="62"/>
+        <location filename="../app/core/views/images/viewer/dialogs/PDFExportDialog.py" line="64"/>
         <source>When checked, all images will be included in the PDF report, even if they don&apos;t have any flagged AOIs. When unchecked, only images with flagged AOIs will be included.</source>
         <translation>Quando selezionato, tutte le immagini saranno incluse nel report PDF, anche se non hanno AOI contrassegnate. Quando deselezionato, verranno incluse solo le immagini con AOI contrassegnate.</translation>
     </message>
@@ -9385,7 +9587,7 @@ Contrassegna almeno una AOI oppure seleziona &apos;Includi immagini senza AOI co
   ... e altri {count}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/path/PathValidationController.py" line="92"/>
+        <location filename="../app/core/controllers/images/viewer/path/PathValidationController.py" line="95"/>
         <source>{count} source image(s) not found at expected locations:
 
 {files}
@@ -9413,7 +9615,7 @@ Seleziona la cartella contenente le immagini sorgente.</translation>
         <translation>Alcune Immagini Mancano Ancora</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/path/PathValidationController.py" line="145"/>
+        <location filename="../app/core/controllers/images/viewer/path/PathValidationController.py" line="147"/>
         <source>Found {found} of {total} images.
 
 Still missing:
@@ -9424,7 +9626,7 @@ Ancora mancanti:
 {missing}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/path/PathValidationController.py" line="175"/>
+        <location filename="../app/core/controllers/images/viewer/path/PathValidationController.py" line="178"/>
         <source>{count} detection mask(s) not found at expected locations:
 
 {files}
@@ -9452,7 +9654,7 @@ Seleziona la cartella contenente i file delle maschere.</translation>
         <translation>Alcune Maschere Mancano Ancora</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/path/PathValidationController.py" line="228"/>
+        <location filename="../app/core/controllers/images/viewer/path/PathValidationController.py" line="230"/>
         <source>Found {found} of {total} masks.
 
 Still missing:
@@ -9466,80 +9668,148 @@ Ancora mancanti:
 <context>
     <name>PersonReferenceDialog</name>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="474"/>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="262"/>
         <source>Person Size Reference</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="481"/>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="269"/>
         <source>Reference Person</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="506"/>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="284"/>
+        <source>Standing</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="286"/>
+        <source>Lying down</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="288"/>
+        <source>Sitting</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="297"/>
+        <source>Show shadows (from capture time)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="300"/>
+        <source>Use terrain elevation (DEM)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="310"/>
+        <source>Rotate the person on the ground to line it up with an object</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="314"/>
         <source>Click to choose overlay color</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="515"/>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="322"/>
         <source>Size:</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="516"/>
-        <source>Position:</source>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="323"/>
+        <source>Show:</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="517"/>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="324"/>
+        <source>Rotation:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="343"/>
+        <source>Drag the white handle to position the reference person. The silhouettes are projected at true perspective scale for this image&apos;s camera angle - they foreshorten toward oblique edges.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="327"/>
         <source>Color:</source>
         <translation type="unfinished">Colore:</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="521"/>
-        <source>On-image Footprint</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="530"/>
-        <source>Length:</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="531"/>
-        <source>Width:</source>
-        <translation type="unfinished">Larghezza:</translation>
-    </message>
-    <message>
-        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="532"/>
-        <source>GSD:</source>
-        <translation type="unfinished">GSD:</translation>
-    </message>
-    <message>
-        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="536"/>
-        <source>Click and drag the silhouette on the image to move it.
-Sizes are drawn to scale using the image&apos;s Ground Sample Distance.</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="544"/>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="348"/>
         <source>Recenter</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="545"/>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="349"/>
         <source>Close</source>
         <translation type="unfinished">Chiudi</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="592"/>
-        <source>Choose Overlay Color</source>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="406"/>
+        <source>Perspective overlay unavailable: this image is missing the altitude or lens metadata needed to project a person.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="651"/>
-        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="794"/>
-        <source>GSD unavailable</source>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="422"/>
+        <source>no image loaded</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="427"/>
+        <source>image metadata could not be read</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="431"/>
+        <source>image has no GPS coordinates</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="442"/>
+        <source>capture time / timezone not in metadata</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="447"/>
+        <source>sun position could not be computed</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="457"/>
+        <source>Sun at capture: {elev:.0f}° above horizon, azimuth {az:.0f}°.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="462"/>
+        <source>the sun was below the horizon at capture</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="464"/>
+        <source>sun position unavailable</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="465"/>
+        <source>Shadow unavailable: {reason}.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="556"/>
+        <source>Place the person and shadow on the DEM terrain surface</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="560"/>
+        <source>Terrain (DEM) data is not available for this image</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="813"/>
+        <source>Choose Overlay Color</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -9635,7 +9905,7 @@ Le modifiche si applicano immediatamente a tutte le finestre.</translation>
         <translation>Errore</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/Preferences.py" line="318"/>
+        <location filename="../app/core/controllers/Preferences.py" line="319"/>
         <source>Terrain service not available.</source>
         <translation>Servizio terreno non disponibile.</translation>
     </message>
@@ -9645,7 +9915,7 @@ Le modifiche si applicano immediatamente a tutte le finestre.</translation>
         <translation>Cancella Cache Terreno</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/Preferences.py" line="326"/>
+        <location filename="../app/core/controllers/Preferences.py" line="328"/>
         <source>Are you sure you want to clear all cached terrain elevation data?
 
 This will require re-downloading tiles when terrain elevation is used.</source>
@@ -9715,7 +9985,7 @@ Ciò richiederà il nuovo download dei tasselli quando verrà utilizzata l&apos;
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/Preferences.py" line="355"/>
+        <location filename="../app/core/controllers/Preferences.py" line="356"/>
         <source>CSV Files (*.csv)</source>
         <translation type="unfinished"></translation>
     </message>
@@ -9725,7 +9995,7 @@ Ciò richiederà il nuovo download dei tasselli quando verrà utilizzata l&apos;
         <translation>Riavvio Richiesto</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/Preferences.py" line="382"/>
+        <location filename="../app/core/controllers/Preferences.py" line="383"/>
         <source>Please restart the application for language changes to take effect.</source>
         <translation>Riavvia l&apos;applicazione affinché le modifiche alla lingua abbiano effetto.</translation>
     </message>
@@ -10355,7 +10625,7 @@ Aggressivo</translation>
         <translation>Off</translation>
     </message>
     <message>
-        <location filename="../app/core/views/streaming/components/RenderingTab.py" line="55"/>
+        <location filename="../app/core/views/streaming/components/RenderingTab.py" line="64"/>
         <source>Shape to draw around detections:
 
 • Box: Rectangle around detection bounding box.
@@ -10394,7 +10664,7 @@ Aggressivo</translation>
         <translation>Mostra Etichette di Testo (più lento)</translation>
     </message>
     <message>
-        <location filename="../app/core/views/streaming/components/RenderingTab.py" line="75"/>
+        <location filename="../app/core/views/streaming/components/RenderingTab.py" line="79"/>
         <source>Displays text labels near detections showing detection information.
 Adds ~5-15ms processing overhead depending on detection count.
 Labels show: detection type, confidence, area.
@@ -10410,7 +10680,7 @@ Consigliato: OFF per la velocità, ON per debug/analisi.</translation>
         <translation>Mostra Contorni (più lento di tutti)</translation>
     </message>
     <message>
-        <location filename="../app/core/views/streaming/components/RenderingTab.py" line="84"/>
+        <location filename="../app/core/views/streaming/components/RenderingTab.py" line="88"/>
         <source>Draws exact detection contours (pixel-precise boundaries).
 Adds ~10-20ms processing overhead (very expensive).
 Shows exact shape detected by algorithm.
@@ -10426,7 +10696,7 @@ Consigliato: OFF per la velocità, ON solo per analisi dettagliate.</translation
         <translation>Usa Colore di Rilevamento (tonalità a 100% sat/val per le anomalie di colore)</translation>
     </message>
     <message>
-        <location filename="../app/core/views/streaming/components/RenderingTab.py" line="95"/>
+        <location filename="../app/core/views/streaming/components/RenderingTab.py" line="100"/>
         <source>Color the detection overlay based on detected color.
 For color anomalies: Uses the detected hue at 100% saturation/value.
 For motion detections: Uses default color (green/blue).
@@ -10449,7 +10719,7 @@ Consigliato: ON per il rilevamento colore, OFF per il solo movimento.</translati
         <translation>Rilevamenti Massimi:</translation>
     </message>
     <message>
-        <location filename="../app/core/views/streaming/components/RenderingTab.py" line="115"/>
+        <location filename="../app/core/views/streaming/components/RenderingTab.py" line="120"/>
         <source>Maximum number of detections to render on screen (0-1000).
 Prevents rendering slowdown when hundreds of detections occur.
 Shows highest confidence detections first.
@@ -10472,7 +10742,7 @@ Consigliato: 10 per uso generale, 50 per rendering complessi (testo+contorni).</
         <translation>Abilita Voto Temporale (riduce lo sfarfallio)</translation>
     </message>
     <message>
-        <location filename="../app/core/views/streaming/components/RenderingTab.py" line="132"/>
+        <location filename="../app/core/views/streaming/components/RenderingTab.py" line="136"/>
         <source>Smooths detections across frames using temporal consistency.
 Detections must appear in N out of M consecutive frames to be confirmed.
 Significantly reduces flickering false positives.
@@ -10488,7 +10758,7 @@ Consigliato: ON in tutti i casi d&apos;uso (predefinito).</translation>
         <translation>Frame Finestra (M):</translation>
     </message>
     <message>
-        <location filename="../app/core/views/streaming/components/RenderingTab.py" line="147"/>
+        <location filename="../app/core/views/streaming/components/RenderingTab.py" line="152"/>
         <source>Size of temporal voting window (2-30 frames).
 Detections must appear in N out of M consecutive frames.
 Larger values = longer memory, more stable, slower response to new objects.
@@ -10506,7 +10776,7 @@ Consigliato: 5 per 30 fps (finestra ~167 ms), 7 per 60 fps.</translation>
         <translation>Soglia (N su M):</translation>
     </message>
     <message>
-        <location filename="../app/core/views/streaming/components/RenderingTab.py" line="160"/>
+        <location filename="../app/core/views/streaming/components/RenderingTab.py" line="165"/>
         <source>Number of frames within window where detection must appear (N of M).
 Higher values = more stringent, filters transient false positives.
 Lower values = more lenient, faster response to new objects.
@@ -10529,7 +10799,7 @@ Consigliato: 3 su 5 (rilevamento nel 60% dei frame).</translation>
         <translation>Abilita Filtro Rapporto d&apos;Aspetto</translation>
     </message>
     <message>
-        <location filename="../app/core/views/streaming/components/RenderingTab.py" line="180"/>
+        <location filename="../app/core/views/streaming/components/RenderingTab.py" line="183"/>
         <source>Filter out very thin or stretched detections based on width/height.
 Useful for removing wires, long shadows, or other non-object shapes.
 Most users can leave this OFF unless you see many long skinny false detections.</source>
@@ -10543,7 +10813,7 @@ La maggior parte degli utenti può lasciarlo OFF, a meno di rilevare molti falsi
         <translation>Rapporto Min:</translation>
     </message>
     <message>
-        <location filename="../app/core/views/streaming/components/RenderingTab.py" line="195"/>
+        <location filename="../app/core/views/streaming/components/RenderingTab.py" line="199"/>
         <source>Minimum width/height ratio to keep (0.1-10.0).
 Lower values = allow taller, thinner detections.
 Higher values = require detections to be more square.
@@ -10559,7 +10829,7 @@ Esempio: 0,2 ≈ rifiuta se l&apos;altezza è più di 5× la larghezza.</transla
         <translation>Rapporto Max:</translation>
     </message>
     <message>
-        <location filename="../app/core/views/streaming/components/RenderingTab.py" line="208"/>
+        <location filename="../app/core/views/streaming/components/RenderingTab.py" line="211"/>
         <source>Maximum width/height ratio to keep (0.1-20.0).
 Lower values = reject very wide, thin detections.
 Higher values = allow wider objects such as vehicles or long equipment.</source>
@@ -10578,7 +10848,7 @@ Valori più alti = consente oggetti più larghi come veicoli o attrezzature lung
         <translation>Abilita Clustering Rilevamenti</translation>
     </message>
     <message>
-        <location filename="../app/core/views/streaming/components/RenderingTab.py" line="223"/>
+        <location filename="../app/core/views/streaming/components/RenderingTab.py" line="226"/>
         <source>Optionally merge nearby detections into a single, larger detection.
 Useful when one object appears as many small adjacent detections.
 Most users can leave this OFF unless objects look fragmented.</source>
@@ -10592,7 +10862,7 @@ La maggior parte degli utenti può lasciarlo OFF, a meno che gli oggetti non app
         <translation>Distanza Clustering (px):</translation>
     </message>
     <message>
-        <location filename="../app/core/views/streaming/components/RenderingTab.py" line="237"/>
+        <location filename="../app/core/views/streaming/components/RenderingTab.py" line="240"/>
         <source>Maximum distance between detection centers to merge them (0-500 pixels).
 Lower values = only merge very close detections.
 Higher values = merge detections that are farther apart (may over-merge).</source>
@@ -10644,7 +10914,7 @@ Valori più alti = unisce rilevamenti più distanti (può unire troppo).</transl
         <translation>Mappa</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/ResultsFolderDialog.py" line="133"/>
+        <location filename="../app/core/views/images/viewer/dialogs/ResultsFolderDialog.py" line="134"/>
         <source>View</source>
         <translation>Visualizza</translation>
     </message>
@@ -10705,7 +10975,7 @@ Valori più alti = unisce rilevamenti più distanti (può unire troppo).</transl
         <translation>Seleziona File Risultati ADIAT</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/guidePages/ReviewOrNewPage.py" line="116"/>
+        <location filename="../app/core/controllers/images/guidePages/ReviewOrNewPage.py" line="117"/>
         <source>XML Files (*.xml);;All Files (*)</source>
         <translation>File XML (*.xml);;Tutti i File (*)</translation>
     </message>
@@ -10715,7 +10985,7 @@ Valori più alti = unisce rilevamenti più distanti (può unire troppo).</transl
         <translation>Avviso Nome File</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/guidePages/ReviewOrNewPage.py" line="127"/>
+        <location filename="../app/core/controllers/images/guidePages/ReviewOrNewPage.py" line="129"/>
         <source>The selected file does not appear to be an ADIAT_Data.xml file.
 
 Do you want to continue with this file?</source>
@@ -10737,7 +11007,7 @@ Vuoi continuare con questo file?</translation>
         <translation>Tracciamento Revisione</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/ReviewerNameDialog.py" line="51"/>
+        <location filename="../app/core/views/images/viewer/dialogs/ReviewerNameDialog.py" line="53"/>
         <source>Enter your name to track your review activity.
 This helps coordinate reviews across multiple reviewers.</source>
         <translation>Inserisci il tuo nome per tracciare la tua attività di revisione.
@@ -10764,7 +11034,7 @@ Questo aiuta a coordinare le revisioni tra più revisori.</translation>
         <translation>Ricorda il mio nome</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/ReviewerNameDialog.py" line="74"/>
+        <location filename="../app/core/views/images/viewer/dialogs/ReviewerNameDialog.py" line="76"/>
         <source>Save your name for future review sessions.
 You can change it later in Preferences or by clicking the reviewer name in the viewer.</source>
         <translation>Salva il tuo nome per future sessioni di revisione.
@@ -10786,7 +11056,7 @@ Puoi cambiarlo più avanti nelle Preferenze o cliccando il nome del revisore nel
         <translation>Nome Richiesto</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/ReviewerNameDialog.py" line="124"/>
+        <location filename="../app/core/views/images/viewer/dialogs/ReviewerNameDialog.py" line="125"/>
         <source>Please enter your name to continue.</source>
         <translation>Inserisci il tuo nome per continuare.</translation>
     </message>
@@ -10837,17 +11107,22 @@ Puoi cambiarlo più avanti nelle Preferenze o cliccando il nome del revisore nel
         <translation>Orientamento Drone</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/status/StatusController.py" line="115"/>
+        <location filename="../app/core/controllers/images/viewer/status/StatusController.py" line="51"/>
+        <source>Grid Review</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/controllers/images/viewer/status/StatusController.py" line="116"/>
         <source>Error Loading Images</source>
         <translation>Errore nel Caricamento delle Immagini</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/status/StatusController.py" line="121"/>
+        <location filename="../app/core/controllers/images/viewer/status/StatusController.py" line="122"/>
         <source>No active images available.</source>
         <translation>Nessuna immagine attiva disponibile.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/status/StatusController.py" line="125"/>
+        <location filename="../app/core/controllers/images/viewer/status/StatusController.py" line="126"/>
         <source>No other images available.</source>
         <translation>Nessun&apos;altra immagine disponibile.</translation>
     </message>
@@ -10855,12 +11130,12 @@ Puoi cambiarlo più avanti nelle Preferenze o cliccando il nome del revisore nel
 <context>
     <name>StreamAlgorithmPage</name>
     <message>
-        <location filename="../app/core/controllers/streaming/guidePages/StreamAlgorithmPage.py" line="90"/>
+        <location filename="../app/core/controllers/streaming/guidePages/StreamAlgorithmPage.py" line="91"/>
         <source>Are you primarily looking for a person?</source>
         <translation>Stai cercando principalmente una persona?</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/guidePages/StreamAlgorithmPage.py" line="156"/>
+        <location filename="../app/core/controllers/streaming/guidePages/StreamAlgorithmPage.py" line="157"/>
         <source>Do you know a distinctive target color?</source>
         <translation>Conosci un colore distintivo del target?</translation>
     </message>
@@ -10885,7 +11160,7 @@ Puoi cambiarlo più avanti nelle Preferenze o cliccando il nome del revisore nel
         <translation>Algoritmo Selezionato: {algorithm}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/guidePages/StreamAlgorithmPage.py" line="191"/>
+        <location filename="../app/core/controllers/streaming/guidePages/StreamAlgorithmPage.py" line="192"/>
         <source>{result}
 Secondary Recommendation: {secondary}</source>
         <translation>{result}
@@ -10948,7 +11223,7 @@ Raccomandazione secondaria: {secondary}</translation>
         <translation>4K</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/guidePages/StreamConnectionPage.py" line="260"/>
+        <location filename="../app/core/controllers/streaming/guidePages/StreamConnectionPage.py" line="261"/>
         <source>Choose the video file you want to analyze. Use Browse to pick a file from disk.</source>
         <translation>Scegli il file video che vuoi analizzare. Usa Sfoglia per scegliere un file dal disco.</translation>
     </message>
@@ -10963,7 +11238,7 @@ Raccomandazione secondaria: {secondary}</translation>
         <translation>Clicca Sfoglia per selezionare un file video...</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/guidePages/StreamConnectionPage.py" line="269"/>
+        <location filename="../app/core/controllers/streaming/guidePages/StreamConnectionPage.py" line="270"/>
         <source>Click Scan to detect available capture devices, then select one from the dropdown.</source>
         <translation>Clicca su Scansiona per rilevare i dispositivi di acquisizione disponibili e seleziona quello desiderato dal menu a discesa.</translation>
     </message>
@@ -11004,7 +11279,7 @@ Raccomandazione secondaria: {secondary}</translation>
         <translation>Dispositivo {index} ({backend})</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/guidePages/StreamConnectionPage.py" line="278"/>
+        <location filename="../app/core/controllers/streaming/guidePages/StreamConnectionPage.py" line="279"/>
         <source>Enter the RTMP URL provided by your streaming server (rtmp://server:port/app/key).</source>
         <translation>Inserisci l&apos;URL RTMP fornito dal tuo server di streaming (rtmp://server:port/app/key).</translation>
     </message>
@@ -11024,7 +11299,7 @@ Raccomandazione secondaria: {secondary}</translation>
         <translation>Seleziona File Video</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/guidePages/StreamConnectionPage.py" line="380"/>
+        <location filename="../app/core/controllers/streaming/guidePages/StreamConnectionPage.py" line="381"/>
         <source>Video Files (*.mp4 *.avi *.mov *.mkv *.flv *.wmv *.m4v *.3gp *.webm);;All Files (*)</source>
         <translation>File Video (*.mp4 *.avi *.mov *.mkv *.flv *.wmv *.m4v *.3gp *.webm);;Tutti i File (*)</translation>
     </message>
@@ -11037,7 +11312,7 @@ Raccomandazione secondaria: {secondary}</translation>
         <translation>Connessione Stream</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="817"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="818"/>
         <source>Configure and connect to video source (file, HDMI capture, or RTMP stream)</source>
         <translation>Configura e connettiti alla sorgente video (file, acquisizione HDMI o stream RTMP)</translation>
     </message>
@@ -11062,7 +11337,7 @@ Raccomandazione secondaria: {secondary}</translation>
         <translation>Stream RTMP</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="829"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="834"/>
         <source>Select the type of video source:
 • File: Pre-recorded video file with timeline controls
 • HDMI Capture: Live capture from HDMI capture device
@@ -11084,7 +11359,7 @@ Raccomandazione secondaria: {secondary}</translation>
         <translation>Clicca per sfogliare il file video...</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="849"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="853"/>
         <source>Enter or browse for the video source:
 • File: Click to browse for video file (MP4, AVI, MOV, etc.)
 • RTMP Stream: Enter RTMP URL (rtmp://server:port/app/stream)</source>
@@ -11109,7 +11384,7 @@ Raccomandazione secondaria: {secondary}</translation>
         <translation>Sfoglia...</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="868"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="871"/>
         <source>Open file browser to select a video file for analysis.
 Supported formats: MP4, AVI, MOV, MKV, FLV, WMV, M4V, 3GP, WebM</source>
         <translation>Apri il browser dei file per selezionare un file video per l&apos;analisi.
@@ -11131,7 +11406,7 @@ Formati supportati: MP4, AVI, MOV, MKV, FLV, WMV, M4V, 3GP, WebM</translation>
         <translation>Connetti</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="887"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="888"/>
         <source>Connect to the specified video source and begin processing.</source>
         <translation>Connettiti alla sorgente video specificata e inizia l&apos;elaborazione.</translation>
     </message>
@@ -11141,7 +11416,7 @@ Formati supportati: MP4, AVI, MOV, MKV, FLV, WMV, M4V, 3GP, WebM</translation>
         <translation>Disconnetti</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="893"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="894"/>
         <source>Disconnect from the current video source and stop processing.</source>
         <translation>Disconnettiti dalla sorgente video corrente e interrompi l&apos;elaborazione.</translation>
     </message>
@@ -11181,7 +11456,7 @@ Formati supportati: MP4, AVI, MOV, MKV, FLV, WMV, M4V, 3GP, WebM</translation>
         <translation>Elaborazione: --</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="914"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="915"/>
         <source>Resolution used for detection processing</source>
         <translation>Risoluzione usata per l&apos;elaborazione del rilevamento</translation>
     </message>
@@ -11201,7 +11476,7 @@ Formati supportati: MP4, AVI, MOV, MKV, FLV, WMV, M4V, 3GP, WebM</translation>
         <translation>FPS Elaborazione: --</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="922"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="923"/>
         <source>Actual frames per second being processed</source>
         <translation>Fotogrammi al secondo effettivamente elaborati</translation>
     </message>
@@ -11211,7 +11486,7 @@ Formati supportati: MP4, AVI, MOV, MKV, FLV, WMV, M4V, 3GP, WebM</translation>
         <translation>Tempo: -- ms</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="928"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="929"/>
         <source>Time in milliseconds to process each frame</source>
         <translation>Tempo in millisecondi per elaborare ogni fotogramma</translation>
     </message>
@@ -11221,7 +11496,7 @@ Formati supportati: MP4, AVI, MOV, MKV, FLV, WMV, M4V, 3GP, WebM</translation>
         <translation>Latenza: -- ms</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="932"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="933"/>
         <source>End-to-end latency from frame capture to display</source>
         <translation>Latenza end-to-end dalla cattura del fotogramma alla visualizzazione</translation>
     </message>
@@ -11256,7 +11531,7 @@ Formati supportati: MP4, AVI, MOV, MKV, FLV, WMV, M4V, 3GP, WebM</translation>
         <translation>Avvia Registrazione</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="961"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="962"/>
         <source>Start recording the video stream with detection overlays.</source>
         <translation>Avvia la registrazione dello stream video con sovrapposizioni di rilevamento.</translation>
     </message>
@@ -11266,7 +11541,7 @@ Formati supportati: MP4, AVI, MOV, MKV, FLV, WMV, M4V, 3GP, WebM</translation>
         <translation>Interrompi Registrazione</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="966"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="967"/>
         <source>Stop the current recording and save to file.</source>
         <translation>Interrompi la registrazione corrente e salva su file.</translation>
     </message>
@@ -11277,7 +11552,7 @@ Formati supportati: MP4, AVI, MOV, MKV, FLV, WMV, M4V, 3GP, WebM</translation>
         <translation>Stato: Non in Registrazione</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="976"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="977"/>
         <source>Current recording status and output file path</source>
         <translation>Stato di registrazione corrente e percorso del file di output</translation>
     </message>
@@ -11288,7 +11563,7 @@ Formati supportati: MP4, AVI, MOV, MKV, FLV, WMV, M4V, 3GP, WebM</translation>
         <translation>Durata: --</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="982"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="983"/>
         <source>Recording statistics: Duration, FPS, Frames</source>
         <translation>Statistiche registrazione: Durata, FPS, Fotogrammi</translation>
     </message>
@@ -11298,12 +11573,12 @@ Formati supportati: MP4, AVI, MOV, MKV, FLV, WMV, M4V, 3GP, WebM</translation>
         <translation>Salva in:</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="994"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="995"/>
         <source>Directory where video recordings will be saved.</source>
         <translation>Cartella in cui verranno salvate le registrazioni video.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="998"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="999"/>
         <source>Choose a folder to store recordings.</source>
         <translation>Scegli una cartella per salvare le registrazioni.</translation>
     </message>
@@ -11318,7 +11593,7 @@ Formati supportati: MP4, AVI, MOV, MKV, FLV, WMV, M4V, 3GP, WebM</translation>
         <translation>Dispositivo Non Valido</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1070"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1071"/>
         <source>Please select a valid HDMI capture device.</source>
         <translation>Seleziona un dispositivo di acquisizione HDMI valido.</translation>
     </message>
@@ -11328,7 +11603,7 @@ Formati supportati: MP4, AVI, MOV, MKV, FLV, WMV, M4V, 3GP, WebM</translation>
         <translation>URL Non Valido</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1083"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1084"/>
         <source>Please enter a valid stream URL.</source>
         <translation>Inserisci un URL stream valido.</translation>
     </message>
@@ -11430,7 +11705,7 @@ Formati supportati: MP4, AVI, MOV, MKV, FLV, WMV, M4V, 3GP, WebM</translation>
         <translation>Seleziona File Video</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1340"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1342"/>
         <source>Video Files (*.mp4 *.avi *.mov *.mkv *.flv *.wmv *.m4v *.3gp *.webm *.mpg *.mpeg *.ts *.mts *.m2ts);;All Files (*)</source>
         <translation>File Video (*.mp4 *.avi *.mov *.mkv *.flv *.wmv *.m4v *.3gp *.webm *.mpg *.mpeg *.ts *.mts *.m2ts);;Tutti i File (*)</translation>
     </message>
@@ -11481,7 +11756,7 @@ Formati supportati: MP4, AVI, MOV, MKV, FLV, WMV, M4V, 3GP, WebM</translation>
         <translation>-- (Dati fotocamera mancanti)</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/guidePages/StreamImageCapturePage.py" line="431"/>
+        <location filename="../app/core/controllers/streaming/guidePages/StreamImageCapturePage.py" line="432"/>
         <source>Unable to calculate GSD. Sensor dimensions are required.</source>
         <translation>Impossibile calcolare il GSD. Sono richieste le dimensioni del sensore.</translation>
     </message>
@@ -11501,7 +11776,7 @@ Formati supportati: MP4, AVI, MOV, MKV, FLV, WMV, M4V, 3GP, WebM</translation>
         <translation>Principale</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/guidePages/StreamImageCapturePage.py" line="472"/>
+        <location filename="../app/core/controllers/streaming/guidePages/StreamImageCapturePage.py" line="473"/>
         <source>Sensor</source>
         <translation>Sensore</translation>
     </message>
@@ -11549,12 +11824,12 @@ Formati supportati: MP4, AVI, MOV, MKV, FLV, WMV, M4V, 3GP, WebM</translation>
         <translation>Altri esempi:</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/guidePages/StreamTargetSizePage.py" line="103"/>
+        <location filename="../app/core/controllers/streaming/guidePages/StreamTargetSizePage.py" line="104"/>
         <source>sqm</source>
         <translation>sqm</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/guidePages/StreamTargetSizePage.py" line="106"/>
+        <location filename="../app/core/controllers/streaming/guidePages/StreamTargetSizePage.py" line="108"/>
         <source>sqft</source>
         <translation>sqft</translation>
     </message>
@@ -11562,7 +11837,7 @@ Formati supportati: MP4, AVI, MOV, MKV, FLV, WMV, M4V, 3GP, WebM</translation>
 <context>
     <name>StreamViewerWindow</name>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="97"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="98"/>
         <source>Automated Drone Image Analysis Tool v{version} - Sponsored by TEXSAR</source>
         <translation>Strumento Automatico di Analisi Immagini Drone v{version} - Sponsorizzato da TEXSAR</translation>
     </message>
@@ -11632,7 +11907,7 @@ Formati supportati: MP4, AVI, MOV, MKV, FLV, WMV, M4V, 3GP, WebM</translation>
         <translation>Avvia Registrazione</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="280"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="281"/>
         <source>Start recording the video stream with detection overlays.</source>
         <translation>Avvia la registrazione dello stream video con sovrapposizioni di rilevamento.</translation>
     </message>
@@ -11642,7 +11917,7 @@ Formati supportati: MP4, AVI, MOV, MKV, FLV, WMV, M4V, 3GP, WebM</translation>
         <translation>Interrompi Registrazione</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="285"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="286"/>
         <source>Stop the current recording and save to file.</source>
         <translation>Interrompi la registrazione corrente e salva su file.</translation>
     </message>
@@ -11653,7 +11928,7 @@ Formati supportati: MP4, AVI, MOV, MKV, FLV, WMV, M4V, 3GP, WebM</translation>
         <translation>Stato: Non in Registrazione</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="295"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="296"/>
         <source>Current recording status and output file path</source>
         <translation>Stato di registrazione corrente e percorso del file di output</translation>
     </message>
@@ -11664,7 +11939,7 @@ Formati supportati: MP4, AVI, MOV, MKV, FLV, WMV, M4V, 3GP, WebM</translation>
         <translation>Durata: --</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="301"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="302"/>
         <source>Recording statistics: Duration, FPS, Frames</source>
         <translation>Statistiche registrazione: Durata, FPS, Fotogrammi</translation>
     </message>
@@ -11674,7 +11949,7 @@ Formati supportati: MP4, AVI, MOV, MKV, FLV, WMV, M4V, 3GP, WebM</translation>
         <translation>Salva in:</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="310"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="311"/>
         <source>Directory where video recordings will be saved.</source>
         <translation>Cartella in cui verranno salvate le registrazioni video.</translation>
     </message>
@@ -11684,7 +11959,7 @@ Formati supportati: MP4, AVI, MOV, MKV, FLV, WMV, M4V, 3GP, WebM</translation>
         <translation>Sfoglia...</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="314"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="315"/>
         <source>Choose a folder to store recordings.</source>
         <translation>Scegli una cartella per salvare le registrazioni.</translation>
     </message>
@@ -11699,12 +11974,12 @@ Formati supportati: MP4, AVI, MOV, MKV, FLV, WMV, M4V, 3GP, WebM</translation>
         <translation>Algoritmo:</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="387"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="388"/>
         <source>Select which streaming detection algorithm to use</source>
         <translation>Seleziona quale algoritmo di rilevamento in streaming utilizzare</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="393"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="397"/>
         <source>Choose which streaming detection algorithm to run.
 • Color Anomaly &amp; Motion Detection: fused anomaly detectors
 • Color Detection: color-based highlighting</source>
@@ -11718,7 +11993,7 @@ Formati supportati: MP4, AVI, MOV, MKV, FLV, WMV, M4V, 3GP, WebM</translation>
         <translation>Soglia Galleria:</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="431"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="433"/>
         <source>Number of frames a detection must be seen before appearing in the Gallery tab</source>
         <translation>Numero di fotogrammi in cui un rilevamento deve essere visto prima di apparire nella scheda Galleria</translation>
     </message>
@@ -11728,7 +12003,7 @@ Formati supportati: MP4, AVI, MOV, MKV, FLV, WMV, M4V, 3GP, WebM</translation>
         <translation> fotogrammi</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="441"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="445"/>
         <source>Detections must be seen for this many consecutive frames
 before appearing in the Gallery. Higher values reduce
 false positives but delay detection appearance.</source>
@@ -11862,7 +12137,7 @@ i falsi positivi ma ritardano la comparsa del rilevamento.</translation>
         <translation>Risultati Rilevamento ({count} trovati):</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1721"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1722"/>
         <source>#{index}: Type({cls}) Pos({x},{y}) Size({w}x{h})</source>
         <translation>#{index}: Tipo({cls}) Pos({x},{y}) Dim({w}x{h})</translation>
     </message>
@@ -11907,7 +12182,7 @@ i falsi positivi ma ritardano la comparsa del rilevamento.</translation>
         <translation>Stream Live</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1900"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1902"/>
         <source>Cannot seek in live stream.
 
 Detection was first seen at frame {frame}.</source>
@@ -12197,12 +12472,12 @@ li.checked::marker { content: &quot;\2612&quot;; }
         <translation>Altri esempi:</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/guidePages/TargetSizePage.py" line="103"/>
+        <location filename="../app/core/controllers/images/guidePages/TargetSizePage.py" line="104"/>
         <source>sqm</source>
         <translation>sqm</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/guidePages/TargetSizePage.py" line="106"/>
+        <location filename="../app/core/controllers/images/guidePages/TargetSizePage.py" line="108"/>
         <source>sqft</source>
         <translation>sqft</translation>
     </message>
@@ -12215,7 +12490,7 @@ li.checked::marker { content: &quot;\2612&quot;; }
         <translation>Nessun AOI Contrassegnato</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/TeamPlanningController.py" line="49"/>
+        <location filename="../app/core/controllers/images/viewer/TeamPlanningController.py" line="52"/>
         <source>There are no flagged AOIs to assign.
 
 Flag at least one AOI in the viewer before using Plan Verification.</source>
@@ -12239,7 +12514,7 @@ Contrassegna almeno un AOI nel visualizzatore prima di usare Pianifica Verifiche
         <translation>Nessun AOI Selezionato</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/TeamPlanningController.py" line="221"/>
+        <location filename="../app/core/controllers/images/viewer/TeamPlanningController.py" line="223"/>
         <source>Select one or more AOIs on the map first.
 Click on markers, or use Rectangle Select for area selection.</source>
         <translation>Seleziona prima uno o più AOI sulla mappa.
@@ -12374,7 +12649,7 @@ Clicca sui marker, oppure usa la Selezione Rettangolare per selezionare un&apos;
         <translation>Assegna Selezione ▶</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/TeamPlanningDialog.py" line="145"/>
+        <location filename="../app/core/views/images/viewer/dialogs/TeamPlanningDialog.py" line="146"/>
         <source>Assign the selected AOIs on the map to the chosen team</source>
         <translation>Assegna gli AOI selezionati sulla mappa alla squadra scelta</translation>
     </message>
@@ -12389,7 +12664,7 @@ Clicca sui marker, oppure usa la Selezione Rettangolare per selezionare un&apos;
         <translation>Esporta PDF Squadra</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/TeamPlanningDialog.py" line="174"/>
+        <location filename="../app/core/views/images/viewer/dialogs/TeamPlanningDialog.py" line="175"/>
         <source>Generate a PDF report for the selected team only</source>
         <translation>Genera un report PDF solo per la squadra selezionata</translation>
     </message>
@@ -12399,7 +12674,7 @@ Clicca sui marker, oppure usa la Selezione Rettangolare per selezionare un&apos;
         <translation>Esporta Tutti i PDF</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/TeamPlanningDialog.py" line="181"/>
+        <location filename="../app/core/views/images/viewer/dialogs/TeamPlanningDialog.py" line="182"/>
         <source>Generate one PDF per team plus a master summary PDF</source>
         <translation>Genera un PDF per squadra più un PDF riepilogativo</translation>
     </message>
@@ -12424,7 +12699,7 @@ Clicca sui marker, oppure usa la Selezione Rettangolare per selezionare un&apos;
         <translation>Selezione Rettangolare</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/TeamPlanningDialog.py" line="96"/>
+        <location filename="../app/core/views/images/viewer/dialogs/TeamPlanningDialog.py" line="97"/>
         <source>Draw a rectangle on the map to select multiple AOIs</source>
         <translation>Disegna un rettangolo sulla mappa per selezionare più AOI</translation>
     </message>
@@ -12440,12 +12715,12 @@ Clicca sui marker, oppure usa la Selezione Rettangolare per selezionare un&apos;
         <translation>Vista Mappa</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/TeamPlanningDialog.py" line="195"/>
+        <location filename="../app/core/views/images/viewer/dialogs/TeamPlanningDialog.py" line="198"/>
         <source>Click to select AOI • Ctrl+Click to multi-select • Use Rectangle Select for area selection • Scroll to zoom</source>
         <translation>Clicca per selezionare AOI • Ctrl+Clic per selezione multipla • Usa Selezione Rettangolare per selezione area • Scorri per zoom</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/TeamPlanningDialog.py" line="222"/>
+        <location filename="../app/core/views/images/viewer/dialogs/TeamPlanningDialog.py" line="223"/>
         <source>Team</source>
         <translation>Squadra</translation>
     </message>
@@ -12518,7 +12793,7 @@ Clicca sui marker, oppure usa la Selezione Rettangolare per selezionare un&apos;
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/core/views/flight/TelemetryHud.py" line="167"/>
+        <location filename="../app/core/views/flight/TelemetryHud.py" line="168"/>
         <location filename="../resources/views/flight/telemetry_hud.ui" line="57"/>
         <source>ALT —</source>
         <translation type="unfinished"></translation>
@@ -12529,7 +12804,7 @@ Clicca sui marker, oppure usa la Selezione Rettangolare per selezionare un&apos;
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/core/views/flight/TelemetryHud.py" line="184"/>
+        <location filename="../app/core/views/flight/TelemetryHud.py" line="186"/>
         <location filename="../resources/views/flight/telemetry_hud.ui" line="91"/>
         <source>HDG —</source>
         <translation type="unfinished"></translation>
@@ -12540,7 +12815,7 @@ Clicca sui marker, oppure usa la Selezione Rettangolare per selezionare un&apos;
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/core/views/flight/TelemetryHud.py" line="194"/>
+        <location filename="../app/core/views/flight/TelemetryHud.py" line="195"/>
         <location filename="../resources/views/flight/telemetry_hud.ui" line="98"/>
         <source>SPD —</source>
         <translation type="unfinished"></translation>
@@ -12850,18 +13125,18 @@ Aggressivo</translation>
 <context>
     <name>ThermalHistogramChart</name>
     <message>
-        <location filename="../app/core/views/images/viewer/widgets/ThermalHistogramChart.py" line="97"/>
+        <location filename="../app/core/views/images/viewer/widgets/ThermalHistogramChart.py" line="99"/>
         <source>No histogram data available</source>
         <translation>Nessun dato istogramma disponibile</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/widgets/ThermalHistogramChart.py" line="435"/>
+        <location filename="../app/core/views/images/viewer/widgets/ThermalHistogramChart.py" line="436"/>
         <source>All Pixels</source>
         <translation>Tutti i Pixel</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/widgets/ThermalHistogramChart.py" line="446"/>
-        <location filename="../app/core/views/images/viewer/widgets/ThermalHistogramChart.py" line="457"/>
+        <location filename="../app/core/views/images/viewer/widgets/ThermalHistogramChart.py" line="447"/>
+        <location filename="../app/core/views/images/viewer/widgets/ThermalHistogramChart.py" line="458"/>
         <source>AOI Pixels</source>
         <translation>Pixel AOI</translation>
     </message>
@@ -12874,7 +13149,7 @@ Aggressivo</translation>
         <translation>Istogramma Termico Non Disponibile</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/ThermalHistogramController.py" line="33"/>
+        <location filename="../app/core/controllers/images/viewer/ThermalHistogramController.py" line="34"/>
         <source>No thermal temperature data is available for the current image.</source>
         <translation>Per l&apos;immagine corrente non sono disponibili dati di temperatura termica.</translation>
     </message>
@@ -12931,7 +13206,7 @@ Aggressivo</translation>
         <translation>Passa il mouse sull&apos;istogramma per ispezionare una banda di temperatura.</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/ThermalHistogramDialog.py" line="30"/>
+        <location filename="../app/core/views/images/viewer/dialogs/ThermalHistogramDialog.py" line="31"/>
         <source>No thermal histogram data available</source>
         <translation>Nessun dato disponibile per l&apos;istogramma termico</translation>
     </message>
@@ -13245,7 +13520,7 @@ Aggressivo</translation>
         <translation>Nessun Dato Selezionato</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="383"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="384"/>
         <source>Please select at least one type of data to export.</source>
         <translation>Seleziona almeno un tipo di dato da esportare.</translation>
     </message>
@@ -13271,7 +13546,7 @@ Aggressivo</translation>
         <translation>Salva Esportazione Mappa</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="428"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="429"/>
         <source>KML files (*.kml)</source>
         <translation>File KML (*.kml)</translation>
     </message>
@@ -13311,12 +13586,12 @@ Aggressivo</translation>
 <context>
     <name>UpdateController</name>
     <message>
-        <location filename="../app/core/controllers/UpdateController.py" line="47"/>
+        <location filename="../app/core/controllers/UpdateController.py" line="48"/>
         <source>Disabled while Offline Only mode is enabled.</source>
         <translation>Disabilitato quando la modalita&apos; Solo offline e&apos; attiva.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/UpdateController.py" line="51"/>
+        <location filename="../app/core/controllers/UpdateController.py" line="52"/>
         <source>Check the update feed for a newer ADIAT installer.</source>
         <translation>Controlla il feed degli aggiornamenti per un installer ADIAT piu&apos; recente.</translation>
     </message>
@@ -13326,7 +13601,7 @@ Aggressivo</translation>
         <translation>Aggiornamenti disabilitati</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/UpdateController.py" line="82"/>
+        <location filename="../app/core/controllers/UpdateController.py" line="83"/>
         <source>Update checks are disabled while Offline Only mode is enabled.</source>
         <translation>Il controllo aggiornamenti e&apos; disabilitato quando la modalita&apos; Solo offline e&apos; attiva.</translation>
     </message>
@@ -13348,7 +13623,7 @@ Aggressivo</translation>
         <translation>Nessun aggiornamento disponibile</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/UpdateController.py" line="107"/>
+        <location filename="../app/core/controllers/UpdateController.py" line="108"/>
         <source>You are already running the latest available version of ADIAT.</source>
         <translation>Stai gia&apos; utilizzando la versione piu&apos; recente disponibile di ADIAT.</translation>
     </message>
@@ -13370,7 +13645,7 @@ Aggressivo</translation>
         <translation>Installer avviato</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/UpdateController.py" line="134"/>
+        <location filename="../app/core/controllers/UpdateController.py" line="135"/>
         <source>The installer has been launched. Close ADIAT when you are ready to continue the update.</source>
         <translation>L&apos;installer e&apos; stato avviato. Chiudi ADIAT quando sei pronto per continuare l&apos;aggiornamento.</translation>
     </message>
@@ -13385,7 +13660,7 @@ Aggressivo</translation>
         <translation>ADIAT {new_version} e&apos; disponibile. Stai usando {current_version}.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/UpdateController.py" line="151"/>
+        <location filename="../app/core/controllers/UpdateController.py" line="152"/>
         <source>Do you want to download and launch the installer now?</source>
         <translation>Vuoi scaricare e avviare subito l&apos;installer?</translation>
     </message>
@@ -13423,7 +13698,7 @@ Aggressivo</translation>
     </message>
     <message>
         <location filename="../app/core/controllers/UpdateController.py" line="194"/>
-        <location filename="../app/core/controllers/UpdateController.py" line="200"/>
+        <location filename="../app/core/controllers/UpdateController.py" line="201"/>
         <source>Update download canceled.</source>
         <translation>Download aggiornamento annullato.</translation>
     </message>
@@ -13489,7 +13764,7 @@ Aggressivo</translation>
         <translation>Chiudi questa finestra di upscale</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/UpscaleDialog.py" line="302"/>
+        <location filename="../app/core/views/images/viewer/dialogs/UpscaleDialog.py" line="306"/>
         <source>Resolution: {width} × {height} pixels | Original: {orig_w} × {orig_h} pixels | Upscale: {level}x | Use mouse wheel to zoom, right-click to pan</source>
         <translation>Risoluzione: {width} × {height} pixel | Originale: {orig_w} × {orig_h} pixel | Upscale: {level}x | Usa la rotella del mouse per lo zoom, tasto destro per spostare</translation>
     </message>
@@ -13508,7 +13783,7 @@ Aggressivo</translation>
         <translation>Errore durante l&apos;upscale iniziale: {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/UpscaleDialog.py" line="388"/>
+        <location filename="../app/core/views/images/viewer/dialogs/UpscaleDialog.py" line="389"/>
         <source>Unable to extract visible image portion.</source>
         <translation>Impossibile estrarre la porzione visibile dell&apos;immagine.</translation>
     </message>
@@ -13518,7 +13793,7 @@ Aggressivo</translation>
         <translation>Upscale Massimo Raggiunto</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/UpscaleDialog.py" line="399"/>
+        <location filename="../app/core/views/images/viewer/dialogs/UpscaleDialog.py" line="401"/>
         <source>Maximum upscale level of {level}x has been reached.
 Further upscaling is not allowed to prevent memory issues.</source>
         <translation>È stato raggiunto il livello massimo di upscale di {level}x.
@@ -13530,7 +13805,7 @@ Ulteriori upscaling non sono consentiti per prevenire problemi di memoria.</tran
         <translation>Immagine Troppo Grande</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/UpscaleDialog.py" line="415"/>
+        <location filename="../app/core/views/images/viewer/dialogs/UpscaleDialog.py" line="418"/>
         <source>Upscaling would result in an image of {width}×{height} pixels.
 Maximum allowed dimension is {max_dim} pixels.
 
@@ -13546,7 +13821,7 @@ Prova a ingrandire una zona più piccola prima di effettuare l&apos;upscale.</tr
         <translation>Immagine Troppo Piccola</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/UpscaleDialog.py" line="428"/>
+        <location filename="../app/core/views/images/viewer/dialogs/UpscaleDialog.py" line="430"/>
         <source>Visible portion is too small ({width}×{height} pixels).
 Please zoom in to a larger area before upscaling.</source>
         <translation>La porzione visibile è troppo piccola ({width}×{height} pixel).
@@ -13561,7 +13836,7 @@ Per favore ingrandisci un&apos;area più grande prima di effettuare l&apos;upsca
 {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/UpscaleDialog.py" line="487"/>
+        <location filename="../app/core/views/images/viewer/dialogs/UpscaleDialog.py" line="490"/>
         <source>Upscaling image with AI enhancement...
 From {width}×{height} to {new_width}×{new_height} pixels
 This may take a few seconds.</source>
@@ -13593,7 +13868,7 @@ Potrebbe richiedere alcuni secondi.</translation>
         <translation>Metodo Non Disponibile</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/UpscaleDialog.py" line="605"/>
+        <location filename="../app/core/views/images/viewer/dialogs/UpscaleDialog.py" line="607"/>
         <source>Real-ESRGAN is not yet implemented.
 Falling back to Lanczos interpolation.</source>
         <translation>Real-ESRGAN non è ancora implementato.
@@ -13821,7 +14096,7 @@ Mostra informazioni in tempo reale durante l&apos;estrazione dei fotogrammi:
 Mostra il totale dei fotogrammi estratti al termine.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/VideoParser.py" line="57"/>
+        <location filename="../app/core/controllers/images/VideoParser.py" line="58"/>
         <source>Select a Video File</source>
         <translation>Seleziona un File Video</translation>
     </message>
@@ -13831,7 +14106,7 @@ Mostra il totale dei fotogrammi estratti al termine.</translation>
         <translation>Seleziona un File di Metadati</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/VideoParser.py" line="73"/>
+        <location filename="../app/core/controllers/images/VideoParser.py" line="74"/>
         <source>Metadata Files (*.srt *.csv);;SRT Files (*.srt);;CSV Flight Logs (*.csv)</source>
         <translation>File di metadati (*.srt *.csv);;File SRT (*.srt);;Log di volo CSV (*.csv)</translation>
     </message>
@@ -13841,7 +14116,7 @@ Mostra il totale dei fotogrammi estratti al termine.</translation>
         <translation>Seleziona Cartella</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/VideoParser.py" line="110"/>
+        <location filename="../app/core/controllers/images/VideoParser.py" line="111"/>
         <source>Please set the video file and output directory.</source>
         <translation>Imposta il file video e la cartella di output.</translation>
     </message>
@@ -13909,8 +14184,8 @@ Mostra il totale dei fotogrammi estratti al termine.</translation>
     <message>
         <location filename="../resources/views/images/viewer/Viewer.ui" line="112"/>
         <location filename="../resources/views/images/viewer/Viewer.ui" line="133"/>
-        <location filename="../resources/views/images/viewer/Viewer.ui" line="951"/>
-        <location filename="../resources/views/images/viewer/Viewer.ui" line="1122"/>
+        <location filename="../resources/views/images/viewer/Viewer.ui" line="1015"/>
+        <location filename="../resources/views/images/viewer/Viewer.ui" line="1186"/>
         <source>TextLabel</source>
         <translation>TextLabel</translation>
     </message>
@@ -13931,13 +14206,13 @@ Quando disabilitato, mostra l&apos;immagine originale non elaborata.
 Usa per confrontare l&apos;immagine originale con i risultati del rilevamento.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="427"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="443"/>
         <location filename="../resources/views/images/viewer/Viewer.ui" line="205"/>
         <source>Show Overlay</source>
         <translation>Mostra Overlay</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1124"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1161"/>
         <location filename="../resources/views/images/viewer/Viewer.ui" line="225"/>
         <source>Toggle Gallery Mode (G)
 Shows all AOIs from all images in a grid view</source>
@@ -13955,7 +14230,7 @@ Mostra tutte le AOI di tutte le immagini in una vista a griglia</translation>
         <translation>Mostra AOI</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1144"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1179"/>
         <location filename="../resources/views/images/viewer/Viewer.ui" line="299"/>
         <source>Open Histogram</source>
         <translation>Apri Istogramma</translation>
@@ -13979,11 +14254,12 @@ Mostra tutte le AOI di tutte le immagini in una vista a griglia</translation>
         <location filename="../resources/views/images/viewer/Viewer.ui" line="357"/>
         <location filename="../resources/views/images/viewer/Viewer.ui" line="385"/>
         <location filename="../resources/views/images/viewer/Viewer.ui" line="408"/>
-        <location filename="../resources/views/images/viewer/Viewer.ui" line="441"/>
-        <location filename="../resources/views/images/viewer/Viewer.ui" line="485"/>
-        <location filename="../resources/views/images/viewer/Viewer.ui" line="522"/>
-        <location filename="../resources/views/images/viewer/Viewer.ui" line="564"/>
-        <location filename="../resources/views/images/viewer/Viewer.ui" line="601"/>
+        <location filename="../resources/views/images/viewer/Viewer.ui" line="427"/>
+        <location filename="../resources/views/images/viewer/Viewer.ui" line="463"/>
+        <location filename="../resources/views/images/viewer/Viewer.ui" line="507"/>
+        <location filename="../resources/views/images/viewer/Viewer.ui" line="544"/>
+        <location filename="../resources/views/images/viewer/Viewer.ui" line="586"/>
+        <location filename="../resources/views/images/viewer/Viewer.ui" line="623"/>
         <source>...</source>
         <translation>...</translation>
     </message>
@@ -14003,7 +14279,7 @@ Mostra tutte le AOI di tutte le immagini in una vista a griglia</translation>
         <translation>ruler.png</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1816"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1871"/>
         <location filename="../resources/views/images/viewer/Viewer.ui" line="405"/>
         <source>Person Size Reference (Ctrl+P)</source>
         <translation type="unfinished"></translation>
@@ -14015,51 +14291,61 @@ Mostra tutte le AOI di tutte le immagini in una vista a griglia</translation>
     </message>
     <message>
         <location filename="../resources/views/images/viewer/Viewer.ui" line="424"/>
+        <source>Toggle Grid Review Mode (S) — sweep the image cell by cell; Shift+S for grid settings</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../resources/views/images/viewer/Viewer.ui" line="439"/>
+        <source>grid.png</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../resources/views/images/viewer/Viewer.ui" line="446"/>
         <source>Toggle Magnifying Glass (Middle Mouse)</source>
         <translation>Attiva/disattiva lente di ingrandimento (tasto centrale)</translation>
     </message>
     <message>
-        <location filename="../resources/views/images/viewer/Viewer.ui" line="454"/>
+        <location filename="../resources/views/images/viewer/Viewer.ui" line="476"/>
         <source>magnify.png</source>
         <translation>magnify.png</translation>
     </message>
     <message>
-        <location filename="../resources/views/images/viewer/Viewer.ui" line="468"/>
+        <location filename="../resources/views/images/viewer/Viewer.ui" line="490"/>
         <source>Map Export (KML / CalTopo)</source>
         <translation>Esportazione Mappa (KML / CalTopo)</translation>
     </message>
     <message>
-        <location filename="../resources/views/images/viewer/Viewer.ui" line="498"/>
+        <location filename="../resources/views/images/viewer/Viewer.ui" line="520"/>
         <source>map.png</source>
         <translation>map.png</translation>
     </message>
     <message>
-        <location filename="../resources/views/images/viewer/Viewer.ui" line="505"/>
+        <location filename="../resources/views/images/viewer/Viewer.ui" line="527"/>
         <source>Generate PDF Report</source>
         <translation>Genera Report PDF</translation>
     </message>
     <message>
-        <location filename="../resources/views/images/viewer/Viewer.ui" line="535"/>
+        <location filename="../resources/views/images/viewer/Viewer.ui" line="557"/>
         <source>pdf.png</source>
         <translation>pdf.png</translation>
     </message>
     <message>
-        <location filename="../resources/views/images/viewer/Viewer.ui" line="547"/>
+        <location filename="../resources/views/images/viewer/Viewer.ui" line="569"/>
         <source>Generate Zip Bundle</source>
         <translation>Genera Pacchetto Zip</translation>
     </message>
     <message>
-        <location filename="../resources/views/images/viewer/Viewer.ui" line="577"/>
+        <location filename="../resources/views/images/viewer/Viewer.ui" line="599"/>
         <source>zip.png</source>
         <translation>zip.png</translation>
     </message>
     <message>
-        <location filename="../resources/views/images/viewer/Viewer.ui" line="584"/>
+        <location filename="../resources/views/images/viewer/Viewer.ui" line="606"/>
         <source>Plan Verification (T)</source>
         <translation>Verifica del Piano (T)</translation>
     </message>
     <message>
-        <location filename="../resources/views/images/viewer/Viewer.ui" line="632"/>
+        <location filename="../resources/views/images/viewer/Viewer.ui" line="654"/>
         <source>Skip hidden images when navigating.
 When enabled, Previous/Next buttons will skip over images marked as hidden.
 Use to focus on images that haven&apos;t been reviewed or marked for exclusion.
@@ -14070,12 +14356,12 @@ Usa per concentrarti su immagini non ancora revisionate o contrassegnate per l&a
 Scorciatoia da tastiera: H per nascondere/mostrare l&apos;immagine corrente</translation>
     </message>
     <message>
-        <location filename="../resources/views/images/viewer/Viewer.ui" line="638"/>
+        <location filename="../resources/views/images/viewer/Viewer.ui" line="660"/>
         <source>Skip Hidden</source>
         <translation>Salta Nascoste</translation>
     </message>
     <message>
-        <location filename="../resources/views/images/viewer/Viewer.ui" line="677"/>
+        <location filename="../resources/views/images/viewer/Viewer.ui" line="699"/>
         <source>Mark current image as hidden.
 Hidden images can be excluded from reports, exports, and navigation.
 Use to remove images with false positives or no relevant detections.
@@ -14088,13 +14374,13 @@ Quando &quot;Salta Nascoste&quot; è abilitato, le immagini nascoste vengono sal
 Scorciatoia da tastiera: H</translation>
     </message>
     <message>
-        <location filename="../resources/views/images/viewer/Viewer.ui" line="684"/>
-        <location filename="../resources/views/images/viewer/Viewer.ui" line="704"/>
+        <location filename="../resources/views/images/viewer/Viewer.ui" line="706"/>
+        <location filename="../resources/views/images/viewer/Viewer.ui" line="726"/>
         <source>Hide Image</source>
         <translation>Nascondi Immagine</translation>
     </message>
     <message>
-        <location filename="../resources/views/images/viewer/Viewer.ui" line="696"/>
+        <location filename="../resources/views/images/viewer/Viewer.ui" line="718"/>
         <source>Displays the name of the currently hidden image.
 When an image is marked as hidden, its filename appears here.
 Hidden images are excluded from navigation when &quot;Skip Hidden&quot; is enabled.</source>
@@ -14103,7 +14389,7 @@ Quando un&apos;immagine è contrassegnata come nascosta, il suo nome file appare
 Le immagini nascoste sono escluse dalla navigazione quando &quot;Salta Nascoste&quot; è abilitato.</translation>
     </message>
     <message>
-        <location filename="../resources/views/images/viewer/Viewer.ui" line="732"/>
+        <location filename="../resources/views/images/viewer/Viewer.ui" line="754"/>
         <source>Jump directly to a specific image number.
 Enter an image number and press Enter to navigate instantly.
 Useful for reviewing specific images or returning to a noted location.</source>
@@ -14112,12 +14398,12 @@ Inserisci un numero immagine e premi Invio per navigare istantaneamente.
 Utile per rivedere immagini specifiche o tornare a una posizione annotata.</translation>
     </message>
     <message>
-        <location filename="../resources/views/images/viewer/Viewer.ui" line="737"/>
+        <location filename="../resources/views/images/viewer/Viewer.ui" line="759"/>
         <source>Jump To:</source>
         <translation>Vai a:</translation>
     </message>
     <message>
-        <location filename="../resources/views/images/viewer/Viewer.ui" line="762"/>
+        <location filename="../resources/views/images/viewer/Viewer.ui" line="784"/>
         <source>Enter an image number (1 to total) and press Enter.
 Quickly navigate to any image in the analysis results.
 Example: Type &quot;25&quot; and press Enter to jump to image #25</source>
@@ -14126,37 +14412,54 @@ Naviga rapidamente a qualsiasi immagine nei risultati dell&apos;analisi.
 Esempio: digita &quot;25&quot; e premi Invio per andare all&apos;immagine n. 25</translation>
     </message>
     <message>
-        <location filename="../resources/views/images/viewer/Viewer.ui" line="776"/>
+        <location filename="../resources/views/images/viewer/Viewer.ui" line="798"/>
+        <source>Jump to a specific AOI by its run-wide number.
+Enter an AOI number and press Enter to select and scroll to it.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../resources/views/images/viewer/Viewer.ui" line="802"/>
+        <source>Go to AOI #:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../resources/views/images/viewer/Viewer.ui" line="827"/>
+        <source>Enter an AOI number and press Enter.
+Selects that AOI and scrolls it into view in the gallery or single-image list.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../resources/views/images/viewer/Viewer.ui" line="840"/>
         <source>Previous Image</source>
         <translation>Immagine Precedente</translation>
     </message>
     <message>
-        <location filename="../resources/views/images/viewer/Viewer.ui" line="783"/>
+        <location filename="../resources/views/images/viewer/Viewer.ui" line="847"/>
         <source>previous.png</source>
         <translation>previous.png</translation>
     </message>
     <message>
-        <location filename="../resources/views/images/viewer/Viewer.ui" line="798"/>
+        <location filename="../resources/views/images/viewer/Viewer.ui" line="862"/>
         <source>Next Image</source>
         <translation>Immagine Successiva</translation>
     </message>
     <message>
-        <location filename="../resources/views/images/viewer/Viewer.ui" line="805"/>
+        <location filename="../resources/views/images/viewer/Viewer.ui" line="869"/>
         <source>next.png</source>
         <translation>next.png</translation>
     </message>
     <message>
-        <location filename="../resources/views/images/viewer/Viewer.ui" line="961"/>
+        <location filename="../resources/views/images/viewer/Viewer.ui" line="1025"/>
         <source>Filter AOIs by color and pixel area</source>
         <translation>Filtra AOI per colore e area in pixel</translation>
     </message>
     <message>
-        <location filename="../resources/views/images/viewer/Viewer.ui" line="1033"/>
+        <location filename="../resources/views/images/viewer/Viewer.ui" line="1097"/>
         <source>Sort By</source>
         <translation>Ordina per</translation>
     </message>
     <message>
-        <location filename="../resources/views/images/viewer/Viewer.ui" line="1045"/>
+        <location filename="../resources/views/images/viewer/Viewer.ui" line="1109"/>
         <source>Sort Areas of Interest (AOIs) in the list.
 Choose how to order the detected objects:
 • Pixel Area: Sort by size (largest to smallest)
@@ -14173,37 +14476,37 @@ Scegli come ordinare gli oggetti rilevati:
 L&apos;ordinamento aiuta a dare priorità alla revisione di oggetti più grandi o più vicini.</translation>
     </message>
     <message>
-        <location filename="../resources/views/images/viewer/Viewer.ui" line="1133"/>
+        <location filename="../resources/views/images/viewer/Viewer.ui" line="1197"/>
         <source>Open</source>
         <translation>Apri</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="128"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="132"/>
         <source>Automated Drone Image Analysis Tool v{version} - Sponsored by TEXSAR</source>
         <translation>Strumento Automatico di Analisi Immagini Drone v{version} - Sponsorizzato da TEXSAR</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="140"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="143"/>
         <source>Reading result file...</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="150"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="160"/>
         <source>Checking image dimensions ({n} images)...</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="160"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="170"/>
         <source>Validating image paths...</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="167"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="177"/>
         <source>Load Results Failed</source>
         <translation>Caricamento Risultati Non Riuscito</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="169"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="182"/>
         <source>Cannot load results without valid image and mask locations.
 
 The viewer will now close.</source>
@@ -14212,60 +14515,60 @@ The viewer will now close.</source>
 Il visualizzatore verrà chiuso.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="176"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="186"/>
         <source>Scanning source folder for full flight...</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="192"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="202"/>
         <source>Initialising controllers...</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="203"/>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1321"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="213"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1360"/>
         <source>Skip Hidden ({count}) </source>
         <translation>Salta Nascoste ({count}) </translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="232"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="244"/>
         <source>Loading detection results from {n} images...</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="271"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="286"/>
         <source>Image metadata and information.
 Click on GPS Coordinates to copy, share, or open in mapping applications.</source>
         <translation>Metadati e informazioni dell&apos;immagine.
 Clicca su Coordinate GPS per copiare, condividere o aprire in applicazioni di mappatura.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="303"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="315"/>
         <source>Loading first image...</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="318"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="330"/>
         <source>Preparing thumbnails...</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="586"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="609"/>
         <source>No Dataset</source>
         <translation>Nessun Dataset</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="587"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="611"/>
         <source>No dataset is currently loaded.</source>
         <translation>Nessun dataset è attualmente caricato.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="594"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="617"/>
         <source>Generate Cache</source>
         <translation>Genera Cache</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="596"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="622"/>
         <source>This will regenerate thumbnail and color caches for all AOIs in this dataset.
 
 This may take a few minutes depending on the dataset size.
@@ -14278,39 +14581,39 @@ Questo potrebbe richiedere alcuni minuti a seconda della dimensione del dataset.
 Continuare?</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="609"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="632"/>
         <source>Initializing cache generation...</source>
         <translation>Inizializzazione generazione cache...</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="610"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="633"/>
         <source>Cancel</source>
         <translation>Annulla</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="615"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="638"/>
         <source>Generating Cache</source>
         <translation>Generazione Cache</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="652"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="675"/>
         <source>Error</source>
         <translation>Errore</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="653"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="676"/>
         <source>Failed to start cache generation:
 {error}</source>
         <translation>Impossibile avviare la generazione della cache:
 {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="671"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="694"/>
         <source>Cache Generated</source>
         <translation>Cache Generata</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="673"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="699"/>
         <source>Cache generation complete!
 
 Processed {images} images with {aois} AOIs.
@@ -14323,12 +14626,12 @@ Elaborate {images} immagini con {aois} AOI.
 Il visualizzatore ora caricherà miniature e colori molto più velocemente.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="704"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="727"/>
         <source>Cache Generation Error</source>
         <translation>Errore Generazione Cache</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="706"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="730"/>
         <source>An error occurred during cache generation:
 
 {error}</source>
@@ -14337,12 +14640,12 @@ Il visualizzatore ora caricherà miniature e colori molto più velocemente.</tra
 {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="886"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="915"/>
         <source>AOI Not Visible</source>
         <translation>AOI Non Visibile</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="888"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="921"/>
         <source>The AOI at the cursor position cannot be selected because it is currently hidden due to active filters.
 
 To select this AOI, please clear or adjust your filters.</source>
@@ -14351,12 +14654,12 @@ To select this AOI, please clear or adjust your filters.</source>
 Per selezionare questa AOI, cancella o regola i tuoi filtri.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1013"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1045"/>
         <source>Update Image Dimensions</source>
         <translation>Aggiorna Dimensioni Immagini</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1015"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1051"/>
         <source>This dataset is missing image dimensions needed for heatmap filtering ({count} images).
 
 Would you like to read dimensions from the image files and update the results file?</source>
@@ -14365,51 +14668,51 @@ Would you like to read dimensions from the image files and update the results fi
 Vuoi leggere le dimensioni dai file immagine e aggiornare il file dei risultati?</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1135"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1170"/>
         <source>Show Pixels of Interest (H or Ctrl+I)</source>
         <translation>Mostra Pixel di Interesse (H o Ctrl+I)</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1150"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1184"/>
         <source>Toggle AOI Circles</source>
         <translation>Attiva/disattiva Cerchi AOI</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1493"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1535"/>
         <source>Missing Dependency</source>
         <translation>Dipendenza Mancante</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1495"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1540"/>
         <source>The qimage2ndarray module is required for the upscale feature.
 Please install it using: pip install qimage2ndarray</source>
         <translation>Il modulo qimage2ndarray è richiesto per la funzione di upscale.
 Installalo usando: pip install qimage2ndarray</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1504"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1546"/>
         <source>Upscale Error</source>
         <translation>Errore di Upscale</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1506"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1549"/>
         <source>An error occurred while opening the upscale dialog:
 {error}</source>
         <translation>Si è verificato un errore durante l&apos;apertura della finestra di upscale:
 {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1820"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1875"/>
         <source>Person Size Reference is unavailable: no GSD for this image</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1896"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1974"/>
         <source>Unknown Reviewer</source>
         <translation>Revisore Sconosciuto</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1959"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="2034"/>
         <source>Loading gallery...</source>
         <translation>Caricamento galleria...</translation>
     </message>
@@ -14447,7 +14750,7 @@ Installalo usando: pip install qimage2ndarray</translation>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/WaldoPrePassDialog.py" line="147"/>
+        <location filename="../app/core/views/images/viewer/dialogs/WaldoPrePassDialog.py" line="148"/>
         <source>WALDO Pre-Pass Cancelled</source>
         <translation type="unfinished"></translation>
     </message>
@@ -14500,7 +14803,7 @@ Installalo usando: pip install qimage2ndarray</translation>
         <translation>Riepilogo Importazione</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/WingtraDataDialog.py" line="58"/>
+        <location filename="../app/core/views/images/viewer/dialogs/WingtraDataDialog.py" line="61"/>
         <source>&lt;b&gt;Matched images:&lt;/b&gt; {matched}&lt;br&gt;&lt;b&gt;CSV entries without match:&lt;/b&gt; {unmatched_csv}&lt;br&gt;&lt;b&gt;Result images without CSV data:&lt;/b&gt; {unmatched_images}</source>
         <translation>&lt;b&gt;Immagini abbinate:&lt;/b&gt; {matched}&lt;br&gt;&lt;b&gt;Voci CSV senza corrispondenza:&lt;/b&gt; {unmatched_csv}&lt;br&gt;&lt;b&gt;Immagini di risultato senza dati CSV:&lt;/b&gt; {unmatched_images}</translation>
     </message>
@@ -14510,12 +14813,12 @@ Installalo usando: pip install qimage2ndarray</translation>
         <translation>Altitudine &amp; GSD</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/WingtraDataDialog.py" line="78"/>
+        <location filename="../app/core/views/images/viewer/dialogs/WingtraDataDialog.py" line="83"/>
         <source>&lt;b&gt;AGL computed from terrain:&lt;/b&gt; {agl_count} of {matched_count} images&lt;br&gt;&lt;br&gt;Per-image AGL is derived from the CSV altitude (ASL) minus terrain elevation at each GPS location. GSD will be calculated automatically using the camera sensor data and focal length.</source>
         <translation>&lt;b&gt;AGL calcolata dal terreno:&lt;/b&gt; {agl_count} di {matched_count} immagini&lt;br&gt;&lt;br&gt;L&apos;AGL per immagine è derivata dall&apos;altitudine CSV (ASL) meno la quota del terreno in corrispondenza di ciascuna posizione GPS. Il GSD verrà calcolato automaticamente usando i dati del sensore della fotocamera e la lunghezza focale.</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/WingtraDataDialog.py" line="89"/>
+        <location filename="../app/core/views/images/viewer/dialogs/WingtraDataDialog.py" line="96"/>
         <source>&lt;b&gt;Terrain data unavailable&lt;/b&gt; - AGL could not be computed.&lt;br&gt;&lt;br&gt;Orientation (yaw/pitch/roll) will still be applied from the CSV. GSD and altitude displays require terrain data or a manual altitude override (Shift+O) after import.</source>
         <translation>&lt;b&gt;Dati del terreno non disponibili&lt;/b&gt; - impossibile calcolare l&apos;AGL.&lt;br&gt;&lt;br&gt;L&apos;orientamento (yaw/pitch/roll) verrà comunque applicato dal CSV. Le visualizzazioni di GSD e altitudine richiedono i dati del terreno o un override manuale dell&apos;altitudine (Maiusc+O) dopo l&apos;importazione.</translation>
     </message>
@@ -14538,7 +14841,7 @@ Installalo usando: pip install qimage2ndarray</translation>
         <translation>Salva File Zip</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/ZipExportController.py" line="132"/>
+        <location filename="../app/core/controllers/images/viewer/exports/ZipExportController.py" line="133"/>
         <source>Zip files (*.zip)</source>
         <translation>File Zip (*.zip)</translation>
     </message>
@@ -14571,7 +14874,7 @@ Installalo usando: pip install qimage2ndarray</translation>
         <translation>Opzioni Esportazione ZIP</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/ZipExportDialog.py" line="26"/>
+        <location filename="../app/core/views/images/viewer/dialogs/ZipExportDialog.py" line="30"/>
         <source>Choose what to export:
 
 - Native: Original images, TIFF masks, and XML (paths made portable).
@@ -14597,7 +14900,7 @@ Installalo usando: pip install qimage2ndarray</translation>
         <translation>Includi immagini senza AOI contrassegnate</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/ZipExportDialog.py" line="53"/>
+        <location filename="../app/core/views/images/viewer/dialogs/ZipExportDialog.py" line="55"/>
         <source>When unchecked, only images with at least one flagged AOI will be exported.
 When checked, all images will be exported regardless of flagged AOI status.</source>
         <translation>Quando deselezionato, verranno esportate solo le immagini con almeno una AOI contrassegnata.
