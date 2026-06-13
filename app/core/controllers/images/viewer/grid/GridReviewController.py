@@ -15,8 +15,9 @@ the viewer's next/previous-image handlers, and progress display through
 the status bar message dict.
 
 Keyboard contract (keys are consumed only while the mode is active,
-except S which toggles the mode):
+except S/Shift+S which work from anywhere in the viewer):
     S            toggle grid review mode
+    Shift+S      open the grid settings dialog
     Space        mark current cell reviewed and advance (serpentine)
     Backspace /
     Shift+Space  step back one cell (no unmarking)
@@ -94,6 +95,9 @@ class GridReviewController(TranslationMixin, QObject):
 
         if key == Qt.Key_S and modifiers == Qt.NoModifier:
             self.toggle_mode()
+            return True
+        if key == Qt.Key_S and modifiers == Qt.ShiftModifier:
+            self.open_settings_dialog()
             return True
 
         if not self.active:
@@ -199,6 +203,80 @@ class GridReviewController(TranslationMixin, QObject):
     def cleanup(self):
         """Persist any pending marks; called from Viewer.closeEvent."""
         self._flush_save()
+
+    # ------------------------------------------------------------------ #
+    #  Settings dialog
+    # ------------------------------------------------------------------ #
+    def open_settings_dialog(self):
+        """Open the grid settings dialog and apply accepted values."""
+        # Imported here rather than at module top: the dialog pulls in the
+        # generated UI module, which the headless controller tests don't need.
+        from core.views.images.viewer.dialogs.GridReviewDialog import GridReviewDialog
+
+        suggestion = self._suggest_dims()
+        person_px = None
+        if suggestion is not None:
+            main_image = self.parent.main_image
+            cell_w = main_image.sceneRect().width() / suggestion[1]
+            try:
+                gsd_cm = self.parent._get_current_image_gsd()
+            except Exception:
+                gsd_cm = None
+            person_px = GridReviewService.person_screen_px(
+                gsd_cm, cell_w, main_image.viewport().width()
+            )
+
+        dialog = GridReviewDialog(
+            self.parent,
+            settings_service=getattr(self.parent, 'settings_service', None),
+            current_rows=self._rows,
+            current_cols=self._cols,
+            auto_mark=self._auto_mark_enabled(),
+            suggestion=suggestion,
+            person_px=person_px,
+        )
+        if dialog.exec():
+            rows, cols, _ = dialog.values()
+            self._apply_grid_size(rows, cols)
+
+    def _apply_grid_size(self, rows, cols):
+        """Resize the active sweep's grid when that is safe.
+
+        An image whose sweep already has marked cells keeps its stored
+        grid — resizing would silently remap the persisted cell indices.
+        The accepted size still becomes the default for unstarted images
+        (the dialog wrote it to settings).
+        """
+        if not self.active:
+            return
+        image = self._current_image()
+        if image is None:
+            return
+
+        grid = image.get('grid_review')
+        if grid and grid['reviewed']:
+            if (int(rows), int(cols)) != (grid['rows'], grid['cols']):
+                status = getattr(self.parent, 'status_controller', None)
+                if status is not None:
+                    status.show_toast(
+                        self.tr("This image keeps its existing grid — the new size applies to unstarted images."),
+                        3500
+                    )
+            return
+
+        if grid:
+            # A stored but unmarked grid is safe to discard.
+            image['grid_review'] = None
+            image_xml = image.get('xml')
+            if image_xml is not None:
+                self.parent.xml_service.clear_image_grid_review(image_xml)
+
+        self._rows = max(1, int(rows))
+        self._cols = max(1, int(cols))
+        self.current_cell = GridReviewService.serpentine_order(self._rows, self._cols)[0]
+        self._refresh_overlay(image)
+        self._zoom_to_cell(self.current_cell)
+        self._update_status()
 
     # ------------------------------------------------------------------ #
     #  Sweep logic

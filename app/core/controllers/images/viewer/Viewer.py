@@ -579,6 +579,10 @@ class Viewer(TranslationMixin, QMainWindow, Ui_Viewer):
         if hasattr(self, 'image_gallery_splitter'):
             self.gallery_controller.save_splitter_position(self.image_gallery_splitter)
 
+    def _on_grid_review_clicked(self):
+        """Handle Grid Review button click - toggle the sweep mode."""
+        self.grid_review_controller.toggle_mode()
+
     def _on_gallery_mode_clicked(self):
         """Handle Gallery Mode button click - update styling and toggle gallery mode."""
         # Gallery and grid review are mutually exclusive single-surface modes
@@ -1130,6 +1134,7 @@ class Viewer(TranslationMixin, QMainWindow, Ui_Viewer):
             self.zipButton.clicked.connect(self._zipButton_clicked)
             self.measureButton.clicked.connect(self._open_measure_dialog)
             self.personOverlayButton.clicked.connect(self._open_person_reference_dialog)
+            self.gridReviewButton.clicked.connect(self._on_grid_review_clicked)
             self.adjustmentsButton.clicked.connect(self._open_image_adjustment_dialog)
             self.magnifyButton.clicked.connect(self._magnifyButton_clicked)
             self.GPSMapButton.clicked.connect(self._gps_map_button_clicked)
@@ -1142,6 +1147,7 @@ class Viewer(TranslationMixin, QMainWindow, Ui_Viewer):
             self.ui_style_controller.update_person_overlay_button_style()
             self.ui_style_controller.update_gps_map_button_style()
             self.ui_style_controller.update_rotate_image_button_style()
+            self.ui_style_controller.update_grid_review_button_style()
 
             # Connect the Gallery Mode button
             if hasattr(self, 'galleryModeButton'):
@@ -2072,6 +2078,7 @@ class Viewer(TranslationMixin, QMainWindow, Ui_Viewer):
         self.zipButton.setIcon(IconHelper.create_icon('fa5s.file-archive', self.theme))
         self.measureButton.setIcon(IconHelper.create_icon('fa6s.ruler', self.theme))
         self.personOverlayButton.setIcon(IconHelper.create_icon('fa6s.person', self.theme))
+        self.gridReviewButton.setIcon(IconHelper.create_icon('fa6s.border-all', self.theme))
         self.adjustmentsButton.setIcon(IconHelper.create_icon('fa6s.sliders', self.theme))
         self.previousImageButton.setIcon(IconHelper.create_icon('fa6s.arrow-left', self.theme))
         self.nextImageButton.setIcon(IconHelper.create_icon('fa6s.arrow-right', self.theme))

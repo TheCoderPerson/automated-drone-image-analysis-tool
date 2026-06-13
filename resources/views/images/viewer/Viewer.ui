@@ -419,6 +419,28 @@ Shows all AOIs from all images in a grid view</string>
                </widget>
               </item>
               <item>
+               <widget class="QToolButton" name="gridReviewButton">
+                <property name="toolTip">
+                 <string>Toggle Grid Review Mode (S) — sweep the image cell by cell; Shift+S for grid settings</string>
+                </property>
+                <property name="text">
+                 <string>...</string>
+                </property>
+                <property name="iconSize">
+                 <size>
+                  <width>25</width>
+                  <height>25</height>
+                 </size>
+                </property>
+                <property name="checkable">
+                 <bool>true</bool>
+                </property>
+                <property name="iconName" stdset="0">
+                 <string>grid.png</string>
+                </property>
+               </widget>
+              </item>
+              <item>
                <widget class="QToolButton" name="magnifyButton">
                 <property name="toolTip">
                  <string>Toggle Magnifying Glass (Middle Mouse)</string>

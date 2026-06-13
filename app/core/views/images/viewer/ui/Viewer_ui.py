@@ -3,7 +3,7 @@
 ################################################################################
 ## Form generated from reading UI file 'Viewer.ui'
 ##
-## Created by: Qt User Interface Compiler version 6.10.2
+## Created by: Qt User Interface Compiler version 6.9.2
 ##
 ## WARNING! All changes made in this file will be lost when recompiling UI file!
 ################################################################################
@@ -213,6 +213,13 @@ class Ui_Viewer(object):
         self.personOverlayButton.setIconSize(QSize(25, 25))
 
         self.horizontalLayout_5.addWidget(self.personOverlayButton)
+
+        self.gridReviewButton = QToolButton(self.mainHeaderWidget)
+        self.gridReviewButton.setObjectName(u"gridReviewButton")
+        self.gridReviewButton.setIconSize(QSize(25, 25))
+        self.gridReviewButton.setCheckable(True)
+
+        self.horizontalLayout_5.addWidget(self.gridReviewButton)
 
         self.magnifyButton = QToolButton(self.mainHeaderWidget)
         self.magnifyButton.setObjectName(u"magnifyButton")
@@ -650,6 +657,11 @@ class Ui_Viewer(object):
 #endif // QT_CONFIG(tooltip)
         self.personOverlayButton.setText(QCoreApplication.translate("Viewer", u"...", None))
         self.personOverlayButton.setProperty(u"iconName", QCoreApplication.translate("Viewer", u"person.png", None))
+#if QT_CONFIG(tooltip)
+        self.gridReviewButton.setToolTip(QCoreApplication.translate("Viewer", u"Toggle Grid Review Mode (S) \u2014 sweep the image cell by cell; Shift+S for grid settings", None))
+#endif // QT_CONFIG(tooltip)
+        self.gridReviewButton.setText(QCoreApplication.translate("Viewer", u"...", None))
+        self.gridReviewButton.setProperty(u"iconName", QCoreApplication.translate("Viewer", u"grid.png", None))
 #if QT_CONFIG(tooltip)
         self.magnifyButton.setToolTip(QCoreApplication.translate("Viewer", u"Toggle Magnifying Glass (Middle Mouse)", None))
 #endif // QT_CONFIG(tooltip)

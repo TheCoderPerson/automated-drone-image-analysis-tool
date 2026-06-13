@@ -19,6 +19,7 @@ from core.views.images.viewer.dialogs.CalTopoMapDialog import CalTopoMapDialog
 from core.views.images.viewer.dialogs.ColorHistogramDialog import ColorHistogramDialog
 from core.views.images.viewer.dialogs.ExportProgressDialog import ExportProgressDialog
 from core.views.images.viewer.dialogs.GPSMapDialog import GPSMapDialog
+from core.views.images.viewer.dialogs.GridReviewDialog import GridReviewDialog
 from core.views.images.viewer.dialogs.HelpDialog import HelpDialog
 from core.views.images.viewer.dialogs.ImageAdjustmentDialog import ImageAdjustmentDialog
 from core.views.images.viewer.dialogs.LoadingDialog import LoadingDialog
@@ -381,3 +382,39 @@ def test_zip_export_dialog_initialization(app):
     """Test ZipExportDialog initialization."""
     dialog = ZipExportDialog(None)
     assert dialog is not None
+
+
+def test_grid_review_dialog_initialization(app):
+    """Test GridReviewDialog initialization with current values."""
+    dialog = GridReviewDialog(None, current_rows=6, current_cols=8, auto_mark=False)
+    assert dialog.rowsSpinBox.value() == 6
+    assert dialog.colsSpinBox.value() == 8
+    assert not dialog.autoMarkCheckBox.isChecked()
+    # Spinboxes are bounded to a sane grid range.
+    assert dialog.rowsSpinBox.minimum() == 1
+    assert dialog.rowsSpinBox.maximum() == 12
+    # No suggestion provided -> the button stays disabled.
+    assert not dialog.useSuggestionButton.isEnabled()
+
+
+def test_grid_review_dialog_suggestion(app):
+    """The GSD suggestion populates the label and the Use Suggestion button."""
+    dialog = GridReviewDialog(None, suggestion=(6, 6), person_px=72.4)
+    assert dialog.useSuggestionButton.isEnabled()
+    assert "6" in dialog.suggestionLabel.text()
+    assert "72" in dialog.suggestionLabel.text()
+
+    dialog.useSuggestionButton.click()
+    assert dialog.values()[:2] == (6, 6)
+
+
+def test_grid_review_dialog_accept_persists_settings(app):
+    """Accepting the dialog writes the chosen values to settings."""
+    settings = MagicMock()
+    dialog = GridReviewDialog(None, settings_service=settings,
+                              current_rows=5, current_cols=7, auto_mark=True)
+    dialog.accept()
+
+    settings.set_setting.assert_any_call("GridReviewRows", 5)
+    settings.set_setting.assert_any_call("GridReviewCols", 7)
+    settings.set_setting.assert_any_call("GridReviewAutoMark", True)
