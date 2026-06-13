@@ -257,6 +257,74 @@ def test_ensure_aoi_numbers_persists_to_xml(tmp_path, sample_xml):
     assert reloaded[1]["areas_of_interest"][0]["number"] == 2
 
 
+# ---------------------------------------------------------------------------
+# Grid review state
+# ---------------------------------------------------------------------------
+
+def test_grid_review_round_trips_through_save_reload(tmp_path, sample_xml):
+    """Grid attributes survive save -> reload, and AOI parsing is unaffected."""
+    service = XmlService(sample_xml)
+    image = service.get_images()[0]
+    assert service.set_image_grid_review(image['xml'], 4, 4, {0, 1, 5}) is True
+
+    out_path = tmp_path / "grid.xml"
+    service.save_xml_file(out_path)
+
+    reloaded = XmlService(out_path).get_images()
+    grid = reloaded[0]['grid_review']
+    assert grid == {'rows': 4, 'cols': 4, 'reviewed': {0, 1, 5}}
+    # Regression for the <image> child-iteration hazard: the new attributes
+    # must not introduce elements that get mis-parsed as AOIs.
+    assert len(reloaded[0]['areas_of_interest']) == 1
+    assert reloaded[0]['areas_of_interest'][0]['center'] == (50, 50)
+    # The untouched image stays unreviewed.
+    assert reloaded[1]['grid_review'] is None
+
+
+def test_legacy_xml_loads_without_grid_review(sample_xml):
+    """Files written before grid review load with grid_review None."""
+    for image in XmlService(sample_xml).get_images():
+        assert image['grid_review'] is None
+
+
+def test_malformed_grid_attributes_treated_as_unreviewed(tmp_path):
+    xml_content = """
+    <data>
+        <images>
+            <image path="a.jpg" grid_rows="x" grid_cols="4" grid_reviewed="0,1">
+                <areas_of_interest center="(10,10)" radius="5" area="20"/>
+            </image>
+            <image path="b.jpg" grid_rows="0" grid_cols="4"/>
+            <image path="c.jpg" grid_rows="2" grid_cols="2" grid_reviewed="junk,3"/>
+        </images>
+    </data>
+    """.strip()
+    xml_path = tmp_path / "bad_grid.xml"
+    with open(xml_path, "w") as f:
+        f.write(xml_content)
+
+    images = XmlService(xml_path).get_images()
+    # Non-integer rows -> unreviewed; AOIs untouched.
+    assert images[0]['grid_review'] is None
+    assert len(images[0]['areas_of_interest']) == 1
+    # Zero rows -> unreviewed.
+    assert images[1]['grid_review'] is None
+    # Junk tokens in reviewed list are dropped, valid ones kept.
+    assert images[2]['grid_review'] == {'rows': 2, 'cols': 2, 'reviewed': {3}}
+
+
+def test_clear_image_grid_review(sample_xml):
+    service = XmlService(sample_xml)
+    image = service.get_images()[0]
+    service.set_image_grid_review(image['xml'], 2, 2, {0})
+    assert service.get_images()[0]['grid_review'] is not None
+
+    assert service.clear_image_grid_review(image['xml']) is True
+    assert service.get_images()[0]['grid_review'] is None
+    # Clearing an element with no grid attributes is harmless.
+    assert service.clear_image_grid_review(image['xml']) is True
+
+
 def test_ensure_aoi_numbers_fills_gaps_above_existing_max(tmp_path):
     """Partially numbered files keep existing numbers; gaps get max+1 upward."""
     xml_content = """

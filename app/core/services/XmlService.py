@@ -4,6 +4,7 @@ from ast import literal_eval
 from datetime import datetime
 import uuid
 import xml.etree.ElementTree as ET
+from core.services.GridReviewService import GridReviewService
 from core.services.LoggerService import LoggerService
 
 
@@ -155,7 +156,15 @@ class XmlService:
                 if fov_alignment is not None:
                     image['fov_alignment'] = fov_alignment
 
+                # Load grid review state if present (None when absent/malformed)
+                image['grid_review'] = self._parse_grid_review(image_xml)
+
                 areas_of_interest = []
+                # NOTE: every child element of <image> is treated as an AOI here,
+                # in this and every shipped version of ADIAT. New per-image state
+                # MUST be stored as attributes on <image> (like 'hidden',
+                # 'bearing*', 'fov_*', 'grid_*'), never as child elements, or old
+                # builds will mis-parse it as an AOI.
                 for area_of_interest_xml in image_xml:
                     area_of_interest = {
                         'area': float(area_of_interest_xml.get('area', "0")),
@@ -632,6 +641,79 @@ class XmlService:
 
         except Exception as e:
             self.logger.error(f"Error setting image FOV alignment: {e}")
+            return False
+
+    @staticmethod
+    def _parse_grid_review(image_xml):
+        """Parse grid review attributes from an <image> element.
+
+        Args:
+            image_xml: The <image> ElementTree element.
+
+        Returns:
+            dict with 'rows' (int), 'cols' (int) and 'reviewed' (set of
+            row-major cell indices), or None when the image has no usable
+            grid review state.
+        """
+        rows_attr = image_xml.get('grid_rows')
+        cols_attr = image_xml.get('grid_cols')
+        if rows_attr is None or cols_attr is None:
+            return None
+
+        try:
+            rows = int(rows_attr)
+            cols = int(cols_attr)
+        except (ValueError, TypeError):
+            # Malformed grid dimensions - treat the image as unreviewed.
+            return None
+
+        if rows < 1 or cols < 1:
+            return None
+
+        reviewed = GridReviewService.parse_reviewed(image_xml.get('grid_reviewed'))
+        return {'rows': rows, 'cols': cols, 'reviewed': reviewed}
+
+    def set_image_grid_review(self, image_xml, rows, cols, reviewed_cells):
+        """Store grid review state for an image as <image> attributes.
+
+        Grid state is stored as attributes (never child elements) so old
+        ADIAT builds, which treat every <image> child as an AOI, keep
+        loading these files correctly.
+
+        Args:
+            image_xml: The <image> ElementTree element to update.
+            rows (int): Number of grid rows.
+            cols (int): Number of grid columns.
+            reviewed_cells: Iterable of reviewed row-major cell indices.
+
+        Returns:
+            bool: True on success, False otherwise.
+        """
+        try:
+            image_xml.set('grid_rows', str(int(rows)))
+            image_xml.set('grid_cols', str(int(cols)))
+            image_xml.set('grid_reviewed', GridReviewService.serialize_reviewed(reviewed_cells))
+            return True
+        except Exception as e:
+            self.logger.error(f"Error setting image grid review state: {e}")
+            return False
+
+    def clear_image_grid_review(self, image_xml):
+        """Remove any grid review attributes from an <image> element.
+
+        Args:
+            image_xml: The <image> ElementTree element to update.
+
+        Returns:
+            bool: True on success, False otherwise.
+        """
+        try:
+            for attr in ('grid_rows', 'grid_cols', 'grid_reviewed'):
+                if attr in image_xml.attrib:
+                    del image_xml.attrib[attr]
+            return True
+        except Exception as e:
+            self.logger.error(f"Error clearing image grid review state: {e}")
             return False
 
     def clear_image_fov_alignment(self, image_path):
