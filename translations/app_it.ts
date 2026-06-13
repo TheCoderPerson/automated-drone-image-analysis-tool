@@ -5323,17 +5323,31 @@ Il cursore è stato impostato su {recommended} processi.</translation>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/grid/GridReviewController.py" line="270"/>
+        <location filename="../app/core/controllers/images/viewer/grid/GridReviewController.py" line="273"/>
         <source>This image keeps its existing grid — the new size applies to unstarted images.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/grid/GridReviewController.py" line="324"/>
+        <location filename="../app/core/controllers/images/viewer/grid/GridReviewController.py" line="320"/>
+        <source>Apply Grid to All Images</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/controllers/images/viewer/grid/GridReviewController.py" line="326"/>
+        <source>{n} image(s) already have review progress recorded at a different grid size.
+
+Reset their progress and apply {rows}×{cols} to them too?
+
+Yes resets them; No keeps them at their current size.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/controllers/images/viewer/grid/GridReviewController.py" line="391"/>
         <source>Image fully reviewed — advancing</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/grid/GridReviewController.py" line="562"/>
+        <location filename="../app/core/controllers/images/viewer/grid/GridReviewController.py" line="629"/>
         <source>cell {cell}/{cells} — image {image}/{images} — run {percent}% reviewed</source>
         <translation type="unfinished"></translation>
     </message>
@@ -5386,12 +5400,22 @@ Il cursore è stato impostato su {recommended} processi.</translation>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../resources/views/images/viewer/GridReviewDialog.ui" line="102"/>
+        <location filename="../resources/views/images/viewer/GridReviewDialog.ui" line="97"/>
+        <source>Apply the chosen rows and columns to every image in this dataset, not just the current one. Images you have already started reviewing keep their progress unless you confirm a reset.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../resources/views/images/viewer/GridReviewDialog.ui" line="100"/>
+        <source>Apply this grid size to all images</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../resources/views/images/viewer/GridReviewDialog.ui" line="112"/>
         <source>No grid suggestion available (image GSD unknown).</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../resources/views/images/viewer/GridReviewDialog.ui" line="109"/>
+        <location filename="../resources/views/images/viewer/GridReviewDialog.ui" line="119"/>
         <source>Use Suggestion</source>
         <translation type="unfinished"></translation>
     </message>

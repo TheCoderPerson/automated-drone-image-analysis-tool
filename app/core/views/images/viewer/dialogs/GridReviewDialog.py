@@ -72,6 +72,14 @@ class GridReviewDialog(TranslationMixin, QDialog, Ui_GridReviewDialog):
         """Return the chosen focus-guide toggle state."""
         return self.subGuideCheckBox.isChecked()
 
+    def apply_to_all(self):
+        """Return True when the grid size should apply to every image.
+
+        This is a one-shot action, not a saved preference, so it is not
+        persisted; it always starts unchecked when the dialog opens.
+        """
+        return self.applyAllCheckBox.isChecked()
+
     def accept(self):
         """Persist the chosen values as defaults, then close."""
         if self.settings_service is not None:

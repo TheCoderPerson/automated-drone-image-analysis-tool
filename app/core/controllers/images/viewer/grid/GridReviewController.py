@@ -240,9 +240,12 @@ class GridReviewController(TranslationMixin, QObject):
         )
         if dialog.exec():
             rows, cols, _ = dialog.values()
-            self._apply_grid_size(rows, cols)
+            if dialog.apply_to_all():
+                self._apply_grid_to_all(rows, cols)
+            else:
+                self._apply_grid_size(rows, cols)
             # Pick up a focus-guide toggle even when the grid size is
-            # unchanged (_apply_grid_size may have returned without redraw).
+            # unchanged (the apply path may have returned without redraw).
             image = self._current_image()
             if self.active and image is not None and self._overlay_item is not None:
                 self._refresh_overlay(image)
@@ -285,6 +288,70 @@ class GridReviewController(TranslationMixin, QObject):
         self._refresh_overlay(image)
         self._zoom_to_cell(self.current_cell)
         self._update_status()
+
+    @staticmethod
+    def _has_conflicting_progress(image, rows, cols):
+        """True when an image has reviewed cells recorded at a different size."""
+        grid = image.get('grid_review')
+        return bool(grid and grid['reviewed'] and (grid['rows'], grid['cols']) != (rows, cols))
+
+    def _apply_grid_to_all(self, rows, cols):
+        """Apply the chosen grid size to every image in the dataset.
+
+        Images with no review progress (and images already at this size)
+        take the new grid directly. Images already reviewed at a different
+        size would lose their cell mapping if resized, so the reviewer is
+        asked whether to reset those too or leave them at their own size.
+        The whole dataset is written once at the end.
+        """
+        images = getattr(self.parent, 'images', None)
+        if not images:
+            return
+        rows = max(1, int(rows))
+        cols = max(1, int(cols))
+
+        conflicting = [img for img in images
+                       if self._has_conflicting_progress(img, rows, cols)]
+        reset_conflicting = False
+        if conflicting:
+            from PySide6.QtWidgets import QMessageBox
+            reply = QMessageBox.question(
+                self.parent,
+                self.tr("Apply Grid to All Images"),
+                self.tr(
+                    "{n} image(s) already have review progress recorded at a "
+                    "different grid size.\n\nReset their progress and apply "
+                    "{rows}×{cols} to them too?\n\n"
+                    "Yes resets them; No keeps them at their current size."
+                ).format(n=len(conflicting), rows=rows, cols=cols),
+                QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel,
+                QMessageBox.No,
+            )
+            if reply == QMessageBox.Cancel:
+                return
+            reset_conflicting = (reply == QMessageBox.Yes)
+
+        for img in images:
+            if not reset_conflicting and self._has_conflicting_progress(img, rows, cols):
+                continue  # keep a started image at its own size
+            grid = img.get('grid_review')
+            if grid and (grid['rows'], grid['cols']) == (rows, cols):
+                reviewed = grid['reviewed']  # same size -> progress still valid
+            else:
+                reviewed = set()
+            img['grid_review'] = {'rows': rows, 'cols': cols, 'reviewed': reviewed}
+            image_xml = img.get('xml')
+            if image_xml is not None:
+                self.parent.xml_service.set_image_grid_review(image_xml, rows, cols, reviewed)
+
+        self._save_pending = True
+        self._flush_save()
+
+        # Re-grid the current view so the change is visible immediately.
+        if self.active:
+            image = self._current_image()
+            if image is not None:
+                self._begin_image_sweep(image)
 
     # ------------------------------------------------------------------ #
     #  Sweep logic

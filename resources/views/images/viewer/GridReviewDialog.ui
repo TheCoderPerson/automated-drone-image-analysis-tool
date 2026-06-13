@@ -92,6 +92,16 @@
     </widget>
    </item>
    <item>
+    <widget class="QCheckBox" name="applyAllCheckBox">
+     <property name="toolTip">
+      <string>Apply the chosen rows and columns to every image in this dataset, not just the current one. Images you have already started reviewing keep their progress unless you confirm a reset.</string>
+     </property>
+     <property name="text">
+      <string>Apply this grid size to all images</string>
+     </property>
+    </widget>
+   </item>
+   <item>
     <layout class="QHBoxLayout" name="suggestionLayout">
      <item>
       <widget class="QLabel" name="suggestionLabel">

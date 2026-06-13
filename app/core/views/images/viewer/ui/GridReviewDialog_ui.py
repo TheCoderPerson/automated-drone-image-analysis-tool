@@ -76,6 +76,11 @@ class Ui_GridReviewDialog(object):
 
         self.verticalLayout.addWidget(self.subGuideCheckBox)
 
+        self.applyAllCheckBox = QCheckBox(GridReviewDialog)
+        self.applyAllCheckBox.setObjectName(u"applyAllCheckBox")
+
+        self.verticalLayout.addWidget(self.applyAllCheckBox)
+
         self.suggestionLayout = QHBoxLayout()
         self.suggestionLayout.setObjectName(u"suggestionLayout")
         self.suggestionLabel = QLabel(GridReviewDialog)
@@ -122,6 +127,10 @@ class Ui_GridReviewDialog(object):
         self.subGuideCheckBox.setToolTip(QCoreApplication.translate("GridReviewDialog", u"Draw a 3\u00d73 guide inside the active cell to focus your scan. Visual only \u2014 it does not change what gets reviewed.", None))
 #endif // QT_CONFIG(tooltip)
         self.subGuideCheckBox.setText(QCoreApplication.translate("GridReviewDialog", u"Show 3\u00d73 focus guide inside each cell", None))
+#if QT_CONFIG(tooltip)
+        self.applyAllCheckBox.setToolTip(QCoreApplication.translate("GridReviewDialog", u"Apply the chosen rows and columns to every image in this dataset, not just the current one. Images you have already started reviewing keep their progress unless you confirm a reset.", None))
+#endif // QT_CONFIG(tooltip)
+        self.applyAllCheckBox.setText(QCoreApplication.translate("GridReviewDialog", u"Apply this grid size to all images", None))
         self.suggestionLabel.setText(QCoreApplication.translate("GridReviewDialog", u"No grid suggestion available (image GSD unknown).", None))
         self.useSuggestionButton.setText(QCoreApplication.translate("GridReviewDialog", u"Use Suggestion", None))
     # retranslateUi

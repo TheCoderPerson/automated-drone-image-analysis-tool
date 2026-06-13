@@ -4,6 +4,7 @@ import pytest
 from unittest.mock import patch, MagicMock
 
 from PySide6.QtCore import Qt, QRectF
+from PySide6.QtWidgets import QMessageBox
 
 
 def _key_event(key, modifiers=Qt.NoModifier):
@@ -167,6 +168,64 @@ def test_escape_deactivates_and_restores_view(controller):
     # Pending marks are flushed on exit.
     controller.parent.xml_service.save_xml_file.assert_called_once()
     assert controller.parent.messages['Grid Review'] is None
+
+
+def test_apply_grid_to_all_applies_to_every_image(controller):
+    """Bulk apply stamps the chosen grid onto every image and saves once."""
+    controller.parent.images = [
+        _image(),
+        _image(grid_review={'rows': 4, 'cols': 4, 'reviewed': set()}),
+    ]
+    controller._apply_grid_to_all(3, 3)
+
+    for img in controller.parent.images:
+        assert (img['grid_review']['rows'], img['grid_review']['cols']) == (3, 3)
+    assert controller.parent.xml_service.set_image_grid_review.call_count == 2
+    controller.parent.xml_service.save_xml_file.assert_called_once()
+
+
+def test_apply_grid_to_all_keeps_same_size_progress(controller):
+    """An image already at the target size keeps its reviewed cells."""
+    controller.parent.images = [_image(grid_review={'rows': 3, 'cols': 3, 'reviewed': {0, 4}})]
+    controller._apply_grid_to_all(3, 3)
+    assert controller.parent.images[0]['grid_review']['reviewed'] == {0, 4}
+
+
+def test_apply_grid_to_all_resets_conflicting_on_yes(controller):
+    """Confirming Yes resets progress recorded at a different size."""
+    controller.parent.images = [_image(grid_review={'rows': 4, 'cols': 4, 'reviewed': {0, 5}})]
+    with patch.object(QMessageBox, 'question', return_value=QMessageBox.Yes):
+        controller._apply_grid_to_all(3, 3)
+    grid = controller.parent.images[0]['grid_review']
+    assert (grid['rows'], grid['cols']) == (3, 3)
+    assert grid['reviewed'] == set()
+
+
+def test_apply_grid_to_all_keeps_conflicting_on_no(controller):
+    """Answering No leaves started images at their own size and progress."""
+    controller.parent.images = [
+        _image(grid_review={'rows': 4, 'cols': 4, 'reviewed': {0, 5}}),
+        _image(),
+    ]
+    with patch.object(QMessageBox, 'question', return_value=QMessageBox.No):
+        controller._apply_grid_to_all(3, 3)
+    started = controller.parent.images[0]['grid_review']
+    assert (started['rows'], started['cols']) == (4, 4)
+    assert started['reviewed'] == {0, 5}
+    # The unstarted image still takes the new size.
+    assert (controller.parent.images[1]['grid_review']['rows'],
+            controller.parent.images[1]['grid_review']['cols']) == (3, 3)
+
+
+def test_apply_grid_to_all_cancel_aborts(controller):
+    """Cancel makes no changes and writes nothing."""
+    controller.parent.images = [_image(grid_review={'rows': 4, 'cols': 4, 'reviewed': {0, 5}})]
+    with patch.object(QMessageBox, 'question', return_value=QMessageBox.Cancel):
+        controller._apply_grid_to_all(3, 3)
+    grid = controller.parent.images[0]['grid_review']
+    assert (grid['rows'], grid['cols']) == (4, 4)
+    assert grid['reviewed'] == {0, 5}
+    controller.parent.xml_service.save_xml_file.assert_not_called()
 
 
 def test_sub_guide_setting_controls_subdivisions(controller):

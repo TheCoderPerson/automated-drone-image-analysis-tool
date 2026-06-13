@@ -406,6 +406,26 @@ def test_grid_review_dialog_focus_guide_defaults_on(app):
     assert dialog.sub_guide_enabled()
 
 
+def test_grid_review_dialog_apply_to_all_defaults_off(app):
+    """Apply-to-all is a one-shot action and starts unchecked."""
+    dialog = GridReviewDialog(None)
+    assert dialog.applyAllCheckBox.isChecked() is False
+    assert dialog.apply_to_all() is False
+    dialog.applyAllCheckBox.setChecked(True)
+    assert dialog.apply_to_all() is True
+
+
+def test_grid_review_dialog_apply_to_all_not_persisted(app):
+    """Apply-to-all is never written to settings (it is not a preference)."""
+    settings = MagicMock()
+    dialog = GridReviewDialog(None, settings_service=settings)
+    dialog.applyAllCheckBox.setChecked(True)
+    dialog.accept()
+    persisted_keys = [call.args[0] for call in settings.set_setting.call_args_list]
+    assert "GridReviewApplyAll" not in persisted_keys
+    assert "applyAll" not in persisted_keys
+
+
 def test_grid_review_dialog_suggestion(app):
     """The GSD suggestion populates the label and the Use Suggestion button."""
     dialog = GridReviewDialog(None, suggestion=(6, 6), person_px=72.4)
