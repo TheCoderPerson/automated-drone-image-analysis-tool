@@ -422,6 +422,23 @@ class QtImageViewer(TranslationMixin, QGraphicsView):
         else:
             self.zoomStack.clear()
 
+    def zoomToRect(self, rect):
+        """Zoom/pan so *rect* (scene coordinates) fills the view.
+
+        Used by grid review mode to frame one grid cell. The rect replaces
+        the whole zoom stack, so a subsequent resetZoom/zoom-out returns to
+        the full image rather than stepping back through prior cells.
+        """
+        if not self.hasImage() or self._recursion_guard or self._is_destroyed:
+            return
+
+        validated_rect = self._validate_zoom_rect(QRectF(rect))
+        if validated_rect is None:
+            return
+
+        self.zoomStack = [validated_rect]
+        self.updateViewer()
+
     def _zoomInAtPos(self, scene_pos, factor=None):
         """Zoom in so that *scene_pos* stays centred on screen."""
         if not self.canZoom or self.thumbnail or not self.hasImage() or self._is_destroyed:
