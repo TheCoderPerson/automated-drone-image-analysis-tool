@@ -48,6 +48,7 @@ class StatusController(TranslationMixin):
             "Temperature": self.tr("Temperature"),
             "Color Values": self.tr("Color Values"),
             "Drone Orientation": self.tr("Drone Orientation"),
+            "Grid Review": self.tr("Grid Review"),
         }
 
         # GPS Coordinates first (with hyperlink)

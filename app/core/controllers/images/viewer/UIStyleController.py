@@ -169,6 +169,15 @@ class UIStyleController:
                 "rotateActive"
             )
 
+    def update_grid_review_button_style(self):
+        """Update the grid review button styling based on the mode state."""
+        if hasattr(self.parent, 'gridReviewButton') and hasattr(self.parent, 'grid_review_controller'):
+            self.update_toolbutton_style(
+                self.parent.gridReviewButton,
+                self.parent.grid_review_controller.active,
+                "buttonActive"
+            )
+
     def update_gallery_mode_button_style(self):
         """Update the Gallery Mode button styling based on its checked state."""
         if hasattr(self.parent, 'galleryModeButton'):

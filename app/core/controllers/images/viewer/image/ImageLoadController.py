@@ -131,6 +131,12 @@ class ImageLoadController(TranslationMixin):
             if hasattr(self.parent, '_update_person_overlay_button_enabled'):
                 self.parent._update_person_overlay_button_enabled()
 
+            # Grid review joins the new image last: when active it re-zooms
+            # to the image's first unreviewed cell, overriding the zoom
+            # reset performed above.
+            if hasattr(self.parent, 'grid_review_controller'):
+                self.parent.grid_review_controller.on_image_loaded()
+
         except Exception as e:
             self._handle_load_error(e, image)
 
