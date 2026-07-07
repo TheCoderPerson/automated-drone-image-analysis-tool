@@ -4,7 +4,10 @@ GPSMapDialog - Dialog window for displaying GPS map visualization.
 This dialog shows all image GPS locations as connected points on an interactive map.
 """
 
-from PySide6.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QMessageBox
+from PySide6.QtWidgets import (
+    QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QMessageBox,
+    QComboBox, QSlider
+)
 from PySide6.QtCore import Qt, Signal, QPointF, QTimer
 from helpers.TranslationMixin import TranslationMixin
 from PySide6.QtGui import QKeySequence, QShortcut, QColor
@@ -24,6 +27,9 @@ class GPSMapDialog(TranslationMixin, QDialog):
 
     # Signal emitted when user right-clicks on the map (lat, lon)
     gps_right_clicked = Signal(float, float)
+
+    # Signal emitted when the POD overlay display changes (enabled, mode, opacity 0-100)
+    pod_display_changed = Signal(bool, str, int)
 
     def __init__(self, parent, gps_data, current_image_index, offline_only=False):
         """
@@ -118,6 +124,32 @@ class GPSMapDialog(TranslationMixin, QDialog):
         self.toggle_view_btn.toggled.connect(self.on_toggle_view)
         controls_layout.addWidget(self.toggle_view_btn)
 
+        # POD coverage overlay controls (enabled once a POD result is cached).
+        controls_layout.addSpacing(20)
+        self.pod_toggle_btn = QPushButton(self.tr("POD Overlay"))
+        self.pod_toggle_btn.setCheckable(True)
+        self.pod_toggle_btn.setEnabled(False)
+        self.pod_toggle_btn.setToolTip(self.tr(
+            "Run a map export with the POD option to generate this overlay"))
+        self.pod_toggle_btn.toggled.connect(self._emit_pod_display_changed)
+        controls_layout.addWidget(self.pod_toggle_btn)
+
+        self.pod_mode_combo = QComboBox()
+        self.pod_mode_combo.addItem(self.tr("POD"), "pod")          # itemData = stable key
+        self.pod_mode_combo.addItem(self.tr("Look count"), "looks")
+        self.pod_mode_combo.setEnabled(False)
+        self.pod_mode_combo.currentIndexChanged.connect(self._emit_pod_display_changed)
+        controls_layout.addWidget(self.pod_mode_combo)
+
+        self.pod_opacity_slider = QSlider(Qt.Horizontal)
+        self.pod_opacity_slider.setRange(0, 100)
+        self.pod_opacity_slider.setValue(70)
+        self.pod_opacity_slider.setFixedWidth(110)
+        self.pod_opacity_slider.setEnabled(False)
+        self.pod_opacity_slider.setToolTip(self.tr("POD overlay opacity"))
+        self.pod_opacity_slider.valueChanged.connect(self._on_pod_opacity_changed)
+        controls_layout.addWidget(self.pod_opacity_slider)
+
         controls_layout.addStretch()
 
         # Help text
@@ -127,6 +159,25 @@ class GPSMapDialog(TranslationMixin, QDialog):
 
         layout.addLayout(controls_layout)
         self.setLayout(layout)
+
+    def set_pod_available(self, available):
+        """Enable/disable the POD overlay controls based on a cached result."""
+        self.pod_toggle_btn.setEnabled(bool(available))
+        self.pod_mode_combo.setEnabled(bool(available) and self.pod_toggle_btn.isChecked())
+        self.pod_opacity_slider.setEnabled(bool(available) and self.pod_toggle_btn.isChecked())
+        if not available and self.pod_toggle_btn.isChecked():
+            self.pod_toggle_btn.setChecked(False)
+
+    def _emit_pod_display_changed(self):
+        enabled = self.pod_toggle_btn.isChecked()
+        self.pod_mode_combo.setEnabled(enabled and self.pod_toggle_btn.isEnabled())
+        self.pod_opacity_slider.setEnabled(enabled and self.pod_toggle_btn.isEnabled())
+        self.pod_display_changed.emit(enabled, self.pod_mode_combo.currentData(),
+                                      self.pod_opacity_slider.value())
+
+    def _on_pod_opacity_changed(self, value):
+        # Opacity is pure view state -> update the view directly (no recompute).
+        self.map_view.set_pod_overlay_opacity(value / 100.0)
 
     def setup_shortcuts(self):
         """Set up keyboard shortcuts."""

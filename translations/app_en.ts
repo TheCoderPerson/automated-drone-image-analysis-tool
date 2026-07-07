@@ -2142,39 +2142,6 @@ The items should now be visible on your map.</translation>
     </message>
 </context>
 <context>
-    <name>CalTopoMapDialog</name>
-    <message>
-        <location filename="../app/core/views/images/viewer/dialogs/CalTopoMapDialog.py" line="35"/>
-        <source>Select CalTopo Map</source>
-        <translation>Select CalTopo Map</translation>
-    </message>
-    <message>
-        <location filename="../app/core/views/images/viewer/dialogs/CalTopoMapDialog.py" line="51"/>
-        <source>Select a CalTopo map to export flagged AOIs:</source>
-        <translation>Select a CalTopo map to export flagged AOIs:</translation>
-    </message>
-    <message>
-        <location filename="../app/core/views/images/viewer/dialogs/CalTopoMapDialog.py" line="60"/>
-        <source>Search:</source>
-        <translation>Search:</translation>
-    </message>
-    <message>
-        <location filename="../app/core/views/images/viewer/dialogs/CalTopoMapDialog.py" line="62"/>
-        <source>Filter maps by name...</source>
-        <translation>Filter maps by name...</translation>
-    </message>
-    <message>
-        <location filename="../app/core/views/images/viewer/dialogs/CalTopoMapDialog.py" line="83"/>
-        <source>Select Map</source>
-        <translation>Select Map</translation>
-    </message>
-    <message>
-        <location filename="../app/core/views/images/viewer/dialogs/CalTopoMapDialog.py" line="87"/>
-        <source>Cancel</source>
-        <translation>Cancel</translation>
-    </message>
-</context>
-<context>
     <name>CalTopoMethodDialog</name>
     <message>
         <location filename="../app/core/views/images/viewer/dialogs/CalTopoMethodDialog.py" line="34"/>
@@ -3333,55 +3300,44 @@ Recommended: 50% for balanced filtering, 30% for more detections, 70% for strict
 <context>
     <name>ColorListDialog</name>
     <message>
-        <location filename="../app/algorithms/images/Shared/views/ColorListDialog.py" line="30"/>
         <location filename="../app/algorithms/Shared/views/ColorListDialog.py" line="30"/>
         <source>Select Color from List</source>
         <translation>Select Color from List</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/images/Shared/views/ColorListDialog.py" line="42"/>
         <location filename="../app/algorithms/Shared/views/ColorListDialog.py" line="42"/>
         <source>Search:</source>
         <translation>Search:</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/images/Shared/views/ColorListDialog.py" line="44"/>
         <location filename="../app/algorithms/Shared/views/ColorListDialog.py" line="44"/>
         <source>Filter by name or uses…</source>
         <translation>Filter by name or uses…</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/images/Shared/views/ColorListDialog.py" line="56"/>
-        <location filename="../app/algorithms/images/Shared/views/ColorListDialog.py" line="61"/>
         <location filename="../app/algorithms/Shared/views/ColorListDialog.py" line="56"/>
         <location filename="../app/algorithms/Shared/views/ColorListDialog.py" line="61"/>
         <source>Name</source>
         <translation>Name</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/images/Shared/views/ColorListDialog.py" line="56"/>
-        <location filename="../app/algorithms/images/Shared/views/ColorListDialog.py" line="61"/>
         <location filename="../app/algorithms/Shared/views/ColorListDialog.py" line="56"/>
         <location filename="../app/algorithms/Shared/views/ColorListDialog.py" line="61"/>
         <source>RGB</source>
         <translation>RGB</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/images/Shared/views/ColorListDialog.py" line="56"/>
         <location filename="../app/algorithms/Shared/views/ColorListDialog.py" line="56"/>
         <source>HSV</source>
         <translation>HSV</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/images/Shared/views/ColorListDialog.py" line="56"/>
-        <location filename="../app/algorithms/images/Shared/views/ColorListDialog.py" line="61"/>
         <location filename="../app/algorithms/Shared/views/ColorListDialog.py" line="56"/>
         <location filename="../app/algorithms/Shared/views/ColorListDialog.py" line="61"/>
         <source>Uses</source>
         <translation>Uses</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/images/Shared/views/ColorListDialog.py" line="73"/>
         <location filename="../app/algorithms/Shared/views/ColorListDialog.py" line="73"/>
         <source>Use Color</source>
         <translation>Use Color</translation>
@@ -3390,13 +3346,11 @@ Recommended: 50% for balanced filtering, 30% for more detections, 70% for strict
 <context>
     <name>ColorPickerDialog</name>
     <message>
-        <location filename="../app/algorithms/images/Shared/views/ColorPickerDialog.py" line="35"/>
         <location filename="../app/algorithms/Shared/views/ColorPickerDialog.py" line="35"/>
         <source>Select Color from Image</source>
         <translation>Select Color from Image</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/images/Shared/views/ColorPickerDialog.py" line="55"/>
         <location filename="../app/algorithms/Shared/views/ColorPickerDialog.py" line="55"/>
         <source>Use Color</source>
         <translation>Use Color</translation>
@@ -3405,29 +3359,22 @@ Recommended: 50% for balanced filtering, 30% for more detections, 70% for strict
 <context>
     <name>ColorPickerImageViewer</name>
     <message>
-        <location filename="../app/algorithms/images/Shared/views/ColorPickerImageViewer.py" line="97"/>
         <location filename="../app/algorithms/Shared/views/ColorPickerImageViewer.py" line="97"/>
         <source>Load Image</source>
         <translation>Load Image</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/images/Shared/views/ColorPickerImageViewer.py" line="102"/>
-        <location filename="../app/algorithms/images/Shared/views/ColorPickerImageViewer.py" line="290"/>
         <location filename="../app/algorithms/Shared/views/ColorPickerImageViewer.py" line="102"/>
         <location filename="../app/algorithms/Shared/views/ColorPickerImageViewer.py" line="290"/>
         <source>Color Selector</source>
         <translation>Color Selector</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/images/Shared/views/ColorPickerImageViewer.py" line="159"/>
         <location filename="../app/algorithms/Shared/views/ColorPickerImageViewer.py" line="159"/>
         <source>Select Image</source>
         <translation>Select Image</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/images/Shared/views/ColorPickerImageViewer.py" line="173"/>
-        <location filename="../app/algorithms/images/Shared/views/ColorPickerImageViewer.py" line="230"/>
-        <location filename="../app/algorithms/images/Shared/views/ColorPickerImageViewer.py" line="588"/>
         <location filename="../app/algorithms/Shared/views/ColorPickerImageViewer.py" line="173"/>
         <location filename="../app/algorithms/Shared/views/ColorPickerImageViewer.py" line="230"/>
         <location filename="../app/algorithms/Shared/views/ColorPickerImageViewer.py" line="588"/>
@@ -3435,37 +3382,31 @@ Recommended: 50% for balanced filtering, 30% for more detections, 70% for strict
         <translation>Error</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/images/Shared/views/ColorPickerImageViewer.py" line="174"/>
         <location filename="../app/algorithms/Shared/views/ColorPickerImageViewer.py" line="174"/>
         <source>Could not load image: {path}</source>
         <translation>Could not load image: {path}</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/images/Shared/views/ColorPickerImageViewer.py" line="231"/>
         <location filename="../app/algorithms/Shared/views/ColorPickerImageViewer.py" line="231"/>
         <source>Error loading image: {error}</source>
         <translation>Error loading image: {error}</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/images/Shared/views/ColorPickerImageViewer.py" line="286"/>
         <location filename="../app/algorithms/Shared/views/ColorPickerImageViewer.py" line="286"/>
         <source>Cancel</source>
         <translation>Cancel</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/images/Shared/views/ColorPickerImageViewer.py" line="358"/>
         <location filename="../app/algorithms/Shared/views/ColorPickerImageViewer.py" line="358"/>
         <source>RGB: ({r}, {g}, {b}) {hex} | HSV: ({h}°, {s}%, {v}%)</source>
         <translation>RGB: ({r}, {g}, {b}) {hex} | HSV: ({h}°, {s}%, {v}%)</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/images/Shared/views/ColorPickerImageViewer.py" line="445"/>
         <location filename="../app/algorithms/Shared/views/ColorPickerImageViewer.py" line="445"/>
         <source>RGB: ({r}, {g}, {b}) {hex} | HSV: {h}°, {s}%, {v}% (hover)</source>
         <translation>RGB: ({r}, {g}, {b}) {hex} | HSV: {h}°, {s}%, {v}% (hover)</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/images/Shared/views/ColorPickerImageViewer.py" line="589"/>
         <location filename="../app/algorithms/Shared/views/ColorPickerImageViewer.py" line="589"/>
         <source>Error setting image: {error}</source>
         <translation>Error setting image: {error}</translation>
@@ -5133,12 +5074,67 @@ Do you want to continue?</translation>
 <context>
     <name>GPSMapController</name>
     <message>
-        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="56"/>
+        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="62"/>
         <source>No GPS data found in images</source>
         <translation>No GPS data found in images</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="366"/>
+        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="294"/>
+        <source>Not covered — no looks</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="295"/>
+        <source>Terrain occlusion</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="296"/>
+        <source>Canopy</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="297"/>
+        <source>Image resolution (GSD)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="298"/>
+        <source>None</source>
+        <translation type="unfinished">None</translation>
+    </message>
+    <message>
+        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="300"/>
+        <source>Unknown</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="357"/>
+        <source>POD: {pod}%   Looks: {looks}</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="360"/>
+        <source>Limiting factor: {factor}</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="368"/>
+        <source>Image {n}</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="369"/>
+        <source>View {name}</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="372"/>
+        <source>Find location in images</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="486"/>
         <source>GPS coordinate not in any images</source>
         <translation type="unfinished"></translation>
     </message>
@@ -5146,58 +5142,83 @@ Do you want to continue?</translation>
 <context>
     <name>GPSMapDialog</name>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="42"/>
+        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="48"/>
         <source>GPS Map View</source>
         <translation>GPS Map View</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="96"/>
+        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="102"/>
         <source>Zoom In (+)</source>
         <translation>Zoom In (+)</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="100"/>
+        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="106"/>
         <source>Zoom Out (-)</source>
         <translation>Zoom Out (-)</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="104"/>
+        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="110"/>
         <source>Fit All (F)</source>
         <translation>Fit All (F)</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="108"/>
+        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="114"/>
         <source>Rotate (R)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="116"/>
-        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="202"/>
+        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="122"/>
+        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="253"/>
         <source>Satellite View</source>
         <translation>Satellite View</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="124"/>
+        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="129"/>
+        <source>POD Overlay</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="133"/>
+        <source>Run a map export with the POD option to generate this overlay</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="138"/>
+        <source>POD</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="139"/>
+        <source>Look count</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="149"/>
+        <source>POD overlay opacity</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="156"/>
         <source>Click point to select • Drag to pan • Scroll to zoom</source>
         <translation>Click point to select • Drag to pan • Scroll to zoom</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="199"/>
+        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="250"/>
         <source>Map View</source>
         <translation>Map View</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="236"/>
+        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="287"/>
         <source>⚠ {error}</source>
         <translation>⚠ {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="246"/>
+        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="297"/>
         <source>Map Tile Loading Issue</source>
         <translation>Map Tile Loading Issue</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="248"/>
+        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="299"/>
         <source>{error}
 
 The map will continue to work with cached tiles where available.</source>
@@ -5209,13 +5230,13 @@ The map will continue to work with cached tiles where available.</translation>
 <context>
     <name>GPSMapView</name>
     <message>
-        <location filename="../app/core/views/images/viewer/widgets/GPSMapView.py" line="1129"/>
+        <location filename="../app/core/views/images/viewer/widgets/GPSMapView.py" line="1216"/>
         <source>Copy Data</source>
         <translation>Copy Data</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/widgets/GPSMapView.py" line="1669"/>
-        <location filename="../app/core/views/images/viewer/widgets/GPSMapView.py" line="1770"/>
+        <location filename="../app/core/views/images/viewer/widgets/GPSMapView.py" line="1756"/>
+        <location filename="../app/core/views/images/viewer/widgets/GPSMapView.py" line="1857"/>
         <source>Zoom FOV</source>
         <translation type="unfinished"></translation>
     </message>
@@ -8647,26 +8668,46 @@ AI PERSON DETECTOR: Deep learning model for accurate people detection
     </message>
     <message>
         <location filename="../app/core/views/images/viewer/dialogs/MapExportDialog.py" line="101"/>
+        <source>Probability of Detection (POD)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/views/images/viewer/dialogs/MapExportDialog.py" line="104"/>
+        <source>POD coverage heatmap (terrain-aware)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/views/images/viewer/dialogs/MapExportDialog.py" line="107"/>
+        <source>Compute a terrain and canopy aware probability-of-detection raster for the whole mission (all non-hidden images, independent of the selections above). Writes coverage_pod.tif, coverage_looks.tif, coverage_gaps.geojson and stats.json. The GeoTIFF can be imported into CalTopo Map Sheets. May take several minutes.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/views/images/viewer/dialogs/MapExportDialog.py" line="112"/>
+        <source>Show on map when complete</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/views/images/viewer/dialogs/MapExportDialog.py" line="123"/>
         <source>CalTopo Options</source>
         <translation>CalTopo Options</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/MapExportDialog.py" line="104"/>
+        <location filename="../app/core/views/images/viewer/dialogs/MapExportDialog.py" line="126"/>
         <source>Include Images</source>
         <translation>Include Images</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/MapExportDialog.py" line="106"/>
+        <location filename="../app/core/views/images/viewer/dialogs/MapExportDialog.py" line="128"/>
         <source>Upload photos to CalTopo markers (CalTopo only)</source>
         <translation>Upload photos to CalTopo markers (CalTopo only)</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/MapExportDialog.py" line="126"/>
+        <location filename="../app/core/views/images/viewer/dialogs/MapExportDialog.py" line="148"/>
         <source>Export</source>
         <translation>Export</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/MapExportDialog.py" line="130"/>
+        <location filename="../app/core/views/images/viewer/dialogs/MapExportDialog.py" line="152"/>
         <source>Cancel</source>
         <translation>Cancel</translation>
     </message>
@@ -8967,89 +9008,6 @@ then click again to place the second point.</translation>
         <location filename="../app/core/views/flight/MissionGalleryDock.py" line="151"/>
         <source>{n} detections</source>
         <translation type="unfinished"></translation>
-    </message>
-</context>
-<context>
-    <name>MotionDetectionWizard</name>
-    <message>
-        <location filename="../resources/views/algorithms/MotionDetectionWizard.ui" line="12"/>
-        <source>Detection Mode</source>
-        <translation>Detection Mode</translation>
-    </message>
-    <message>
-        <location filename="../resources/views/algorithms/MotionDetectionWizard.ui" line="16"/>
-        <source>Mode:</source>
-        <translation>Mode:</translation>
-    </message>
-    <message>
-        <location filename="../resources/views/algorithms/MotionDetectionWizard.ui" line="22"/>
-        <source>Auto</source>
-        <translation>Auto</translation>
-    </message>
-    <message>
-        <location filename="../resources/views/algorithms/MotionDetectionWizard.ui" line="25"/>
-        <source>Static Camera</source>
-        <translation>Static Camera</translation>
-    </message>
-    <message>
-        <location filename="../resources/views/algorithms/MotionDetectionWizard.ui" line="28"/>
-        <source>Moving Camera</source>
-        <translation>Moving Camera</translation>
-    </message>
-    <message>
-        <location filename="../resources/views/algorithms/MotionDetectionWizard.ui" line="37"/>
-        <source>Algorithm</source>
-        <translation>Algorithm</translation>
-    </message>
-    <message>
-        <location filename="../resources/views/algorithms/MotionDetectionWizard.ui" line="41"/>
-        <source>Algorithm:</source>
-        <translation>Algorithm:</translation>
-    </message>
-    <message>
-        <location filename="../resources/views/algorithms/MotionDetectionWizard.ui" line="47"/>
-        <source>Frame Difference</source>
-        <translation>Frame Difference</translation>
-    </message>
-    <message>
-        <location filename="../resources/views/algorithms/MotionDetectionWizard.ui" line="50"/>
-        <source>MOG2 Background</source>
-        <translation>MOG2 Background</translation>
-    </message>
-    <message>
-        <location filename="../resources/views/algorithms/MotionDetectionWizard.ui" line="53"/>
-        <source>KNN Background</source>
-        <translation>KNN Background</translation>
-    </message>
-    <message>
-        <location filename="../resources/views/algorithms/MotionDetectionWizard.ui" line="56"/>
-        <source>Optical Flow</source>
-        <translation>Optical Flow</translation>
-    </message>
-    <message>
-        <location filename="../resources/views/algorithms/MotionDetectionWizard.ui" line="59"/>
-        <source>Feature Matching</source>
-        <translation>Feature Matching</translation>
-    </message>
-    <message>
-        <location filename="../resources/views/algorithms/MotionDetectionWizard.ui" line="68"/>
-        <source>Detection Parameters</source>
-        <translation>Detection Parameters</translation>
-    </message>
-    <message>
-        <location filename="../resources/views/algorithms/MotionDetectionWizard.ui" line="72"/>
-        <source>Sensitivity: 50%</source>
-        <translation>Sensitivity: 50%</translation>
-    </message>
-    <message>
-        <location filename="../resources/views/algorithms/MotionDetectionWizard.ui" line="87"/>
-        <source>Min Area:</source>
-        <translation>Min Area:</translation>
-    </message>
-    <message>
-        <location filename="../resources/views/algorithms/MotionDetectionWizard.ui" line="103"/>
-        <source>Max Area:</source>
-        <translation>Max Area:</translation>
     </message>
 </context>
 <context>
@@ -9809,96 +9767,148 @@ All changes are saved automatically when modified.</source>
 All changes are saved automatically when modified.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/Preferences.py" line="60"/>
+        <location filename="../app/core/controllers/Preferences.py" line="66"/>
         <source>Language:</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/Preferences.py" line="79"/>
+        <location filename="../app/core/controllers/Preferences.py" line="85"/>
         <source>Terrain Elevation Source</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/Preferences.py" line="83"/>
+        <location filename="../app/core/controllers/Preferences.py" line="89"/>
         <source>Provider:</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/Preferences.py" line="93"/>
+        <location filename="../app/core/controllers/Preferences.py" line="99"/>
+        <location filename="../app/core/controllers/Preferences.py" line="141"/>
         <source>Manifest CSV:</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/Preferences.py" line="95"/>
+        <location filename="../app/core/controllers/Preferences.py" line="101"/>
         <source>Path to dem_manifest.csv</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/Preferences.py" line="96"/>
-        <location filename="../app/core/controllers/Preferences.py" line="107"/>
+        <location filename="../app/core/controllers/Preferences.py" line="102"/>
+        <location filename="../app/core/controllers/Preferences.py" line="113"/>
+        <location filename="../app/core/controllers/Preferences.py" line="144"/>
+        <location filename="../app/core/controllers/Preferences.py" line="154"/>
         <source>Browse...</source>
         <translation type="unfinished">Browse...</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/Preferences.py" line="104"/>
+        <location filename="../app/core/controllers/Preferences.py" line="110"/>
+        <location filename="../app/core/controllers/Preferences.py" line="151"/>
         <source>Tiles directory:</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/Preferences.py" line="106"/>
+        <location filename="../app/core/controllers/Preferences.py" line="112"/>
+        <location filename="../app/core/controllers/Preferences.py" line="153"/>
         <source>Folder containing the GeoTIFF tiles</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/Preferences.py" line="160"/>
-        <location filename="../app/core/controllers/Preferences.py" line="366"/>
+        <location filename="../app/core/controllers/Preferences.py" line="128"/>
+        <source>Canopy Data Source</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/controllers/Preferences.py" line="132"/>
+        <source>Source:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/controllers/Preferences.py" line="143"/>
+        <source>Path to the canopy manifest CSV</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/controllers/Preferences.py" line="162"/>
+        <source>Download tiles...</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/controllers/Preferences.py" line="164"/>
+        <source>Download DEM and/or canopy tiles for an area of interest and register them here.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/controllers/Preferences.py" line="223"/>
+        <location filename="../app/core/controllers/Preferences.py" line="496"/>
         <source>{version}_{date}</source>
         <translation>{version}_{date}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/Preferences.py" line="251"/>
+        <location filename="../app/core/controllers/Preferences.py" line="320"/>
         <source>Select 3DEP manifest CSV</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/Preferences.py" line="253"/>
+        <location filename="../app/core/controllers/Preferences.py" line="322"/>
+        <location filename="../app/core/controllers/Preferences.py" line="367"/>
         <source>CSV files (*.csv);;All files (*)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/Preferences.py" line="263"/>
+        <location filename="../app/core/controllers/Preferences.py" line="332"/>
         <source>Select 3DEP tiles directory</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/Preferences.py" line="301"/>
+        <location filename="../app/core/controllers/Preferences.py" line="366"/>
+        <source>Select canopy manifest CSV</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/controllers/Preferences.py" line="375"/>
+        <source>Select canopy tiles directory</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/controllers/Preferences.py" line="386"/>
+        <source>Download Tiles</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/controllers/Preferences.py" line="387"/>
+        <source>The tile downloader is unavailable:
+{error}</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/controllers/Preferences.py" line="431"/>
         <source>{tiles} tiles ({size_mb:.1f} MB)</source>
         <translation>{tiles} tiles ({size_mb:.1f} MB)</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/Preferences.py" line="307"/>
+        <location filename="../app/core/controllers/Preferences.py" line="437"/>
         <source>Not available</source>
         <translation>Not available</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/Preferences.py" line="309"/>
-        <location filename="../app/core/controllers/Preferences.py" line="317"/>
-        <location filename="../app/core/controllers/Preferences.py" line="345"/>
+        <location filename="../app/core/controllers/Preferences.py" line="439"/>
+        <location filename="../app/core/controllers/Preferences.py" line="447"/>
+        <location filename="../app/core/controllers/Preferences.py" line="475"/>
         <source>Error</source>
         <translation>Error</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/Preferences.py" line="318"/>
+        <location filename="../app/core/controllers/Preferences.py" line="448"/>
         <source>Terrain service not available.</source>
         <translation>Terrain service not available.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/Preferences.py" line="324"/>
+        <location filename="../app/core/controllers/Preferences.py" line="454"/>
         <source>Clear Terrain Cache</source>
         <translation>Clear Terrain Cache</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/Preferences.py" line="326"/>
+        <location filename="../app/core/controllers/Preferences.py" line="456"/>
         <source>Are you sure you want to clear all cached terrain elevation data?
 
 This will require re-downloading tiles when terrain elevation is used.</source>
@@ -9907,37 +9917,37 @@ This will require re-downloading tiles when terrain elevation is used.</source>
 This will require re-downloading tiles when terrain elevation is used.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/Preferences.py" line="339"/>
+        <location filename="../app/core/controllers/Preferences.py" line="469"/>
         <source>Cache Cleared</source>
         <translation>Cache Cleared</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/Preferences.py" line="340"/>
+        <location filename="../app/core/controllers/Preferences.py" line="470"/>
         <source>Cleared {count} cached terrain tiles.</source>
         <translation>Cleared {count} cached terrain tiles.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/Preferences.py" line="346"/>
+        <location filename="../app/core/controllers/Preferences.py" line="476"/>
         <source>Failed to clear cache: {error}</source>
         <translation>Failed to clear cache: {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/Preferences.py" line="353"/>
+        <location filename="../app/core/controllers/Preferences.py" line="483"/>
         <source>Select a Drone Sensor File</source>
         <translation>Select a Drone Sensor File</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/Preferences.py" line="355"/>
+        <location filename="../app/core/controllers/Preferences.py" line="485"/>
         <source>CSV Files (*.csv)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/Preferences.py" line="381"/>
+        <location filename="../app/core/controllers/Preferences.py" line="511"/>
         <source>Restart Required</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/Preferences.py" line="382"/>
+        <location filename="../app/core/controllers/Preferences.py" line="512"/>
         <source>Please restart the application for language changes to take effect.</source>
         <translation type="unfinished"></translation>
     </message>
@@ -10155,42 +10165,42 @@ Aggressive</source>
 <context>
     <name>RecentColorWidget</name>
     <message>
-        <location filename="../app/algorithms/images/Shared/views/RecentColorsDialog.py" line="68"/>
+        <location filename="../app/algorithms/Shared/views/RecentColorsDialog.py" line="68"/>
         <source>&lt;b&gt;RGB:&lt;/b&gt; ({r}, {g}, {b})</source>
         <translation>&lt;b&gt;RGB:&lt;/b&gt; ({r}, {g}, {b})</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/images/Shared/views/RecentColorsDialog.py" line="97"/>
+        <location filename="../app/algorithms/Shared/views/RecentColorsDialog.py" line="97"/>
         <source>&lt;br&gt;&lt;b&gt;H (°):&lt;/b&gt; {min}-{max}</source>
         <translation>&lt;br&gt;&lt;b&gt;H (°):&lt;/b&gt; {min}-{max}</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/images/Shared/views/RecentColorsDialog.py" line="100"/>
+        <location filename="../app/algorithms/Shared/views/RecentColorsDialog.py" line="100"/>
         <source> &lt;b&gt;S (%):&lt;/b&gt; {min}-{max}</source>
         <translation> &lt;b&gt;S (%):&lt;/b&gt; {min}-{max}</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/images/Shared/views/RecentColorsDialog.py" line="103"/>
+        <location filename="../app/algorithms/Shared/views/RecentColorsDialog.py" line="103"/>
         <source> &lt;b&gt;V (%):&lt;/b&gt; {min}-{max}</source>
         <translation> &lt;b&gt;V (%):&lt;/b&gt; {min}-{max}</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/images/Shared/views/RecentColorsDialog.py" line="112"/>
+        <location filename="../app/algorithms/Shared/views/RecentColorsDialog.py" line="112"/>
         <source>&lt;br&gt;&lt;b&gt;R:&lt;/b&gt; {min}-{max}</source>
         <translation>&lt;br&gt;&lt;b&gt;R:&lt;/b&gt; {min}-{max}</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/images/Shared/views/RecentColorsDialog.py" line="115"/>
+        <location filename="../app/algorithms/Shared/views/RecentColorsDialog.py" line="115"/>
         <source> &lt;b&gt;G:&lt;/b&gt; {min}-{max}</source>
         <translation> &lt;b&gt;G:&lt;/b&gt; {min}-{max}</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/images/Shared/views/RecentColorsDialog.py" line="118"/>
+        <location filename="../app/algorithms/Shared/views/RecentColorsDialog.py" line="118"/>
         <source> &lt;b&gt;B:&lt;/b&gt; {min}-{max}</source>
         <translation> &lt;b&gt;B:&lt;/b&gt; {min}-{max}</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/images/Shared/views/RecentColorsDialog.py" line="124"/>
+        <location filename="../app/algorithms/Shared/views/RecentColorsDialog.py" line="124"/>
         <source>&lt;br&gt;&lt;b&gt;Threshold:&lt;/b&gt; {value}</source>
         <translation>&lt;br&gt;&lt;b&gt;Threshold:&lt;/b&gt; {value}</translation>
     </message>
@@ -10198,22 +10208,22 @@ Aggressive</source>
 <context>
     <name>RecentColorsDialog</name>
     <message>
-        <location filename="../app/algorithms/images/Shared/views/RecentColorsDialog.py" line="151"/>
+        <location filename="../app/algorithms/Shared/views/RecentColorsDialog.py" line="151"/>
         <source>Recent Colors</source>
         <translation>Recent Colors</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/images/Shared/views/RecentColorsDialog.py" line="162"/>
+        <location filename="../app/algorithms/Shared/views/RecentColorsDialog.py" line="162"/>
         <source>Select a recently used color:</source>
         <translation>Select a recently used color:</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/images/Shared/views/RecentColorsDialog.py" line="178"/>
+        <location filename="../app/algorithms/Shared/views/RecentColorsDialog.py" line="178"/>
         <source>No recent colors found</source>
         <translation>No recent colors found</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/images/Shared/views/RecentColorsDialog.py" line="204"/>
+        <location filename="../app/algorithms/Shared/views/RecentColorsDialog.py" line="204"/>
         <source>Cancel</source>
         <translation type="unfinished">Cancel</translation>
     </message>
@@ -11280,14 +11290,6 @@ Supported formats: MP4, AVI, MOV, MKV, FLV, WMV, M4V, 3GP, WebM</translation>
         <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1340"/>
         <source>Video Files (*.mp4 *.avi *.mov *.mkv *.flv *.wmv *.m4v *.3gp *.webm *.mpg *.mpeg *.ts *.mts *.m2ts);;All Files (*)</source>
         <translation>Video Files (*.mp4 *.avi *.mov *.mkv *.flv *.wmv *.m4v *.3gp *.webm *.mpg *.mpeg *.ts *.mts *.m2ts);;All Files (*)</translation>
-    </message>
-</context>
-<context>
-    <name>StreamGeneralPage</name>
-    <message>
-        <location filename="../app/core/controllers/streaming/guidePages/StreamGeneralPage.py" line="55"/>
-        <source>Select Recording Folder</source>
-        <translation>Select Recording Folder</translation>
     </message>
 </context>
 <context>
@@ -13051,6 +13053,138 @@ Aggressive</source>
     </message>
 </context>
 <context>
+    <name>TileFetchController</name>
+    <message>
+        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="88"/>
+        <source>Invalid Area</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="89"/>
+        <source>Please enter a valid bounding box.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="92"/>
+        <source>No Output Folder</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="93"/>
+        <source>Please choose an output folder.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="96"/>
+        <source>No Dataset</source>
+        <translation type="unfinished">No Dataset</translation>
+    </message>
+    <message>
+        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="97"/>
+        <source>Please select at least one dataset.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="146"/>
+        <source>Download Complete</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="147"/>
+        <source>Downloaded {count} tiles.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="161"/>
+        <source>Download Error</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="162"/>
+        <source>Tile download failed:
+{error}</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
+    <name>TileFetchDialog</name>
+    <message>
+        <location filename="../app/core/views/images/viewer/dialogs/TileFetchDialog.py" line="20"/>
+        <source>Download Coverage Data</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/views/images/viewer/dialogs/TileFetchDialog.py" line="28"/>
+        <source>Area of Interest (WGS84)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/views/images/viewer/dialogs/TileFetchDialog.py" line="41"/>
+        <source>Min longitude:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/views/images/viewer/dialogs/TileFetchDialog.py" line="43"/>
+        <source>Min latitude:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/views/images/viewer/dialogs/TileFetchDialog.py" line="45"/>
+        <source>Max longitude:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/views/images/viewer/dialogs/TileFetchDialog.py" line="47"/>
+        <source>Max latitude:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/views/images/viewer/dialogs/TileFetchDialog.py" line="52"/>
+        <source>Datasets</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/views/images/viewer/dialogs/TileFetchDialog.py" line="54"/>
+        <source>USGS 3DEP DEM</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/views/images/viewer/dialogs/TileFetchDialog.py" line="56"/>
+        <source>Meta/WRI Canopy Height</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/views/images/viewer/dialogs/TileFetchDialog.py" line="64"/>
+        <source>Output folder:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/views/images/viewer/dialogs/TileFetchDialog.py" line="66"/>
+        <source>Browse...</source>
+        <translation type="unfinished">Browse...</translation>
+    </message>
+    <message>
+        <location filename="../app/core/views/images/viewer/dialogs/TileFetchDialog.py" line="72"/>
+        <source>Register in Preferences when complete</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/views/images/viewer/dialogs/TileFetchDialog.py" line="78"/>
+        <source>Download</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/views/images/viewer/dialogs/TileFetchDialog.py" line="81"/>
+        <source>Cancel</source>
+        <translation type="unfinished">Cancel</translation>
+    </message>
+    <message>
+        <location filename="../app/core/views/images/viewer/dialogs/TileFetchDialog.py" line="88"/>
+        <source>Select output folder</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
     <name>TrackGalleryWidget</name>
     <message>
         <location filename="../app/core/views/streaming/components/TrackGalleryWidget.py" line="41"/>
@@ -13076,68 +13210,101 @@ Aggressive</source>
 <context>
     <name>UnifiedMapExportController</name>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="382"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="432"/>
         <source>No Data Selected</source>
         <translation>No Data Selected</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="383"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="433"/>
         <source>Please select at least one type of data to export.</source>
         <translation>Please select at least one type of data to export.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="408"/>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="509"/>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="543"/>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="577"/>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="622"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="458"/>
+        <source>Select folder for POD coverage files</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="466"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="569"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="713"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="747"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="792"/>
         <source>Export Error</source>
         <translation>Export Error</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="409"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="467"/>
         <source>An error occurred during export:
 {error}</source>
         <translation>An error occurred during export:
 {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="426"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="484"/>
         <source>Save Map Export</source>
         <translation>Save Map Export</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="428"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="486"/>
         <source>KML files (*.kml)</source>
         <translation>KML files (*.kml)</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="510"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="570"/>
         <source>Failed to export to KML:
 {error}</source>
         <translation>Failed to export to KML:
 {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="544"/>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="578"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="612"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="680"/>
+        <source>POD Error</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="613"/>
+        <source>Could not start the POD calculation:
+{error}</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="653"/>
+        <source>POD coverage complete</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="673"/>
+        <source>POD calculation cancelled</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="681"/>
+        <source>POD calculation failed:
+{error}</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="714"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="748"/>
         <source>Failed to export to CalTopo:
 {error}</source>
         <translation>Failed to export to CalTopo:
 {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="594"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="764"/>
         <source>Map export completed successfully!</source>
         <translation>Map export completed successfully!</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="609"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="779"/>
         <source>Map export cancelled</source>
         <translation>Map export cancelled</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="623"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="793"/>
         <source>Map export failed:
 {error}</source>
         <translation>Map export failed:
@@ -13699,29 +13866,6 @@ Shows total frames extracted when complete.</translation>
     </message>
 </context>
 <context>
-    <name>VideoTimelineWidget</name>
-    <message>
-        <location filename="../app/core/views/streaming/components/VideoTimelineWidget.py" line="46"/>
-        <source>Play/Pause (Space)</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../app/core/views/streaming/components/VideoTimelineWidget.py" line="59"/>
-        <source>Drag to seek through video</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../app/core/views/streaming/components/VideoTimelineWidget.py" line="100"/>
-        <source>Pause (Space)</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../app/core/views/streaming/components/VideoTimelineWidget.py" line="100"/>
-        <source>Play (Space)</source>
-        <translation type="unfinished"></translation>
-    </message>
-</context>
-<context>
     <name>Viewer</name>
     <message>
         <location filename="../resources/views/images/viewer/Viewer.ui" line="14"/>
@@ -13824,7 +13968,7 @@ Shows all AOIs from all images in a grid view</translation>
         <translation>ruler.png</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1863"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1867"/>
         <location filename="../resources/views/images/viewer/Viewer.ui" line="405"/>
         <source>Person Size Reference (Ctrl+P)</source>
         <translation type="unfinished"></translation>
@@ -14056,7 +14200,7 @@ The viewer will now close.</translation>
     </message>
     <message>
         <location filename="../app/core/controllers/images/viewer/Viewer.py" line="212"/>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1353"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1357"/>
         <source>Skip Hidden ({count}) </source>
         <translation>Skip Hidden ({count}) </translation>
     </message>
@@ -14211,41 +14355,41 @@ Would you like to read dimensions from the image files and update the results fi
         <translation>Toggle AOI Circles</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1528"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1532"/>
         <source>Missing Dependency</source>
         <translation>Missing Dependency</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1530"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1534"/>
         <source>The qimage2ndarray module is required for the upscale feature.
 Please install it using: pip install qimage2ndarray</source>
         <translation>The qimage2ndarray module is required for the upscale feature.
 Please install it using: pip install qimage2ndarray</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1539"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1543"/>
         <source>Upscale Error</source>
         <translation>Upscale Error</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1541"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1545"/>
         <source>An error occurred while opening the upscale dialog:
 {error}</source>
         <translation>An error occurred while opening the upscale dialog:
 {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1867"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1871"/>
         <source>Person Size Reference is unavailable: no GSD for this image</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1964"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1968"/>
         <source>Unknown Reviewer</source>
         <translation>Unknown Reviewer</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="2027"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="2031"/>
         <source>Loading gallery...</source>
         <translation>Loading gallery...</translation>
     </message>

@@ -7,6 +7,7 @@ from PySide6.QtWidgets import QDialog
 from core.controllers.images.viewer.exports.UnifiedMapExportController import (
     UnifiedMapExportController,
     UnifiedMapExportThread,
+    CoveragePodExportThread,
 )
 
 
@@ -172,6 +173,8 @@ def test_show_export_dialog_no_data_selected_warns(controller):
         d.should_include_images_without_flagged_aois.return_value = False
         d.should_include_flagged_aois.return_value = False
         d.should_include_coverage.return_value = False
+        d.should_include_pod.return_value = False
+        d.should_show_pod_on_map.return_value = False
         d.should_include_images.return_value = False
 
         controller.show_export_dialog()
@@ -191,6 +194,8 @@ def test_show_export_dialog_kml_export_calls_kml_method(controller):
         d.should_include_images_without_flagged_aois.return_value = False
         d.should_include_flagged_aois.return_value = False
         d.should_include_coverage.return_value = False
+        d.should_include_pod.return_value = False
+        d.should_show_pod_on_map.return_value = False
 
         controller.show_export_dialog()
 
@@ -212,6 +217,8 @@ def test_show_export_dialog_caltopo_method_cancelled(controller):
         d.should_include_images_without_flagged_aois.return_value = False
         d.should_include_flagged_aois.return_value = False
         d.should_include_coverage.return_value = False
+        d.should_include_pod.return_value = False
+        d.should_show_pod_on_map.return_value = False
         d.should_include_images.return_value = True
         MockMethod.return_value.exec.return_value = QDialog.Rejected
 
@@ -235,6 +242,8 @@ def test_show_export_dialog_caltopo_api_path(controller):
         d.should_include_images_without_flagged_aois.return_value = False
         d.should_include_flagged_aois.return_value = False
         d.should_include_coverage.return_value = False
+        d.should_include_pod.return_value = False
+        d.should_show_pod_on_map.return_value = False
         d.should_include_images.return_value = True
         MockMethod.return_value.exec.return_value = QDialog.Accepted
         MockMethod.return_value.get_selected_method.return_value = "api"
@@ -258,6 +267,8 @@ def test_show_export_dialog_caltopo_browser_path(controller):
         d.should_include_images_without_flagged_aois.return_value = False
         d.should_include_flagged_aois.return_value = False
         d.should_include_coverage.return_value = False
+        d.should_include_pod.return_value = False
+        d.should_show_pod_on_map.return_value = False
         d.should_include_images.return_value = True
         MockMethod.return_value.exec.return_value = QDialog.Accepted
         MockMethod.return_value.get_selected_method.return_value = "browser"
@@ -272,4 +283,101 @@ def test_export_to_kml_file_dialog_cancelled(controller):
         "core.controllers.images.viewer.exports.UnifiedMapExportController.QFileDialog"
     ) as MockFile:
         MockFile.getSaveFileName.return_value = ("", "")
-        controller._export_to_kml(True, False, True, False)
+        assert controller._export_to_kml(True, False, True, False) is None
+
+
+# ---------------------------------------------------------------------------
+# POD pass: standalone thread + controller wiring
+# ---------------------------------------------------------------------------
+
+def test_pod_dir_for_kml():
+    import os
+    d = UnifiedMapExportController._pod_dir_for_kml(os.path.join("out", "mission.kml"))
+    assert d == os.path.join("out", "mission_coverage_pod")
+
+
+def _make_result(cancelled=False):
+    r = MagicMock()
+    r.cancelled = cancelled
+    return r
+
+
+def test_pod_thread_completes_and_writes(tmp_path):
+    pod_service = MagicMock()
+    result = _make_result(cancelled=False)
+    pod_service.calculate.return_value = result
+    thread = CoveragePodExportThread(pod_service, [{"path": "a"}], str(tmp_path))
+
+    completed, finished = [], []
+    thread.podCompleted.connect(lambda r: completed.append(r))
+    thread.finished.connect(lambda: finished.append(True))
+    with patch(
+        "core.services.coverage.writers.write_all_outputs"
+    ) as mock_write:
+        thread.run()
+
+    # calculate was driven with progress + cancel plumbing.
+    assert pod_service.calculate.called
+    _, kwargs = pod_service.calculate.call_args
+    assert "progress_callback" in kwargs and "cancel_check" in kwargs
+    mock_write.assert_called_once()
+    assert completed == [result]
+    assert finished == [True]
+
+
+def test_pod_thread_cancelled_result_does_not_write(tmp_path):
+    pod_service = MagicMock()
+    pod_service.calculate.return_value = _make_result(cancelled=True)
+    thread = CoveragePodExportThread(pod_service, [], str(tmp_path))
+
+    canceled, completed = [], []
+    thread.canceled.connect(lambda: canceled.append(True))
+    thread.podCompleted.connect(lambda r: completed.append(r))
+    with patch("core.services.coverage.writers.write_all_outputs") as mock_write:
+        thread.run()
+
+    assert canceled == [True]
+    assert completed == []
+    mock_write.assert_not_called()
+
+
+def test_pod_thread_emits_error(tmp_path):
+    pod_service = MagicMock()
+    pod_service.calculate.side_effect = RuntimeError("kaboom")
+    thread = CoveragePodExportThread(pod_service, [], str(tmp_path))
+    errors = []
+    thread.errorOccurred.connect(lambda m: errors.append(m))
+    thread.run()
+    assert len(errors) == 1 and "kaboom" in errors[0]
+
+
+def test_on_pod_completed_populates_cache(controller):
+    controller.parent.pod_result_cache = MagicMock()
+    result = _make_result()
+    controller._on_pod_completed(result)
+    controller.parent.pod_result_cache.set_result.assert_called_once_with(result)
+
+
+def test_pod_only_export_is_valid(controller):
+    """A POD-only selection must pass validation and trigger the POD pass."""
+    controller._export_to_kml = MagicMock(return_value="C:/tmp/mission.kml")
+    controller._run_pod_export = MagicMock()
+    with patch(
+        "core.controllers.images.viewer.exports.UnifiedMapExportController.MapExportDialog"
+    ) as MockDialog, patch(
+        "core.controllers.images.viewer.exports.UnifiedMapExportController.QMessageBox"
+    ) as MockQMB:
+        d = MockDialog.return_value
+        d.exec.return_value = QDialog.Accepted
+        d.get_export_type.return_value = "kml"
+        d.should_include_locations.return_value = False
+        d.should_include_images_without_flagged_aois.return_value = False
+        d.should_include_flagged_aois.return_value = False
+        d.should_include_coverage.return_value = False
+        d.should_include_pod.return_value = True
+        d.should_show_pod_on_map.return_value = True
+
+        controller.show_export_dialog()
+
+    MockQMB.warning.assert_not_called()
+    controller._run_pod_export.assert_called_once()

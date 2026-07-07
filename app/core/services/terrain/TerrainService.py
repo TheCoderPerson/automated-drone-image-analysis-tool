@@ -255,6 +255,44 @@ class TerrainService:
             results.append(self.get_elevation(lat, lon, offline_only))
         return results
 
+    def sample_grid(self, bounds_wgs84, resolution_m: float, offline_only: bool = False):
+        """Sample an elevation grid covering ``bounds_wgs84`` at ~``resolution_m``.
+
+        Convenience wrapper deriving a lattice-snapped EPSG:3857 ``GridSpec`` and
+        delegating to :meth:`sample_grid_spec`. Returns a ``GridSample`` or None.
+        """
+        from .grid import spec_for_bounds_wgs84
+        return self.sample_grid_spec(spec_for_bounds_wgs84(bounds_wgs84, resolution_m),
+                                     offline_only=offline_only)
+
+    def sample_grid_spec(self, spec, offline_only: bool = False):
+        """Sample the active provider onto ``spec`` (EPSG:3857 GridSpec).
+
+        Dispatches by provider kind, mirroring :meth:`get_elevation`:
+        local_geotiff providers use their windowed-reproject fast path; tiled_web
+        providers go through the Terrarium mosaic sampler; any other provider
+        falls back to the ABC per-point slow path. Returns a ``GridSample`` or
+        None when terrain is disabled or no data covers the grid.
+        """
+        if not self._enabled:
+            return None
+
+        kind = self.provider.get_provider_kind()
+        if kind == 'local_geotiff':
+            # The provider's windowed-reproject path is authoritative; if no tile
+            # covers the grid the per-point slow path would also find nothing.
+            return self.provider.sample_grid_spec(spec)
+
+        if kind == 'tiled_web':
+            from .TerrariumGridSampler import sample_grid_tiled
+            sample = sample_grid_tiled(self.provider, self.cache, spec, self.zoom,
+                                       offline_only=offline_only)
+            if sample is not None:
+                return sample
+
+        # Last resort: ABC per-point slow path (works for any sample_elevation provider).
+        return self.provider.sample_grid_spec(spec)
+
     def get_effective_altitude_agl(
         self,
         drone_lat: float,

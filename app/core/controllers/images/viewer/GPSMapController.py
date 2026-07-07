@@ -6,6 +6,8 @@ and coordination between the map and main viewer.
 """
 
 from PySide6.QtCore import QObject, Signal, QTimer, QPointF
+from PySide6.QtWidgets import QMenu
+from PySide6.QtGui import QCursor, QImage, QPixmap
 from helpers.LocationInfo import LocationInfo
 from helpers.MetaDataHelper import MetaDataHelper
 from core.services.LoggerService import LoggerService
@@ -42,6 +44,10 @@ class GPSMapController(QObject):
         self.logger = LoggerService()  # Create our own logger
         self.map_dialog = None
         self.gps_data = []
+        self._pod_overlay_enabled = False
+        self._pod_overlay_mode = 'pod'
+        self._limit_labels = None
+        self._max_overlay_dim = 2048
 
     def show_map(self):
         """
@@ -70,12 +76,19 @@ class GPSMapController(QObject):
             self.map_dialog = GPSMapDialog(self.parent, self.gps_data, current_gps_index, offline_only=offline_only)
             self.map_dialog.image_selected.connect(self.on_map_image_selected)
             self.map_dialog.gps_right_clicked.connect(self.on_map_gps_clicked)
+            if hasattr(self.map_dialog, 'pod_display_changed'):
+                self.map_dialog.pod_display_changed.connect(self.on_pod_display_changed)
             # Connect to dialog close event to update button state
             self.map_dialog.finished.connect(self.on_map_dialog_closed)
         else:
             # Update with latest data if dialog already exists
             self.map_dialog.update_gps_data(self.gps_data, current_gps_index)
             self.map_dialog.set_offline_mode(offline_only)
+
+        # Enable/disable the overlay controls based on whether a POD result exists.
+        cache = self._pod_cache()
+        if hasattr(self.map_dialog, 'set_pod_available'):
+            self.map_dialog.set_pod_available(cache is not None and cache.has_result())
 
         self.map_dialog.show()
         self.map_dialog.raise_()
@@ -268,6 +281,98 @@ class GPSMapController(QObject):
             self.parent.current_image = image_index
             self.parent._load_image()
 
+    # ---------------- POD coverage overlay ----------------
+
+    def _pod_cache(self):
+        return getattr(self.parent, 'pod_result_cache', None)
+
+    def _limit_label(self, code):
+        if self._limit_labels is None:
+            from core.services.coverage.contracts import (
+                LIMIT_NO_LOOKS, LIMIT_TERRAIN, LIMIT_CANOPY, LIMIT_GSD, LIMIT_NONE)
+            self._limit_labels = {
+                LIMIT_NO_LOOKS: self.tr("Not covered — no looks"),
+                LIMIT_TERRAIN: self.tr("Terrain occlusion"),
+                LIMIT_CANOPY: self.tr("Canopy"),
+                LIMIT_GSD: self.tr("Image resolution (GSD)"),
+                LIMIT_NONE: self.tr("None"),
+            }
+        return self._limit_labels.get(code, self.tr("Unknown"))
+
+    def _build_pod_pixmap(self, result, mode):
+        """(QPixmap, transform6) from a CoverageResult, downsampled to a display cap."""
+        import numpy as np
+        from core.services.coverage.colormap import pod_to_rgba, look_count_to_rgba
+
+        if mode == 'looks':
+            rgba = look_count_to_rgba(result.look_count)
+        else:
+            rgba = pod_to_rgba(result.pod, result.look_count, result.params)
+
+        a, b, c, d, e, f = tuple(result.transform)[:6]
+        rows, cols = rgba.shape[:2]
+        shrink = max(rows, cols) / float(self._max_overlay_dim)
+        if shrink > 1.0:
+            import cv2
+            new_cols = max(1, int(cols / shrink))
+            new_rows = max(1, int(rows / shrink))
+            rgba = cv2.resize(rgba, (new_cols, new_rows), interpolation=cv2.INTER_NEAREST)
+            a *= cols / new_cols
+            e *= rows / new_rows
+            rows, cols = new_rows, new_cols
+
+        arr = np.ascontiguousarray(rgba, dtype=np.uint8)
+        qimg = QImage(arr.tobytes(), cols, rows, 4 * cols, QImage.Format.Format_RGBA8888)
+        return QPixmap.fromImage(qimg), (a, b, c, d, e, f)
+
+    def enable_pod_overlay(self, mode='pod'):
+        """Turn the overlay on from the cached result (called after an export run)."""
+        cache = self._pod_cache()
+        if cache is None or not cache.has_result() or self.map_dialog is None:
+            return
+        if hasattr(self.map_dialog, 'set_pod_available'):
+            self.map_dialog.set_pod_available(True)
+        self.on_pod_display_changed(True, mode, int(self.map_dialog.map_view._pod_opacity * 100)
+                                    if hasattr(self.map_dialog, 'map_view') else 70)
+
+    def on_pod_display_changed(self, enabled, mode, opacity):
+        """React to the dialog's overlay toggle / mode / opacity controls."""
+        cache = self._pod_cache()
+        if not enabled or cache is None or not cache.has_result() or self.map_dialog is None:
+            self._pod_overlay_enabled = False
+            if self.map_dialog is not None and hasattr(self.map_dialog, 'map_view'):
+                self.map_dialog.map_view.clear_pod_overlay()
+            return
+        result = cache.get_result()
+        pixmap, transform6 = self._build_pod_pixmap(result, mode)
+        self._pod_overlay_enabled = True
+        self._pod_overlay_mode = mode
+        view = self.map_dialog.map_view
+        view.set_pod_overlay(pixmap, transform6)
+        view.set_pod_overlay_opacity(opacity / 100.0)
+
+    def _show_pod_inspect_menu(self, sample, lat, lon):
+        view = self.map_dialog.map_view if self.map_dialog else None
+        menu = QMenu(view)
+        hdr = menu.addAction(self.tr("POD: {pod}%   Looks: {looks}").format(
+            pod=round(sample['pod'] * 100), looks=sample['looks']))
+        hdr.setEnabled(False)
+        lim = menu.addAction(self.tr("Limiting factor: {factor}").format(
+            factor=self._limit_label(sample['limiting_factor'])))
+        lim.setEnabled(False)
+        frames = sample.get('frames', [])
+        if frames:
+            menu.addSeparator()
+            for idx in frames[:8]:
+                if 0 <= idx < len(self.parent.images):
+                    name = self.parent.images[idx].get('name', self.tr("Image {n}").format(n=idx + 1))
+                    act = menu.addAction(self.tr("View {name}").format(name=name))
+                    act.triggered.connect(lambda checked=False, i=idx: self.on_map_image_selected(i))
+        menu.addSeparator()
+        locate = menu.addAction(self.tr("Find location in images"))
+        locate.triggered.connect(lambda checked=False: self._reverse_locate(lat, lon))
+        menu.exec(QCursor.pos())
+
     def update_current_image(self, image_index):
         """
         Update the map to highlight a new current image.
@@ -296,9 +401,24 @@ class GPSMapController(QObject):
             self.map_dialog.update_zoom_fov(visible_rect)
 
     def on_map_gps_clicked(self, lat, lon):
+        """Handle a right-click on the map.
+
+        When the POD overlay is active and the click lands on a covered cell,
+        show a cell-inspect menu (POD, look count, limiting factor, contributing
+        frames). Otherwise fall back to the reverse image lookup.
         """
-        Handle right-click on GPS map — find image containing the coordinate
-        and center the viewer on that position.
+        if self._pod_overlay_enabled:
+            cache = self._pod_cache()
+            result = cache.get_result() if (cache and cache.has_result()) else None
+            sample = result.sample(lat, lon) if result is not None else None
+            if sample is not None:
+                self._show_pod_inspect_menu(sample, lat, lon)
+                return
+        self._reverse_locate(lat, lon)
+
+    def _reverse_locate(self, lat, lon):
+        """
+        Find the image containing the coordinate and center the viewer on it.
 
         Args:
             lat: Clicked latitude

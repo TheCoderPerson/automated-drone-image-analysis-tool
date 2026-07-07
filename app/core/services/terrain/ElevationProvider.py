@@ -42,6 +42,10 @@ class ElevationProvider(ABC):
         providers don't have anything to load up-front."""
         return None
 
+    # Upper bound on cells the slow (per-point) grid fallback will sample before
+    # refusing, so a mis-sized bbox can't spin for an hour of point queries.
+    SLOW_GRID_CELL_LIMIT = 250_000
+
     def sample_elevation(self, lat: float, lon: float) -> Optional[float]:
         """Return orthometric elevation in meters at lat/lon, or None if unavailable.
 
@@ -53,6 +57,57 @@ class ElevationProvider(ABC):
             f"{self.__class__.__name__} did not override sample_elevation; "
             "this is required for non-tile providers."
         )
+
+    def sample_grid(self, bounds_wgs84: Tuple[float, float, float, float],
+                    resolution_m: float):
+        """Return an elevation grid covering ``bounds_wgs84`` at ~``resolution_m``.
+
+        Convenience wrapper: derives a lattice-snapped EPSG:3857 ``GridSpec`` and
+        delegates to :meth:`sample_grid_spec`. ``bounds_wgs84`` is
+        (min_lon, min_lat, max_lon, max_lat).
+        """
+        from .grid import spec_for_bounds_wgs84
+        return self.sample_grid_spec(spec_for_bounds_wgs84(bounds_wgs84, resolution_m))
+
+    def sample_grid_spec(self, spec):
+        """Return a ``GridSample`` for ``spec``, or None if unavailable.
+
+        Default slow path: loop :meth:`sample_elevation` over cell centers. Works
+        for any provider that implements ``sample_elevation``; providers with a
+        fast windowed path (e.g. local GeoTIFF) override this. Returns None when
+        ``sample_elevation`` is unimplemented (tile-based providers — their fast
+        path lives on ``TerrainService``) or when the grid exceeds
+        ``SLOW_GRID_CELL_LIMIT``.
+        """
+        import numpy as np
+        from .grid import GridSample, mercator_to_lonlat
+
+        n_cells = spec.width * spec.height
+        if n_cells > self.SLOW_GRID_CELL_LIMIT:
+            logger = getattr(self, 'logger', None)
+            if logger is not None:
+                logger.warning(
+                    f"{self.__class__.__name__}: grid {spec.width}x{spec.height} exceeds "
+                    f"slow-path limit {self.SLOW_GRID_CELL_LIMIT}; refusing."
+                )
+            return None
+
+        xs, ys = spec.cell_centers()
+        data = np.full((spec.height, spec.width), np.nan, dtype=np.float32)
+        try:
+            for i, y in enumerate(ys):
+                for j, x in enumerate(xs):
+                    lon, lat = mercator_to_lonlat(float(x), float(y))
+                    value = self.sample_elevation(lat, lon)
+                    if value is not None:
+                        data[i, j] = value
+        except NotImplementedError:
+            return None
+
+        datum = self.get_datum_info()
+        datum_note = f"{datum.get('type', '')} {datum.get('name', '')}".strip()
+        return GridSample(data=data, transform=spec.transform, crs=spec.crs,
+                          datum_note=datum_note)
 
     def get_tile_url(self, z: int, x: int, y: int) -> str:
         """Get the URL for a specific tile (tile-based providers only)."""

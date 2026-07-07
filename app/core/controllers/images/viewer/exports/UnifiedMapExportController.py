@@ -338,6 +338,51 @@ class UnifiedMapExportThread(QThread):
             self.errorOccurred.emit(error_msg)
 
 
+class CoveragePodExportThread(QThread):
+    """Thread for the Probability-of-Detection pass (compute + write outputs).
+
+    Runs independently of the KML/CalTopo export so the existing export path is
+    untouched. Emits ``podCompleted`` with the CoverageResult on success.
+    """
+
+    finished = Signal()
+    errorOccurred = Signal(str)
+    progressUpdated = Signal(int, int, str)
+    canceled = Signal()
+    podCompleted = Signal(object)
+
+    def __init__(self, pod_service, images, output_dir):
+        super().__init__()
+        self.pod_service = pod_service
+        self.images = images
+        self.output_dir = output_dir
+        self._cancelled = False
+
+    def cancel(self):
+        self._cancelled = True
+
+    def is_cancelled(self):
+        return self._cancelled
+
+    def run(self):
+        try:
+            from core.services.coverage.writers import write_all_outputs
+            result = self.pod_service.calculate(
+                self.images,
+                progress_callback=lambda c, t, m: self.progressUpdated.emit(c, t, m),
+                cancel_check=self.is_cancelled,
+            )
+            if result.cancelled or self.is_cancelled():
+                self.canceled.emit()
+                return
+            self.progressUpdated.emit(1, 1, "Writing POD outputs...")
+            write_all_outputs(result, self.output_dir)
+            self.podCompleted.emit(result)
+            self.finished.emit()
+        except Exception as e:
+            self.errorOccurred.emit(f"{str(e)}\n\n{traceback.format_exc()}")
+
+
 class UnifiedMapExportController(TranslationMixin):
     """
     Controller for managing unified map export functionality.
@@ -357,6 +402,9 @@ class UnifiedMapExportController(TranslationMixin):
         self.logger = logger or LoggerService()
         self.export_thread = None
         self.progress_dialog = None
+        self.pod_thread = None
+        self.pod_progress_dialog = None
+        self._pending_pod_result = None
 
     def show_export_dialog(self):
         """Show the unified map export dialog and handle export based on selections."""
@@ -374,9 +422,11 @@ class UnifiedMapExportController(TranslationMixin):
             include_flagged_aois = dialog.should_include_flagged_aois()
             include_coverage = dialog.should_include_coverage()
             include_images = dialog.should_include_images() if export_type == 'caltopo' else False
+            include_pod = dialog.should_include_pod()
+            show_pod_on_map = dialog.should_show_pod_on_map()
 
-            # Validate selections
-            if not (include_locations or include_flagged_aois or include_coverage):
+            # Validate selections (POD is a valid stand-alone selection).
+            if not (include_locations or include_flagged_aois or include_coverage or include_pod):
                 QMessageBox.warning(
                     self.parent,
                     self.tr("No Data Selected"),
@@ -386,7 +436,10 @@ class UnifiedMapExportController(TranslationMixin):
 
             # Handle export based on type
             if export_type == 'kml':
-                self._export_to_kml(include_locations, include_images_without_flagged_aois, include_flagged_aois, include_coverage)
+                kml_path = self._export_to_kml(include_locations, include_images_without_flagged_aois,
+                                               include_flagged_aois, include_coverage)
+                if include_pod and kml_path:
+                    self._run_pod_export(self._pod_dir_for_kml(kml_path), show_pod_on_map)
             else:  # caltopo
                 # Show method selection dialog
                 method_dialog = CalTopoMethodDialog(self.parent)
@@ -400,6 +453,11 @@ class UnifiedMapExportController(TranslationMixin):
                                                     include_flagged_aois, include_coverage, include_images)
                 else:  # browser
                     self._export_to_caltopo(include_locations, include_images_without_flagged_aois, include_flagged_aois, include_coverage, include_images)
+                if include_pod:
+                    pod_dir = QFileDialog.getExistingDirectory(
+                        self.parent, self.tr("Select folder for POD coverage files"))
+                    if pod_dir:
+                        self._run_pod_export(pod_dir, show_pod_on_map)
 
         except Exception as e:
             self.logger.error(f"Error in unified map export: {str(e)}")
@@ -429,7 +487,7 @@ class UnifiedMapExportController(TranslationMixin):
             )
 
             if not file_name:  # User cancelled
-                return
+                return None
 
             # Get custom altitude if available
             custom_alt = None
@@ -502,6 +560,8 @@ class UnifiedMapExportController(TranslationMixin):
             if self.progress_dialog.exec() == QDialog.Rejected:
                 self.export_thread.cancel()
 
+            return file_name
+
         except Exception as e:
             self.logger.error(f"Error exporting to KML: {str(e)}")
             QMessageBox.critical(
@@ -509,6 +569,116 @@ class UnifiedMapExportController(TranslationMixin):
                 self.tr("Export Error"),
                 self.tr("Failed to export to KML:\n{error}").format(error=str(e))
             )
+            return None
+
+    @staticmethod
+    def _pod_dir_for_kml(kml_path):
+        """Sibling subfolder next to the KML for the POD product set."""
+        import os
+        base = os.path.splitext(os.path.basename(kml_path))[0]
+        return os.path.join(os.path.dirname(kml_path), f"{base}_coverage_pod")
+
+    def _build_pod_service(self):
+        """Construct a CoveragePodService from settings (fresh TerrainService for
+        thread safety; canopy factory is optional until it ships)."""
+        from core.services.terrain.TerrainService import TerrainService
+        from core.services.coverage.params import PodParams
+        from core.services.coverage.CoveragePodService import CoveragePodService
+
+        settings = getattr(self.parent, 'settings_service', None)
+        terrain = TerrainService(settings_service=settings)
+        canopy = None
+        try:
+            from core.services.terrain.CanopyServiceFactory import create_canopy_service
+            canopy = create_canopy_service(settings)
+        except Exception:
+            canopy = None
+
+        custom_alt = None
+        if hasattr(self.parent, 'altitude_controller'):
+            custom_alt = self.parent.altitude_controller.get_effective_altitude()
+        params = PodParams.from_settings(settings)
+        return CoveragePodService(terrain, canopy, params,
+                                  custom_altitude_ft=custom_alt, logger=self.logger)
+
+    def _run_pod_export(self, output_dir, show_on_map):
+        """Run the POD pass on the full (non-hidden) image set, write outputs,
+        cache the result, and optionally show it on the viewer map."""
+        try:
+            pod_service = self._build_pod_service()
+        except Exception as e:
+            self.logger.error(f"Failed to build POD service: {e}")
+            QMessageBox.critical(
+                self.parent, self.tr("POD Error"),
+                self.tr("Could not start the POD calculation:\n{error}").format(error=str(e)))
+            return
+
+        self._pending_pod_result = None
+        self._show_pod_on_map_requested = show_on_map
+
+        self.pod_progress_dialog = ExportProgressDialog(
+            self.parent, title="Coverage / POD", total_items=len(self.parent.images) + 2)
+        self.pod_progress_dialog.set_title("Calculating probability of detection...")
+
+        self.pod_thread = CoveragePodExportThread(pod_service, self.parent.images, output_dir)
+        self.pod_thread.podCompleted.connect(self._on_pod_completed)
+        self.pod_thread.finished.connect(self._on_pod_finished)
+        self.pod_thread.errorOccurred.connect(self._on_pod_error)
+        self.pod_thread.progressUpdated.connect(self._on_pod_progress)
+        self.pod_thread.canceled.connect(self._on_pod_cancelled)
+        self.pod_progress_dialog.cancel_requested.connect(self.pod_thread.cancel)
+
+        self.pod_thread.start()
+        self.pod_progress_dialog.show()
+        QApplication.processEvents()
+        if self.pod_progress_dialog.exec() == QDialog.Rejected:
+            self.pod_thread.cancel()
+
+    def _on_pod_progress(self, current, total, message):
+        if self.pod_progress_dialog:
+            self.pod_progress_dialog.update_progress(current, total, message)
+            QApplication.processEvents()
+
+    def _on_pod_completed(self, result):
+        self._pending_pod_result = result
+        cache = getattr(self.parent, 'pod_result_cache', None)
+        if cache is not None:
+            cache.set_result(result)
+
+    def _on_pod_finished(self):
+        if self.pod_progress_dialog:
+            self.pod_progress_dialog.accept()
+        if hasattr(self.parent, 'status_controller'):
+            self.parent.status_controller.show_toast(
+                self.tr("POD coverage complete"), 3000, color="#00C853")
+        # Show on the viewer map if requested and the overlay is available.
+        if self._pending_pod_result is not None and getattr(self, '_show_pod_on_map_requested', False):
+            controller = getattr(self.parent, 'gps_map_controller', None)
+            if controller is not None and hasattr(controller, 'enable_pod_overlay'):
+                try:
+                    controller.show_map()
+                    controller.enable_pod_overlay()
+                except Exception as e:
+                    self.logger.warning(f"Could not show POD overlay: {e}")
+        self._pending_pod_result = None
+
+    def _on_pod_cancelled(self):
+        if self.pod_thread and self.pod_thread.isRunning():
+            self.pod_thread.terminate()
+            self.pod_thread.wait()
+        if self.pod_progress_dialog and self.pod_progress_dialog.isVisible():
+            self.pod_progress_dialog.reject()
+        if hasattr(self.parent, 'status_controller'):
+            self.parent.status_controller.show_toast(
+                self.tr("POD calculation cancelled"), 3000, color="#FFA726")
+
+    def _on_pod_error(self, error_message):
+        if self.pod_progress_dialog and self.pod_progress_dialog.isVisible():
+            self.pod_progress_dialog.reject()
+        self.logger.error(f"POD export error: {error_message}")
+        QMessageBox.critical(
+            self.parent, self.tr("POD Error"),
+            self.tr("POD calculation failed:\n{error}").format(error=error_message))
 
     def _export_to_caltopo(self, include_locations, include_images_without_flagged_aois, include_flagged_aois, include_coverage, include_images=True):
         """
