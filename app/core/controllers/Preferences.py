@@ -386,8 +386,15 @@ class Preferences(TranslationMixin, QDialog, Ui_Preferences):
                 self, self.tr("Download Tiles"),
                 self.tr("The tile downloader is unavailable:\n{error}").format(error=str(e)))
             return
+        # If a mission is loaded in the viewer, hand its images to the fetch
+        # dialog so it can auto-fill the AOI (no manual coordinates needed).
+        mission_images = None
+        viewer = getattr(self.parent, 'viewer', None)
+        if viewer is not None:
+            mission_images = getattr(viewer, 'source_images', None) or getattr(viewer, 'images', None)
+
         controller = TileFetchController(self, self.parent.settings_service, logger=None)
-        controller.run_fetch()
+        controller.run_fetch(mission_images=mission_images)
         # Reflect any settings the fetch registered back into the fields.
         self.canopyManifestEdit.setText(self.parent.settings_service.get_setting('CanopyManifestPath', '') or '')
         self.canopyTilesEdit.setText(self.parent.settings_service.get_setting('CanopyTilesDir', '') or '')

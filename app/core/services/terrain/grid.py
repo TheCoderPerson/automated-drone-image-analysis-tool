@@ -203,6 +203,37 @@ def spec_for_bounds_wgs84(bounds_wgs84: Tuple[float, float, float, float],
     return make_lattice_spec((minx, miny, maxx, maxy), cell_size)
 
 
+def read_window(ds, spec: GridSpec, nodata=None, pad_px: int = 4):
+    """Read only the ``spec`` footprint from an open rasterio dataset (band 1).
+
+    Returns (array, window_transform), or (None, None) if the footprint does not
+    intersect the tile. Reading a bounded window keeps huge (Cloud-Optimized)
+    tiles from ever loading in full -- e.g. the ~65536x65536 (16 GB) Meta/WRI
+    canopy COGs, or large USGS 3DEP tiles.
+    """
+    from rasterio.windows import from_bounds, Window
+    from rasterio.warp import transform_bounds
+
+    left, bottom, right, top = spec.bounds
+    src_bounds = transform_bounds(spec.crs, ds.crs, left, bottom, right, top)
+    try:
+        win = from_bounds(*src_bounds, transform=ds.transform)
+    except Exception:
+        return None, None
+    win = win.round_offsets().round_lengths()
+    win = Window(win.col_off - pad_px, win.row_off - pad_px,
+                 win.width + 2 * pad_px, win.height + 2 * pad_px)
+    if (win.col_off + win.width <= 0 or win.row_off + win.height <= 0
+            or win.col_off >= ds.width or win.row_off >= ds.height
+            or win.width <= 0 or win.height <= 0):
+        return None, None
+    fill = float(nodata) if nodata is not None else -9999.0
+    raw = ds.read(1, window=win, boundless=True, fill_value=fill)
+    if raw.size == 0:
+        return None, None
+    return raw, ds.window_transform(win)
+
+
 def integer_offset(child: GridSpec, parent: GridSpec,
                    tol: float = 1e-6) -> Tuple[int, int]:
     """(row_off, col_off) of ``child``'s top-left cell within ``parent``.

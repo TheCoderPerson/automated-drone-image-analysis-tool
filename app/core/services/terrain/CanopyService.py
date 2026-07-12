@@ -260,7 +260,14 @@ class CanopyService:
             product = tile['product']
             nodata = ds.nodatavals[0] if ds.nodatavals else None
             try:
-                src = self._decode(product, ds.read(1), nodata)
+                # Read ONLY the window under the footprint. Meta/WRI canopy COGs
+                # are ~65536x65536 (16 GB) -- a full ds.read(1) would OOM; the
+                # windowed read touches only the AOI.
+                from core.services.terrain.grid import read_window
+                raw, win_transform = read_window(ds, spec, nodata)
+                if raw is None:
+                    continue
+                src = self._decode(product, raw, nodata)
             except Exception as e:
                 self.logger.warning(f"CanopyService: decode failed for {tile['filename']}: {e}")
                 continue
@@ -269,7 +276,7 @@ class CanopyService:
             try:
                 reproject(
                     source=src, destination=tmp,
-                    src_transform=ds.transform, src_crs=ds.crs, src_nodata=np.nan,
+                    src_transform=win_transform, src_crs=ds.crs, src_nodata=np.nan,
                     dst_transform=spec.transform, dst_crs=spec.crs, dst_nodata=np.nan,
                     resampling=Resampling.bilinear)
             except Exception as e:

@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(gh pr *)",
+      "PowerShell(gh pr view 112 --repo crgrove/ADIAT --json number,title,state,baseRefName,headRefName,headRepositoryOwner,author,mergeable)",
+      "PowerShell($pr = Invoke-RestMethod -Uri \"https://api.github.com/repos/crgrove/ADIAT/pulls/112\" -Headers @{ 'Accept' = 'application/vnd.github+json' }; $pr | Select-Object number, title, state, @{N='base';E={$_.base.ref}}, @{N='head';E={$_.head.label}}, mergeable, mergeable_state | Format-List)",
+      "PowerShell($repo = Invoke-RestMethod -Uri \"https://api.github.com/repos/crgrove/ADIAT\" -Headers @{ 'Accept' = 'application/vnd.github+json' }; $repo | Select-Object name, default_branch, @{N='branches_url';E={$_.branches_url}} | Format-List; $branches = Invoke-RestMethod -Uri \"https://api.github.com/repos/crgrove/ADIAT/branches\" -Headers @{ 'Accept' = 'application/vnd.github+json' }; $branches | Select-Object name | Format-Table)",
+      "PowerShell($results = Invoke-RestMethod -Uri \"https://api.github.com/search/repositories?q=ADIAT+drone\" -Headers @{ 'Accept' = 'application/vnd.github+json' }; $results.items | Select-Object full_name, description, default_branch, html_url | Format-List)",
+      "PowerShell($branches = Invoke-RestMethod -Uri \"https://api.github.com/repos/crgrove/automated-drone-image-analysis-tool/branches\" -Headers @{ 'Accept' = 'application/vnd.github+json' }; $branches | Select-Object name | Format-Table; \"---PR 112---\"; $pr = Invoke-RestMethod -Uri \"https://api.github.com/repos/crgrove/automated-drone-image-analysis-tool/pulls/112\" -Headers @{ 'Accept' = 'application/vnd.github+json' }; $pr | Select-Object number, title, state, @{N='base';E={$_.base.ref}}, @{N='head';E={$_.head.label}}, @{N='head_sha';E={$_.head.sha}}, mergeable, mergeable_state | Format-List)"
+    ]
+  }
+}

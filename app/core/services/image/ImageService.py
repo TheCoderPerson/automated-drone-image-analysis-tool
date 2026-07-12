@@ -22,7 +22,8 @@ from helpers.LocationInfo import LocationInfo
 class ImageService:
     """Service to calculate various drone and image attributes based on metadata."""
 
-    def __init__(self, path, mask_path=None, img_array=None, calculated_bearing=None):
+    def __init__(self, path, mask_path=None, img_array=None, calculated_bearing=None,
+                 exif_data=None, xmp_data=None):
         """
         Initializes the ImageService by extracting Exif and XMP metadata.
 
@@ -33,9 +34,13 @@ class ImageService:
                                               If provided, skips loading from disk.
             calculated_bearing (float, optional): Calculated bearing in degrees [0, 360).
                                                  Used as fallback if EXIF bearing is missing.
+            exif_data (dict, optional): Pre-read EXIF data. Skips the piexif read when given.
+            xmp_data (dict, optional): Pre-read XMP data. Skips the (ExifTool) XMP read when
+                                       given — used by bulk callers (e.g. the POD pass) to
+                                       avoid launching one ExifTool process per image.
         """
-        self.exif_data = MetaDataHelper.get_exif_data_piexif(path)
-        self.xmp_data = MetaDataHelper.get_xmp_data_merged(path)
+        self.exif_data = exif_data if exif_data is not None else MetaDataHelper.get_exif_data_piexif(path)
+        self.xmp_data = xmp_data if xmp_data is not None else MetaDataHelper.get_xmp_data_merged(path)
         self.drone_make = MetaDataHelper.get_drone_make(self.exif_data)
         self.path = path
         self.mask_path = mask_path

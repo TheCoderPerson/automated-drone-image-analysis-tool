@@ -178,6 +178,8 @@ class USGS3DEPProvider(ElevationProvider):
             self.logger.error(f"USGS3DEPProvider: rasterio required for sample_grid_spec: {e}")
             return None
 
+        from .grid import read_window
+
         dest = np.full((spec.height, spec.width), np.nan, dtype=np.float32)
         merged_any = False
         for tile in tiles:
@@ -185,14 +187,21 @@ class USGS3DEPProvider(ElevationProvider):
             if ds is None:
                 continue
             src_nodata = ds.nodatavals[0] if ds.nodatavals else None
+            # Read only the footprint window so large 3DEP tiles never load in full.
+            raw, win_transform = read_window(ds, spec, src_nodata)
+            if raw is None:
+                continue
+            src = raw.astype(np.float32)
+            if src_nodata is not None:
+                src[src == src_nodata] = np.nan
             tmp = np.full((spec.height, spec.width), np.nan, dtype=np.float32)
             try:
                 reproject(
-                    source=rasterio.band(ds, 1),
+                    source=src,
                     destination=tmp,
-                    src_transform=ds.transform,
+                    src_transform=win_transform,
                     src_crs=ds.crs,
-                    src_nodata=src_nodata,
+                    src_nodata=np.nan,
                     dst_transform=spec.transform,
                     dst_crs=spec.crs,
                     dst_nodata=np.nan,

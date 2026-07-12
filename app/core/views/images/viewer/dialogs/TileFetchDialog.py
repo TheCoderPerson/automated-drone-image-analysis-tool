@@ -14,18 +14,38 @@ from helpers.TranslationMixin import TranslationMixin
 
 
 class TileFetchDialog(TranslationMixin, QDialog):
-    def __init__(self, parent=None, default_bounds=None):
-        """default_bounds: optional (min_lon, min_lat, max_lon, max_lat) to prefill."""
+    def __init__(self, parent=None, default_bounds=None, has_mission=False):
+        """
+        Args:
+            default_bounds: optional (min_lon, min_lat, max_lon, max_lat) to prefill.
+            has_mission: whether a mission is loaded (enables the auto-fill button).
+        """
         super().__init__(parent)
         self.setWindowTitle(self.tr("Download Coverage Data"))
-        self.setMinimumWidth(420)
-        self._setup_ui(default_bounds)
+        self.setMinimumWidth(460)
+        self._setup_ui(default_bounds, has_mission)
         self._apply_translations()
 
-    def _setup_ui(self, default_bounds):
+    def _setup_ui(self, default_bounds, has_mission):
         layout = QVBoxLayout(self)
 
         aoi_group = QGroupBox(self.tr("Area of Interest (WGS84)"))
+        aoi_layout = QVBoxLayout()
+
+        # Auto-fill row: derive the AOI from the loaded mission or an image folder.
+        fill_row = QHBoxLayout()
+        self.use_mission_btn = QPushButton(self.tr("Use loaded mission extent"))
+        self.use_mission_btn.setEnabled(bool(has_mission))
+        self.use_mission_btn.setToolTip(self.tr(
+            "Fill the AOI from the GPS positions of the currently loaded mission's images."))
+        self.load_folder_btn = QPushButton(self.tr("Load extent from image folder..."))
+        self.load_folder_btn.setToolTip(self.tr(
+            "Read image GPS from a folder to fill the AOI (use when no mission is loaded)."))
+        fill_row.addWidget(self.use_mission_btn)
+        fill_row.addWidget(self.load_folder_btn)
+        fill_row.addStretch()
+        aoi_layout.addLayout(fill_row)
+
         grid = QGridLayout()
         self.min_lon_edit = QLineEdit()
         self.min_lat_edit = QLineEdit()
@@ -34,10 +54,7 @@ class TileFetchDialog(TranslationMixin, QDialog):
         for e in (self.min_lon_edit, self.min_lat_edit, self.max_lon_edit, self.max_lat_edit):
             e.setValidator(QDoubleValidator())
         if default_bounds:
-            self.min_lon_edit.setText(str(default_bounds[0]))
-            self.min_lat_edit.setText(str(default_bounds[1]))
-            self.max_lon_edit.setText(str(default_bounds[2]))
-            self.max_lat_edit.setText(str(default_bounds[3]))
+            self.set_aoi(default_bounds)
         grid.addWidget(QLabel(self.tr("Min longitude:")), 0, 0)
         grid.addWidget(self.min_lon_edit, 0, 1)
         grid.addWidget(QLabel(self.tr("Min latitude:")), 0, 2)
@@ -46,7 +63,21 @@ class TileFetchDialog(TranslationMixin, QDialog):
         grid.addWidget(self.max_lon_edit, 1, 1)
         grid.addWidget(QLabel(self.tr("Max latitude:")), 1, 2)
         grid.addWidget(self.max_lat_edit, 1, 3)
-        aoi_group.setLayout(grid)
+        aoi_layout.addLayout(grid)
+
+        buffer_row = QHBoxLayout()
+        buffer_row.addWidget(QLabel(self.tr("Footprint buffer (m):")))
+        self.buffer_edit = QLineEdit()
+        self.buffer_edit.setValidator(QDoubleValidator(0.0, 100000.0, 1))
+        self.buffer_edit.setFixedWidth(90)
+        self.buffer_edit.setToolTip(self.tr(
+            "Padding added around the camera positions so downloaded tiles cover the "
+            "image footprints. Auto-sized from the mission; edit and re-fill to change."))
+        buffer_row.addWidget(self.buffer_edit)
+        buffer_row.addStretch()
+        aoi_layout.addLayout(buffer_row)
+
+        aoi_group.setLayout(aoi_layout)
         layout.addWidget(aoi_group)
 
         data_group = QGroupBox(self.tr("Datasets"))
@@ -88,6 +119,24 @@ class TileFetchDialog(TranslationMixin, QDialog):
         directory = QFileDialog.getExistingDirectory(self, self.tr("Select output folder"))
         if directory:
             self.output_edit.setText(directory)
+
+    def set_aoi(self, bounds):
+        """Fill the four AOI fields from (min_lon, min_lat, max_lon, max_lat)."""
+        self.min_lon_edit.setText(f"{bounds[0]:.6f}")
+        self.min_lat_edit.setText(f"{bounds[1]:.6f}")
+        self.max_lon_edit.setText(f"{bounds[2]:.6f}")
+        self.max_lat_edit.setText(f"{bounds[3]:.6f}")
+
+    def set_buffer(self, buffer_m):
+        self.buffer_edit.setText(f"{buffer_m:.0f}")
+
+    def get_buffer(self):
+        """Buffer in meters, or None if empty/invalid."""
+        try:
+            v = float(self.buffer_edit.text())
+            return v if v > 0 else None
+        except ValueError:
+            return None
 
     def get_bounds(self):
         """(min_lon, min_lat, max_lon, max_lat) or None if incomplete/invalid."""

@@ -8,9 +8,10 @@ downloaded data is immediately usable.
 """
 
 import os
+import glob
 
-from PySide6.QtWidgets import QMessageBox, QDialog, QApplication
-from PySide6.QtCore import QThread, Signal
+from PySide6.QtWidgets import QMessageBox, QDialog, QApplication, QFileDialog
+from PySide6.QtCore import QThread, Signal, Qt
 
 from core.services.LoggerService import LoggerService
 from core.services.terrain.TileFetchService import TileFetchService
@@ -77,8 +78,16 @@ class TileFetchController(TranslationMixin):
         self.progress_dialog = None
         self._register = True
 
-    def run_fetch(self, default_bounds=None):
-        dialog = TileFetchDialog(self.parent, default_bounds=default_bounds)
+    def run_fetch(self, default_bounds=None, mission_images=None):
+        self._mission_images = mission_images
+        dialog = TileFetchDialog(self.parent, default_bounds=default_bounds,
+                                 has_mission=bool(mission_images))
+        dialog.use_mission_btn.clicked.connect(
+            lambda: self._fill_aoi(dialog, self._mission_images, "loaded mission"))
+        dialog.load_folder_btn.clicked.connect(lambda: self._fill_from_folder(dialog))
+        if mission_images:
+            self._fill_aoi(dialog, mission_images, "loaded mission", warn_if_empty=False)
+
         if dialog.exec() != QDialog.Accepted:
             return
 
@@ -117,6 +126,50 @@ class TileFetchController(TranslationMixin):
         QApplication.processEvents()
         if self.progress_dialog.exec() == QDialog.Rejected:
             self.thread.cancel()
+
+    _IMAGE_GLOBS = ("*.jpg", "*.jpeg", "*.JPG", "*.JPEG", "*.tif", "*.tiff", "*.png")
+
+    def _fill_aoi(self, dialog, images, source_label, warn_if_empty=True):
+        """Compute the AOI (+ buffer) from ``images`` and fill the dialog fields."""
+        if not images:
+            return
+        from core.services.coverage.aoi import (
+            compute_mission_gps_bounds, suggest_buffer_m, pad_bounds)
+        QApplication.setOverrideCursor(Qt.WaitCursor)
+        try:
+            raw = compute_mission_gps_bounds(images)
+            if raw is None:
+                if warn_if_empty:
+                    QMessageBox.warning(
+                        self.parent, self.tr("No GPS Found"),
+                        self.tr("No GPS positions were found in the {source} images.").format(
+                            source=source_label))
+                return
+            buffer_m = dialog.get_buffer()
+            if buffer_m is None:
+                buffer_m = suggest_buffer_m(images)
+                dialog.set_buffer(buffer_m)
+            dialog.set_aoi(pad_bounds(raw, buffer_m))
+        finally:
+            QApplication.restoreOverrideCursor()
+
+    def _fill_from_folder(self, dialog):
+        folder = QFileDialog.getExistingDirectory(
+            self.parent, self.tr("Select image folder"))
+        if not folder:
+            return
+        paths = []
+        for pattern in self._IMAGE_GLOBS:
+            paths.extend(glob.glob(os.path.join(folder, pattern)))
+        images = [{'path': p} for p in sorted(set(paths))]
+        if not images:
+            QMessageBox.warning(
+                self.parent, self.tr("No Images"),
+                self.tr("No images were found in the selected folder."))
+            return
+        # A fresh folder -> re-suggest the buffer for it.
+        dialog.buffer_edit.clear()
+        self._fill_aoi(dialog, images, "selected folder")
 
     def _on_progress(self, current, total, message):
         if self.progress_dialog:

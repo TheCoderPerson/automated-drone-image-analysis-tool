@@ -317,7 +317,18 @@ class MetaDataHelper:
             # If ExifTool fails, fall back to direct parsing
             pass
 
-        # Fallback to original direct parsing method
+        # Fallback to direct byte-parsing (no ExifTool subprocess).
+        return MetaDataHelper.get_xmp_data_direct(file_path)
+
+    @staticmethod
+    def get_xmp_data_direct(file_path: str) -> dict:
+        """Parse XMP (incl. extended XMP) straight from the file bytes.
+
+        No ExifTool subprocess, so this is far cheaper than
+        :meth:`get_xmp_data_merged` when reading many files (e.g. the POD pass,
+        which launches ~one ExifTool process per image otherwise). Returns the
+        merged XMP dict, or {} if none is found.
+        """
         _XMP_EXT_HDR = b"http://ns.adobe.com/xmp/extension/\x00"
 
         def parse_base(data: bytes):
@@ -361,8 +372,11 @@ class MetaDataHelper:
                 buf[off:off + len(ch)] = ch
             return bytes(buf)
 
-        with open(file_path, 'rb') as f:
-            data = f.read()
+        try:
+            with open(file_path, 'rb') as f:
+                data = f.read()
+        except OSError:
+            return {}
 
         guid, base = parse_base(data)
         if not guid:

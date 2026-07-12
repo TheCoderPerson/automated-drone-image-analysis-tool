@@ -42,6 +42,12 @@ from .writers import (
 )
 from .CoveragePodService import CoveragePodService
 from .CoverageResultCache import CoverageResultCache
+from .aoi import (
+    estimate_download_aoi,
+    compute_mission_gps_bounds,
+    suggest_buffer_m,
+    pad_bounds,
+)
 
 __all__ = [
     'PodParams',
@@ -76,4 +82,8 @@ __all__ = [
     'write_all_outputs',
     'CoveragePodService',
     'CoverageResultCache',
+    'estimate_download_aoi',
+    'compute_mission_gps_bounds',
+    'suggest_buffer_m',
+    'pad_bounds',
 ]

@@ -79,3 +79,49 @@ def test_register_disabled_writes_nothing(app):
     ctrl._register = False
     ctrl._register_results({'dem': FetchResult('usgs_3dep_dem', "d", "m.csv")})
     settings.set_setting.assert_not_called()
+
+
+def test_fill_aoi_fills_dialog_from_mission(app):
+    from unittest.mock import patch
+    from core.views.images.viewer.dialogs.TileFetchDialog import TileFetchDialog
+
+    ctrl = TileFetchController(MagicMock(), MagicMock())
+    dialog = TileFetchDialog(has_mission=True)
+    images = [{"path": "a.jpg"}, {"path": "b.jpg"}]
+
+    with patch("core.services.coverage.aoi.compute_mission_gps_bounds",
+               return_value=(-120.50, 38.70, -120.46, 38.72)), \
+         patch("core.services.coverage.aoi.suggest_buffer_m", return_value=400.0):
+        ctrl._fill_aoi(dialog, images, "loaded mission")
+
+    assert dialog.get_buffer() == 400.0
+    b = dialog.get_bounds()
+    # Padded outward from the raw camera-position box.
+    assert b is not None and b[0] < -120.50 and b[2] > -120.46
+
+
+def test_fill_aoi_warns_when_no_gps(app):
+    from unittest.mock import patch
+    from core.views.images.viewer.dialogs.TileFetchDialog import TileFetchDialog
+
+    ctrl = TileFetchController(MagicMock(), MagicMock())
+    dialog = TileFetchDialog(has_mission=True)
+    with patch("core.services.coverage.aoi.compute_mission_gps_bounds", return_value=None), \
+         patch("core.controllers.images.viewer.exports.TileFetchController.QMessageBox") as mock_mb:
+        ctrl._fill_aoi(dialog, [{"path": "a.jpg"}], "loaded mission")
+    mock_mb.warning.assert_called_once()
+
+
+def test_fill_aoi_respects_existing_buffer(app):
+    from unittest.mock import patch
+    from core.views.images.viewer.dialogs.TileFetchDialog import TileFetchDialog
+
+    ctrl = TileFetchController(MagicMock(), MagicMock())
+    dialog = TileFetchDialog(has_mission=True)
+    dialog.set_buffer(900.0)   # user-set buffer must be kept
+    with patch("core.services.coverage.aoi.compute_mission_gps_bounds",
+               return_value=(-120.50, 38.70, -120.46, 38.72)), \
+         patch("core.services.coverage.aoi.suggest_buffer_m", return_value=100.0) as mock_suggest:
+        ctrl._fill_aoi(dialog, [{"path": "a.jpg"}], "loaded mission")
+    mock_suggest.assert_not_called()
+    assert dialog.get_buffer() == 900.0

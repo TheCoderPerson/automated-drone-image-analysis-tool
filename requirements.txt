@@ -7,7 +7,7 @@ spectral
 piexif
 simplekml
 scikit-image
-pyqtdarktheme==2.1.0
+pyqtdarktheme-fork==2.3.6
 pillow
 pandas
 pyarrow==20.0.0

@@ -13,6 +13,7 @@ over unchanged.
 """
 
 import math
+import time
 from typing import Any, Dict, List, Optional
 
 import numpy as np
@@ -59,6 +60,7 @@ class CoveragePodService:
         meters_per_unit = 1.0
         cell_size_3857 = self.params.grid_res_m
         processed = 0
+        timings = {'geom': 0.0, 'dem': 0.0, 'canopy': 0.0, 'kernel': 0.0}
 
         for idx, image in enumerate(images):
             if cancel_check and cancel_check():
@@ -74,7 +76,9 @@ class CoveragePodService:
                 continue
 
             try:
+                t0 = time.perf_counter()
                 fg = self._frame_geometry(image)
+                t_geom = time.perf_counter() - t0
                 if fg is None:
                     skipped.append((name, SKIP_NO_POSE))
                     continue
@@ -88,13 +92,17 @@ class CoveragePodService:
                     accumulator = MissionAccumulator(cell_size_3857, self.params, self.logger)
 
                 spec = compute_frame_spec(fg, self.params, cell_size_3857)
+                t0 = time.perf_counter()
                 dem_sample = self.terrain.sample_grid_spec(spec)
+                t_dem = time.perf_counter() - t0
                 if dem_sample is None:
                     skipped.append((name, SKIP_NO_DEM))
                     continue
                 dem = dem_sample.data
 
+                t0 = time.perf_counter()
                 chm, cover = self._sample_canopy(spec)
+                t_canopy = time.perf_counter() - t0
 
                 cam_x, cam_y = lonlat_to_mercator(fg.lon, fg.lat)
                 nadir_elev = dem_sample.sample_bilinear(cam_x, cam_y)
@@ -108,6 +116,7 @@ class CoveragePodService:
                 fg.cam_elev_m = cam_z
                 cam_xyz = (cam_x, cam_y, cam_z)
 
+                t0 = time.perf_counter()
                 mask, gsd = compute_target_mask_and_gsd(
                     dem, spec, fg, cam_xyz, self.params, meters_per_unit)
                 if not mask.any():
@@ -117,6 +126,7 @@ class CoveragePodService:
                 pod, factor = frame_pod_kernel(
                     dem, chm, cover, spec.transform, cam_xyz, mask, gsd,
                     self.params, meters_per_unit=meters_per_unit, return_factors=True)
+                t_kernel = time.perf_counter() - t0
 
                 placed = accumulator.add_frame(
                     idx, pod, spec, fg.yaw_deg, fg.pitch_deg, fg.bearing_confidence,
@@ -127,9 +137,25 @@ class CoveragePodService:
 
                 cam_points.append((cam_x, cam_y))
                 processed += 1
+
+                timings['geom'] += t_geom
+                timings['dem'] += t_dem
+                timings['canopy'] += t_canopy
+                timings['kernel'] += t_kernel
+                if processed <= 3 or processed % 25 == 0:
+                    self.logger.info(
+                        f"POD frame '{name}' ({dem.shape[1]}x{dem.shape[0]} cells): "
+                        f"geom={t_geom * 1000:.0f}ms dem={t_dem * 1000:.0f}ms "
+                        f"canopy={t_canopy * 1000:.0f}ms kernel={t_kernel * 1000:.0f}ms")
             except Exception as e:
                 self.logger.error(f"POD frame '{name}' failed: {e}")
                 skipped.append((name, SKIP_ERROR))
+
+        if processed:
+            self.logger.info(
+                f"POD timing totals over {processed} frames: "
+                f"geom={timings['geom']:.1f}s dem={timings['dem']:.1f}s "
+                f"canopy={timings['canopy']:.1f}s kernel={timings['kernel']:.1f}s")
 
         if accumulator is None:
             return self._empty_result(processed, skipped)
@@ -165,9 +191,26 @@ class CoveragePodService:
         path = image.get('path', '')
         if not path:
             return None
+        # Read metadata cheaply: piexif for EXIF and the direct byte-parser for
+        # XMP, so we never spawn one ExifTool process per image (the dominant
+        # per-frame cost over a large mission).
+        from helpers.MetaDataHelper import MetaDataHelper
+        from helpers.LocationInfo import LocationInfo
+        exif_data = MetaDataHelper.get_exif_data_piexif(path)
+        fg = self._build_frame_geometry(image, path, exif_data,
+                                        MetaDataHelper.get_xmp_data_direct(path))
+        # Safety net: if the fast XMP parse missed pose/AGL for a GPS-tagged image,
+        # retry that one image with the full (ExifTool) reader before giving up.
+        if fg is None and LocationInfo.get_gps(exif_data=exif_data):
+            fg = self._build_frame_geometry(image, path, exif_data,
+                                            MetaDataHelper.get_xmp_data_merged(path))
+        return fg
+
+    def _build_frame_geometry(self, image, path, exif_data, xmp_data):
         svc = ImageService(path, image.get('mask_path', ''),
                            img_array=_DUMMY_IMG,
-                           calculated_bearing=image.get('bearing'))
+                           calculated_bearing=image.get('bearing'),
+                           exif_data=exif_data, xmp_data=xmp_data)
         # Drop the dummy pixels so FrameGeometry reads image size from EXIF
         # (frames never need the decoded pixels -> skip the 20 MP decode cost).
         svc.img_array = None
