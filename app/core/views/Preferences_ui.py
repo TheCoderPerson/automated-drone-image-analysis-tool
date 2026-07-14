@@ -16,18 +16,22 @@ from PySide6.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
     QImage, QKeySequence, QLinearGradient, QPainter,
     QPalette, QPixmap, QRadialGradient, QTransform)
 from PySide6.QtWidgets import (QAbstractButton, QApplication, QCheckBox, QComboBox,
-    QDialog, QDialogButtonBox, QHBoxLayout, QLabel,
-    QPushButton, QSizePolicy, QSpacerItem, QSpinBox,
-    QVBoxLayout, QWidget)
+    QDialog, QDialogButtonBox, QFrame, QHBoxLayout,
+    QLabel, QPushButton, QScrollArea, QSizePolicy,
+    QSpacerItem, QSpinBox, QVBoxLayout, QWidget)
 
 class Ui_Preferences(object):
     def setupUi(self, Preferences):
         if not Preferences.objectName():
             Preferences.setObjectName(u"Preferences")
-        Preferences.resize(431, 403)
+        Preferences.resize(560, 600)
         self.verticalLayout = QVBoxLayout(Preferences)
         self.verticalLayout.setObjectName(u"verticalLayout")
-        self.mainWidget = QWidget(Preferences)
+        self.scrollArea = QScrollArea(Preferences)
+        self.scrollArea.setObjectName(u"scrollArea")
+        self.scrollArea.setWidgetResizable(True)
+        self.scrollArea.setFrameShape(QFrame.Shape.NoFrame)
+        self.mainWidget = QWidget()
         self.mainWidget.setObjectName(u"mainWidget")
         self.verticalLayout_2 = QVBoxLayout(self.mainWidget)
         self.verticalLayout_2.setObjectName(u"verticalLayout_2")
@@ -273,8 +277,9 @@ class Ui_Preferences(object):
 
         self.verticalLayout_2.addLayout(self.droneSensorLabelsWidget)
 
+        self.scrollArea.setWidget(self.mainWidget)
 
-        self.verticalLayout.addWidget(self.mainWidget, 0, Qt.AlignmentFlag.AlignTop)
+        self.verticalLayout.addWidget(self.scrollArea)
 
         self.buttonBox = QDialogButtonBox(Preferences)
         self.buttonBox.setObjectName(u"buttonBox")

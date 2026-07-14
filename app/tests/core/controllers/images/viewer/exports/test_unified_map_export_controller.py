@@ -358,6 +358,16 @@ def test_on_pod_completed_populates_cache(controller):
     controller.parent.pod_result_cache.set_result.assert_called_once_with(result)
 
 
+def test_run_pod_public_wrapper_delegates(controller):
+    """run_pod (the GPS-map entry point) drives the same POD flow as Map Export."""
+    controller._run_pod_export = MagicMock()
+    controller.run_pod("C:/results/coverage_pod")
+    controller._run_pod_export.assert_called_once_with("C:/results/coverage_pod", True)
+    controller._run_pod_export.reset_mock()
+    controller.run_pod("C:/results/coverage_pod", show_on_map=False)
+    controller._run_pod_export.assert_called_once_with("C:/results/coverage_pod", False)
+
+
 def test_pod_only_export_is_valid(controller):
     """A POD-only selection must pass validation and trigger the POD pass."""
     controller._export_to_kml = MagicMock(return_value="C:/tmp/mission.kml")

@@ -56,11 +56,21 @@ def test_terrain_card_groups_all_three_controls(preferences):
     ]
 
 
-def test_terrain_card_is_at_the_bottom(preferences):
-    """The Terrain card is the last item in the settings layout."""
+def test_canopy_group_is_at_the_bottom_below_terrain(preferences):
+    """The Canopy Data Source group is the last item, directly below the
+    Terrain card."""
     layout = preferences.verticalLayout_2
     last = layout.itemAt(layout.count() - 1).widget()
-    assert last is preferences.terrainCard
+    second_last = layout.itemAt(layout.count() - 2).widget()
+    assert last is preferences.canopySourceGroup
+    assert second_last is preferences.terrainCard
+
+
+def test_preferences_use_scroll_area(preferences):
+    """All settings live inside a scroll area so the dialog can stay compact."""
+    assert hasattr(preferences, 'scrollArea')
+    assert preferences.scrollArea.widgetResizable()
+    assert preferences.scrollArea.widget() is preferences.mainWidget
 
 
 def test_terrain_controls_not_left_in_top_level_layout(preferences):

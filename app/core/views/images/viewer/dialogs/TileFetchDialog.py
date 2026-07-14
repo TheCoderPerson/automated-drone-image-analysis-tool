@@ -5,44 +5,60 @@ Code-built (matching the MapExportDialog family) so no generated UI changes are
 needed. Collects an AOI bounding box, product selection, and an output folder.
 """
 
+from PySide6.QtCore import Signal
 from PySide6.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QGridLayout, QLabel, QLineEdit,
-    QCheckBox, QPushButton, QGroupBox, QFileDialog
+    QCheckBox, QPushButton, QGroupBox, QFileDialog, QComboBox
 )
 from PySide6.QtGui import QDoubleValidator
 from helpers.TranslationMixin import TranslationMixin
 
 
 class TileFetchDialog(TranslationMixin, QDialog):
-    def __init__(self, parent=None, default_bounds=None, has_mission=False):
+    # Emitted when the user picks an AOI fill source from the dropdown; the arg
+    # is a stable key ('mission' or 'folder'). The controller owns the actual
+    # fill logic (it has the mission images and the folder picker).
+    fill_source_activated = Signal(str)
+
+    def __init__(self, parent=None, default_bounds=None, has_mission=False,
+                 default_output_dir=None):
         """
         Args:
             default_bounds: optional (min_lon, min_lat, max_lon, max_lat) to prefill.
-            has_mission: whether a mission is loaded (enables the auto-fill button).
+            has_mission: whether a mission is loaded (enables the mission fill action).
+            default_output_dir: optional folder to prefill the output field (the
+                results folder, so downloaded tiles land beside the analysis).
         """
         super().__init__(parent)
         self.setWindowTitle(self.tr("Download Coverage Data"))
         self.setMinimumWidth(460)
-        self._setup_ui(default_bounds, has_mission)
+        self._setup_ui(default_bounds, has_mission, default_output_dir)
         self._apply_translations()
 
-    def _setup_ui(self, default_bounds, has_mission):
+    def _setup_ui(self, default_bounds, has_mission, default_output_dir):
         layout = QVBoxLayout(self)
 
         aoi_group = QGroupBox(self.tr("Area of Interest (WGS84)"))
         aoi_layout = QVBoxLayout()
 
-        # Auto-fill row: derive the AOI from the loaded mission or an image folder.
+        # Auto-fill source: a dropdown that fills the (editable) AOI fields from
+        # the loaded mission or a chosen image folder. It reflects the current
+        # selection like any combo box; the controller owns the fill logic (it
+        # has the mission images) and connects fill_source_activated. A mission
+        # item is only offered when one is loaded.
         fill_row = QHBoxLayout()
-        self.use_mission_btn = QPushButton(self.tr("Use loaded mission extent"))
-        self.use_mission_btn.setEnabled(bool(has_mission))
-        self.use_mission_btn.setToolTip(self.tr(
-            "Fill the AOI from the GPS positions of the currently loaded mission's images."))
-        self.load_folder_btn = QPushButton(self.tr("Load extent from image folder..."))
-        self.load_folder_btn.setToolTip(self.tr(
-            "Read image GPS from a folder to fill the AOI (use when no mission is loaded)."))
-        fill_row.addWidget(self.use_mission_btn)
-        fill_row.addWidget(self.load_folder_btn)
+        self.fill_combo = QComboBox()
+        self.fill_combo.setPlaceholderText(self.tr("Fill area from"))
+        if has_mission:
+            self.fill_combo.addItem(self.tr("Loaded mission extent"), "mission")
+        self.fill_combo.addItem(self.tr("Image folder..."), "folder")
+        self.fill_combo.setToolTip(self.tr(
+            "Fill the area from the loaded mission's image GPS, or from an image folder."))
+        self.fill_combo.activated.connect(self._on_fill_source_activated)
+        # With a mission loaded the AOI is already auto-filled from it, so show
+        # "Loaded mission extent"; otherwise show the placeholder (nothing filled).
+        self.fill_combo.setCurrentIndex(0 if has_mission else -1)
+        fill_row.addWidget(self.fill_combo)
         fill_row.addStretch()
         aoi_layout.addLayout(fill_row)
 
@@ -94,6 +110,8 @@ class TileFetchDialog(TranslationMixin, QDialog):
         out_row = QHBoxLayout()
         out_row.addWidget(QLabel(self.tr("Output folder:")))
         self.output_edit = QLineEdit()
+        if default_output_dir:
+            self.output_edit.setText(default_output_dir)
         self.output_button = QPushButton(self.tr("Browse..."))
         self.output_button.clicked.connect(self._browse_output)
         out_row.addWidget(self.output_edit, 1)
@@ -119,6 +137,12 @@ class TileFetchDialog(TranslationMixin, QDialog):
         directory = QFileDialog.getExistingDirectory(self, self.tr("Select output folder"))
         if directory:
             self.output_edit.setText(directory)
+
+    def _on_fill_source_activated(self, index):
+        """Relay the chosen fill source (stable itemData key) to the controller."""
+        key = self.fill_combo.itemData(index)
+        if key:
+            self.fill_source_activated.emit(key)
 
     def set_aoi(self, bounds):
         """Fill the four AOI fields from (min_lon, min_lat, max_lon, max_lat)."""

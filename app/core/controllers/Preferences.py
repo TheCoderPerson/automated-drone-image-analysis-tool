@@ -52,8 +52,9 @@ class Preferences(TranslationMixin, QDialog, Ui_Preferences):
         self._terrain_service = None
         self._add_language_selection()
         self._add_terrain_provider_section()
-        self._add_canopy_source_section()
         self._arrange_terrain_controls()
+        # Canopy is added after the Terrain card so it sits at the bottom.
+        self._add_canopy_source_section()
         self._load_settings()
         self._connect_signals()
         self._update_terrain_cache_display()
@@ -196,15 +197,29 @@ class Preferences(TranslationMixin, QDialog, Ui_Preferences):
         tiles_row.addWidget(self.canopyTilesButton)
         layout.addLayout(tiles_row)
 
+        # Inline validation: a paths-requiring kind with empty paths means
+        # canopy is silently disabled at runtime -- say so right here.
+        self.canopyPathsWarningLabel = QLabel(
+            self.tr("Canopy is disabled until both paths are set — "
+                    "use Download tiles… or Browse."),
+            self.canopySourceGroup)
+        self.canopyPathsWarningLabel.setStyleSheet("color: #E6A700;")
+        self.canopyPathsWarningLabel.setWordWrap(True)
+        self.canopyPathsWarningLabel.setVisible(False)
+        layout.addWidget(self.canopyPathsWarningLabel)
+
         fetch_row = QHBoxLayout()
         fetch_row.addStretch()
         self.canopyFetchButton = QPushButton(self.tr("Download tiles..."), self.canopySourceGroup)
         self.canopyFetchButton.setToolTip(self.tr(
-            "Download DEM and/or canopy tiles for an area of interest and register them here."))
+            "Download DEM and/or canopy tiles for an area of interest and register them here. "
+            "Note: the canopy download uses Meta/WRI data and registers it as the canopy source."))
         fetch_row.addWidget(self.canopyFetchButton)
         layout.addLayout(fetch_row)
 
-        self.verticalLayout_2.insertWidget(2, self.canopySourceGroup)
+        # Append below the Terrain card (added by _arrange_terrain_controls) so
+        # the Canopy Data Source group is the last section in the dialog.
+        self.verticalLayout_2.addWidget(self.canopySourceGroup)
 
     def _load_settings(self):
         """Loads the settings from SettingsService and updates the UI accordingly."""
@@ -378,13 +393,18 @@ class Preferences(TranslationMixin, QDialog, Ui_Preferences):
     # ---- Canopy source ----
 
     def _refresh_canopy_visibility(self):
-        """Show/hide the canopy path fields based on the selected source kind."""
+        """Show/hide the canopy path fields based on the selected source kind,
+        and surface the disabled-until-configured warning when paths are missing."""
         needs_paths = self.canopyKindComboBox.currentData() != CANOPY_KIND_NONE
         for w in (
             self.canopyManifestLabel, self.canopyManifestEdit, self.canopyManifestButton,
             self.canopyTilesLabel, self.canopyTilesEdit, self.canopyTilesButton,
         ):
             w.setVisible(needs_paths)
+        if hasattr(self, 'canopyPathsWarningLabel'):
+            incomplete = needs_paths and not (
+                self.canopyManifestEdit.text().strip() and self.canopyTilesEdit.text().strip())
+            self.canopyPathsWarningLabel.setVisible(incomplete)
 
     def _update_canopy_kind(self):
         kind = self.canopyKindComboBox.currentData() or DEFAULT_CANOPY_KIND
@@ -394,10 +414,12 @@ class Preferences(TranslationMixin, QDialog, Ui_Preferences):
     def _update_canopy_manifest(self):
         self.parent.settings_service.set_setting(
             'CanopyManifestPath', self.canopyManifestEdit.text().strip())
+        self._refresh_canopy_visibility()
 
     def _update_canopy_tiles(self):
         self.parent.settings_service.set_setting(
             'CanopyTilesDir', self.canopyTilesEdit.text().strip())
+        self._refresh_canopy_visibility()
 
     def _browse_canopy_manifest(self):
         start_dir = self.canopyManifestEdit.text() or os.path.expanduser("~")
@@ -428,12 +450,18 @@ class Preferences(TranslationMixin, QDialog, Ui_Preferences):
         # If a mission is loaded in the viewer, hand its images to the fetch
         # dialog so it can auto-fill the AOI (no manual coordinates needed).
         mission_images = None
+        default_output_dir = None
         viewer = getattr(self.parent, 'viewer', None)
         if viewer is not None:
             mission_images = getattr(viewer, 'source_images', None) or getattr(viewer, 'images', None)
+            # Default the download destination to the loaded results folder.
+            # xml_path is a pathlib.Path (see MainWindow), so accept any path-like.
+            xml_path = getattr(viewer, 'xml_path', None)
+            if isinstance(xml_path, (str, os.PathLike)) and os.fspath(xml_path):
+                default_output_dir = os.path.dirname(os.fspath(xml_path))
 
         controller = TileFetchController(self, self.parent.settings_service, logger=None)
-        controller.run_fetch(mission_images=mission_images)
+        controller.run_fetch(mission_images=mission_images, default_output_dir=default_output_dir)
         # Reflect any settings the fetch registered back into the fields.
         self.canopyManifestEdit.setText(self.parent.settings_service.get_setting('CanopyManifestPath', '') or '')
         self.canopyTilesEdit.setText(self.parent.settings_service.get_setting('CanopyTilesDir', '') or '')
@@ -442,6 +470,19 @@ class Preferences(TranslationMixin, QDialog, Ui_Preferences):
         if cidx >= 0:
             self.canopyKindComboBox.setCurrentIndex(cidx)
         self._refresh_canopy_visibility()
+        # Mirror the write-back for the DEM: a registered 3DEP download should
+        # show up in the terrain fields immediately, not only after a reopen.
+        if hasattr(self, 'terrain3DEPManifestEdit'):
+            dem_manifest = self.parent.settings_service.get_setting('Terrain3DEPManifestPath', '') or ''
+            dem_tiles = self.parent.settings_service.get_setting('Terrain3DEPTilesDir', '') or ''
+            if dem_manifest:
+                self.terrain3DEPManifestEdit.setText(dem_manifest)
+            if dem_tiles:
+                self.terrain3DEPTilesEdit.setText(dem_tiles)
+            provider_id = self.parent.settings_service.get_setting('TerrainProviderId', '') or ''
+            pidx = self.terrainProviderComboBox.findData(provider_id) if provider_id else -1
+            if pidx >= 0:
+                self.terrainProviderComboBox.setCurrentIndex(pidx)
 
     def _update_terrain_elevation(self, checked: bool):
         """Update whether terrain elevation data should be used for AOI positioning."""

@@ -189,6 +189,238 @@ def test_on_finished_handles_missing_progress_dialog(app, tmp_path):
     assert "1" in mb.information.call_args.args[2]
 
 
+# --- per-product outcome surfacing (regression: silent canopy failure) -------
+
+def test_on_finished_warns_when_canopy_wrote_nothing(app, tmp_path):
+    """A requested product with zero tiles must produce a WARNING that names
+    the product and states it was not registered — not a success dialog.
+
+    Regression: a failed canopy download reported "Download Complete" while
+    silently registering nothing ("CanopyServiceFactory: paths unset").
+    """
+    from unittest.mock import patch
+
+    ctrl = TileFetchController(MagicMock(), MagicMock())
+    ctrl.progress_dialog = MagicMock()
+    ctrl._register = True
+    dem = FetchResult('usgs_3dep_dem', str(tmp_path / "dem"),
+                      str(tmp_path / "dem" / "m.csv"), tiles_written=1)
+    canopy = FetchResult('meta_chm', str(tmp_path / "chm"), None,
+                         tiles_written=0, tiles_failed=1,
+                         errors=[("chm_x.tif", "download failed")])
+
+    with patch(f"{_MODULE}.QMessageBox") as mb:
+        ctrl._on_finished({'dem': dem, 'canopy': canopy})
+
+    mb.information.assert_not_called()
+    mb.warning.assert_called_once()
+    title, body = mb.warning.call_args.args[1], mb.warning.call_args.args[2]
+    assert "Problem" in title
+    assert "Canopy height" in body and "failed" in body
+    assert "NOT registered" in body
+
+
+def test_on_finished_warns_when_area_has_no_canopy_coverage(app, tmp_path):
+    """All-absent tiles (sparse coverage) warn with a no-coverage message."""
+    from unittest.mock import patch
+
+    ctrl = TileFetchController(MagicMock(), MagicMock())
+    ctrl.progress_dialog = MagicMock()
+    ctrl._register = True
+    canopy = FetchResult('meta_chm', str(tmp_path / "chm"), None,
+                         tiles_written=0, tiles_skipped=2)
+
+    with patch(f"{_MODULE}.QMessageBox") as mb:
+        ctrl._on_finished({'canopy': canopy})
+
+    mb.warning.assert_called_once()
+    assert "no data covers this area" in mb.warning.call_args.args[2]
+
+
+def test_on_finished_success_states_registration(app, tmp_path):
+    """A clean download says exactly what got registered."""
+    from unittest.mock import patch
+
+    settings = MagicMock()
+    settings.get_setting.return_value = ''   # no LANDFIRE configured
+    ctrl = TileFetchController(MagicMock(), settings)
+    ctrl.progress_dialog = MagicMock()
+    ctrl._register = True
+    canopy = FetchResult('meta_chm', str(tmp_path / "chm"),
+                         str(tmp_path / "chm" / "m.csv"), tiles_written=1)
+
+    with patch(f"{_MODULE}.QMessageBox") as mb:
+        ctrl._on_finished({'canopy': canopy})
+
+    mb.information.assert_called_once()
+    body = mb.information.call_args.args[2]
+    assert "registered as the active source" in body
+
+
+def test_register_results_returns_registration_map(app, tmp_path):
+    settings = MagicMock()
+    settings.get_setting.return_value = ''
+    ctrl = TileFetchController(MagicMock(), settings)
+    ctrl._register = True
+    canopy = FetchResult('meta_chm', str(tmp_path / "chm"),
+                         str(tmp_path / "chm" / "m.csv"), tiles_written=1)
+    registered = ctrl._register_results({'canopy': canopy})
+    assert registered == {'canopy': True}
+
+
+def test_register_results_skips_canopy_without_manifest(app, tmp_path):
+    """manifest_path=None (nothing usable downloaded) must not register."""
+    settings = MagicMock()
+    ctrl = TileFetchController(MagicMock(), settings)
+    ctrl._register = True
+    canopy = FetchResult('meta_chm', str(tmp_path / "chm"), None)
+    registered = ctrl._register_results({'canopy': canopy})
+    assert 'canopy' not in registered
+    canopy_writes = [c for c in settings.set_setting.call_args_list
+                     if c.args and str(c.args[0]).startswith('Canopy')]
+    assert canopy_writes == []
+
+
+# --- LANDFIRE clobber guard ---------------------------------------------------
+
+def _landfire_settings():
+    settings = MagicMock()
+    values = {'CanopyKind': 'landfire',
+              'CanopyManifestPath': 'C:/landfire/manifest.csv',
+              'CanopyTilesDir': 'C:/landfire/tiles'}
+    settings.get_setting.side_effect = lambda k, default='': values.get(k, default)
+    return settings
+
+
+def test_landfire_source_not_silently_clobbered(app, tmp_path):
+    """With LANDFIRE configured, declining the prompt keeps it untouched."""
+    from unittest.mock import patch
+    from PySide6.QtWidgets import QMessageBox
+
+    settings = _landfire_settings()
+    ctrl = TileFetchController(MagicMock(), settings)
+    ctrl._register = True
+    canopy = FetchResult('meta_chm', str(tmp_path / "chm"),
+                         str(tmp_path / "chm" / "m.csv"), tiles_written=1)
+
+    with patch(f"{_MODULE}.QMessageBox") as mb:
+        mb.StandardButton = QMessageBox.StandardButton
+        mb.question.return_value = QMessageBox.StandardButton.No
+        registered = ctrl._register_results({'canopy': canopy})
+
+    mb.question.assert_called_once()
+    assert registered == {'canopy': False}
+    canopy_writes = [c for c in settings.set_setting.call_args_list
+                     if c.args and str(c.args[0]).startswith('Canopy')]
+    assert canopy_writes == []
+
+
+def test_landfire_overwrite_confirmed_registers_meta(app, tmp_path):
+    """Accepting the prompt switches the canopy source to the Meta download."""
+    from unittest.mock import patch
+    from PySide6.QtWidgets import QMessageBox
+
+    settings = _landfire_settings()
+    stored = {}
+    settings.set_setting.side_effect = lambda k, v: stored.__setitem__(k, v)
+    ctrl = TileFetchController(MagicMock(), settings)
+    ctrl._register = True
+    canopy = FetchResult('meta_chm', str(tmp_path / "chm"),
+                         str(tmp_path / "chm" / "m.csv"), tiles_written=1)
+
+    with patch(f"{_MODULE}.QMessageBox") as mb:
+        mb.StandardButton = QMessageBox.StandardButton
+        mb.question.return_value = QMessageBox.StandardButton.Yes
+        registered = ctrl._register_results({'canopy': canopy})
+
+    assert registered == {'canopy': True}
+    assert stored['CanopyKind'] == 'meta'
+
+
+def test_no_guard_when_no_landfire_configured(app, tmp_path):
+    """Meta/empty existing config registers without any prompt."""
+    from unittest.mock import patch
+
+    settings = MagicMock()
+    settings.get_setting.return_value = ''
+    ctrl = TileFetchController(MagicMock(), settings)
+    ctrl._register = True
+    canopy = FetchResult('meta_chm', str(tmp_path / "chm"),
+                         str(tmp_path / "chm" / "m.csv"), tiles_written=1)
+
+    with patch(f"{_MODULE}.QMessageBox") as mb:
+        registered = ctrl._register_results({'canopy': canopy})
+
+    mb.question.assert_not_called()
+    assert registered == {'canopy': True}
+
+
+# --- phase messaging in the download thread -----------------------------------
+
+def test_thread_emits_phase_transition_messages(app, tmp_path):
+    """The thread announces each phase up front so the dialog never shows a
+    stale 'DEM 100%' while the canopy phase runs (the frozen-dialog bug)."""
+    service = MagicMock()
+    service.fetch_3dep_dem.return_value = FetchResult('usgs_3dep_dem', str(tmp_path), None)
+    service.fetch_meta_canopy.return_value = FetchResult('meta_chm', str(tmp_path), None)
+    thread = TileFetchThread(service, (-120.5, 38.7, -120.4, 38.8), str(tmp_path),
+                             want_dem=True, want_canopy=True)
+    messages = []
+    thread.progressUpdated.connect(lambda c, t, m: messages.append(m))
+    thread.run()
+
+    assert any("Step 1/2" in m and "DEM" in m for m in messages)
+    assert any("Step 2/2" in m and "canopy" in m.lower() for m in messages)
+    # The canopy announcement resets the bar BEFORE the canopy fetch runs.
+    step2 = next(i for i, m in enumerate(messages) if "Step 2/2" in m)
+    assert step2 >= 1
+
+
+def test_last_results_lifecycle(app, tmp_path):
+    """last_results reports only a COMPLETED run: None initially, set by
+    _on_finished, reset when a new run_fetch starts (chaining contract)."""
+    from unittest.mock import patch
+    from PySide6.QtWidgets import QDialog
+
+    settings = MagicMock()
+    settings.get_setting.return_value = ''
+    ctrl = TileFetchController(MagicMock(), settings)
+    assert ctrl.last_results is None
+
+    ctrl.progress_dialog = MagicMock()
+    ctrl._register = False
+    results = {'dem': FetchResult('usgs_3dep_dem', str(tmp_path), None, tiles_written=1)}
+    with patch(f"{_MODULE}.QMessageBox"):
+        ctrl._on_finished(results)
+    assert ctrl.last_results == results
+
+    # A new run resets it so a dismissed dialog can't reuse stale results.
+    with patch(f"{_MODULE}.TileFetchDialog") as MockDlg, \
+         patch(f"{_MODULE}.QMessageBox"):
+        MockDlg.return_value.exec.return_value = QDialog.Rejected
+        ctrl.run_fetch()
+    assert ctrl.last_results is None
+
+
+def test_thread_prefixes_service_progress_with_phase(app, tmp_path):
+    """Per-tile service progress carries the phase prefix."""
+    def dem_with_progress(bounds, out_dir, progress_callback=None, cancel_check=None):
+        if progress_callback:
+            progress_callback(1, 1, "Downloading DEM tile 1/1...")
+        return FetchResult('usgs_3dep_dem', out_dir, None, tiles_written=1)
+
+    service = MagicMock()
+    service.fetch_3dep_dem.side_effect = dem_with_progress
+    service.fetch_meta_canopy.return_value = FetchResult('meta_chm', str(tmp_path), None)
+    thread = TileFetchThread(service, (-120.5, 38.7, -120.4, 38.8), str(tmp_path),
+                             want_dem=True, want_canopy=True)
+    messages = []
+    thread.progressUpdated.connect(lambda c, t, m: messages.append(m))
+    thread.run()
+
+    assert any(m.startswith("Step 1/2: Downloading DEM tile") for m in messages)
+
+
 # --- _on_error -------------------------------------------------------------
 
 def test_on_error_shows_critical_rejects_and_logs(app):
@@ -238,39 +470,53 @@ def test_on_error_handles_no_progress_dialog(app):
 
 # --- _on_cancelled ---------------------------------------------------------
 
-def test_on_cancelled_terminates_thread_and_rejects(app):
+def test_on_cancelled_terminates_thread_rejects_and_warns(app):
+    """Cancel tears down the transfer AND says nothing was registered —
+    a silently closing dialog was being read as a successful download."""
+    from unittest.mock import patch
+
     ctrl = TileFetchController(MagicMock(), MagicMock())
     ctrl.thread = MagicMock()
     ctrl.thread.isRunning.return_value = True
     ctrl.progress_dialog = MagicMock()
     ctrl.progress_dialog.isVisible.return_value = True
 
-    ctrl._on_cancelled()
+    with patch(f"{_MODULE}.QMessageBox") as mb:
+        ctrl._on_cancelled()
 
     ctrl.thread.terminate.assert_called_once()
     ctrl.thread.wait.assert_called_once()
     ctrl.progress_dialog.reject.assert_called_once()
+    mb.warning.assert_called_once()
+    assert "Cancelled" in mb.warning.call_args.args[1]
+    assert "No tiles were registered" in mb.warning.call_args.args[2]
 
 
 def test_on_cancelled_skips_when_thread_idle_and_dialog_hidden(app):
+    from unittest.mock import patch
+
     ctrl = TileFetchController(MagicMock(), MagicMock())
     ctrl.thread = MagicMock()
     ctrl.thread.isRunning.return_value = False
     ctrl.progress_dialog = MagicMock()
     ctrl.progress_dialog.isVisible.return_value = False
 
-    ctrl._on_cancelled()
+    with patch(f"{_MODULE}.QMessageBox"):
+        ctrl._on_cancelled()
 
     ctrl.thread.terminate.assert_not_called()
     ctrl.progress_dialog.reject.assert_not_called()
 
 
 def test_on_cancelled_handles_none_state(app):
+    from unittest.mock import patch
+
     ctrl = TileFetchController(MagicMock(), MagicMock())
     ctrl.thread = None
     ctrl.progress_dialog = None
 
-    ctrl._on_cancelled()   # must not raise
+    with patch(f"{_MODULE}.QMessageBox"):
+        ctrl._on_cancelled()   # must not raise
 
 
 # --- _fill_from_folder -----------------------------------------------------
@@ -484,3 +730,41 @@ def test_run_fetch_cancels_thread_when_progress_rejected(app):
     assert ctrl._register is False
     thread.start.assert_called_once()
     thread.cancel.assert_called_once()
+
+
+def test_run_fetch_passes_default_output_dir_to_dialog(app):
+    """The results folder is forwarded to the dialog as the output-field default."""
+    from unittest.mock import patch
+    from PySide6.QtWidgets import QDialog
+
+    ctrl = TileFetchController(MagicMock(), MagicMock())
+    with patch(f"{_MODULE}.TileFetchDialog") as MockDlg, \
+         patch(f"{_MODULE}.QMessageBox"):
+        MockDlg.return_value.exec.return_value = QDialog.Rejected  # bail out early
+        ctrl.run_fetch(default_output_dir="/results/mission1")
+
+    _args, kwargs = MockDlg.call_args
+    assert kwargs.get("default_output_dir") == "/results/mission1"
+
+
+def test_on_fill_source_dispatches_to_fill_methods(app):
+    """The dropdown's source key routes to the mission / folder fill logic."""
+    ctrl = TileFetchController(MagicMock(), MagicMock())
+    ctrl._mission_images = [{"path": "a.jpg"}]
+    ctrl._fill_aoi = MagicMock()
+    ctrl._fill_from_folder = MagicMock()
+    dialog = MagicMock()
+
+    ctrl._on_fill_source(dialog, "mission")
+    ctrl._fill_aoi.assert_called_once()
+    ctrl._fill_from_folder.assert_not_called()
+
+    ctrl._on_fill_source(dialog, "folder")
+    ctrl._fill_from_folder.assert_called_once()
+
+    # An unknown/placeholder key is a no-op.
+    ctrl._fill_aoi.reset_mock()
+    ctrl._fill_from_folder.reset_mock()
+    ctrl._on_fill_source(dialog, None)
+    ctrl._fill_aoi.assert_not_called()
+    ctrl._fill_from_folder.assert_not_called()

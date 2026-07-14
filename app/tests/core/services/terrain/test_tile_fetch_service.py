@@ -227,3 +227,266 @@ def test_fetch_3dep_request_exception_is_swallowed(tmp_path):
     # Each of the initial call and the one blind retry exhausts MAX_RETRIES attempts,
     # proving exceptions were swallowed and the loop continued rather than aborting.
     assert len(svc.session.calls) == TileFetchService.MAX_RETRIES * 2
+
+
+# --- absent vs failed classification (canopy) --------------------------------
+#
+# Regression: a genuine download failure used to be filed as a benign "skip"
+# (like a 404), so the fetch reported success with no manifest and the canopy
+# source silently never registered ("CanopyServiceFactory: paths unset").
+
+def test_fetch_meta_failure_is_counted_as_failed_not_skipped(tmp_path):
+    """Exhausted retries -> tiles_failed + errors entry, NOT tiles_skipped."""
+    svc = _svc(lambda url, params, n: _Resp(500))
+    result = svc.fetch_meta_canopy((-120.50, 38.70, -120.49, 38.71), str(tmp_path))
+    assert result.tiles_written == 0
+    assert result.tiles_failed >= 1
+    assert result.tiles_skipped == 0
+    assert result.errors and result.errors[0][1] == "download failed"
+    assert result.manifest_path is None
+
+
+def test_fetch_meta_connection_error_is_failed(tmp_path):
+    import requests
+
+    def handler(url, params, n):
+        raise requests.exceptions.ConnectionError("net down")
+
+    svc = _svc(handler)
+    result = svc.fetch_meta_canopy((-120.50, 38.70, -120.49, 38.71), str(tmp_path))
+    assert result.tiles_failed >= 1
+    assert result.tiles_skipped == 0
+
+
+def test_fetch_meta_404_still_skipped_not_failed(tmp_path):
+    """Sparse coverage (403/404) stays a benign skip with no error entry."""
+    svc = _svc(lambda url, params, n: _Resp(404))
+    result = svc.fetch_meta_canopy((-120.50, 38.70, -120.49, 38.71), str(tmp_path))
+    assert result.tiles_skipped >= 1
+    assert result.tiles_failed == 0
+    assert result.errors == []
+
+
+def test_memory_error_is_not_retried(tmp_path):
+    """A MemoryError (buffering a huge body) must not trigger a re-download."""
+    calls = {'n': 0}
+
+    def handler(url, params, n):
+        calls['n'] += 1
+        raise MemoryError("765 MB body")
+
+    svc = _svc(handler)
+    result = svc.fetch_meta_canopy((-120.50, 38.70, -120.49, 38.71), str(tmp_path))
+    assert result.tiles_failed >= 1
+    # One attempt per transfer path (stream + none) -- never MAX_RETRIES loops.
+    assert calls['n'] <= 2
+
+
+# --- streamed fallback behavior ----------------------------------------------
+
+class _StreamResp:
+    """Response with iter_content + headers, modeling a large streamed body."""
+
+    def __init__(self, status, chunks, content_length=None):
+        self.status_code = status
+        self._chunks = chunks
+        self.headers = {}
+        if content_length is not None:
+            self.headers['Content-Length'] = str(content_length)
+        self.closed = False
+
+    def iter_content(self, chunk_size=None):
+        for c in self._chunks:
+            yield c
+
+    def close(self):
+        self.closed = True
+
+
+class _StreamSession:
+    """Session whose get() accepts stream= and returns a _StreamResp."""
+
+    def __init__(self, resp_factory):
+        self._factory = resp_factory
+        self.calls = []
+
+    def get(self, url, params=None, timeout=None, stream=False):
+        self.calls.append((url, stream))
+        return self._factory()
+
+
+def test_stream_to_file_writes_chunks_and_reports_bytes(tmp_path):
+    """A streamed body lands on disk chunk by chunk with byte progress —
+    resp.content is never touched (the memory contract for ~765 MB tiles)."""
+    chunks = [b"a" * (1024 * 1024), b"b" * (1024 * 1024)]
+    session = _StreamSession(lambda: _StreamResp(200, chunks, content_length=2 * 1024 * 1024))
+    svc = TileFetchService(session=session, backoff_ms=0)
+    dest = tmp_path / "big.tif"
+    updates = []
+
+    outcome = svc._stream_to_file(
+        "http://x/big.tif", str(dest),
+        progress_callback=lambda c, t, m: updates.append((c, t, m)))
+
+    assert outcome == "ok"
+    assert dest.stat().st_size == 2 * 1024 * 1024
+    assert session.calls == [("http://x/big.tif", True)]  # streamed, not buffered
+    # Byte progress was reported during (not just after) the transfer.
+    assert len(updates) >= 2
+    assert "MB" in updates[0][2]
+
+
+def test_stream_to_file_cancel_mid_transfer_deletes_partial(tmp_path):
+    """Cancel between chunks stops the download and removes the partial file."""
+    state = {'chunks': 0}
+
+    class _CancelableResp(_StreamResp):
+        def iter_content(self, chunk_size=None):
+            for c in [b"x" * 1024] * 100:
+                state['chunks'] += 1
+                yield c
+
+    session = _StreamSession(lambda: _CancelableResp(200, [], content_length=100 * 1024))
+    svc = TileFetchService(session=session, backoff_ms=0)
+    dest = tmp_path / "big.tif"
+
+    outcome = svc._stream_to_file(
+        "http://x/big.tif", str(dest),
+        cancel_check=lambda: state['chunks'] >= 3)
+
+    assert outcome == "cancelled"
+    assert not dest.exists()          # partial file cleaned up
+    assert state['chunks'] < 100      # transfer stopped early
+
+
+def test_stream_to_file_mid_body_failure_is_failed_no_restart(tmp_path):
+    """A mid-body exception fails once — no MAX_RETRIES x 765 MB restarts."""
+    def bad_iter():
+        yield b"x" * 1024
+        raise IOError("connection reset")
+
+    class _BadResp(_StreamResp):
+        def iter_content(self, chunk_size=None):
+            return bad_iter()
+
+    session = _StreamSession(lambda: _BadResp(200, []))
+    svc = TileFetchService(session=session, backoff_ms=0)
+    dest = tmp_path / "big.tif"
+
+    outcome = svc._stream_to_file("http://x/big.tif", str(dest))
+    assert outcome == "failed"
+    assert not dest.exists()
+    assert len(session.calls) == 1    # no whole-file restart
+
+
+# --- progress cadence ---------------------------------------------------------
+
+def test_fetch_meta_emits_progress_before_transfer(tmp_path):
+    """The tile is announced BEFORE the download so the UI never sits on a
+    stale message during a long transfer (the frozen-dialog regression)."""
+    order = []
+
+    class _RecordingSession(_Session):
+        def get(self, url, params=None, timeout=None):
+            order.append('transfer')
+            return _Resp(200)
+
+    svc = TileFetchService(session=_RecordingSession(None), backoff_ms=0)
+    svc.fetch_meta_canopy(
+        (-120.50, 38.70, -120.499, 38.701), str(tmp_path),
+        progress_callback=lambda c, t, m: order.append(f"progress:{m}"))
+
+    first_progress = order.index(next(o for o in order if o.startswith('progress')))
+    first_transfer = order.index('transfer')
+    assert first_progress < first_transfer
+
+
+# --- windowed /vsicurl clip path ----------------------------------------------
+
+def test_fetch_meta_auto_uses_http_path_with_injected_session(tmp_path):
+    """An injected session forces the HTTP path (tests must never touch GDAL)."""
+    svc = _svc(lambda url, params, n: _Resp(200))
+    result = svc.fetch_meta_canopy((-120.50, 38.70, -120.49, 38.71), str(tmp_path))
+    assert result.tiles_written >= 1
+    assert len(svc.session.calls) >= 1  # went through the session
+
+
+def test_fetch_meta_windowed_clip_writes_manifest_with_clip_bounds(tmp_path):
+    """The windowed path records the CLIP's extent (not the whole z9 tile)."""
+    svc = TileFetchService(backoff_ms=0)
+    clip_bounds = (-120.501, 38.699, -120.489, 38.711)
+
+    from unittest.mock import patch
+    with patch.object(svc, '_probe_absent', return_value=('ok', 42)), \
+         patch.object(svc, '_fetch_canopy_tile_windowed',
+                      return_value=("chm_QK_clip_ab12cd34.tif", clip_bounds)) as mock_win:
+        result = svc.fetch_meta_canopy((-120.50, 38.70, -120.49, 38.71),
+                                       str(tmp_path), use_windowed=True)
+
+    mock_win.assert_called_once()
+    assert result.tiles_written == 1
+    assert result.manifest_path
+    with open(result.manifest_path, newline="") as fh:
+        rows = list(csv.DictReader(fh))
+    assert rows[0]['filename'] == "chm_QK_clip_ab12cd34.tif"
+    # Manifest bbox is the clip's true extent so tile lookup intersects correctly.
+    assert float(rows[0]['minX']) == clip_bounds[0]
+    assert float(rows[0]['maxY']) == clip_bounds[3]
+
+
+def test_fetch_meta_windowed_failure_falls_back_to_stream(tmp_path):
+    """If the /vsicurl clip fails (no GDAL curl), the streamed download runs."""
+    svc = _svc(lambda url, params, n: _Resp(200))
+
+    from unittest.mock import patch
+    with patch.object(svc, '_probe_absent', return_value=('ok', None)), \
+         patch.object(svc, '_fetch_canopy_tile_windowed',
+                      side_effect=RuntimeError("vsicurl unavailable")):
+        result = svc.fetch_meta_canopy((-120.50, 38.70, -120.49, 38.71),
+                                       str(tmp_path), use_windowed=True)
+
+    assert result.tiles_written >= 1               # fallback succeeded
+    assert len(svc.session.calls) >= 1             # via the HTTP session
+
+
+def test_windowed_survives_prior_dem_fetch(tmp_path):
+    """REGRESSION: fetch_3dep_dem lazily creates the internal session; the
+    canopy auto-mode must still choose the windowed clip afterwards.
+
+    This is the exact in-app sequence (Step 1/2 DEM, Step 2/2 canopy) that
+    silently fell back to the whole-~765 MB streamed download, because
+    use_windowed was keyed off `_session is None` instead of injection.
+    """
+    from unittest.mock import patch
+
+    svc = TileFetchService(backoff_ms=0)
+    # Simulate the DEM phase having created the internal session.
+    svc.session  # property access instantiates requests.Session
+    assert svc._session is not None
+    assert svc._session_injected is False
+
+    clip_bounds = (-120.501, 38.699, -120.489, 38.711)
+    with patch.object(svc, '_probe_absent', return_value=('ok', 42)), \
+         patch.object(svc, '_fetch_canopy_tile_windowed',
+                      return_value=("chm_QK_clip_ab12cd34.tif", clip_bounds)) as mock_win, \
+         patch.object(svc, '_stream_to_file') as mock_stream:
+        result = svc.fetch_meta_canopy((-120.50, 38.70, -120.49, 38.71), str(tmp_path))
+
+    mock_win.assert_called_once()          # windowed path taken
+    mock_stream.assert_not_called()        # NOT the 765 MB fallback
+    assert result.tiles_written == 1
+
+
+def test_fetch_meta_windowed_absent_probe_skips(tmp_path):
+    """A 404 probe classifies the tile as absent without opening GDAL at all."""
+    svc = TileFetchService(backoff_ms=0)
+
+    from unittest.mock import patch
+    with patch.object(svc, '_probe_absent', return_value=('absent', None)), \
+         patch.object(svc, '_fetch_canopy_tile_windowed') as mock_win:
+        result = svc.fetch_meta_canopy((-120.50, 38.70, -120.49, 38.71),
+                                       str(tmp_path), use_windowed=True)
+
+    mock_win.assert_not_called()
+    assert result.tiles_skipped >= 1
+    assert result.tiles_failed == 0

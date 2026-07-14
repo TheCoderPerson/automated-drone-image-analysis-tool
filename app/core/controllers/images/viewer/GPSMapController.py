@@ -5,8 +5,8 @@ This controller handles the GPS map window lifecycle, data extraction,
 and coordination between the map and main viewer.
 """
 
-from PySide6.QtCore import QObject, Signal, QTimer, QPointF
-from PySide6.QtWidgets import QMenu
+from PySide6.QtCore import QObject, QThread, Signal, QTimer, QPointF
+from PySide6.QtWidgets import QMenu, QMessageBox
 from PySide6.QtGui import QCursor, QImage, QPixmap
 from helpers.LocationInfo import LocationInfo
 from helpers.MetaDataHelper import MetaDataHelper
@@ -19,6 +19,27 @@ from core.views.images.viewer.dialogs.GPSMapDialog import GPSMapDialog
 import piexif
 from datetime import datetime
 import math
+import os
+
+
+class _CanopyOverlayWorker(QThread):
+    """Samples + colorizes the canopy overlay off the GUI thread.
+
+    Emits result_ready(rgba_or_None, spec). Only numpy/rasterio work happens
+    here; QPixmap conversion stays on the GUI thread (Qt requirement).
+    """
+
+    result_ready = Signal(object, object)
+
+    def __init__(self, canopy_service, spec, logger):
+        super().__init__()
+        self._canopy = canopy_service
+        self._spec = spec
+        self._logger = logger
+
+    def run(self):
+        rgba = GPSMapController._build_canopy_rgba(self._canopy, self._spec, self._logger)
+        self.result_ready.emit(rgba, self._spec)
 
 
 class GPSMapController(QObject):
@@ -51,6 +72,10 @@ class GPSMapController(QObject):
         self._canopy_svc = None
         self._canopy_svc_loaded = False
         self._canopy_overlay_cache = None  # (spec key, pixmap, transform6)
+        self._canopy_worker = None
+        self._canopy_pending_opacity = 70
+        self._tile_fetch_controller = None
+        self._canopy_prompt_shown = False  # one-time "download canopy?" prompt per session
 
         # Coalesce zoom-FOV updates. Viewer.viewChanged fires up to twice per
         # wheel notch, and each forward reruns the map's terrain-projected FOV
@@ -93,6 +118,10 @@ class GPSMapController(QObject):
             self.map_dialog.gps_right_clicked.connect(self.on_map_gps_clicked)
             if hasattr(self.map_dialog, 'pod_display_changed'):
                 self.map_dialog.pod_display_changed.connect(self.on_pod_display_changed)
+            if hasattr(self.map_dialog, 'canopy_download_requested'):
+                self.map_dialog.canopy_download_requested.connect(self.on_canopy_download_requested)
+            if hasattr(self.map_dialog, 'pod_calculate_requested'):
+                self.map_dialog.pod_calculate_requested.connect(self.on_pod_calculate_requested)
             # Connect to dialog close event to update button state
             self.map_dialog.finished.connect(self.on_map_dialog_closed)
         else:
@@ -100,17 +129,10 @@ class GPSMapController(QObject):
             self.map_dialog.update_gps_data(self.gps_data, current_gps_index)
             self.map_dialog.set_offline_mode(offline_only)
 
-        # Enable/disable the overlay controls: POD/looks need a cached result,
-        # canopy just needs a configured canopy source. Re-check the canopy
-        # settings each open (the user may have changed them in Preferences).
-        cache = self._pod_cache()
+        # Re-check overlay availability each open: canopy settings may have
+        # changed in Preferences, or a tile download may have registered a source.
         self._canopy_svc_loaded = False
-        pod_available = cache is not None and cache.has_result()
-        if hasattr(self.map_dialog, 'set_overlay_availability'):
-            self.map_dialog.set_overlay_availability(
-                pod_available, self._canopy_service() is not None)
-        elif hasattr(self.map_dialog, 'set_pod_available'):
-            self.map_dialog.set_pod_available(pod_available)
+        self._refresh_overlay_availability()
 
         self.map_dialog.show()
         self.map_dialog.raise_()
@@ -128,6 +150,145 @@ class GPSMapController(QObject):
         # Send current zoom FOV state to the map
         if hasattr(self.parent, '_on_view_changed'):
             self.parent._on_view_changed()
+
+        # Offer a one-time download if no canopy source is configured yet.
+        self._maybe_prompt_canopy_download()
+
+    def _refresh_overlay_availability(self):
+        """Gate the map's overlay controls. POD/look-count need a cached POD
+        result; the canopy mode only needs a configured canopy source."""
+        if self.map_dialog is None:
+            return
+        cache = self._pod_cache()
+        pod_available = cache is not None and cache.has_result()
+        canopy_available = self._canopy_service() is not None
+        if hasattr(self.map_dialog, 'set_overlay_availability'):
+            self.map_dialog.set_overlay_availability(pod_available, canopy_available)
+        elif hasattr(self.map_dialog, 'set_pod_available'):
+            self.map_dialog.set_pod_available(pod_available)
+
+    def on_canopy_download_requested(self):
+        """Run the tile-fetch flow for this mission, then refresh availability so
+        a freshly registered canopy source lights up the overlay immediately."""
+        if self._is_offline_only():
+            self.parent.status_controller.show_toast(
+                self.tr("Downloading tiles is disabled in Offline Only mode"),
+                3000, color="#F44336")
+            return
+        # Release any open canopy datasets first: on Windows an open tile file
+        # cannot be overwritten, which would break a re-download into the same
+        # folder. Also drop the stale overlay cache.
+        self._close_canopy_service()
+        self._canopy_svc_loaded = False
+        self._canopy_overlay_cache = None
+        if not self._run_tile_fetch():
+            return
+        # A download may have registered a new canopy/DEM source in settings.
+        self._canopy_svc_loaded = False
+        self._refresh_overlay_availability()
+        self._maybe_offer_pod_calculation()
+
+    def _maybe_offer_pod_calculation(self):
+        """After a completed download, offer to compute POD right away so the
+        download -> calculate -> overlay workflow chains without leaving the map.
+
+        Only offered when the download actually finished (not dismissed or
+        cancelled) and no POD result is cached yet.
+        """
+        fetch = self._tile_fetch_controller
+        if fetch is None or getattr(fetch, 'last_results', None) is None:
+            return
+        cache = self._pod_cache()
+        if cache is not None and cache.has_result():
+            return
+        resp = QMessageBox.question(
+            self.map_dialog,
+            self.tr("Calculate POD Coverage?"),
+            self.tr("Coverage data is ready. Calculate the probability-of-detection "
+                    "heatmap for this mission now? (May take several minutes.)"),
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.Yes)
+        if resp == QMessageBox.StandardButton.Yes:
+            self.on_pod_calculate_requested()
+
+    def on_pod_calculate_requested(self):
+        """Run the POD coverage calculation from the map view.
+
+        Delegates to the viewer's UnifiedMapExportController (the same flow as
+        Map Export's POD option) so the computation, progress dialog, result
+        cache, and overlay enablement all stay in one place. Outputs land in
+        ``<results>/coverage_pod``.
+        """
+        export_controller = getattr(self.parent, 'unified_map_export', None)
+        if export_controller is None or not hasattr(export_controller, 'run_pod'):
+            try:
+                from core.controllers.images.viewer.exports.UnifiedMapExportController import (
+                    UnifiedMapExportController)
+                export_controller = UnifiedMapExportController(self.parent, self.logger)
+                self.parent.unified_map_export = export_controller
+            except Exception as e:
+                self.logger.error(f"GPS map: POD controller unavailable: {e}")
+                self.parent.status_controller.show_toast(
+                    self.tr("POD calculation is unavailable"), 3000, color="#F44336")
+                return
+        export_controller.run_pod(self._pod_output_dir(), show_on_map=True)
+
+    def _pod_output_dir(self):
+        """Default POD product folder: <results dir>/coverage_pod."""
+        xml_path = getattr(self.parent, 'xml_path', None)
+        if isinstance(xml_path, (str, os.PathLike)) and os.fspath(xml_path):
+            return os.path.join(os.path.dirname(os.fspath(xml_path)), "coverage_pod")
+        return os.path.join(os.getcwd(), "coverage_pod")
+
+    def _run_tile_fetch(self):
+        """Open the Download Tiles dialog seeded with this mission's images so it
+        can auto-fill the AOI. Returns False if the downloader is unavailable."""
+        try:
+            from core.controllers.images.viewer.exports.TileFetchController import TileFetchController
+        except Exception as e:
+            self.logger.error(f"GPS map: tile downloader unavailable: {e}")
+            self.parent.status_controller.show_toast(
+                self.tr("The tile downloader is unavailable"), 3000, color="#F44336")
+            return False
+        settings_service = getattr(self.parent, 'settings_service', None)
+        mission_images = (getattr(self.parent, 'source_images', None)
+                          or getattr(self.parent, 'images', None))
+        # Default the download destination to the results folder (next to
+        # ADIAT_Data.xml) so tiles land beside the analysis they support.
+        # Viewer.xml_path is a pathlib.Path (see MainWindow), so accept any
+        # path-like, not just str; a MagicMock parent in tests is neither.
+        default_output_dir = None
+        xml_path = getattr(self.parent, 'xml_path', None)
+        if isinstance(xml_path, (str, os.PathLike)) and os.fspath(xml_path):
+            default_output_dir = os.path.dirname(os.fspath(xml_path))
+        # Keep a reference so the fetch thread is not collected mid-run.
+        self._tile_fetch_controller = TileFetchController(
+            self.map_dialog, settings_service, logger=self.logger)
+        self._tile_fetch_controller.run_fetch(
+            mission_images=mission_images, default_output_dir=default_output_dir)
+        return True
+
+    def _maybe_prompt_canopy_download(self):
+        """Once per session, if no canopy source is configured (and not offline),
+        offer to download elevation/canopy tiles for this mission."""
+        if self._canopy_prompt_shown or self.map_dialog is None:
+            return
+        if self._is_offline_only() or self._canopy_service() is not None:
+            return
+        self._canopy_prompt_shown = True
+        resp = QMessageBox.question(
+            self.map_dialog,
+            self.tr("Download Canopy Data?"),
+            self.tr("No canopy-height data is configured for this mission.\n\n"
+                    "Download elevation and canopy tiles for this area now so the "
+                    "canopy overlay and terrain-aware detection coverage can use them?\n\n"
+                    "This downloads Meta/WRI canopy height (1 m) and sets it as the canopy "
+                    "source, replacing any LANDFIRE selection (LANDFIRE tiles must be added "
+                    "manually)."),
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No)
+        if resp == QMessageBox.StandardButton.Yes:
+            self.on_canopy_download_requested()
 
     def _is_offline_only(self) -> bool:
         """Return whether OfflineOnly preference is enabled."""
@@ -355,7 +516,7 @@ class GPSMapController(QObject):
         """Lazily build (and cache) the settings-configured CanopyService."""
         if not self._canopy_svc_loaded:
             self._canopy_svc_loaded = True
-            self._canopy_svc = None
+            self._close_canopy_service()   # release the old source's datasets
             try:
                 from core.services.SettingsService import SettingsService
                 from core.services.terrain.CanopyServiceFactory import create_canopy_service
@@ -363,6 +524,21 @@ class GPSMapController(QObject):
             except Exception as e:
                 self.logger.warning(f"Canopy overlay: service unavailable: {e}")
         return self._canopy_svc
+
+    def _close_canopy_service(self):
+        """Deterministically close the canopy service's open rasterio datasets.
+
+        The Meta/WRI source keeps large COGs open in an LRU; leaking the
+        handles blocks re-downloads on Windows (open files can't be replaced)
+        and holds file mappings for the viewer's lifetime.
+        """
+        svc = self._canopy_svc
+        self._canopy_svc = None
+        if svc is not None:
+            try:
+                svc.close()
+            except Exception:
+                pass
 
     def _canopy_extent_spec(self):
         """EPSG:3857 GridSpec for the canopy overlay: the cached POD grid when
@@ -390,9 +566,33 @@ class GPSMapController(QObject):
         res_m = max(2.0, span_m / float(self._max_overlay_dim))
         return spec_for_bounds_wgs84(bounds, res_m)
 
+    @staticmethod
+    def _build_canopy_rgba(canopy, spec, logger):
+        """Sample + colorize the canopy for ``spec``. Worker-thread safe: touches
+        only numpy/rasterio, never QPixmap (pixmaps must be built on the GUI
+        thread). Returns an RGBA ndarray or None."""
+        try:
+            sample = canopy.sample_grid_spec(spec)
+        except Exception as e:
+            logger.warning(f"Canopy overlay: sampling failed: {e}")
+            return None
+        if sample is None or sample.chm is None:
+            return None
+        from core.services.coverage.colormap import chm_to_rgba
+        return chm_to_rgba(sample.chm)
+
+    @staticmethod
+    def _canopy_cache_key(spec):
+        return (spec.crs, tuple(spec.transform)[:6], spec.width, spec.height)
+
     def _build_canopy_pixmap(self):
         """(QPixmap, transform6) of canopy height over the mission extent, or
-        None when no canopy source is configured / no tile covers the area."""
+        None when no canopy source is configured / no tile covers the area.
+
+        Synchronous path (also the worker's core); the interactive overlay
+        toggle goes through _start_canopy_overlay_build so the sampling runs
+        off the GUI thread.
+        """
         canopy = self._canopy_service()
         if canopy is None:
             return None
@@ -400,22 +600,76 @@ class GPSMapController(QObject):
         if spec is None:
             return None
 
-        key = (spec.crs, tuple(spec.transform)[:6], spec.width, spec.height)
+        key = self._canopy_cache_key(spec)
         if self._canopy_overlay_cache and self._canopy_overlay_cache[0] == key:
             return self._canopy_overlay_cache[1], self._canopy_overlay_cache[2]
 
-        try:
-            sample = canopy.sample_grid_spec(spec)
-        except Exception as e:
-            self.logger.warning(f"Canopy overlay: sampling failed: {e}")
+        rgba = self._build_canopy_rgba(canopy, spec, self.logger)
+        if rgba is None:
             return None
-        if sample is None or sample.chm is None:
-            return None
-
-        from core.services.coverage.colormap import chm_to_rgba
-        pixmap, transform6 = self._rgba_to_pixmap(chm_to_rgba(sample.chm), spec.transform)
+        pixmap, transform6 = self._rgba_to_pixmap(rgba, spec.transform)
         self._canopy_overlay_cache = (key, pixmap, transform6)
         return pixmap, transform6
+
+    def _start_canopy_overlay_build(self, opacity):
+        """Build the canopy overlay on a worker thread (a full-resolution
+        sample + reproject can take seconds -- it must not freeze the UI).
+        Delivery lands back on the GUI thread via the worker's signal."""
+        canopy = self._canopy_service()
+        spec = self._canopy_extent_spec() if canopy is not None else None
+        if canopy is None or spec is None:
+            self._canopy_overlay_failed()
+            return
+
+        key = self._canopy_cache_key(spec)
+        if self._canopy_overlay_cache and self._canopy_overlay_cache[0] == key:
+            self._set_overlay(self._canopy_overlay_cache[1],
+                              self._canopy_overlay_cache[2], 'canopy', opacity)
+            return
+
+        if self._canopy_worker is not None and self._canopy_worker.isRunning():
+            # A build is already running; the newest request wins on delivery.
+            self._canopy_pending_opacity = opacity
+            return
+
+        if hasattr(self.parent, 'status_controller'):
+            self.parent.status_controller.show_toast(
+                self.tr("Building canopy overlay..."), 2000)
+        self._canopy_pending_opacity = opacity
+        self._canopy_worker = _CanopyOverlayWorker(canopy, spec, self.logger)
+        self._canopy_worker.result_ready.connect(self._on_canopy_overlay_built)
+        self._canopy_worker.start()
+
+    def _on_canopy_overlay_built(self, rgba, spec):
+        """GUI-thread delivery of a worker-built canopy RGBA array."""
+        worker = self._canopy_worker
+        self._canopy_worker = None
+        if worker is not None:
+            worker.wait(100)
+        # The overlay may have been toggled off / switched while building.
+        if not self._pod_overlay_enabled or self._pod_overlay_mode != 'canopy':
+            return
+        if rgba is None:
+            self._canopy_overlay_failed()
+            return
+        pixmap, transform6 = self._rgba_to_pixmap(rgba, spec.transform)
+        self._canopy_overlay_cache = (self._canopy_cache_key(spec), pixmap, transform6)
+        self._set_overlay(pixmap, transform6, 'canopy', self._canopy_pending_opacity)
+
+    def _canopy_overlay_failed(self):
+        self._clear_pod_overlay()
+        if hasattr(self.parent, 'status_controller'):
+            self.parent.status_controller.show_toast(
+                self.tr("No canopy data covers this area"), 3000, color="#F44336")
+
+    def _set_overlay(self, pixmap, transform6, mode, opacity):
+        self._pod_overlay_enabled = True
+        self._pod_overlay_mode = mode
+        if self.map_dialog is None or not hasattr(self.map_dialog, 'map_view'):
+            return
+        view = self.map_dialog.map_view
+        view.set_pod_overlay(pixmap, transform6)
+        view.set_pod_overlay_opacity(opacity / 100.0)
 
     def enable_pod_overlay(self, mode='pod'):
         """Turn the overlay on from the cached result (called after an export run)."""
@@ -434,32 +688,20 @@ class GPSMapController(QObject):
             return
 
         if mode == 'canopy':
-            from PySide6.QtWidgets import QApplication
-            from PySide6.QtCore import Qt
-            QApplication.setOverrideCursor(Qt.CursorShape.WaitCursor)
-            try:
-                built = self._build_canopy_pixmap()
-            finally:
-                QApplication.restoreOverrideCursor()
-            if built is None:
-                self._clear_pod_overlay()
-                if hasattr(self.parent, 'status_controller'):
-                    self.parent.status_controller.show_toast(
-                        self.tr("No canopy data covers this area"), 3000, color="#F44336")
-                return
-            pixmap, transform6 = built
-        else:
-            cache = self._pod_cache()
-            if cache is None or not cache.has_result():
-                self._clear_pod_overlay()
-                return
-            pixmap, transform6 = self._build_pod_pixmap(cache.get_result(), mode)
+            # Sampling a large canopy source can take seconds; run it on a
+            # worker thread and deliver the overlay when it's ready. Mark the
+            # overlay as pending-enabled so delivery knows it's still wanted.
+            self._pod_overlay_enabled = True
+            self._pod_overlay_mode = mode
+            self._start_canopy_overlay_build(opacity)
+            return
 
-        self._pod_overlay_enabled = True
-        self._pod_overlay_mode = mode
-        view = self.map_dialog.map_view
-        view.set_pod_overlay(pixmap, transform6)
-        view.set_pod_overlay_opacity(opacity / 100.0)
+        cache = self._pod_cache()
+        if cache is None or not cache.has_result():
+            self._clear_pod_overlay()
+            return
+        pixmap, transform6 = self._build_pod_pixmap(cache.get_result(), mode)
+        self._set_overlay(pixmap, transform6, mode, opacity)
 
     def _clear_pod_overlay(self):
         self._pod_overlay_enabled = False
@@ -669,6 +911,16 @@ class GPSMapController(QObject):
         # the dialog is gone.
         self._fov_throttle.stop()
         self._has_pending_fov = False
+        # Let an in-flight canopy build finish, then release the (potentially
+        # very large) open canopy datasets deterministically.
+        if self._canopy_worker is not None:
+            try:
+                self._canopy_worker.wait(2000)
+            except Exception:
+                pass
+            self._canopy_worker = None
+        self._close_canopy_service()
+        self._canopy_svc_loaded = False
         if hasattr(self.parent, 'gps_map_open'):
             self.parent.gps_map_open = False
             if hasattr(self.parent, 'ui_style_controller'):

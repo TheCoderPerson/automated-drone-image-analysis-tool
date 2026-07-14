@@ -4,15 +4,26 @@ TileFetchService - download DEM / canopy tiles for an AOI and write the manifest
 * USGS 3DEP DEM  - ArcGIS ImageServer exportImage, tiled to keep each request
   under a pixel cap; writes GeoTIFF tiles + the manifest the USGS3DEPProvider
   reads. (No API key.)
-* Meta/WRI CHM   - Bing-quadkey z9 COG tiles from the public S3 bucket; writes
-  the COG bytes as local tiles + the manifest CanopyService reads.
+* Meta/WRI CHM   - Bing-quadkey z9 COG tiles from the public S3 bucket. A whole
+  z9 COG is enormous (~765 MB for a populated tile), so the fetch prefers a
+  **windowed** rasterio ``/vsicurl`` read that clips just the AOI (KB-MB moved,
+  not the whole file) and writes a small local GeoTIFF whose manifest bbox is
+  the clip's true extent. If GDAL range reads are unavailable the fetch falls
+  back to a **streamed** whole-file download with chunked byte progress and
+  mid-transfer cancellation -- never a blocking whole-body ``resp.content``.
 
-Both mirror the SAR-Preflight fetch patterns (single blind retry for 3DEP;
-linear-backoff retry with skip-on-404 for canopy). Network / file I/O only; no
-Qt. A ``requests.Session`` may be injected for tests.
+Outcome semantics: HTTP 403/404 means the tile legitimately does not exist
+(sparse coverage) and is counted as *skipped*; every other failure (timeouts,
+resets, exhausted retries) is counted as *failed* with an ``errors`` entry so
+callers can tell "no data there" from "the download broke".
+
+Network / file I/O only; no Qt. A ``requests.Session`` may be injected for
+tests (an injected session also forces the HTTP path so tests never touch
+GDAL's network stack).
 """
 
 import csv
+import hashlib
 import math
 import os
 import time
@@ -21,6 +32,12 @@ from pathlib import Path
 from typing import List, Optional, Tuple
 
 from core.services.LoggerService import LoggerService
+
+# Outcome constants for a single tile transfer.
+OUTCOME_OK = 'ok'
+OUTCOME_ABSENT = 'absent'        # confirmed 403/404 -> sparse coverage, benign
+OUTCOME_FAILED = 'failed'        # anything else -> a real failure to surface
+OUTCOME_CANCELLED = 'cancelled'
 
 
 @dataclass
@@ -48,6 +65,12 @@ class TileFetchService:
                  timeout: float = 60.0, backoff_ms: Optional[int] = None):
         self.logger = logger or LoggerService()
         self._session = session
+        # Record whether the caller supplied the session. The lazily created
+        # internal session must NOT count as "injected": the DEM phase creates
+        # it before the canopy phase runs, and keying windowed-vs-HTTP off
+        # `_session is None` made the canopy fetch silently fall back to the
+        # whole-~765 MB download whenever DEM ran first.
+        self._session_injected = session is not None
         self.timeout = timeout
         self.backoff_ms = self.BACKOFF_MS if backoff_ms is None else backoff_ms
 
@@ -106,23 +129,195 @@ class TileFetchService:
 
     # ---- HTTP ----
 
-    def _get_with_retry(self, url, params=None):
-        """GET with linear backoff. Returns bytes, or None for absent (403/404)
-        or exhausted retries."""
+    def _http_get(self, url, params=None, cancel_check=None):
+        """GET with linear backoff. Returns (outcome, bytes-or-None).
+
+        Distinguishes a confirmed-absent tile (403/404 -> OUTCOME_ABSENT) from a
+        genuine failure (exceptions / other statuses / exhausted retries ->
+        OUTCOME_FAILED). Only network-ish exceptions are retried; a MemoryError
+        from buffering a huge body must NOT trigger a re-download.
+        """
         for attempt in range(self.MAX_RETRIES):
+            if cancel_check and cancel_check():
+                return OUTCOME_CANCELLED, None
             if attempt > 0 and self.backoff_ms:
                 time.sleep(self.backoff_ms * attempt / 1000.0)
             try:
                 resp = self.session.get(url, params=params, timeout=self.timeout)
+            except MemoryError:
+                self.logger.error(f"TileFetch: out of memory buffering {url}")
+                return OUTCOME_FAILED, None
             except Exception as e:
                 self.logger.warning(f"TileFetch: request error {url}: {e}")
                 continue
             if resp.status_code == 200:
-                return resp.content
+                return OUTCOME_OK, resp.content
             if resp.status_code in (403, 404):
-                return None
+                return OUTCOME_ABSENT, None
             self.logger.warning(f"TileFetch: HTTP {resp.status_code} for {url}")
-        return None
+        return OUTCOME_FAILED, None
+
+    def _get_with_retry(self, url, params=None):
+        """Back-compat wrapper: bytes on success, None for absent OR failed."""
+        _, content = self._http_get(url, params=params)
+        return content
+
+    def _stream_to_file(self, url, dest_path, progress_callback=None,
+                        cancel_check=None, label=""):
+        """Stream a (potentially huge) file to disk in chunks. Returns an
+        OUTCOME_* constant.
+
+        Chunked writes keep memory flat, report byte progress (MB), and honor
+        cancellation between chunks -- a whole z9 canopy COG can be ~765 MB, so
+        a blocking ``resp.content`` here is exactly the freeze this replaces.
+        A partial file is deleted on cancel/failure.
+        """
+        for attempt in range(self.MAX_RETRIES):
+            if cancel_check and cancel_check():
+                return OUTCOME_CANCELLED
+            if attempt > 0 and self.backoff_ms:
+                time.sleep(self.backoff_ms * attempt / 1000.0)
+            try:
+                # Injected test sessions may not accept stream=; fall back to a
+                # plain GET (their bodies are tiny in-memory fixtures anyway).
+                try:
+                    resp = self.session.get(url, timeout=self.timeout, stream=True)
+                except TypeError:
+                    resp = self.session.get(url, timeout=self.timeout)
+            except MemoryError:
+                # Buffering a huge body OOM'd; retrying would just re-download
+                # hundreds of MB into the same wall.
+                self.logger.error(f"TileFetch: out of memory requesting {url}")
+                return OUTCOME_FAILED
+            except Exception as e:
+                self.logger.warning(f"TileFetch: request error {url}: {e}")
+                continue
+
+            if resp.status_code in (403, 404):
+                return OUTCOME_ABSENT
+            if resp.status_code != 200:
+                self.logger.warning(f"TileFetch: HTTP {resp.status_code} for {url}")
+                continue
+
+            total_bytes = 0
+            try:
+                total_bytes = int(getattr(resp, 'headers', {}).get('Content-Length', 0))
+            except (TypeError, ValueError):
+                total_bytes = 0
+            total_mb = max(1, round(total_bytes / (1024 * 1024))) if total_bytes else 0
+
+            try:
+                with open(dest_path, 'wb') as fh:
+                    if hasattr(resp, 'iter_content'):
+                        written = 0
+                        for chunk in resp.iter_content(chunk_size=1024 * 1024):
+                            if cancel_check and cancel_check():
+                                try:
+                                    resp.close()
+                                except Exception:
+                                    pass
+                                fh.close()
+                                Path(dest_path).unlink(missing_ok=True)
+                                return OUTCOME_CANCELLED
+                            if not chunk:
+                                continue
+                            fh.write(chunk)
+                            written += len(chunk)
+                            if progress_callback:
+                                done_mb = round(written / (1024 * 1024))
+                                progress_callback(
+                                    min(done_mb, total_mb) if total_mb else done_mb,
+                                    total_mb,
+                                    f"{label} — {done_mb} of {total_mb} MB..." if total_mb
+                                    else f"{label} — {done_mb} MB...")
+                    else:
+                        fh.write(resp.content)
+                return OUTCOME_OK
+            except MemoryError:
+                self.logger.error(f"TileFetch: out of memory streaming {url}")
+                Path(dest_path).unlink(missing_ok=True)
+                return OUTCOME_FAILED
+            except Exception as e:
+                # Mid-body failure: do NOT restart a multi-hundred-MB transfer
+                # MAX_RETRIES times; surface it as a failure.
+                self.logger.warning(f"TileFetch: streaming failed for {url}: {e}")
+                Path(dest_path).unlink(missing_ok=True)
+                return OUTCOME_FAILED
+        return OUTCOME_FAILED
+
+    # ---- windowed COG clip (canopy) ----
+
+    CLIP_PAD_DEG = 300.0 / 111320.0   # ~300 m so padded overlay extents stay covered
+
+    def _fetch_canopy_tile_windowed(self, x, y, zoom, bounds_wgs84, out_dir):
+        """Clip just the AOI from a remote canopy COG via rasterio /vsicurl.
+
+        Downloads only the HTTP ranges GDAL needs (KB-MB) instead of the whole
+        ~765 MB tile. Returns (filename, (minX, minY, maxX, maxY)) for the
+        manifest, or raises on any failure (caller falls back to streaming).
+        """
+        import numpy as np
+        import rasterio
+        from rasterio.windows import from_bounds, Window
+        from rasterio.transform import array_bounds
+
+        qk = self.tile_xy_to_quadkey(x, y, zoom)
+        url = self.META_CHM_URL.format(quadkey=qk)
+
+        # Pad the AOI, then clamp to this tile's own extent.
+        min_lon, min_lat, max_lon, max_lat = bounds_wgs84
+        t_lon0, t_lat0, t_lon1, t_lat1 = self.tile_xy_to_bounds(x, y, zoom)
+        w = max(min_lon - self.CLIP_PAD_DEG, t_lon0)
+        e = min(max_lon + self.CLIP_PAD_DEG, t_lon1)
+        s = max(min_lat - self.CLIP_PAD_DEG, t_lat0)
+        n = min(max_lat + self.CLIP_PAD_DEG, t_lat1)
+        if w >= e or s >= n:
+            raise ValueError("AOI does not intersect tile")
+
+        env = rasterio.Env(
+            GDAL_DISABLE_READDIR_ON_OPEN='EMPTY_DIR',
+            CPL_VSIL_CURL_ALLOWED_EXTENSIONS='.tif',
+            GDAL_HTTP_CONNECTTIMEOUT='30',
+            GDAL_HTTP_TIMEOUT=str(int(self.timeout)),
+        )
+        with env:
+            with rasterio.open('/vsicurl/' + url) as ds:
+                from rasterio.warp import transform_bounds
+                src_bounds = transform_bounds('EPSG:4326', ds.crs, w, s, e, n)
+                win = from_bounds(*src_bounds, transform=ds.transform)
+                win = win.round_offsets().round_lengths()
+                # Clamp to the dataset so the clip transform is exact.
+                col0 = max(0, int(win.col_off))
+                row0 = max(0, int(win.row_off))
+                col1 = min(ds.width, int(win.col_off + win.width))
+                row1 = min(ds.height, int(win.row_off + win.height))
+                if col1 <= col0 or row1 <= row0:
+                    raise ValueError("window outside dataset")
+                win = Window(col0, row0, col1 - col0, row1 - row0)
+                data = ds.read(1, window=win)
+                clip_transform = ds.window_transform(win)
+                profile = {
+                    'driver': 'GTiff', 'height': data.shape[0], 'width': data.shape[1],
+                    'count': 1, 'dtype': data.dtype, 'crs': ds.crs,
+                    'transform': clip_transform, 'compress': 'deflate',
+                }
+                nodata = ds.nodatavals[0] if ds.nodatavals else None
+                if nodata is not None and np.isfinite(nodata):
+                    profile['nodata'] = nodata
+
+        # Deterministic per-AOI clip name: same AOI overwrites its own clip,
+        # a different AOI adds a new one (manifest merges by filename).
+        digest = hashlib.md5(
+            f"{w:.6f}_{s:.6f}_{e:.6f}_{n:.6f}".encode()).hexdigest()[:8]
+        filename = f"chm_{qk}_clip_{digest}.tif"
+        with rasterio.open(os.path.join(out_dir, filename), 'w', **profile) as out:
+            out.write(data, 1)
+
+        # Manifest bbox = the clip's true extent (in the tile's CRS -> WGS84).
+        from rasterio.warp import transform_bounds as tb
+        cb = array_bounds(data.shape[0], data.shape[1], clip_transform)
+        lon0, lat0, lon1, lat1 = tb(profile['crs'], 'EPSG:4326', *cb)
+        return filename, (lon0, lat0, lon1, lat1)
 
     @staticmethod
     def _write_manifest(rows, manifest_path, include_product):
@@ -184,10 +379,23 @@ class TileFetchService:
                     'interpolation': 'RSP_BilinearInterpolation', 'f': 'image',
                 }
                 filename = f"dem_{j}_{i}.tif"
-                content = self._get_with_retry(self.DEP_EXPORT_URL, params=params)
+                # Announce the tile BEFORE the transfer so the UI shows activity
+                # while the request is in flight.
+                if progress_callback:
+                    progress_callback(done, total,
+                                      f"Downloading DEM tile {done + 1}/{total}...")
+                outcome, content = self._http_get(self.DEP_EXPORT_URL, params=params,
+                                                  cancel_check=cancel_check)
+                if outcome == OUTCOME_CANCELLED:
+                    result.cancelled = True
+                    return result
                 if content is None:
                     # one blind retry (endpoint occasionally 502s)
-                    content = self._get_with_retry(self.DEP_EXPORT_URL, params=params)
+                    outcome, content = self._http_get(self.DEP_EXPORT_URL, params=params,
+                                                      cancel_check=cancel_check)
+                    if outcome == OUTCOME_CANCELLED:
+                        result.cancelled = True
+                        return result
                 if content is None:
                     result.tiles_failed += 1
                     result.errors.append((filename, "download failed"))
@@ -209,12 +417,26 @@ class TileFetchService:
     # ---- Meta/WRI canopy ----
 
     def fetch_meta_canopy(self, bounds_wgs84, out_dir, zoom: int = 9,
-                          progress_callback=None, cancel_check=None) -> FetchResult:
+                          progress_callback=None, cancel_check=None,
+                          use_windowed: Optional[bool] = None) -> FetchResult:
+        """Fetch Meta/WRI canopy for the AOI.
+
+        Prefers a windowed /vsicurl clip of just the AOI (a whole z9 COG can be
+        ~765 MB; the clip moves KB-MB). Falls back to a streamed whole-file
+        download with byte progress and mid-transfer cancel. ``use_windowed``
+        defaults to auto: windowed unless a custom session was injected (tests
+        drive the HTTP path with in-memory bodies and must not touch GDAL).
+        """
         os.makedirs(out_dir, exist_ok=True)
         tiles = self.tiles_covering_bbox(bounds_wgs84, zoom)
         result = FetchResult(product='meta_chm', out_dir=out_dir, manifest_path=None)
         rows = []
         total = len(tiles)
+        if use_windowed is None:
+            # Keyed off *injection*, not existence: fetch_3dep_dem lazily
+            # creates the internal session, and that must not disable the clip.
+            use_windowed = not self._session_injected
+
         for done, (x, y) in enumerate(tiles, start=1):
             if cancel_check and cancel_check():
                 result.cancelled = True
@@ -222,20 +444,82 @@ class TileFetchService:
             qk = self.tile_xy_to_quadkey(x, y, zoom)
             url = self.META_CHM_URL.format(quadkey=qk)
             filename = f"chm_{qk}.tif"
-            content = self._get_with_retry(url)
-            if content is None:
-                result.tiles_skipped += 1
-            else:
-                Path(out_dir, filename).write_bytes(content)
-                lon0, lat0, lon1, lat1 = self.tile_xy_to_bounds(x, y, zoom)
-                rows.append({'filename': filename, 'product': 'meta_chm',
-                             'minX': lon0, 'minY': lat0, 'maxX': lon1, 'maxY': lat1})
-                result.tiles_written += 1
+            # Announce the tile BEFORE the transfer so the UI never sits on a
+            # stale message while a long download runs.
             if progress_callback:
-                progress_callback(done, total, f"Downloading canopy tile {done}/{total}...")
+                progress_callback(done - 1, total,
+                                  f"Downloading canopy tile {done}/{total}...")
+
+            outcome = None
+            if use_windowed:
+                # Cheap absence probe first: a 403/404 is sparse coverage, and
+                # probing avoids burying "absent" inside a GDAL open error.
+                probe, _ = self._probe_absent(url)
+                if probe == OUTCOME_ABSENT:
+                    outcome = OUTCOME_ABSENT
+                else:
+                    try:
+                        filename, clip_bounds = self._fetch_canopy_tile_windowed(
+                            x, y, zoom, bounds_wgs84, out_dir)
+                        rows.append({'filename': filename, 'product': 'meta_chm',
+                                     'minX': clip_bounds[0], 'minY': clip_bounds[1],
+                                     'maxX': clip_bounds[2], 'maxY': clip_bounds[3]})
+                        result.tiles_written += 1
+                        outcome = OUTCOME_OK
+                    except Exception as e:
+                        self.logger.warning(
+                            f"TileFetch: windowed canopy clip failed for {qk} ({e}); "
+                            "falling back to full-tile download")
+                        outcome = None  # fall through to streaming
+
+            if outcome is None:
+                outcome = self._stream_to_file(
+                    url, os.path.join(out_dir, filename),
+                    progress_callback=progress_callback, cancel_check=cancel_check,
+                    label=f"Downloading canopy tile {done}/{total}")
+                if outcome == OUTCOME_OK:
+                    lon0, lat0, lon1, lat1 = self.tile_xy_to_bounds(x, y, zoom)
+                    rows.append({'filename': filename, 'product': 'meta_chm',
+                                 'minX': lon0, 'minY': lat0, 'maxX': lon1, 'maxY': lat1})
+                    result.tiles_written += 1
+
+            if outcome == OUTCOME_CANCELLED:
+                result.cancelled = True
+                break
+            if outcome == OUTCOME_ABSENT:
+                result.tiles_skipped += 1
+            elif outcome == OUTCOME_FAILED:
+                result.tiles_failed += 1
+                result.errors.append((filename, "download failed"))
+            if progress_callback:
+                progress_callback(done, total,
+                                  f"Downloading canopy tile {done}/{total}...")
 
         if rows:
             manifest = os.path.join(out_dir, "chm_manifest.csv")
             self._write_manifest(rows, manifest, include_product=True)
             result.manifest_path = manifest
         return result
+
+    def _probe_absent(self, url):
+        """HEAD probe classifying a tile as absent (403/404) vs present/unknown.
+
+        Returns (outcome, content-length-or-None). Any probe error returns
+        (OUTCOME_OK, None) -- i.e. "assume present", letting the real transfer
+        classify definitively.
+        """
+        try:
+            head = getattr(self.session, 'head', None)
+            if head is None:
+                return OUTCOME_OK, None
+            resp = head(url, timeout=min(self.timeout, 20.0))
+            if resp.status_code in (403, 404):
+                return OUTCOME_ABSENT, None
+            length = None
+            try:
+                length = int(getattr(resp, 'headers', {}).get('Content-Length', 0)) or None
+            except (TypeError, ValueError):
+                pass
+            return OUTCOME_OK, length
+        except Exception:
+            return OUTCOME_OK, None

@@ -6,16 +6,23 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>431</width>
-    <height>403</height>
+    <width>560</width>
+    <height>600</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>Preferences</string>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
-   <item alignment="Qt::AlignmentFlag::AlignTop">
-    <widget class="QWidget" name="mainWidget" native="true">
+   <item>
+    <widget class="QScrollArea" name="scrollArea">
+     <property name="widgetResizable">
+      <bool>true</bool>
+     </property>
+     <property name="frameShape">
+      <enum>QFrame::Shape::NoFrame</enum>
+     </property>
+     <widget class="QWidget" name="mainWidget">
      <layout class="QVBoxLayout" name="verticalLayout_2">
       <item>
        <widget class="QWidget" name="themeWidget" native="true">
@@ -588,6 +595,7 @@ Backup existing file before replacing.</string>
        </layout>
       </item>
      </layout>
+    </widget>
     </widget>
    </item>
    <item>

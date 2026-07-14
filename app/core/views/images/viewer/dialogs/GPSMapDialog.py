@@ -31,6 +31,12 @@ class GPSMapDialog(TranslationMixin, QDialog):
     # Signal emitted when the POD overlay display changes (enabled, mode, opacity 0-100)
     pod_display_changed = Signal(bool, str, int)
 
+    # Signal emitted when the user requests a DEM/canopy tile download for the mission
+    canopy_download_requested = Signal()
+
+    # Signal emitted when the user requests the POD coverage calculation
+    pod_calculate_requested = Signal()
+
     def __init__(self, parent, gps_data, current_image_index, offline_only=False):
         """
         Initialize the GPS map dialog.
@@ -151,6 +157,22 @@ class GPSMapDialog(TranslationMixin, QDialog):
         self.pod_opacity_slider.valueChanged.connect(self._on_pod_opacity_changed)
         controls_layout.addWidget(self.pod_opacity_slider)
 
+        # Download elevation/canopy tiles for this mission's footprint. Needs the
+        # network, so it is disabled in Offline Only mode (see _apply_canopy_fetch_enabled).
+        self.canopy_fetch_btn = QPushButton(self.tr("Download Canopy Tiles"))
+        self.canopy_fetch_btn.clicked.connect(self.canopy_download_requested.emit)
+        controls_layout.addWidget(self.canopy_fetch_btn)
+        self._apply_canopy_fetch_enabled()
+
+        # Compute the POD coverage raster for this mission without leaving the
+        # map: it feeds the POD / Look count overlay modes above.
+        self.pod_calc_btn = QPushButton(self.tr("Calculate POD"))
+        self.pod_calc_btn.setToolTip(self.tr(
+            "Compute the terrain-aware probability-of-detection heatmap for this "
+            "mission (may take several minutes)"))
+        self.pod_calc_btn.clicked.connect(self.pod_calculate_requested.emit)
+        controls_layout.addWidget(self.pod_calc_btn)
+
         controls_layout.addStretch()
 
         # Help text
@@ -205,6 +227,17 @@ class GPSMapDialog(TranslationMixin, QDialog):
     def _on_pod_opacity_changed(self, value):
         # Opacity is pure view state -> update the view directly (no recompute).
         self.map_view.set_pod_overlay_opacity(value / 100.0)
+
+    def _apply_canopy_fetch_enabled(self):
+        """Gate the download button: fetching tiles needs the network, so it is
+        disabled while Offline Only is on (with an explanatory tooltip)."""
+        if not hasattr(self, 'canopy_fetch_btn'):
+            return
+        self.canopy_fetch_btn.setEnabled(not self.offline_only)
+        self.canopy_fetch_btn.setToolTip(
+            self.tr("Downloading tiles is disabled in Offline Only mode")
+            if self.offline_only
+            else self.tr("Download elevation and canopy-height tiles for this mission's area"))
 
     def setup_shortcuts(self):
         """Set up keyboard shortcuts."""
@@ -333,6 +366,7 @@ class GPSMapDialog(TranslationMixin, QDialog):
         self.offline_only = bool(offline_only)
         if hasattr(self, "map_view"):
             self.map_view.set_offline_mode(self.offline_only)
+        self._apply_canopy_fetch_enabled()
 
     def showEvent(self, event):
         """Handle dialog show event."""

@@ -157,3 +157,66 @@ def test_toggle_gates_combo_and_slider_enabled_state(dialog):
     dialog.pod_toggle_btn.setChecked(False)
     assert not dialog.pod_mode_combo.isEnabled()
     assert not dialog.pod_opacity_slider.isEnabled()
+
+
+# ---------------------------------------------------------------------------
+# Canopy tile-download button (Offline Only gating + request signal)
+# ---------------------------------------------------------------------------
+
+
+def test_canopy_fetch_button_disabled_in_offline_mode(dialog):
+    """The `dialog` fixture is offline_only=True, so downloading is disabled."""
+    assert not dialog.canopy_fetch_btn.isEnabled()
+
+
+def test_canopy_fetch_button_enabled_when_online(app):
+    dlg = GPSMapDialog(None, [], None, offline_only=False)
+    try:
+        assert dlg.canopy_fetch_btn.isEnabled()
+    finally:
+        dlg.close()
+        dlg.deleteLater()
+
+
+def test_set_offline_mode_toggles_canopy_fetch_button(app):
+    """Flipping Offline Only must enable/disable the download button live."""
+    dlg = GPSMapDialog(None, [], None, offline_only=False)
+    try:
+        assert dlg.canopy_fetch_btn.isEnabled()
+        dlg.set_offline_mode(True)
+        assert not dlg.canopy_fetch_btn.isEnabled()
+        dlg.set_offline_mode(False)
+        assert dlg.canopy_fetch_btn.isEnabled()
+    finally:
+        dlg.close()
+        dlg.deleteLater()
+
+
+def test_canopy_fetch_button_emits_request_signal(app, qtbot):
+    """Clicking the button emits canopy_download_requested (controller wires it)."""
+    dlg = GPSMapDialog(None, [], None, offline_only=False)
+    try:
+        with qtbot.waitSignal(dlg.canopy_download_requested, timeout=1000):
+            dlg.canopy_fetch_btn.click()
+    finally:
+        dlg.close()
+        dlg.deleteLater()
+
+
+def test_pod_calculate_button_emits_request_signal(app, qtbot):
+    """The Calculate POD button lets the user compute coverage without leaving
+    the map; clicking emits pod_calculate_requested (controller wires it)."""
+    dlg = GPSMapDialog(None, [], None, offline_only=False)
+    try:
+        assert dlg.pod_calc_btn.isEnabled()
+        with qtbot.waitSignal(dlg.pod_calculate_requested, timeout=1000):
+            dlg.pod_calc_btn.click()
+    finally:
+        dlg.close()
+        dlg.deleteLater()
+
+
+def test_pod_calculate_button_enabled_even_offline(dialog):
+    """POD computes from local data (images + registered tiles), so the button
+    stays enabled in Offline Only mode (the `dialog` fixture is offline)."""
+    assert dialog.pod_calc_btn.isEnabled()

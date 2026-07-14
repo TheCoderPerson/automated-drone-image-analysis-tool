@@ -37,9 +37,42 @@ def test_invalid_bounds_return_none(app):
     assert d.get_bounds() is None
 
 
-def test_use_mission_button_gated_on_has_mission(app):
-    assert TileFetchDialog(has_mission=False).use_mission_btn.isEnabled() is False
-    assert TileFetchDialog(has_mission=True).use_mission_btn.isEnabled() is True
+def test_fill_combo_gated_on_has_mission(app):
+    """The 'Loaded mission extent' option only appears when a mission is loaded;
+    the image-folder option is always available."""
+    no_mission = TileFetchDialog(has_mission=False)
+    keys = [no_mission.fill_combo.itemData(i) for i in range(no_mission.fill_combo.count())]
+    assert "mission" not in keys
+    assert "folder" in keys
+
+    with_mission = TileFetchDialog(has_mission=True)
+    keys2 = [with_mission.fill_combo.itemData(i) for i in range(with_mission.fill_combo.count())]
+    assert keys2 == ["mission", "folder"]
+
+
+def test_fill_combo_reflects_selection(app):
+    """Selecting an item updates the combo's displayed text.
+
+    Regression: the previous menu button stayed on 'Fill area from' no matter
+    what the user picked. A real combo shows the current selection.
+    """
+    d = TileFetchDialog(has_mission=True)
+    d.fill_combo.setCurrentIndex(d.fill_combo.findData("folder"))
+    assert d.fill_combo.currentText() == "Image folder..."
+    assert d.fill_combo.currentData() == "folder"
+
+
+def test_fill_combo_default_selection(app):
+    """With a mission loaded the combo shows 'Loaded mission extent' (the AOI is
+    auto-filled from it); with no mission it shows the placeholder (index -1)."""
+    assert TileFetchDialog(has_mission=True).fill_combo.currentData() == "mission"
+    assert TileFetchDialog(has_mission=False).fill_combo.currentIndex() == -1
+
+
+def test_default_output_dir_prefills_output_edit(app):
+    """The results folder is prefilled as the download destination."""
+    d = TileFetchDialog(default_output_dir="/mission/results")
+    assert d.get_output_dir() == "/mission/results"
 
 
 def test_set_aoi_and_buffer(app):
@@ -69,32 +102,26 @@ def _shown_dialog(qtbot, **kwargs):
     return d
 
 
-def test_use_mission_click_populates_aoi_from_injected_extent(app, qtbot):
-    """Clicking 'Use loaded mission extent' fills the AOI via caller wiring.
+def test_fill_combo_activation_emits_source_key(app, qtbot):
+    """Activating an item emits fill_source_activated with the stable key.
 
-    The dialog exposes ``use_mission_btn`` but leaves the click handler to the
-    caller (see TileFetchController.run_fetch). Simulate that wiring and confirm
-    a real mouse click populates the four AOI fields from the mission extent.
+    The dialog owns no fill logic; the controller connects this signal (see
+    TileFetchController.run_fetch) and fills the AOI from the chosen source.
     """
     d = _shown_dialog(qtbot, has_mission=True)
-    extent = (-121.10, 39.20, -121.02, 39.27)
-    d.use_mission_btn.clicked.connect(lambda: d.set_aoi(extent))
-
-    assert d.get_bounds() is None  # empty before the click
-    qtbot.mouseClick(d.use_mission_btn, Qt.LeftButton)
-    assert d.get_bounds() == pytest.approx(extent)
+    received = []
+    d.fill_source_activated.connect(received.append)
+    d.fill_combo.activated.emit(d.fill_combo.findData("folder"))
+    assert received == ["folder"]
 
 
-def test_use_mission_click_ignored_when_disabled(app, qtbot):
-    """Gating: with no mission the button is disabled and the click is a no-op."""
+def test_fill_combo_placeholder_activation_is_noop(app, qtbot):
+    """Activating an index with no source key (placeholder) emits nothing."""
     d = _shown_dialog(qtbot, has_mission=False)
-    fired = []
-    d.use_mission_btn.clicked.connect(lambda: fired.append(True))
-
-    assert d.use_mission_btn.isEnabled() is False
-    qtbot.mouseClick(d.use_mission_btn, Qt.LeftButton)
-    assert fired == []
-    assert d.get_bounds() is None
+    received = []
+    d.fill_source_activated.connect(received.append)
+    d._on_fill_source_activated(-1)
+    assert received == []
 
 
 def test_browse_button_updates_output_edit(app, qtbot, tmp_path):

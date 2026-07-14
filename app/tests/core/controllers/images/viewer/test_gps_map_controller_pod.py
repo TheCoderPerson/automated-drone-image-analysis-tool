@@ -1,10 +1,12 @@
 """Tests for the POD overlay orchestration + cell inspect on GPSMapController."""
 
+import os
+import pathlib
 import numpy as np
 import pytest
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
-from PySide6.QtWidgets import QApplication
+from PySide6.QtWidgets import QApplication, QMessageBox
 
 from core.controllers.images.viewer.GPSMapController import GPSMapController
 from core.services.coverage.params import PodParams
@@ -116,9 +118,19 @@ def _canopy_controller(app, canopy=None, result=None):
     return ctrl
 
 
+def _run_canopy_workers_synchronously():
+    """Patch the overlay worker so start() runs its body inline (the repo's
+    established pattern for testing QThread-backed flows without racing)."""
+    from core.controllers.images.viewer.GPSMapController import _CanopyOverlayWorker
+    return patch.object(_CanopyOverlayWorker, 'start', lambda self: self.run(),
+                        create=False)
+
+
 def test_canopy_mode_sets_overlay_from_canopy_service(app):
+    """The canopy overlay is built on a worker and delivered to the view."""
     ctrl = _canopy_controller(app, canopy=_fake_canopy(), result=_real_result())
-    ctrl.on_pod_display_changed(True, 'canopy', 50)
+    with _run_canopy_workers_synchronously():
+        ctrl.on_pod_display_changed(True, 'canopy', 50)
     assert ctrl._pod_overlay_enabled is True
     assert ctrl._pod_overlay_mode == 'canopy'
     ctrl.map_dialog.map_view.set_pod_overlay.assert_called_once()
@@ -127,10 +139,70 @@ def test_canopy_mode_sets_overlay_from_canopy_service(app):
 
 def test_canopy_mode_without_source_clears_and_toasts(app):
     ctrl = _canopy_controller(app, canopy=None, result=_real_result())
-    ctrl.on_pod_display_changed(True, 'canopy', 50)
+    with _run_canopy_workers_synchronously():
+        ctrl.on_pod_display_changed(True, 'canopy', 50)
     assert ctrl._pod_overlay_enabled is False
     ctrl.map_dialog.map_view.clear_pod_overlay.assert_called_once()
     ctrl.parent.status_controller.show_toast.assert_called_once()
+
+
+def test_canopy_overlay_build_happens_off_gui_thread_contract(app):
+    """_build_canopy_rgba (the worker body) returns plain numpy — no QPixmap.
+
+    QPixmap must only be created on the GUI thread; the worker/GUI split relies
+    on the worker emitting an ndarray that the delivery slot converts.
+    """
+    canopy = _fake_canopy()
+    ctrl = _canopy_controller(app, canopy=canopy, result=_real_result())
+    spec = ctrl._canopy_extent_spec()
+    rgba = ctrl._build_canopy_rgba(canopy, spec, ctrl.logger)
+    assert isinstance(rgba, np.ndarray)
+    assert rgba.ndim == 3 and rgba.shape[2] == 4  # RGBA
+
+
+def test_canopy_delivery_dropped_if_overlay_toggled_off(app):
+    """A worker result arriving after the overlay was disabled is discarded."""
+    ctrl = _canopy_controller(app, canopy=_fake_canopy(), result=_real_result())
+    spec = ctrl._canopy_extent_spec()
+    ctrl._pod_overlay_enabled = False  # toggled off while the worker ran
+    ctrl._on_canopy_overlay_built(np.zeros((4, 4, 4), dtype=np.uint8), spec)
+    ctrl.map_dialog.map_view.set_pod_overlay.assert_not_called()
+
+
+def test_canopy_second_request_uses_cache_without_new_worker(app):
+    """Once built, re-enabling the canopy overlay hits the pixmap cache."""
+    canopy = _fake_canopy()
+    ctrl = _canopy_controller(app, canopy=canopy, result=_real_result())
+    with _run_canopy_workers_synchronously():
+        ctrl.on_pod_display_changed(True, 'canopy', 50)
+        ctrl.on_pod_display_changed(True, 'canopy', 70)
+    assert canopy.sample_grid_spec.call_count == 1
+    assert ctrl.map_dialog.map_view.set_pod_overlay.call_count == 2
+
+
+def test_map_dialog_close_releases_canopy_datasets(app):
+    """Closing the map deterministically closes the canopy service (open
+    Meta/WRI COGs hold large mappings and block re-downloads on Windows)."""
+    canopy = _fake_canopy()
+    ctrl = _canopy_controller(app, canopy=canopy, result=_real_result())
+    ctrl.on_map_dialog_closed()
+    canopy.close.assert_called_once()
+    assert ctrl._canopy_svc is None
+    assert ctrl._canopy_svc_loaded is False
+
+
+def test_canopy_download_closes_datasets_before_fetch(app):
+    """Re-downloading must close open tile handles first (Windows can't
+    overwrite an open file) and drop the stale overlay cache."""
+    canopy = _fake_canopy()
+    ctrl = _canopy_controller(app, canopy=canopy, result=_real_result())
+    ctrl._canopy_overlay_cache = ("stale", None, None)
+    ctrl._is_offline_only = lambda: False
+    ctrl._run_tile_fetch = MagicMock(return_value=True)
+    ctrl._refresh_overlay_availability = MagicMock()
+    ctrl.on_canopy_download_requested()
+    canopy.close.assert_called_once()
+    assert ctrl._canopy_overlay_cache is None
 
 
 def test_canopy_extent_uses_gps_bounds_without_result(app):
@@ -275,3 +347,314 @@ def test_show_pod_inspect_menu_skips_out_of_range_frames(app):
 
     # Only indices within [0, image_count) become View actions.
     assert view_texts == ['View A', 'View B']
+
+
+# ---------------------------------------------------------------------------
+# Overlay-availability refresh
+# ---------------------------------------------------------------------------
+
+
+def test_refresh_overlay_availability_reports_pod_and_canopy(app):
+    ctrl = _controller(app)
+    ctrl.map_dialog = MagicMock()
+    cache = MagicMock()
+    cache.has_result.return_value = True
+    ctrl.parent.pod_result_cache = cache
+    ctrl._canopy_service = MagicMock(return_value=MagicMock())  # configured
+    ctrl._refresh_overlay_availability()
+    ctrl.map_dialog.set_overlay_availability.assert_called_once_with(True, True)
+
+
+def test_refresh_overlay_availability_no_canopy_no_pod(app):
+    ctrl = _controller(app)
+    ctrl.map_dialog = MagicMock()
+    cache = MagicMock()
+    cache.has_result.return_value = False
+    ctrl.parent.pod_result_cache = cache
+    ctrl._canopy_service = MagicMock(return_value=None)  # unconfigured
+    ctrl._refresh_overlay_availability()
+    ctrl.map_dialog.set_overlay_availability.assert_called_once_with(False, False)
+
+
+def test_refresh_overlay_availability_noop_without_dialog(app):
+    ctrl = _controller(app)
+    ctrl.map_dialog = None
+    # Must not raise when there is no dialog to gate.
+    ctrl._refresh_overlay_availability()
+
+
+# ---------------------------------------------------------------------------
+# Canopy tile download (button handler + fetch wiring)
+# ---------------------------------------------------------------------------
+
+
+def test_canopy_download_blocked_offline(app):
+    ctrl = _controller(app)
+    ctrl._is_offline_only = lambda: True
+    ctrl._run_tile_fetch = MagicMock()
+    ctrl.on_canopy_download_requested()
+    ctrl._run_tile_fetch.assert_not_called()
+    ctrl.parent.status_controller.show_toast.assert_called_once()
+
+
+def test_canopy_download_runs_fetch_then_refreshes(app):
+    ctrl = _controller(app)
+    ctrl._is_offline_only = lambda: False
+    ctrl._run_tile_fetch = MagicMock(return_value=True)
+    ctrl._refresh_overlay_availability = MagicMock()
+    ctrl._canopy_svc_loaded = True
+    ctrl.on_canopy_download_requested()
+    ctrl._run_tile_fetch.assert_called_once()
+    ctrl._refresh_overlay_availability.assert_called_once()
+    # The cached canopy service is invalidated so a freshly registered source loads.
+    assert ctrl._canopy_svc_loaded is False
+
+
+def test_canopy_download_aborts_when_downloader_unavailable(app):
+    ctrl = _controller(app)
+    ctrl._is_offline_only = lambda: False
+    ctrl._run_tile_fetch = MagicMock(return_value=False)
+    ctrl._refresh_overlay_availability = MagicMock()
+    ctrl.on_canopy_download_requested()
+    ctrl._refresh_overlay_availability.assert_not_called()
+
+
+def test_run_tile_fetch_seeds_mission_images(app):
+    ctrl = _controller(app)
+    ctrl.map_dialog = MagicMock()
+    ctrl.parent.source_images = None
+    ctrl.parent.images = [{"path": "a.jpg"}, {"path": "b.jpg"}]
+    ctrl.parent.settings_service = MagicMock()
+    ctrl.parent.xml_path = None  # no results path -> no output default here
+
+    fake_instance = MagicMock()
+    fake_ctor = MagicMock(return_value=fake_instance)
+    target = 'core.controllers.images.viewer.exports.TileFetchController.TileFetchController'
+    with patch(target, fake_ctor):
+        assert ctrl._run_tile_fetch() is True
+
+    fake_ctor.assert_called_once()
+    _args, kwargs = fake_instance.run_fetch.call_args
+    # The loaded mission's images are handed over so the AOI auto-fills.
+    assert kwargs['mission_images'] == ctrl.parent.images
+
+
+def test_run_tile_fetch_defaults_output_to_results_folder(app):
+    """The download destination defaults to the results folder (dir of xml_path).
+
+    Regression: Viewer.xml_path is a pathlib.Path, not a str, so the default was
+    silently dropped by an ``isinstance(..., str)`` guard and the output folder
+    came up empty. A path-like xml_path must resolve to its parent directory.
+    """
+    ctrl = _controller(app)
+    ctrl.map_dialog = MagicMock()
+    ctrl.parent.source_images = None
+    ctrl.parent.images = [{"path": "a.jpg"}]
+    ctrl.parent.settings_service = MagicMock()
+    ctrl.parent.xml_path = pathlib.Path("C:/results/mission1/ADIAT_Data.xml")
+
+    fake_instance = MagicMock()
+    target = 'core.controllers.images.viewer.exports.TileFetchController.TileFetchController'
+    with patch(target, MagicMock(return_value=fake_instance)):
+        assert ctrl._run_tile_fetch() is True
+
+    _args, kwargs = fake_instance.run_fetch.call_args
+    assert kwargs['default_output_dir'] == os.path.dirname(os.fspath(ctrl.parent.xml_path))
+
+
+def test_run_tile_fetch_handles_unavailable_downloader(app):
+    ctrl = _controller(app)
+    ctrl.map_dialog = MagicMock()
+    mod = 'core.controllers.images.viewer.exports.TileFetchController'
+    # A None entry in sys.modules makes the in-method import raise ImportError.
+    with patch.dict('sys.modules', {mod: None}):
+        assert ctrl._run_tile_fetch() is False
+    ctrl.parent.status_controller.show_toast.assert_called_once()
+
+
+# ---------------------------------------------------------------------------
+# One-time "download canopy?" prompt on map open
+# ---------------------------------------------------------------------------
+
+_QMSGBOX = 'core.controllers.images.viewer.GPSMapController.QMessageBox'
+
+
+def test_prompt_skipped_when_offline(app):
+    ctrl = _controller(app)
+    ctrl.map_dialog = MagicMock()
+    ctrl._is_offline_only = lambda: True
+    ctrl._canopy_service = lambda: None
+    with patch(_QMSGBOX) as mb:
+        ctrl._maybe_prompt_canopy_download()
+    mb.question.assert_not_called()
+    assert ctrl._canopy_prompt_shown is False  # not consumed; can ask later
+
+
+def test_prompt_skipped_when_canopy_already_configured(app):
+    ctrl = _controller(app)
+    ctrl.map_dialog = MagicMock()
+    ctrl._is_offline_only = lambda: False
+    ctrl._canopy_service = lambda: MagicMock()  # configured
+    with patch(_QMSGBOX) as mb:
+        ctrl._maybe_prompt_canopy_download()
+    mb.question.assert_not_called()
+
+
+def test_prompt_yes_triggers_download_and_is_one_time(app):
+    ctrl = _controller(app)
+    ctrl.map_dialog = MagicMock()
+    ctrl._is_offline_only = lambda: False
+    ctrl._canopy_service = lambda: None  # unconfigured
+    ctrl.on_canopy_download_requested = MagicMock()
+
+    with patch(_QMSGBOX) as mb:
+        mb.StandardButton = QMessageBox.StandardButton
+        mb.question.return_value = QMessageBox.StandardButton.Yes
+        ctrl._maybe_prompt_canopy_download()
+    ctrl.on_canopy_download_requested.assert_called_once()
+    assert ctrl._canopy_prompt_shown is True
+
+    # Second open in the same session must not prompt again.
+    ctrl.on_canopy_download_requested.reset_mock()
+    with patch(_QMSGBOX) as mb2:
+        ctrl._maybe_prompt_canopy_download()
+    mb2.question.assert_not_called()
+    ctrl.on_canopy_download_requested.assert_not_called()
+
+
+def test_prompt_no_does_not_download_but_is_consumed(app):
+    ctrl = _controller(app)
+    ctrl.map_dialog = MagicMock()
+    ctrl._is_offline_only = lambda: False
+    ctrl._canopy_service = lambda: None
+    ctrl.on_canopy_download_requested = MagicMock()
+
+    with patch(_QMSGBOX) as mb:
+        mb.StandardButton = QMessageBox.StandardButton
+        mb.question.return_value = QMessageBox.StandardButton.No
+        ctrl._maybe_prompt_canopy_download()
+    ctrl.on_canopy_download_requested.assert_not_called()
+    assert ctrl._canopy_prompt_shown is True  # answered; won't nag again
+
+
+def test_pod_calculate_delegates_to_export_controller(app):
+    """The map's Calculate POD request reuses the viewer's export controller
+    (same flow as Map Export) with the results-folder output dir."""
+    ctrl = _controller(app)
+    ctrl.parent.xml_path = pathlib.Path("C:/results/mission1/ADIAT_Data.xml")
+    export = MagicMock()
+    ctrl.parent.unified_map_export = export
+
+    ctrl.on_pod_calculate_requested()
+
+    expected = os.path.join(os.path.dirname(os.fspath(ctrl.parent.xml_path)), "coverage_pod")
+    export.run_pod.assert_called_once_with(expected, show_on_map=True)
+
+
+def test_pod_calculate_creates_controller_when_missing(app):
+    """A viewer without a live export controller gets one created and kept."""
+    ctrl = _controller(app)
+    ctrl.parent.xml_path = pathlib.Path("C:/results/mission1/ADIAT_Data.xml")
+    ctrl.parent.unified_map_export = None
+
+    fake = MagicMock()
+    target = ('core.controllers.images.viewer.exports.UnifiedMapExportController.'
+              'UnifiedMapExportController')
+    with patch(target, MagicMock(return_value=fake)):
+        ctrl.on_pod_calculate_requested()
+
+    fake.run_pod.assert_called_once()
+    assert ctrl.parent.unified_map_export is fake
+
+
+# ---------------------------------------------------------------------------
+# Download -> POD chaining
+# ---------------------------------------------------------------------------
+
+
+def test_download_offers_pod_calculation_on_completion(app):
+    """A completed download offers to compute POD immediately; Yes runs it."""
+    from PySide6.QtWidgets import QMessageBox as _QMB
+
+    ctrl = _controller(app)
+    ctrl.map_dialog = MagicMock()
+    ctrl._tile_fetch_controller = MagicMock()
+    ctrl._tile_fetch_controller.last_results = {'canopy': MagicMock()}
+    cache = MagicMock()
+    cache.has_result.return_value = False   # no POD yet
+    ctrl.parent.pod_result_cache = cache
+    ctrl.on_pod_calculate_requested = MagicMock()
+
+    with patch(_QMSGBOX) as mb:
+        mb.StandardButton = _QMB.StandardButton
+        mb.question.return_value = _QMB.StandardButton.Yes
+        ctrl._maybe_offer_pod_calculation()
+
+    mb.question.assert_called_once()
+    ctrl.on_pod_calculate_requested.assert_called_once()
+
+
+def test_no_pod_offer_when_download_did_not_complete(app):
+    """A dismissed/cancelled download (last_results None) must not prompt."""
+    ctrl = _controller(app)
+    ctrl.map_dialog = MagicMock()
+    ctrl._tile_fetch_controller = MagicMock()
+    ctrl._tile_fetch_controller.last_results = None
+
+    with patch(_QMSGBOX) as mb:
+        ctrl._maybe_offer_pod_calculation()
+
+    mb.question.assert_not_called()
+
+
+def test_no_pod_offer_when_result_already_cached(app):
+    """An existing POD result suppresses the offer (nothing new to compute)."""
+    ctrl = _controller(app)
+    ctrl.map_dialog = MagicMock()
+    ctrl._tile_fetch_controller = MagicMock()
+    ctrl._tile_fetch_controller.last_results = {'dem': MagicMock()}
+    cache = MagicMock()
+    cache.has_result.return_value = True
+    ctrl.parent.pod_result_cache = cache
+
+    with patch(_QMSGBOX) as mb:
+        ctrl._maybe_offer_pod_calculation()
+
+    mb.question.assert_not_called()
+
+
+def test_pod_offer_declined_does_not_calculate(app):
+    from PySide6.QtWidgets import QMessageBox as _QMB
+
+    ctrl = _controller(app)
+    ctrl.map_dialog = MagicMock()
+    ctrl._tile_fetch_controller = MagicMock()
+    ctrl._tile_fetch_controller.last_results = {'canopy': MagicMock()}
+    cache = MagicMock()
+    cache.has_result.return_value = False
+    ctrl.parent.pod_result_cache = cache
+    ctrl.on_pod_calculate_requested = MagicMock()
+
+    with patch(_QMSGBOX) as mb:
+        mb.StandardButton = _QMB.StandardButton
+        mb.question.return_value = _QMB.StandardButton.No
+        ctrl._maybe_offer_pod_calculation()
+
+    ctrl.on_pod_calculate_requested.assert_not_called()
+
+
+def test_prompt_body_warns_about_meta_wri_override(app):
+    """The prompt must tell the user the built-in download fetches Meta/WRI and
+    replaces any LANDFIRE selection (LANDFIRE stays bring-your-own)."""
+    ctrl = _controller(app)
+    ctrl.map_dialog = MagicMock()
+    ctrl._is_offline_only = lambda: False
+    ctrl._canopy_service = lambda: None
+    ctrl.on_canopy_download_requested = MagicMock()
+    with patch(_QMSGBOX) as mb:
+        mb.StandardButton = QMessageBox.StandardButton
+        mb.question.return_value = QMessageBox.StandardButton.No
+        ctrl._maybe_prompt_canopy_download()
+    body = mb.question.call_args.args[2]
+    assert "Meta/WRI" in body
+    assert "LANDFIRE" in body

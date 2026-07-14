@@ -601,6 +601,11 @@ class UnifiedMapExportController(TranslationMixin):
         return CoveragePodService(terrain, canopy, params,
                                   custom_altitude_ft=custom_alt, logger=self.logger)
 
+    def run_pod(self, output_dir, show_on_map=True):
+        """Public entry point for a standalone POD calculation (no KML/CalTopo
+        export required) — used by the GPS Map View's Calculate POD button."""
+        self._run_pod_export(output_dir, show_on_map)
+
     def _run_pod_export(self, output_dir, show_on_map):
         """Run the POD pass on the full (non-hidden) image set, write outputs,
         cache the result, and optionally show it on the viewer map."""

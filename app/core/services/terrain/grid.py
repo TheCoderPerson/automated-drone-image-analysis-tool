@@ -210,6 +210,15 @@ def read_window(ds, spec: GridSpec, nodata=None, pad_px: int = 4):
     intersect the tile. Reading a bounded window keeps huge (Cloud-Optimized)
     tiles from ever loading in full -- e.g. the ~65536x65536 (16 GB) Meta/WRI
     canopy COGs, or large USGS 3DEP tiles.
+
+    When the source window is much denser than the target grid (a native ~1 m
+    canopy read against a coarse overlay spec), the read is decimated via
+    ``out_shape`` so rasterio pulls COG overviews instead of tens of millions
+    of native pixels; the returned transform is scaled to match. Decimation
+    uses NEAREST resampling on purpose: the raw band may hold categorical
+    LANDFIRE class codes that are decoded to physical units only after this
+    read -- averaging codes would be meaningless (and would smear the
+    boundless fill value into the data).
     """
     from rasterio.windows import from_bounds, Window
     from rasterio.warp import transform_bounds
@@ -228,6 +237,26 @@ def read_window(ds, spec: GridSpec, nodata=None, pad_px: int = 4):
             or win.width <= 0 or win.height <= 0):
         return None, None
     fill = float(nodata) if nodata is not None else -9999.0
+
+    # Decimate when the source window is >=2x denser than the target grid.
+    decim = 1
+    if spec.width > 0 and spec.height > 0:
+        decim = int(min(win.width / spec.width, win.height / spec.height))
+        decim = max(1, decim)
+    if decim > 1:
+        from rasterio.enums import Resampling
+        from affine import Affine
+        out_h = max(1, math.ceil(win.height / decim))
+        out_w = max(1, math.ceil(win.width / decim))
+        raw = ds.read(1, window=win, out_shape=(out_h, out_w), boundless=True,
+                      fill_value=fill, resampling=Resampling.nearest)
+        if raw.size == 0:
+            return None, None
+        # Scale the window transform so the decimated array stays registered.
+        transform = ds.window_transform(win) * Affine.scale(
+            win.width / out_w, win.height / out_h)
+        return raw, transform
+
     raw = ds.read(1, window=win, boundless=True, fill_value=fill)
     if raw.size == 0:
         return None, None

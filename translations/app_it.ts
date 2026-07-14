@@ -1131,12 +1131,12 @@ Dettagli:
         <translation>Questa immagine non contiene dati GPS e non può essere allineata</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/AlignImageController.py" line="81"/>
+        <location filename="../app/core/controllers/images/viewer/AlignImageController.py" line="84"/>
         <source>Could not save the alignment</source>
         <translation>Impossibile salvare l&apos;allineamento</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/AlignImageController.py" line="92"/>
+        <location filename="../app/core/controllers/images/viewer/AlignImageController.py" line="95"/>
         <source>Image alignment saved</source>
         <translation>Allineamento immagine salvato</translation>
     </message>
@@ -1144,63 +1144,63 @@ Dettagli:
 <context>
     <name>AlignImageDialog</name>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/AlignImageDialog.py" line="54"/>
+        <location filename="../app/core/views/images/viewer/dialogs/AlignImageDialog.py" line="53"/>
         <source>This saved alignment looks mirrored - re-place each corner handle on its matching photo corner (coloured squares).</source>
         <translation>Questo allineamento salvato sembra speculare: riposiziona ogni maniglia d&apos;angolo sull&apos;angolo corrispondente della foto (quadrati colorati).</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/AlignImageDialog.py" line="61"/>
+        <location filename="../app/core/views/images/viewer/dialogs/AlignImageDialog.py" line="60"/>
         <source>Align Image</source>
         <translation>Allinea immagine</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/AlignImageDialog.py" line="131"/>
+        <location filename="../app/core/views/images/viewer/dialogs/AlignImageDialog.py" line="130"/>
         <source>Rotate the drone image to line it up with the map. The small coloured squares mark the photo&apos;s corners - drag each corner handle onto the map where its matching-coloured photo corner belongs. For extra accuracy, add tie points: put the IMAGE end on a feature in the drone photo and the MAP end on the same feature on the map.</source>
         <translation>Ruota l&apos;immagine del drone per allinearla alla mappa. I piccoli quadrati colorati segnano gli angoli della foto: trascina ogni maniglia d&apos;angolo sulla mappa nel punto in cui deve trovarsi l&apos;angolo della foto dello stesso colore. Per maggiore precisione, aggiungi punti di collegamento: metti l&apos;estremità IMMAGINE su un elemento nella foto del drone e l&apos;estremità MAPPA sullo stesso elemento sulla mappa.</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/AlignImageDialog.py" line="138"/>
+        <location filename="../app/core/views/images/viewer/dialogs/AlignImageDialog.py" line="137"/>
         <source>Rotation:</source>
         <translation>Rotazione:</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/AlignImageDialog.py" line="139"/>
+        <location filename="../app/core/views/images/viewer/dialogs/AlignImageDialog.py" line="138"/>
         <source>Map opacity:</source>
         <translation>Opacità mappa:</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/AlignImageDialog.py" line="140"/>
+        <location filename="../app/core/views/images/viewer/dialogs/AlignImageDialog.py" line="139"/>
         <source>FOV overlay opacity:</source>
         <translation>Opacità sovrapposizione FOV:</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/AlignImageDialog.py" line="141"/>
-        <location filename="../app/core/views/images/viewer/dialogs/AlignImageDialog.py" line="193"/>
+        <location filename="../app/core/views/images/viewer/dialogs/AlignImageDialog.py" line="140"/>
+        <location filename="../app/core/views/images/viewer/dialogs/AlignImageDialog.py" line="192"/>
         <source>Show Street Map</source>
         <translation>Mostra mappa stradale</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/AlignImageDialog.py" line="142"/>
+        <location filename="../app/core/views/images/viewer/dialogs/AlignImageDialog.py" line="141"/>
         <source>Add Tie Point</source>
         <translation>Aggiungi punto di collegamento</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/AlignImageDialog.py" line="143"/>
+        <location filename="../app/core/views/images/viewer/dialogs/AlignImageDialog.py" line="142"/>
         <source>Reset</source>
         <translation>Reimposta</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/AlignImageDialog.py" line="196"/>
+        <location filename="../app/core/views/images/viewer/dialogs/AlignImageDialog.py" line="195"/>
         <source>Show Satellite</source>
         <translation>Mostra satellite</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/AlignImageDialog.py" line="220"/>
+        <location filename="../app/core/views/images/viewer/dialogs/AlignImageDialog.py" line="218"/>
         <source>Corners look mirrored</source>
         <translation>Gli angoli sembrano speculari</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/AlignImageDialog.py" line="222"/>
+        <location filename="../app/core/views/images/viewer/dialogs/AlignImageDialog.py" line="220"/>
         <source>The four corners appear mirrored - the drone image would map to the ground flipped.
 
 Each corner handle is colour-matched to a corner of the drone photo (the small coloured squares). Make sure every handle sits where its matching photo corner belongs.</source>
@@ -1209,7 +1209,7 @@ Each corner handle is colour-matched to a corner of the drone photo (the small c
 Ogni maniglia d&apos;angolo è abbinata per colore a un angolo della foto del drone (i piccoli quadrati colorati). Assicurati che ogni maniglia si trovi nel punto in cui deve stare l&apos;angolo corrispondente della foto.</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/AlignImageDialog.py" line="232"/>
+        <location filename="../app/core/views/images/viewer/dialogs/AlignImageDialog.py" line="230"/>
         <source>Go Back and Fix</source>
         <translation>Torna indietro e correggi</translation>
     </message>
@@ -1217,17 +1217,17 @@ Ogni maniglia d&apos;angolo è abbinata per colore a un angolo della foto del dr
 <context>
     <name>AlignImageView</name>
     <message>
-        <location filename="../app/core/views/images/viewer/widgets/AlignImageView.py" line="372"/>
+        <location filename="../app/core/views/images/viewer/widgets/AlignImageView.py" line="425"/>
         <source>IMAGE</source>
         <translation>IMMAGINE</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/widgets/AlignImageView.py" line="374"/>
+        <location filename="../app/core/views/images/viewer/widgets/AlignImageView.py" line="427"/>
         <source>MAP</source>
         <translation>MAPPA</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/widgets/AlignImageView.py" line="603"/>
+        <location filename="../app/core/views/images/viewer/widgets/AlignImageView.py" line="672"/>
         <source>Remove Tie Point</source>
         <translation>Rimuovi punto di collegamento</translation>
     </message>
@@ -5450,72 +5450,120 @@ Vuoi continuare?</translation>
 <context>
     <name>GPSMapController</name>
     <message>
-        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="77"/>
+        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="102"/>
         <source>No GPS data found in images</source>
         <translation>Nessun dato GPS trovato nelle immagini</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="316"/>
+        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="175"/>
+        <source>Downloading tiles is disabled in Offline Only mode</source>
+        <translation>Il download delle tile è disabilitato nella modalità solo offline</translation>
+    </message>
+    <message>
+        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="206"/>
+        <source>Calculate POD Coverage?</source>
+        <translation>Calcolare la copertura POD?</translation>
+    </message>
+    <message>
+        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="207"/>
+        <source>Coverage data is ready. Calculate the probability-of-detection heatmap for this mission now? (May take several minutes.)</source>
+        <translation>I dati di copertura sono pronti. Calcolare ora la heatmap della probabilità di rilevamento per questa missione? (Può richiedere diversi minuti.)</translation>
+    </message>
+    <message>
+        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="232"/>
+        <source>POD calculation is unavailable</source>
+        <translation>Il calcolo POD non è disponibile</translation>
+    </message>
+    <message>
+        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="251"/>
+        <source>The tile downloader is unavailable</source>
+        <translation>Il downloader delle tile non è disponibile</translation>
+    </message>
+    <message>
+        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="281"/>
+        <source>Download Canopy Data?</source>
+        <translation>Scaricare i dati della chioma?</translation>
+    </message>
+    <message>
+        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="282"/>
+        <source>No canopy-height data is configured for this mission.
+
+Download elevation and canopy tiles for this area now so the canopy overlay and terrain-aware detection coverage can use them?
+
+This downloads Meta/WRI canopy height (1 m) and sets it as the canopy source, replacing any LANDFIRE selection (LANDFIRE tiles must be added manually).</source>
+        <translation>Nessun dato di altezza della chioma è configurato per questa missione.
+
+Scaricare ora le tile di elevazione e chioma per quest&apos;area affinché la sovrapposizione della chioma e la copertura di rilevamento con analisi del terreno possano utilizzarle?
+
+Questo scarica l&apos;altezza chioma Meta/WRI (1 m) e la imposta come origine dati chioma, sostituendo qualsiasi selezione LANDFIRE (le tile LANDFIRE devono essere aggiunte manualmente).</translation>
+    </message>
+    <message>
+        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="477"/>
         <source>Not covered — no looks</source>
         <translation>Non coperto — nessuna osservazione</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="317"/>
+        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="478"/>
         <source>Terrain occlusion</source>
         <translation>Occlusione del terreno</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="318"/>
+        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="479"/>
         <source>Canopy</source>
         <translation>Chioma</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="319"/>
+        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="480"/>
         <source>Image resolution (GSD)</source>
         <translation>Risoluzione immagine (GSD)</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="320"/>
+        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="481"/>
         <source>None</source>
         <translation>Nessuno</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="322"/>
+        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="483"/>
         <source>Unknown</source>
         <translation>Sconosciuto</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="448"/>
+        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="637"/>
+        <source>Building canopy overlay...</source>
+        <translation>Creazione della sovrapposizione della chioma...</translation>
+    </message>
+    <message>
+        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="663"/>
         <source>No canopy data covers this area</source>
         <translation>Nessun dato sulla chioma copre quest&apos;area</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="472"/>
+        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="714"/>
         <source>POD: {pod}%   Looks: {looks}</source>
         <translation>POD: {pod}%   Osservazioni: {looks}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="475"/>
+        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="717"/>
         <source>Limiting factor: {factor}</source>
         <translation>Fattore limitante: {factor}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="483"/>
+        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="725"/>
         <source>Image {n}</source>
         <translation>Immagine {n}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="484"/>
+        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="726"/>
         <source>View {name}</source>
         <translation>Vista {name}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="487"/>
+        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="729"/>
         <source>Find location in images</source>
         <translation>Trova posizione nelle immagini</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="623"/>
+        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="865"/>
         <source>GPS coordinate not in any images</source>
         <translation>Coordinata GPS non presente in nessuna immagine</translation>
     </message>
@@ -5523,88 +5571,113 @@ Vuoi continuare?</translation>
 <context>
     <name>GPSMapDialog</name>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="48"/>
+        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="54"/>
         <source>GPS Map View</source>
         <translation>Vista Mappa GPS</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="102"/>
+        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="108"/>
         <source>Zoom In (+)</source>
         <translation>Ingrandisci (+)</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="106"/>
+        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="112"/>
         <source>Zoom Out (-)</source>
         <translation>Rimpicciolisci (-)</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="110"/>
+        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="116"/>
         <source>Fit All (F)</source>
         <translation>Adatta Tutto (F)</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="114"/>
+        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="120"/>
         <source>Rotate (R)</source>
         <translation>Ruota (R)</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="122"/>
-        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="280"/>
+        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="128"/>
+        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="313"/>
         <source>Satellite View</source>
         <translation>Vista Satellitare</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="129"/>
+        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="135"/>
         <source>POD Overlay</source>
         <translation>Sovrapposizione POD</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="133"/>
+        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="139"/>
         <source>Run a map export with the POD option to generate this overlay</source>
         <translation>Esegui un&apos;esportazione mappa con l&apos;opzione POD per generare questa sovrapposizione</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="138"/>
+        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="144"/>
         <source>POD</source>
         <translation>POD</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="139"/>
+        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="145"/>
         <source>Look count</source>
         <translation>Numero di osservazioni</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="140"/>
+        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="146"/>
         <source>Canopy height</source>
         <translation>Altezza della chioma</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="150"/>
+        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="156"/>
         <source>POD overlay opacity</source>
         <translation>Opacità della sovrapposizione POD</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="157"/>
+        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="162"/>
+        <source>Download Canopy Tiles</source>
+        <translation>Scarica tile chioma</translation>
+    </message>
+    <message>
+        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="169"/>
+        <source>Calculate POD</source>
+        <translation>Calcola POD</translation>
+    </message>
+    <message>
+        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="171"/>
+        <source>Compute the terrain-aware probability-of-detection heatmap for this mission (may take several minutes)</source>
+        <translation>Calcola la heatmap della probabilità di rilevamento con analisi del terreno per questa missione (può richiedere diversi minuti)</translation>
+    </message>
+    <message>
+        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="179"/>
         <source>Click point to select • Drag to pan • Scroll to zoom</source>
         <translation>Clicca su un punto per selezionare • Trascina per scorrere • Scorri per lo zoom</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="277"/>
+        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="238"/>
+        <source>Downloading tiles is disabled in Offline Only mode</source>
+        <translation>Il download delle tile è disabilitato nella modalità solo offline</translation>
+    </message>
+    <message>
+        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="240"/>
+        <source>Download elevation and canopy-height tiles for this mission&apos;s area</source>
+        <translation>Scarica le tile di elevazione e altezza della chioma per l&apos;area di questa missione</translation>
+    </message>
+    <message>
+        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="310"/>
         <source>Map View</source>
         <translation>Vista Mappa</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="314"/>
+        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="347"/>
         <source>⚠ {error}</source>
         <translation>⚠ {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="324"/>
+        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="357"/>
         <source>Map Tile Loading Issue</source>
         <translation>Problema di Caricamento Tasselli Mappa</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="326"/>
+        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="359"/>
         <source>{error}
 
 The map will continue to work with cached tiles where available.</source>
@@ -10187,19 +10260,19 @@ Ancora mancanti:
         <translation>Preferenze</translation>
     </message>
     <message>
-        <location filename="../resources/views/Preferences.ui" line="48"/>
+        <location filename="../resources/views/Preferences.ui" line="55"/>
         <source>Select the application theme appearance.
 Changes the overall color scheme and visual style.</source>
         <translation>Seleziona l&apos;aspetto del tema dell&apos;applicazione.
 Cambia lo schema colori generale e lo stile visivo.</translation>
     </message>
     <message>
-        <location filename="../resources/views/Preferences.ui" line="52"/>
+        <location filename="../resources/views/Preferences.ui" line="59"/>
         <source>Theme:</source>
         <translation>Tema:</translation>
     </message>
     <message>
-        <location filename="../resources/views/Preferences.ui" line="64"/>
+        <location filename="../resources/views/Preferences.ui" line="71"/>
         <source>Choose the application theme:
 • Light: Bright theme with light backgrounds and dark text
 • Dark: Dark theme with dark backgrounds and light text
@@ -10210,123 +10283,118 @@ Changes apply immediately to all windows.</source>
 Le modifiche si applicano immediatamente a tutte le finestre.</translation>
     </message>
     <message>
-        <location filename="../resources/views/Preferences.ui" line="71"/>
+        <location filename="../resources/views/Preferences.ui" line="78"/>
         <source>Light</source>
         <translation>Chiaro</translation>
     </message>
     <message>
-        <location filename="../resources/views/Preferences.ui" line="76"/>
+        <location filename="../resources/views/Preferences.ui" line="83"/>
         <source>Dark</source>
         <translation>Scuro</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/Preferences.py" line="96"/>
+        <location filename="../app/core/controllers/Preferences.py" line="97"/>
         <source>Elevation Source:</source>
         <translation>Origine elevazione:</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/Preferences.py" line="150"/>
+        <location filename="../app/core/controllers/Preferences.py" line="151"/>
         <source>Terrain</source>
         <translation>Terreno</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/Preferences.py" line="167"/>
+        <location filename="../app/core/controllers/Preferences.py" line="168"/>
         <source>Canopy Data Source</source>
         <translation>Origine dati chioma</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/Preferences.py" line="171"/>
+        <location filename="../app/core/controllers/Preferences.py" line="172"/>
         <source>Source:</source>
         <translation>Origine:</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/Preferences.py" line="182"/>
+        <location filename="../app/core/controllers/Preferences.py" line="183"/>
         <source>Path to the canopy manifest CSV</source>
         <translation>Percorso del CSV manifest della chioma</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/Preferences.py" line="201"/>
+        <location filename="../app/core/controllers/Preferences.py" line="213"/>
         <source>Download tiles...</source>
         <translation>Scarica tile...</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/Preferences.py" line="203"/>
-        <source>Download DEM and/or canopy tiles for an area of interest and register them here.</source>
-        <translation>Scarica tile DEM e/o della chioma per un&apos;area di interesse e registrale qui.</translation>
-    </message>
-    <message>
-        <location filename="../app/core/controllers/Preferences.py" line="262"/>
-        <location filename="../app/core/controllers/Preferences.py" line="542"/>
+        <location filename="../app/core/controllers/Preferences.py" line="277"/>
+        <location filename="../app/core/controllers/Preferences.py" line="583"/>
         <source>{version}_{date}</source>
         <translation>{version}_{date}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/Preferences.py" line="359"/>
+        <location filename="../app/core/controllers/Preferences.py" line="374"/>
         <source>Select 3DEP manifest CSV</source>
         <translation>Seleziona CSV manifest 3DEP</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/Preferences.py" line="361"/>
-        <location filename="../app/core/controllers/Preferences.py" line="406"/>
+        <location filename="../app/core/controllers/Preferences.py" line="376"/>
+        <location filename="../app/core/controllers/Preferences.py" line="428"/>
         <source>CSV files (*.csv);;All files (*)</source>
         <translation>File CSV (*.csv);;Tutti i file (*)</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/Preferences.py" line="371"/>
+        <location filename="../app/core/controllers/Preferences.py" line="386"/>
         <source>Select 3DEP tiles directory</source>
         <translation>Seleziona cartella tile 3DEP</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/Preferences.py" line="405"/>
+        <location filename="../app/core/controllers/Preferences.py" line="427"/>
         <source>Select canopy manifest CSV</source>
         <translation>Seleziona il CSV manifest della chioma</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/Preferences.py" line="414"/>
+        <location filename="../app/core/controllers/Preferences.py" line="436"/>
         <source>Select canopy tiles directory</source>
         <translation>Seleziona la cartella delle tile della chioma</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/Preferences.py" line="425"/>
+        <location filename="../app/core/controllers/Preferences.py" line="447"/>
         <source>Download Tiles</source>
         <translation>Scarica tile</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/Preferences.py" line="426"/>
+        <location filename="../app/core/controllers/Preferences.py" line="448"/>
         <source>The tile downloader is unavailable:
 {error}</source>
         <translation>Il downloader delle tile non è disponibile:
 {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/Preferences.py" line="477"/>
+        <location filename="../app/core/controllers/Preferences.py" line="518"/>
         <source>{tiles} tiles ({size_mb:.1f} MB)</source>
         <translation>{tiles} tasselli ({size_mb:.1f} MB)</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/Preferences.py" line="483"/>
+        <location filename="../app/core/controllers/Preferences.py" line="524"/>
         <source>Not available</source>
         <translation>Non disponibile</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/Preferences.py" line="485"/>
-        <location filename="../app/core/controllers/Preferences.py" line="493"/>
-        <location filename="../app/core/controllers/Preferences.py" line="521"/>
+        <location filename="../app/core/controllers/Preferences.py" line="526"/>
+        <location filename="../app/core/controllers/Preferences.py" line="534"/>
+        <location filename="../app/core/controllers/Preferences.py" line="562"/>
         <source>Error</source>
         <translation>Errore</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/Preferences.py" line="494"/>
+        <location filename="../app/core/controllers/Preferences.py" line="535"/>
         <source>Terrain service not available.</source>
         <translation>Servizio terreno non disponibile.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/Preferences.py" line="500"/>
+        <location filename="../app/core/controllers/Preferences.py" line="541"/>
         <source>Clear Terrain Cache</source>
         <translation>Cancella Cache Terreno</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/Preferences.py" line="502"/>
+        <location filename="../app/core/controllers/Preferences.py" line="543"/>
         <source>Are you sure you want to clear all cached terrain elevation data?
 
 This will require re-downloading tiles when terrain elevation is used.</source>
@@ -10335,140 +10403,150 @@ This will require re-downloading tiles when terrain elevation is used.</source>
 Ciò richiederà il nuovo download dei tasselli quando verrà utilizzata l&apos;elevazione del terreno.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/Preferences.py" line="515"/>
+        <location filename="../app/core/controllers/Preferences.py" line="556"/>
         <source>Cache Cleared</source>
         <translation>Cache Cancellata</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/Preferences.py" line="516"/>
+        <location filename="../app/core/controllers/Preferences.py" line="557"/>
         <source>Cleared {count} cached terrain tiles.</source>
         <translation>Cancellati {count} tasselli di terreno dalla cache.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/Preferences.py" line="522"/>
+        <location filename="../app/core/controllers/Preferences.py" line="563"/>
         <source>Failed to clear cache: {error}</source>
         <translation>Impossibile cancellare la cache: {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/Preferences.py" line="529"/>
+        <location filename="../app/core/controllers/Preferences.py" line="570"/>
         <source>Select a Drone Sensor File</source>
         <translation>Seleziona un File Sensore Drone</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/Preferences.py" line="67"/>
+        <location filename="../app/core/controllers/Preferences.py" line="68"/>
         <source>Language:</source>
         <translation>Lingua:</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/Preferences.py" line="106"/>
-        <location filename="../app/core/controllers/Preferences.py" line="180"/>
+        <location filename="../app/core/controllers/Preferences.py" line="107"/>
+        <location filename="../app/core/controllers/Preferences.py" line="181"/>
         <source>Manifest CSV:</source>
         <translation>CSV manifest:</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/Preferences.py" line="108"/>
+        <location filename="../app/core/controllers/Preferences.py" line="109"/>
         <source>Path to dem_manifest.csv</source>
         <translation>Percorso di dem_manifest.csv</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/Preferences.py" line="109"/>
-        <location filename="../app/core/controllers/Preferences.py" line="120"/>
-        <location filename="../app/core/controllers/Preferences.py" line="183"/>
-        <location filename="../app/core/controllers/Preferences.py" line="193"/>
+        <location filename="../app/core/controllers/Preferences.py" line="110"/>
+        <location filename="../app/core/controllers/Preferences.py" line="121"/>
+        <location filename="../app/core/controllers/Preferences.py" line="184"/>
+        <location filename="../app/core/controllers/Preferences.py" line="194"/>
         <source>Browse...</source>
         <translation>Sfoglia...</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/Preferences.py" line="117"/>
-        <location filename="../app/core/controllers/Preferences.py" line="190"/>
+        <location filename="../app/core/controllers/Preferences.py" line="118"/>
+        <location filename="../app/core/controllers/Preferences.py" line="191"/>
         <source>Tiles directory:</source>
         <translation>Cartella tile:</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/Preferences.py" line="119"/>
-        <location filename="../app/core/controllers/Preferences.py" line="192"/>
+        <location filename="../app/core/controllers/Preferences.py" line="120"/>
+        <location filename="../app/core/controllers/Preferences.py" line="193"/>
         <source>Folder containing the GeoTIFF tiles</source>
         <translation>Cartella contenente i tile GeoTIFF</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/Preferences.py" line="531"/>
+        <location filename="../app/core/controllers/Preferences.py" line="203"/>
+        <source>Canopy is disabled until both paths are set — use Download tiles… or Browse.</source>
+        <translation>La chioma è disabilitata finché entrambi i percorsi non sono impostati — usa Scarica tile… o Sfoglia.</translation>
+    </message>
+    <message>
+        <location filename="../app/core/controllers/Preferences.py" line="215"/>
+        <source>Download DEM and/or canopy tiles for an area of interest and register them here. Note: the canopy download uses Meta/WRI data and registers it as the canopy source.</source>
+        <translation>Scarica le tile DEM e/o chioma per un&apos;area di interesse e registrale qui. Nota: il download della chioma usa dati Meta/WRI e li registra come origine dati chioma.</translation>
+    </message>
+    <message>
+        <location filename="../app/core/controllers/Preferences.py" line="572"/>
         <source>CSV Files (*.csv)</source>
         <translation>File CSV (*.csv)</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/Preferences.py" line="557"/>
+        <location filename="../app/core/controllers/Preferences.py" line="598"/>
         <source>Restart Required</source>
         <translation>Riavvio Richiesto</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/Preferences.py" line="558"/>
+        <location filename="../app/core/controllers/Preferences.py" line="599"/>
         <source>Please restart the application for language changes to take effect.</source>
         <translation>Riavvia l&apos;applicazione affinché le modifiche alla lingua abbiano effetto.</translation>
     </message>
     <message>
-        <location filename="../resources/views/Preferences.ui" line="111"/>
+        <location filename="../resources/views/Preferences.ui" line="118"/>
         <source>Max Areas of Interest: </source>
         <translation>Aree di Interesse Massime: </translation>
     </message>
     <message>
-        <location filename="../resources/views/Preferences.ui" line="158"/>
+        <location filename="../resources/views/Preferences.ui" line="165"/>
         <source>Area of Interest Circle Radius(px):</source>
         <translation>Raggio Cerchio Area di Interesse (px):</translation>
     </message>
     <message>
-        <location filename="../resources/views/Preferences.ui" line="206"/>
+        <location filename="../resources/views/Preferences.ui" line="213"/>
         <source>Coordinate System:</source>
         <translation>Sistema di Coordinate:</translation>
     </message>
     <message>
-        <location filename="../resources/views/Preferences.ui" line="259"/>
+        <location filename="../resources/views/Preferences.ui" line="266"/>
         <source>Temperature Unit:</source>
         <translation>Unità di Temperatura:</translation>
     </message>
     <message>
-        <location filename="../resources/views/Preferences.ui" line="308"/>
+        <location filename="../resources/views/Preferences.ui" line="315"/>
         <source>Distance Unit:</source>
         <translation>Unità di Distanza:</translation>
     </message>
     <message>
-        <location filename="../resources/views/Preferences.ui" line="359"/>
+        <location filename="../resources/views/Preferences.ui" line="366"/>
         <source>Offline Only Mode:</source>
         <translation>Modalità Solo Offline:</translation>
     </message>
     <message>
-        <location filename="../resources/views/Preferences.ui" line="397"/>
+        <location filename="../resources/views/Preferences.ui" line="404"/>
         <source>Use Terrain Elevation:</source>
         <translation>Usa Elevazione Terreno:</translation>
     </message>
     <message>
-        <location filename="../resources/views/Preferences.ui" line="437"/>
+        <location filename="../resources/views/Preferences.ui" line="444"/>
         <source>Terrain Cache:</source>
         <translation>Cache Terreno:</translation>
     </message>
     <message>
-        <location filename="../resources/views/Preferences.ui" line="514"/>
+        <location filename="../resources/views/Preferences.ui" line="521"/>
         <source>Drone Sensor File Version:</source>
         <translation>Versione File Sensore Drone:</translation>
     </message>
     <message>
-        <location filename="../resources/views/Preferences.ui" line="581"/>
+        <location filename="../resources/views/Preferences.ui" line="588"/>
         <source>Replace</source>
         <translation>Sostituisci</translation>
     </message>
     <message>
-        <location filename="../resources/views/Preferences.ui" line="478"/>
+        <location filename="../resources/views/Preferences.ui" line="485"/>
         <source>Clear Cache</source>
         <translation>Cancella Cache</translation>
     </message>
     <message>
-        <location filename="../resources/views/Preferences.ui" line="107"/>
+        <location filename="../resources/views/Preferences.ui" line="114"/>
         <source>Warning threshold for total AOIs detected across all images.
 Prompts user when this limit is reached during processing.</source>
         <translation>Soglia di avviso per il totale di AOI rilevate in tutte le immagini.
 Avvisa l&apos;utente quando questo limite viene raggiunto durante l&apos;elaborazione.</translation>
     </message>
     <message>
-        <location filename="../resources/views/Preferences.ui" line="123"/>
+        <location filename="../resources/views/Preferences.ui" line="130"/>
         <source>Set the warning threshold for total AOIs detected during processing.
 • Range: 0 to 1000
 • Default: 100
@@ -10487,14 +10565,14 @@ Quando questo numero di AOI è rilevato su tutte le immagini:
 Usa valori più bassi per individuare presto conteggi elevati di rilevamenti.</translation>
     </message>
     <message>
-        <location filename="../resources/views/Preferences.ui" line="154"/>
+        <location filename="../resources/views/Preferences.ui" line="161"/>
         <source>Radius for combining neighboring AOIs into single detections.
 AOIs within this distance are merged together.</source>
         <translation>Raggio per combinare AOI vicine in singoli rilevamenti.
 Le AOI entro questa distanza vengono unite.</translation>
     </message>
     <message>
-        <location filename="../resources/views/Preferences.ui" line="170"/>
+        <location filename="../resources/views/Preferences.ui" line="177"/>
         <source>Set the radius for combining nearby AOIs during detection.
 • Range: 0 to 100 pixels
 • Default: 25 pixels
@@ -10515,14 +10593,14 @@ Quando le AOI sono entro questo raggio l&apos;una dall&apos;altra:
 Usa per consolidare rilevamenti raggruppati in singoli oggetti.</translation>
     </message>
     <message>
-        <location filename="../resources/views/Preferences.ui" line="202"/>
+        <location filename="../resources/views/Preferences.ui" line="209"/>
         <source>Format for displaying geographic coordinates throughout the application.
 Affects how GPS locations are shown in the viewer and exports.</source>
         <translation>Formato per visualizzare le coordinate geografiche in tutta l&apos;applicazione.
 Influisce su come le posizioni GPS sono mostrate nel visualizzatore e nelle esportazioni.</translation>
     </message>
     <message>
-        <location filename="../resources/views/Preferences.ui" line="218"/>
+        <location filename="../resources/views/Preferences.ui" line="225"/>
         <source>Select the geographic coordinate display format:
 • Lat/Long - Decimal Degrees: 34.123456, -118.987654 (most common, easy to use)
 • Lat/Long - Degrees, Minutes, Seconds: 34° 7&apos; 24.4416&quot; N, 118° 59&apos; 15.5424&quot; W (traditional navigation)
@@ -10535,29 +10613,29 @@ This setting affects coordinate display in the viewer, exports, and overlays.</s
 Questa impostazione influisce sulla visualizzazione delle coordinate nel visualizzatore, nelle esportazioni e nelle sovrapposizioni.</translation>
     </message>
     <message>
-        <location filename="../resources/views/Preferences.ui" line="226"/>
+        <location filename="../resources/views/Preferences.ui" line="233"/>
         <source>Lat/Long - Decimal Degrees</source>
         <translation>Lat/Long - Gradi Decimali</translation>
     </message>
     <message>
-        <location filename="../resources/views/Preferences.ui" line="231"/>
+        <location filename="../resources/views/Preferences.ui" line="238"/>
         <source>Lat/Long - Degrees, Minutes, Seconds</source>
         <translation>Lat/Long - Gradi, Minuti, Secondi</translation>
     </message>
     <message>
-        <location filename="../resources/views/Preferences.ui" line="236"/>
+        <location filename="../resources/views/Preferences.ui" line="243"/>
         <source>UTM</source>
         <translation>UTM</translation>
     </message>
     <message>
-        <location filename="../resources/views/Preferences.ui" line="255"/>
+        <location filename="../resources/views/Preferences.ui" line="262"/>
         <source>Unit for displaying temperature measurements from thermal imagery.
 Used when analyzing thermal images from thermal cameras.</source>
         <translation>Unità per visualizzare le misure di temperatura da immagini termiche.
 Usata quando si analizzano immagini termiche da camere termiche.</translation>
     </message>
     <message>
-        <location filename="../resources/views/Preferences.ui" line="271"/>
+        <location filename="../resources/views/Preferences.ui" line="278"/>
         <source>Select the temperature unit for thermal image analysis:
 • Fahrenheit (°F): Imperial temperature scale (US standard)
   - Water freezes at 32°F, boils at 212°F
@@ -10572,24 +10650,24 @@ Applies to thermal camera data display and analysis results.</source>
 Si applica alla visualizzazione dei dati della camera termica e ai risultati di analisi.</translation>
     </message>
     <message>
-        <location filename="../resources/views/Preferences.ui" line="280"/>
+        <location filename="../resources/views/Preferences.ui" line="287"/>
         <source>Fahrenheit</source>
         <translation>Fahrenheit</translation>
     </message>
     <message>
-        <location filename="../resources/views/Preferences.ui" line="285"/>
+        <location filename="../resources/views/Preferences.ui" line="292"/>
         <source>Celsius</source>
         <translation>Celsius</translation>
     </message>
     <message>
-        <location filename="../resources/views/Preferences.ui" line="304"/>
+        <location filename="../resources/views/Preferences.ui" line="311"/>
         <source>Unit for displaying distance and altitude measurements.
 Used for drone altitude, object distances, and spatial calculations.</source>
         <translation>Unità per visualizzare misure di distanza e altitudine.
 Usata per altitudine del drone, distanze degli oggetti e calcoli spaziali.</translation>
     </message>
     <message>
-        <location filename="../resources/views/Preferences.ui" line="320"/>
+        <location filename="../resources/views/Preferences.ui" line="327"/>
         <source>Select the distance unit for measurements:
 • Meters (m): Metric distance unit (international standard)
   - 1 meter = 3.281 feet
@@ -10608,35 +10686,35 @@ Applies to altitude displays, GSD calculations, and distance measurements.</sour
 Si applica alle visualizzazioni dell&apos;altitudine, ai calcoli GSD e alle misurazioni delle distanze.</translation>
     </message>
     <message>
-        <location filename="../resources/views/Preferences.ui" line="331"/>
+        <location filename="../resources/views/Preferences.ui" line="338"/>
         <source>Meters</source>
         <translation>Metri</translation>
     </message>
     <message>
-        <location filename="../resources/views/Preferences.ui" line="336"/>
+        <location filename="../resources/views/Preferences.ui" line="343"/>
         <source>Feet</source>
         <translation>Piedi</translation>
     </message>
     <message>
-        <location filename="../resources/views/Preferences.ui" line="355"/>
+        <location filename="../resources/views/Preferences.ui" line="362"/>
         <source>Toggle Offline Only mode.
 When enabled, the app skips any network calls (map tiles, CalTopo exports) and works with cached data only.</source>
         <translation>Attiva/disattiva la modalità Solo Offline.
 Quando abilitata, l&apos;app salta tutte le chiamate di rete (tessere mappa, esportazioni CalTopo) e lavora solo con dati in cache.</translation>
     </message>
     <message>
-        <location filename="../resources/views/Preferences.ui" line="371"/>
+        <location filename="../resources/views/Preferences.ui" line="378"/>
         <source>Disable online functionality (tile downloads, CalTopo integration) and work entirely offline.</source>
         <translation>Disabilita le funzionalità online (download tessere, integrazione CalTopo) e lavora completamente offline.</translation>
     </message>
     <message>
-        <location filename="../resources/views/Preferences.ui" line="374"/>
-        <location filename="../resources/views/Preferences.ui" line="415"/>
+        <location filename="../resources/views/Preferences.ui" line="381"/>
+        <location filename="../resources/views/Preferences.ui" line="422"/>
         <source>Enable</source>
         <translation>Abilita</translation>
     </message>
     <message>
-        <location filename="../resources/views/Preferences.ui" line="392"/>
+        <location filename="../resources/views/Preferences.ui" line="399"/>
         <source>Use terrain elevation data (DTM/DSM) for more accurate AOI GPS coordinate calculations.
 When enabled, uses online elevation data to account for terrain variations.
 When disabled, assumes flat terrain at takeoff altitude.</source>
@@ -10645,7 +10723,7 @@ Quando abilitato, usa dati di elevazione online per tenere conto delle variazion
 Quando disabilitato, assume terreno piatto all&apos;altitudine di decollo.</translation>
     </message>
     <message>
-        <location filename="../resources/views/Preferences.ui" line="409"/>
+        <location filename="../resources/views/Preferences.ui" line="416"/>
         <source>Enable terrain-corrected AOI positioning using DTM/DSM elevation data.
 • When enabled: Downloads and caches elevation tiles for accurate positioning
 • When disabled: Uses flat terrain assumption (faster, works offline)
@@ -10656,45 +10734,45 @@ Terrain data is cached locally and works offline after first download.</source>
 I dati del terreno vengono memorizzati localmente e funzionano offline dopo il primo download.</translation>
     </message>
     <message>
-        <location filename="../resources/views/Preferences.ui" line="433"/>
+        <location filename="../resources/views/Preferences.ui" line="440"/>
         <source>Manage the terrain elevation data cache.
 Terrain tiles are downloaded and stored locally for offline use.</source>
         <translation>Gestisci la cache dei dati di elevazione del terreno.
 I tasselli del terreno vengono scaricati e memorizzati localmente per l&apos;uso offline.</translation>
     </message>
     <message>
-        <location filename="../resources/views/Preferences.ui" line="449"/>
+        <location filename="../resources/views/Preferences.ui" line="456"/>
         <source>0 tiles (0 MB)</source>
         <translation>0 tasselli (0 MB)</translation>
     </message>
     <message>
-        <location filename="../resources/views/Preferences.ui" line="474"/>
+        <location filename="../resources/views/Preferences.ui" line="481"/>
         <source>Clear all cached terrain elevation tiles.
 This will require re-downloading tiles when terrain elevation is used.</source>
         <translation>Cancella tutti i tasselli di elevazione del terreno memorizzati nella cache.
 Ciò richiederà il nuovo download dei tasselli quando verrà utilizzata l&apos;elevazione del terreno.</translation>
     </message>
     <message>
-        <location filename="../resources/views/Preferences.ui" line="510"/>
+        <location filename="../resources/views/Preferences.ui" line="517"/>
         <source>Version of the current drone sensor configuration file.
 Contains camera specifications, sensor dimensions, and focal length data for different drone models.</source>
         <translation>Versione del file di configurazione del sensore drone corrente.
 Contiene specifiche della camera, dimensioni del sensore e dati sulla lunghezza focale per diversi modelli di drone.</translation>
     </message>
     <message>
-        <location filename="../resources/views/Preferences.ui" line="539"/>
+        <location filename="../resources/views/Preferences.ui" line="546"/>
         <source>Currently loaded drone sensor file version number.
 The sensor file defines camera parameters for accurate GSD and AOI calculations.</source>
         <translation>Numero di versione del file sensore drone attualmente caricato.
 Il file sensore definisce i parametri della camera per calcoli accurati di GSD e AOI.</translation>
     </message>
     <message>
-        <location filename="../resources/views/Preferences.ui" line="543"/>
+        <location filename="../resources/views/Preferences.ui" line="550"/>
         <source>TextLabel</source>
         <translation>TextLabel</translation>
     </message>
     <message>
-        <location filename="../resources/views/Preferences.ui" line="571"/>
+        <location filename="../resources/views/Preferences.ui" line="578"/>
         <source>Replace the current drone sensor configuration file.
 Allows updating to a newer version or custom sensor specifications.
 Required file format: JSON with drone models, sensors, focal lengths, and dimensions.
@@ -10713,7 +10791,7 @@ Usa questo quando:
 Esegui un backup del file esistente prima di sostituirlo.</translation>
     </message>
     <message>
-        <location filename="../resources/views/Preferences.ui" line="601"/>
+        <location filename="../resources/views/Preferences.ui" line="609"/>
         <source>Close the Preferences window.
 All changes are saved automatically when modified.</source>
         <translation>Chiudi la finestra Preferenze.
@@ -13919,77 +13997,147 @@ Aggressivo</translation>
 <context>
     <name>TileFetchController</name>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="97"/>
+        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="113"/>
         <source>Invalid Area</source>
         <translation>Area non valida</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="98"/>
+        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="114"/>
         <source>Please enter a valid bounding box.</source>
         <translation>Inserisci un riquadro di delimitazione valido.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="101"/>
+        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="117"/>
         <source>No Output Folder</source>
         <translation>Nessuna cartella di output</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="102"/>
+        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="118"/>
         <source>Please choose an output folder.</source>
         <translation>Scegli una cartella di output.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="105"/>
+        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="121"/>
         <source>No Dataset</source>
         <translation>Nessun set di dati</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="106"/>
+        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="122"/>
         <source>Please select at least one dataset.</source>
         <translation>Seleziona almeno un set di dati.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="144"/>
+        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="167"/>
         <source>No GPS Found</source>
         <translation>Nessun GPS trovato</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="145"/>
+        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="168"/>
         <source>No GPS positions were found in the {source} images.</source>
         <translation>Nessuna posizione GPS trovata nelle immagini di {source}.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="158"/>
+        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="181"/>
         <source>Select image folder</source>
         <translation>Seleziona la cartella delle immagini</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="167"/>
+        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="190"/>
         <source>No Images</source>
         <translation>Nessuna immagine</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="168"/>
+        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="191"/>
         <source>No images were found in the selected folder.</source>
         <translation>Nessuna immagine trovata nella cartella selezionata.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="199"/>
+        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="237"/>
+        <source>Replace Canopy Source?</source>
+        <translation>Sostituire l&apos;origine dati chioma?</translation>
+    </message>
+    <message>
+        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="238"/>
+        <source>A LANDFIRE canopy source is currently configured.
+
+Register the downloaded Meta/WRI canopy tiles instead? (Your LANDFIRE files stay on disk; only the selected source changes.)</source>
+        <translation>È attualmente configurata un&apos;origine dati chioma LANDFIRE.
+
+Registrare invece le tile chioma Meta/WRI scaricate? (I file LANDFIRE restano su disco; cambia solo l&apos;origine selezionata.)</translation>
+    </message>
+    <message>
+        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="247"/>
+        <source>Elevation (DEM)</source>
+        <translation>Elevazione (DEM)</translation>
+    </message>
+    <message>
+        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="247"/>
+        <source>Canopy height</source>
+        <translation>Altezza della chioma</translation>
+    </message>
+    <message>
+        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="264"/>
+        <source>{product}: cancelled before completion.</source>
+        <translation>{product}: annullato prima del completamento.</translation>
+    </message>
+    <message>
+        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="266"/>
+        <source>{product}: {failed} tile(s) failed to download.</source>
+        <translation>{product}: {failed} tile non scaricate.</translation>
+    </message>
+    <message>
+        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="269"/>
+        <source>{product}: no data covers this area.</source>
+        <translation>{product}: nessun dato copre quest&apos;area.</translation>
+    </message>
+    <message>
+        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="271"/>
+        <source>{product}: nothing was downloaded.</source>
+        <translation>{product}: non è stato scaricato nulla.</translation>
+    </message>
+    <message>
+        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="278"/>
+        <source>{product}: registered as the active source.</source>
+        <translation>{product}: registrato come origine attiva.</translation>
+    </message>
+    <message>
+        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="281"/>
+        <source>{product}: NOT registered (no usable tiles).</source>
+        <translation>{product}: NON registrato (nessuna tile utilizzabile).</translation>
+    </message>
+    <message>
+        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="290"/>
+        <source>Download Finished with Problems</source>
+        <translation>Download completato con problemi</translation>
+    </message>
+    <message>
+        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="296"/>
         <source>Download Complete</source>
         <translation>Download completato</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="200"/>
+        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="285"/>
+        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="292"/>
         <source>Downloaded {count} tiles.</source>
         <translation>Scaricate {count} tile.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="214"/>
+        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="307"/>
+        <source>Download Cancelled</source>
+        <translation>Download annullato</translation>
+    </message>
+    <message>
+        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="308"/>
+        <source>The download was cancelled. No tiles were registered.</source>
+        <translation>Il download è stato annullato. Nessuna tile è stata registrata.</translation>
+    </message>
+    <message>
+        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="315"/>
         <source>Download Error</source>
         <translation>Errore di download</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="215"/>
+        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="316"/>
         <source>Tile download failed:
 {error}</source>
         <translation>Download delle tile non riuscito:
@@ -13999,107 +14147,107 @@ Aggressivo</translation>
 <context>
     <name>TileFetchDialog</name>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/TileFetchDialog.py" line="24"/>
+        <location filename="../app/core/views/images/viewer/dialogs/TileFetchDialog.py" line="33"/>
         <source>Download Coverage Data</source>
         <translation>Scarica dati di copertura</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/TileFetchDialog.py" line="32"/>
+        <location filename="../app/core/views/images/viewer/dialogs/TileFetchDialog.py" line="41"/>
         <source>Area of Interest (WGS84)</source>
         <translation>Area di interesse (WGS84)</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/TileFetchDialog.py" line="37"/>
-        <source>Use loaded mission extent</source>
-        <translation>Usa l&apos;estensione della missione caricata</translation>
+        <location filename="../app/core/views/images/viewer/dialogs/TileFetchDialog.py" line="51"/>
+        <source>Fill area from</source>
+        <translation>Riempi area da</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/TileFetchDialog.py" line="40"/>
-        <source>Fill the AOI from the GPS positions of the currently loaded mission&apos;s images.</source>
-        <translation>Compila l&apos;area di interesse dalle posizioni GPS delle immagini della missione attualmente caricata.</translation>
+        <location filename="../app/core/views/images/viewer/dialogs/TileFetchDialog.py" line="56"/>
+        <source>Fill the area from the loaded mission&apos;s image GPS, or from an image folder.</source>
+        <translation>Riempi l&apos;area dal GPS delle immagini della missione caricata o da una cartella di immagini.</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/TileFetchDialog.py" line="41"/>
-        <source>Load extent from image folder...</source>
-        <translation>Carica estensione da cartella immagini...</translation>
+        <location filename="../app/core/views/images/viewer/dialogs/TileFetchDialog.py" line="53"/>
+        <source>Loaded mission extent</source>
+        <translation>Estensione della missione caricata</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/TileFetchDialog.py" line="43"/>
-        <source>Read image GPS from a folder to fill the AOI (use when no mission is loaded).</source>
-        <translation>Legge il GPS delle immagini da una cartella per compilare l&apos;area di interesse (usare quando nessuna missione è caricata).</translation>
+        <location filename="../app/core/views/images/viewer/dialogs/TileFetchDialog.py" line="54"/>
+        <source>Image folder...</source>
+        <translation>Cartella immagini...</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/TileFetchDialog.py" line="58"/>
+        <location filename="../app/core/views/images/viewer/dialogs/TileFetchDialog.py" line="74"/>
         <source>Min longitude:</source>
         <translation>Longitudine min.:</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/TileFetchDialog.py" line="60"/>
+        <location filename="../app/core/views/images/viewer/dialogs/TileFetchDialog.py" line="76"/>
         <source>Min latitude:</source>
         <translation>Latitudine min.:</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/TileFetchDialog.py" line="62"/>
+        <location filename="../app/core/views/images/viewer/dialogs/TileFetchDialog.py" line="78"/>
         <source>Max longitude:</source>
         <translation>Longitudine max.:</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/TileFetchDialog.py" line="64"/>
+        <location filename="../app/core/views/images/viewer/dialogs/TileFetchDialog.py" line="80"/>
         <source>Max latitude:</source>
         <translation>Latitudine max.:</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/TileFetchDialog.py" line="69"/>
+        <location filename="../app/core/views/images/viewer/dialogs/TileFetchDialog.py" line="85"/>
         <source>Footprint buffer (m):</source>
         <translation>Buffer dell&apos;impronta (m):</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/TileFetchDialog.py" line="74"/>
+        <location filename="../app/core/views/images/viewer/dialogs/TileFetchDialog.py" line="90"/>
         <source>Padding added around the camera positions so downloaded tiles cover the image footprints. Auto-sized from the mission; edit and re-fill to change.</source>
         <translation>Spazio aggiunto attorno alle posizioni della camera affinché le tile scaricate coprano le impronte delle immagini. Dimensionato automaticamente dalla missione; modifica e ricompila per cambiarlo.</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/TileFetchDialog.py" line="83"/>
+        <location filename="../app/core/views/images/viewer/dialogs/TileFetchDialog.py" line="99"/>
         <source>Datasets</source>
         <translation>Set di dati</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/TileFetchDialog.py" line="85"/>
+        <location filename="../app/core/views/images/viewer/dialogs/TileFetchDialog.py" line="101"/>
         <source>USGS 3DEP DEM</source>
         <translation>USGS 3DEP DEM</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/TileFetchDialog.py" line="87"/>
+        <location filename="../app/core/views/images/viewer/dialogs/TileFetchDialog.py" line="103"/>
         <source>Meta/WRI Canopy Height</source>
         <translation>Altezza chioma Meta/WRI</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/TileFetchDialog.py" line="95"/>
+        <location filename="../app/core/views/images/viewer/dialogs/TileFetchDialog.py" line="111"/>
         <source>Output folder:</source>
         <translation>Cartella di output:</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/TileFetchDialog.py" line="97"/>
+        <location filename="../app/core/views/images/viewer/dialogs/TileFetchDialog.py" line="115"/>
         <source>Browse...</source>
         <translation>Sfoglia...</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/TileFetchDialog.py" line="103"/>
+        <location filename="../app/core/views/images/viewer/dialogs/TileFetchDialog.py" line="121"/>
         <source>Register in Preferences when complete</source>
         <translation>Registra nelle Preferenze al termine</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/TileFetchDialog.py" line="109"/>
+        <location filename="../app/core/views/images/viewer/dialogs/TileFetchDialog.py" line="127"/>
         <source>Download</source>
         <translation>Scarica</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/TileFetchDialog.py" line="112"/>
+        <location filename="../app/core/views/images/viewer/dialogs/TileFetchDialog.py" line="130"/>
         <source>Cancel</source>
         <translation>Annulla</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/TileFetchDialog.py" line="119"/>
+        <location filename="../app/core/views/images/viewer/dialogs/TileFetchDialog.py" line="137"/>
         <source>Select output folder</source>
         <translation>Seleziona la cartella di output</translation>
     </message>
@@ -14147,9 +14295,9 @@ Aggressivo</translation>
     <message>
         <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="466"/>
         <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="569"/>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="713"/>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="747"/>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="792"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="718"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="752"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="797"/>
         <source>Export Error</source>
         <translation>Errore di Esportazione</translation>
     </message>
@@ -14178,55 +14326,55 @@ Aggressivo</translation>
 {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="612"/>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="680"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="617"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="685"/>
         <source>POD Error</source>
         <translation>Errore POD</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="613"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="618"/>
         <source>Could not start the POD calculation:
 {error}</source>
         <translation>Impossibile avviare il calcolo POD:
 {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="653"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="658"/>
         <source>POD coverage complete</source>
         <translation>Copertura POD completata</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="673"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="678"/>
         <source>POD calculation cancelled</source>
         <translation>Calcolo POD annullato</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="681"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="686"/>
         <source>POD calculation failed:
 {error}</source>
         <translation>Calcolo POD non riuscito:
 {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="714"/>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="748"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="719"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="753"/>
         <source>Failed to export to CalTopo:
 {error}</source>
         <translation>Impossibile esportare su CalTopo:
 {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="764"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="769"/>
         <source>Map export completed successfully!</source>
         <translation>Esportazione mappa completata con successo!</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="779"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="784"/>
         <source>Map export cancelled</source>
         <translation>Esportazione mappa annullata</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="793"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="798"/>
         <source>Map export failed:
 {error}</source>
         <translation>Esportazione mappa non riuscita:
