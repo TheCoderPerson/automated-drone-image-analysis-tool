@@ -137,6 +137,7 @@ class GPSMapDialog(TranslationMixin, QDialog):
         self.pod_mode_combo = QComboBox()
         self.pod_mode_combo.addItem(self.tr("POD"), "pod")          # itemData = stable key
         self.pod_mode_combo.addItem(self.tr("Look count"), "looks")
+        self.pod_mode_combo.addItem(self.tr("Canopy height"), "canopy")
         self.pod_mode_combo.setEnabled(False)
         self.pod_mode_combo.currentIndexChanged.connect(self._emit_pod_display_changed)
         controls_layout.addWidget(self.pod_mode_combo)
@@ -162,10 +163,36 @@ class GPSMapDialog(TranslationMixin, QDialog):
 
     def set_pod_available(self, available):
         """Enable/disable the POD overlay controls based on a cached result."""
-        self.pod_toggle_btn.setEnabled(bool(available))
-        self.pod_mode_combo.setEnabled(bool(available) and self.pod_toggle_btn.isChecked())
-        self.pod_opacity_slider.setEnabled(bool(available) and self.pod_toggle_btn.isChecked())
-        if not available and self.pod_toggle_btn.isChecked():
+        self.set_overlay_availability(available, getattr(self, '_canopy_available', False))
+
+    def set_overlay_availability(self, pod_available, canopy_available):
+        """Gate the overlay controls: the POD/look-count modes need a cached POD
+        result, while the canopy mode only needs a configured canopy source."""
+        self._pod_available = bool(pod_available)
+        self._canopy_available = bool(canopy_available)
+        any_available = self._pod_available or self._canopy_available
+
+        model = self.pod_mode_combo.model()
+        for i in range(self.pod_mode_combo.count()):
+            item = model.item(i)
+            if item is not None:
+                key = self.pod_mode_combo.itemData(i)
+                item.setEnabled(self._canopy_available if key == 'canopy'
+                                else self._pod_available)
+
+        # If the current mode just became unavailable, hop to the first enabled one.
+        cur = model.item(self.pod_mode_combo.currentIndex())
+        if cur is None or not cur.isEnabled():
+            for i in range(self.pod_mode_combo.count()):
+                item = model.item(i)
+                if item is not None and item.isEnabled():
+                    self.pod_mode_combo.setCurrentIndex(i)
+                    break
+
+        self.pod_toggle_btn.setEnabled(any_available)
+        self.pod_mode_combo.setEnabled(any_available and self.pod_toggle_btn.isChecked())
+        self.pod_opacity_slider.setEnabled(any_available and self.pod_toggle_btn.isChecked())
+        if not any_available and self.pod_toggle_btn.isChecked():
             self.pod_toggle_btn.setChecked(False)
 
     def _emit_pod_display_changed(self):

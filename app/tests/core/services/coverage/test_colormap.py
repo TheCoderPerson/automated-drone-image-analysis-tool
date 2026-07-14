@@ -7,6 +7,7 @@ from core.services.coverage.colormap import (
     _build_pod_lut,
     pod_to_rgba,
     look_count_to_rgba,
+    chm_to_rgba,
 )
 
 
@@ -33,6 +34,28 @@ def test_pod_to_rgba_transparent_where_no_looks():
     # Looked cells above the floor are opaque.
     assert rgba[0, 1, 3] > 0
     assert rgba[1, 1, 3] > 0
+
+
+def test_chm_rgba_transparent_at_open_ground_and_nodata():
+    chm = np.array([[np.nan, 0.0, 0.3, 5.0]], dtype=np.float32)
+    rgba = chm_to_rgba(chm)
+    assert rgba.shape == (1, 4, 4)
+    # NaN, bare ground, and sub-threshold vegetation are all fully transparent.
+    assert tuple(rgba[0, 0]) == (0, 0, 0, 0)
+    assert tuple(rgba[0, 1]) == (0, 0, 0, 0)
+    assert tuple(rgba[0, 2]) == (0, 0, 0, 0)
+    assert rgba[0, 3, 3] > 0
+
+
+def test_chm_rgba_darker_and_more_opaque_with_height():
+    chm = np.array([[2.0, 15.0, 35.0, 80.0]], dtype=np.float32)
+    rgba = chm_to_rgba(chm, max_height_m=35.0)
+    # Green channel dominates and darkens as canopy gets taller.
+    lum = rgba[0, :, :3].astype(int).sum(axis=1)
+    assert lum[0] > lum[1] > lum[2]
+    # Alpha rises with height, saturating at max_height_m.
+    assert rgba[0, 0, 3] < rgba[0, 1, 3] < rgba[0, 2, 3]
+    assert tuple(rgba[0, 2]) == tuple(rgba[0, 3])
 
 
 def test_look_count_rgba_saturates():

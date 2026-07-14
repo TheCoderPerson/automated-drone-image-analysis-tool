@@ -19,6 +19,15 @@ _VIRIDIS_ANCHORS = [
     (1.00, 253, 231, 37),
 ]
 
+# Sequential light->dark green ramp for the canopy-height overlay
+# (t = height / max_height_m).
+_CANOPY_ANCHORS = [
+    (0.00, 247, 252, 185),  # grass / very low vegetation: pale yellow-green
+    (0.35, 120, 198, 121),  # shrub / young trees
+    (0.70, 35, 132, 67),    # mature canopy
+    (1.00, 0, 60, 30),      # tall timber
+]
+
 # Discrete look-count -> RGBA steps (>=5 saturates to the last).
 _LOOKS_STEPS = [
     (255, 245, 157, 140),  # 1 look
@@ -53,6 +62,26 @@ def pod_to_rgba(pod: np.ndarray, look_count: np.ndarray, params) -> np.ndarray:
     idx = np.clip(np.round(np.nan_to_num(pod, nan=0.0) * 255.0), 0, 255).astype(np.uint8)
     rgba = lut[idx]
     rgba[look_count == 0] = 0
+    return rgba
+
+
+def chm_to_rgba(chm: np.ndarray, max_height_m: float = 35.0,
+                min_height_m: float = 0.5) -> np.ndarray:
+    """float canopy-height grid (meters) -> (H, W, 4) uint8 RGBA.
+
+    Transparent where the height is NaN or below ``min_height_m`` (open ground,
+    roads), then a light->dark green ramp saturating at ``max_height_m`` with
+    alpha rising alongside height so tall canopy reads strongest.
+    """
+    h = np.nan_to_num(np.asarray(chm, dtype=np.float32), nan=0.0)
+    t = np.clip(h / max(max_height_m, 1e-6), 0.0, 1.0)
+    rgba = np.zeros(t.shape + (4,), dtype=np.uint8)
+    xs = [a[0] for a in _CANOPY_ANCHORS]
+    for ch in range(3):
+        ys = [a[1 + ch] for a in _CANOPY_ANCHORS]
+        rgba[..., ch] = np.clip(np.interp(t, xs, ys), 0, 255).astype(np.uint8)
+    rgba[..., 3] = (110.0 + 90.0 * t).astype(np.uint8)
+    rgba[h < min_height_m] = 0
     return rgba
 
 

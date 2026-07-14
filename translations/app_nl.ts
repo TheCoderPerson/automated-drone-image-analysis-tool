@@ -5254,67 +5254,72 @@ Wilt u doorgaan?</translation>
 <context>
     <name>GPSMapController</name>
     <message>
-        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="62"/>
+        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="65"/>
         <source>No GPS data found in images</source>
         <translation>Geen GPS-gegevens gevonden in afbeeldingen</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="294"/>
+        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="304"/>
         <source>Not covered — no looks</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="295"/>
+        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="305"/>
         <source>Terrain occlusion</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="296"/>
+        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="306"/>
         <source>Canopy</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="297"/>
+        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="307"/>
         <source>Image resolution (GSD)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="298"/>
+        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="308"/>
         <source>None</source>
         <translation type="unfinished">Geen</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="300"/>
+        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="310"/>
         <source>Unknown</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="357"/>
+        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="436"/>
+        <source>No canopy data covers this area</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="460"/>
         <source>POD: {pod}%   Looks: {looks}</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="360"/>
+        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="463"/>
         <source>Limiting factor: {factor}</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="368"/>
+        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="471"/>
         <source>Image {n}</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="369"/>
+        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="472"/>
         <source>View {name}</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="372"/>
+        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="475"/>
         <source>Find location in images</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="486"/>
+        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="589"/>
         <source>GPS coordinate not in any images</source>
         <translation>GPS-coördinaat in geen enkele afbeelding</translation>
     </message>
@@ -5348,7 +5353,7 @@ Wilt u doorgaan?</translation>
     </message>
     <message>
         <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="122"/>
-        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="253"/>
+        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="280"/>
         <source>Satellite View</source>
         <translation>Satellietweergave</translation>
     </message>
@@ -5373,32 +5378,37 @@ Wilt u doorgaan?</translation>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="149"/>
+        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="140"/>
+        <source>Canopy height</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="150"/>
         <source>POD overlay opacity</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="156"/>
+        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="157"/>
         <source>Click point to select • Drag to pan • Scroll to zoom</source>
         <translation>Klik op punt om te selecteren • Sleep om te verplaatsen • Scrol om te zoomen</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="250"/>
+        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="277"/>
         <source>Map View</source>
         <translation>Kaartweergave</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="287"/>
+        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="314"/>
         <source>⚠ {error}</source>
         <translation>⚠ {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="297"/>
+        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="324"/>
         <source>Map Tile Loading Issue</source>
         <translation>Probleem met laden van kaarttegels</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="299"/>
+        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="326"/>
         <source>{error}
 
 The map will continue to work with cached tiles where available.</source>

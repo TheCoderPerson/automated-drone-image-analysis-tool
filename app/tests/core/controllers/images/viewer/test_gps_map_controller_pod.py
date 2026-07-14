@@ -87,6 +87,86 @@ def test_build_pod_pixmap_downsamples_and_rescales(app):
     assert transform6[0] > a0
 
 
+class _FakeCanopySample:
+    def __init__(self, chm):
+        self.chm = chm
+
+
+def _fake_canopy(chm_value=12.0):
+    svc = MagicMock()
+
+    def sample(spec):
+        chm = np.full((spec.height, spec.width), chm_value, dtype=np.float32)
+        return _FakeCanopySample(chm)
+
+    svc.sample_grid_spec.side_effect = sample
+    return svc
+
+
+def _canopy_controller(app, canopy=None, result=None):
+    ctrl = _controller(app)
+    ctrl.map_dialog = MagicMock()
+    ctrl.map_dialog.map_view = MagicMock()
+    cache = MagicMock()
+    cache.has_result.return_value = result is not None
+    cache.get_result.return_value = result
+    ctrl.parent.pod_result_cache = cache
+    ctrl._canopy_svc = canopy
+    ctrl._canopy_svc_loaded = True
+    return ctrl
+
+
+def test_canopy_mode_sets_overlay_from_canopy_service(app):
+    ctrl = _canopy_controller(app, canopy=_fake_canopy(), result=_real_result())
+    ctrl.on_pod_display_changed(True, 'canopy', 50)
+    assert ctrl._pod_overlay_enabled is True
+    assert ctrl._pod_overlay_mode == 'canopy'
+    ctrl.map_dialog.map_view.set_pod_overlay.assert_called_once()
+    ctrl.map_dialog.map_view.set_pod_overlay_opacity.assert_called_with(0.5)
+
+
+def test_canopy_mode_without_source_clears_and_toasts(app):
+    ctrl = _canopy_controller(app, canopy=None, result=_real_result())
+    ctrl.on_pod_display_changed(True, 'canopy', 50)
+    assert ctrl._pod_overlay_enabled is False
+    ctrl.map_dialog.map_view.clear_pod_overlay.assert_called_once()
+    ctrl.parent.status_controller.show_toast.assert_called_once()
+
+
+def test_canopy_extent_uses_gps_bounds_without_result(app):
+    ctrl = _controller(app)
+    ctrl.parent.pod_result_cache = None
+    ctrl.gps_data = [
+        {'latitude': 38.70, 'longitude': -120.50},
+        {'latitude': 38.71, 'longitude': -120.49},
+    ]
+    spec = ctrl._canopy_extent_spec()
+    assert spec is not None
+    assert spec.crs == "EPSG:3857"
+    min_lon, min_lat, max_lon, max_lat = spec.wgs84_bounds()
+    # Padded outward beyond the raw GPS bounding box.
+    assert min_lon < -120.50 and max_lon > -120.49
+    assert min_lat < 38.70 and max_lat > 38.71
+    assert max(spec.width, spec.height) <= ctrl._max_overlay_dim + 2
+
+
+def test_canopy_extent_matches_pod_grid_when_result_cached(app):
+    result = _real_result()
+    ctrl = _canopy_controller(app, canopy=_fake_canopy(), result=result)
+    spec = ctrl._canopy_extent_spec()
+    assert spec.transform == result.transform
+    assert (spec.height, spec.width) == result.pod.shape
+
+
+def test_canopy_pixmap_cached_per_extent(app):
+    canopy = _fake_canopy()
+    ctrl = _canopy_controller(app, canopy=canopy, result=_real_result())
+    first = ctrl._build_canopy_pixmap()
+    second = ctrl._build_canopy_pixmap()
+    assert first is not None and second is not None
+    assert canopy.sample_grid_spec.call_count == 1
+
+
 def test_on_pod_display_changed_sets_and_clears_overlay(app):
     ctrl = _controller(app)
     ctrl.map_dialog = MagicMock()

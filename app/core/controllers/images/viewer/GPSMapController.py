@@ -48,6 +48,9 @@ class GPSMapController(QObject):
         self._pod_overlay_mode = 'pod'
         self._limit_labels = None
         self._max_overlay_dim = 2048
+        self._canopy_svc = None
+        self._canopy_svc_loaded = False
+        self._canopy_overlay_cache = None  # (spec key, pixmap, transform6)
 
     def show_map(self):
         """
@@ -85,10 +88,17 @@ class GPSMapController(QObject):
             self.map_dialog.update_gps_data(self.gps_data, current_gps_index)
             self.map_dialog.set_offline_mode(offline_only)
 
-        # Enable/disable the overlay controls based on whether a POD result exists.
+        # Enable/disable the overlay controls: POD/looks need a cached result,
+        # canopy just needs a configured canopy source. Re-check the canopy
+        # settings each open (the user may have changed them in Preferences).
         cache = self._pod_cache()
-        if hasattr(self.map_dialog, 'set_pod_available'):
-            self.map_dialog.set_pod_available(cache is not None and cache.has_result())
+        self._canopy_svc_loaded = False
+        pod_available = cache is not None and cache.has_result()
+        if hasattr(self.map_dialog, 'set_overlay_availability'):
+            self.map_dialog.set_overlay_availability(
+                pod_available, self._canopy_service() is not None)
+        elif hasattr(self.map_dialog, 'set_pod_available'):
+            self.map_dialog.set_pod_available(pod_available)
 
         self.map_dialog.show()
         self.map_dialog.raise_()
@@ -299,17 +309,11 @@ class GPSMapController(QObject):
             }
         return self._limit_labels.get(code, self.tr("Unknown"))
 
-    def _build_pod_pixmap(self, result, mode):
-        """(QPixmap, transform6) from a CoverageResult, downsampled to a display cap."""
+    def _rgba_to_pixmap(self, rgba, transform):
+        """(QPixmap, transform6) from an RGBA grid, downsampled to a display cap."""
         import numpy as np
-        from core.services.coverage.colormap import pod_to_rgba, look_count_to_rgba
 
-        if mode == 'looks':
-            rgba = look_count_to_rgba(result.look_count)
-        else:
-            rgba = pod_to_rgba(result.pod, result.look_count, result.params)
-
-        a, b, c, d, e, f = tuple(result.transform)[:6]
+        a, b, c, d, e, f = tuple(transform)[:6]
         rows, cols = rgba.shape[:2]
         shrink = max(rows, cols) / float(self._max_overlay_dim)
         if shrink > 1.0:
@@ -325,6 +329,82 @@ class GPSMapController(QObject):
         qimg = QImage(arr.tobytes(), cols, rows, 4 * cols, QImage.Format.Format_RGBA8888)
         return QPixmap.fromImage(qimg), (a, b, c, d, e, f)
 
+    def _build_pod_pixmap(self, result, mode):
+        """(QPixmap, transform6) from a CoverageResult, downsampled to a display cap."""
+        from core.services.coverage.colormap import pod_to_rgba, look_count_to_rgba
+
+        if mode == 'looks':
+            rgba = look_count_to_rgba(result.look_count)
+        else:
+            rgba = pod_to_rgba(result.pod, result.look_count, result.params)
+        return self._rgba_to_pixmap(rgba, result.transform)
+
+    def _canopy_service(self):
+        """Lazily build (and cache) the settings-configured CanopyService."""
+        if not self._canopy_svc_loaded:
+            self._canopy_svc_loaded = True
+            self._canopy_svc = None
+            try:
+                from core.services.SettingsService import SettingsService
+                from core.services.terrain.CanopyServiceFactory import create_canopy_service
+                self._canopy_svc = create_canopy_service(SettingsService())
+            except Exception as e:
+                self.logger.warning(f"Canopy overlay: service unavailable: {e}")
+        return self._canopy_svc
+
+    def _canopy_extent_spec(self):
+        """EPSG:3857 GridSpec for the canopy overlay: the cached POD grid when
+        one exists (pixel-aligned with the POD overlay), else the mission GPS
+        bounding box padded 200 m, at a resolution capped to the display size."""
+        from core.services.terrain.grid import GridSpec, spec_for_bounds_wgs84, WEB_MERCATOR_CRS
+
+        cache = self._pod_cache()
+        if cache is not None and cache.has_result():
+            result = cache.get_result()
+            rows, cols = result.pod.shape
+            if rows and cols:
+                return GridSpec(crs=WEB_MERCATOR_CRS, transform=result.transform,
+                                width=int(cols), height=int(rows))
+
+        lats = [d['latitude'] for d in self.gps_data]
+        lons = [d['longitude'] for d in self.gps_data]
+        if not lats:
+            return None
+        pad_deg = 200.0 / 111320.0
+        bounds = (min(lons) - pad_deg, min(lats) - pad_deg,
+                  max(lons) + pad_deg, max(lats) + pad_deg)
+        span_m = max((bounds[2] - bounds[0]) * 111320.0 * math.cos(math.radians(lats[0])),
+                     (bounds[3] - bounds[1]) * 111320.0)
+        res_m = max(2.0, span_m / float(self._max_overlay_dim))
+        return spec_for_bounds_wgs84(bounds, res_m)
+
+    def _build_canopy_pixmap(self):
+        """(QPixmap, transform6) of canopy height over the mission extent, or
+        None when no canopy source is configured / no tile covers the area."""
+        canopy = self._canopy_service()
+        if canopy is None:
+            return None
+        spec = self._canopy_extent_spec()
+        if spec is None:
+            return None
+
+        key = (spec.crs, tuple(spec.transform)[:6], spec.width, spec.height)
+        if self._canopy_overlay_cache and self._canopy_overlay_cache[0] == key:
+            return self._canopy_overlay_cache[1], self._canopy_overlay_cache[2]
+
+        try:
+            sample = canopy.sample_grid_spec(spec)
+        except Exception as e:
+            self.logger.warning(f"Canopy overlay: sampling failed: {e}")
+            return None
+        if sample is None or sample.chm is None:
+            return None
+
+        from core.services.coverage.colormap import chm_to_rgba
+        pixmap, transform6 = self._rgba_to_pixmap(chm_to_rgba(sample.chm), spec.transform)
+        self._canopy_overlay_cache = (key, pixmap, transform6)
+        return pixmap, transform6
+
     def enable_pod_overlay(self, mode='pod'):
         """Turn the overlay on from the cached result (called after an export run)."""
         cache = self._pod_cache()
@@ -337,19 +417,42 @@ class GPSMapController(QObject):
 
     def on_pod_display_changed(self, enabled, mode, opacity):
         """React to the dialog's overlay toggle / mode / opacity controls."""
-        cache = self._pod_cache()
-        if not enabled or cache is None or not cache.has_result() or self.map_dialog is None:
-            self._pod_overlay_enabled = False
-            if self.map_dialog is not None and hasattr(self.map_dialog, 'map_view'):
-                self.map_dialog.map_view.clear_pod_overlay()
+        if not enabled or self.map_dialog is None:
+            self._clear_pod_overlay()
             return
-        result = cache.get_result()
-        pixmap, transform6 = self._build_pod_pixmap(result, mode)
+
+        if mode == 'canopy':
+            from PySide6.QtWidgets import QApplication
+            from PySide6.QtCore import Qt
+            QApplication.setOverrideCursor(Qt.CursorShape.WaitCursor)
+            try:
+                built = self._build_canopy_pixmap()
+            finally:
+                QApplication.restoreOverrideCursor()
+            if built is None:
+                self._clear_pod_overlay()
+                if hasattr(self.parent, 'status_controller'):
+                    self.parent.status_controller.show_toast(
+                        self.tr("No canopy data covers this area"), 3000, color="#F44336")
+                return
+            pixmap, transform6 = built
+        else:
+            cache = self._pod_cache()
+            if cache is None or not cache.has_result():
+                self._clear_pod_overlay()
+                return
+            pixmap, transform6 = self._build_pod_pixmap(cache.get_result(), mode)
+
         self._pod_overlay_enabled = True
         self._pod_overlay_mode = mode
         view = self.map_dialog.map_view
         view.set_pod_overlay(pixmap, transform6)
         view.set_pod_overlay_opacity(opacity / 100.0)
+
+    def _clear_pod_overlay(self):
+        self._pod_overlay_enabled = False
+        if self.map_dialog is not None and hasattr(self.map_dialog, 'map_view'):
+            self.map_dialog.map_view.clear_pod_overlay()
 
     def _show_pod_inspect_menu(self, sample, lat, lon):
         view = self.map_dialog.map_view if self.map_dialog else None
