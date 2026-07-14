@@ -60,6 +60,25 @@ def test_pod_geotiff_roundtrip(tmp_path, small_result):
         assert ds.tags().get("ADIAT_PRODUCT") == "coverage_pod"
 
 
+def test_pod_values_geotiff_roundtrip(tmp_path, small_result):
+    spec, result = small_result
+    path = str(tmp_path / "coverage_pod_values.tif")
+    writers.write_pod_values_geotiff(path, result.pod, result.look_count,
+                                     result.transform, result.params)
+    with rasterio.open(path) as ds:
+        assert ds.count == 1
+        assert ds.dtypes[0] == "float32"
+        assert ds.crs.to_epsg() == 3857
+        assert np.isnan(ds.nodata)
+        assert tuple(ds.transform)[:6] == pytest.approx(tuple(result.transform)[:6])
+        band = ds.read(1)
+        looked = result.look_count > 0
+        # Actual probabilities are queryable where looked; NaN elsewhere.
+        assert band[looked] == pytest.approx(result.pod[looked], abs=1e-6)
+        assert np.isnan(band[~looked]).all()
+        assert ds.tags()["ADIAT_PRODUCT"] == "coverage_pod_values"
+
+
 def test_looks_geotiff_roundtrip(tmp_path, small_result):
     spec, result = small_result
     path = str(tmp_path / "coverage_looks.tif")
@@ -116,7 +135,7 @@ def test_write_all_outputs(tmp_path, small_result):
     spec, result = small_result
     out = str(tmp_path / "coverage_pod")
     paths = writers.write_all_outputs(result, out)
-    assert set(paths.keys()) == {"pod", "looks", "gaps", "stats"}
+    assert set(paths.keys()) == {"pod", "pod_values", "looks", "gaps", "stats"}
     for p in paths.values():
         import os
         assert os.path.exists(p)

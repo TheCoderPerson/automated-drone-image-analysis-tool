@@ -3,6 +3,8 @@ writers - serialize a CoverageResult to the four mission products.
 
 * coverage_pod.tif    - RGBA colormapped GeoTIFF (EPSG:3857), auto-places in
                         CalTopo Map Sheets.
+* coverage_pod_values.tif - float32 POD probabilities 0-1 (NaN = no looks), the
+                        GIS-queryable counterpart of the RGBA render.
 * coverage_looks.tif  - uint16 look-count raster (binary coverage = count >= 1).
 * coverage_gaps.geojson - WGS84 polygons where POD < gap_threshold inside the
                         flight-track hull (the re-tasking product).
@@ -64,6 +66,32 @@ def write_pod_geotiff(path, rgba: np.ndarray, transform, params=None,
                            ColorInterp.blue, ColorInterp.alpha]
         dst.write(np.moveaxis(rgba, 2, 0))
         tags = {"ADIAT_PRODUCT": "coverage_pod"}
+        if params is not None:
+            tags["ADIAT_PARAMS"] = json.dumps(params.to_dict())
+        dst.update_tags(**tags)
+
+
+def write_pod_values_geotiff(path, pod: np.ndarray, look_count: np.ndarray,
+                             transform, params=None,
+                             crs: str = "EPSG:3857") -> None:
+    """Single-band float32 POD values (0-1), NaN where never looked at.
+
+    The analyzable counterpart of the RGBA visualization: GIS tools can query,
+    threshold, and restyle actual probabilities from this band.
+    """
+    import rasterio
+
+    data = pod.astype("float32").copy()
+    data[look_count == 0] = np.nan
+    profile = dict(
+        driver="GTiff", height=data.shape[0], width=data.shape[1],
+        count=1, dtype="float32", crs=crs, transform=transform,
+        nodata=float("nan"), compress="deflate",
+        tiled=True, blockxsize=256, blockysize=256,
+    )
+    with rasterio.open(path, "w", **profile) as dst:
+        dst.write(data, 1)
+        tags = {"ADIAT_PRODUCT": "coverage_pod_values"}
         if params is not None:
             tags["ADIAT_PARAMS"] = json.dumps(params.to_dict())
         dst.update_tags(**tags)
@@ -166,7 +194,7 @@ def build_stats(pod, look_count, transform, skipped, gap_polygons, params,
 
 
 def write_all_outputs(result, out_dir: str) -> dict:
-    """Write the four spec-named products into ``out_dir``. Returns {name: path}."""
+    """Write the mission products into ``out_dir``. Returns {name: path}."""
     os.makedirs(out_dir, exist_ok=True)
     paths = {}
 
@@ -174,6 +202,11 @@ def write_all_outputs(result, out_dir: str) -> dict:
     rgba = pod_to_rgba(result.pod, result.look_count, result.params)
     write_pod_geotiff(pod_path, rgba, result.transform, result.params)
     paths["pod"] = pod_path
+
+    values_path = os.path.join(out_dir, "coverage_pod_values.tif")
+    write_pod_values_geotiff(values_path, result.pod, result.look_count,
+                             result.transform, result.params)
+    paths["pod_values"] = values_path
 
     looks_path = os.path.join(out_dir, "coverage_looks.tif")
     write_looks_geotiff(looks_path, result.look_count, result.transform)
