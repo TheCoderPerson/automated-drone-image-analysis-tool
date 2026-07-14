@@ -86,3 +86,102 @@ def test_estimate_download_aoi(monkeypatch):
 def test_estimate_none_without_gps(monkeypatch):
     monkeypatch.setattr(aoi, "image_gps", lambda p: None)
     assert aoi.estimate_download_aoi([{"path": "a.jpg"}]) is None
+
+
+# --- image_gps error/fallback paths -----------------------------------------
+
+def test_image_gps_none_when_path_empty():
+    # Falsy paths short-circuit before any EXIF read.
+    assert aoi.image_gps("") is None
+    assert aoi.image_gps(None) is None
+
+
+def test_image_gps_returns_lat_lon():
+    with patch("helpers.MetaDataHelper.MetaDataHelper") as mdh, \
+            patch("helpers.LocationInfo.LocationInfo") as loc:
+        mdh.get_exif_data_piexif.return_value = {"fake": "exif"}
+        loc.get_gps.return_value = {"latitude": 38.7, "longitude": -120.5}
+        assert aoi.image_gps("a.jpg") == (38.7, -120.5)
+    loc.get_gps.assert_called_once()
+
+
+def test_image_gps_none_when_gps_missing():
+    # EXIF reads fine but no GPS block -> None.
+    with patch("helpers.MetaDataHelper.MetaDataHelper") as mdh, \
+            patch("helpers.LocationInfo.LocationInfo") as loc:
+        mdh.get_exif_data_piexif.return_value = {"fake": "exif"}
+        loc.get_gps.return_value = None
+        assert aoi.image_gps("a.jpg") is None
+
+
+def test_image_gps_none_when_exif_read_raises():
+    # Any exception during the EXIF read is swallowed -> None.
+    with patch("helpers.MetaDataHelper.MetaDataHelper") as mdh, \
+            patch("helpers.LocationInfo.LocationInfo") as loc:
+        mdh.get_exif_data_piexif.side_effect = RuntimeError("bad exif")
+        assert aoi.image_gps("a.jpg") is None
+        loc.get_gps.assert_not_called()
+
+
+# --- _frame_geometry error/fallback paths -----------------------------------
+
+def test_frame_geometry_returns_geometry():
+    sentinel = object()
+    with patch("core.services.image.ImageService.ImageService") as IS:
+        IS.return_value.get_frame_geometry.return_value = sentinel
+        assert aoi._frame_geometry("a.jpg") is sentinel
+
+
+def test_frame_geometry_none_when_imageservice_raises():
+    # Construction failure is swallowed -> None.
+    with patch("core.services.image.ImageService.ImageService") as IS:
+        IS.side_effect = RuntimeError("cannot open image")
+        assert aoi._frame_geometry("a.jpg") is None
+
+
+def test_frame_geometry_none_when_get_frame_geometry_raises():
+    # Geometry extraction failure is swallowed -> None.
+    with patch("core.services.image.ImageService.ImageService") as IS:
+        IS.return_value.get_frame_geometry.side_effect = RuntimeError("no pose")
+        assert aoi._frame_geometry("a.jpg") is None
+
+
+# --- suggest_buffer_m error/fallback paths ----------------------------------
+
+def test_suggest_buffer_default_when_no_images():
+    assert aoi.suggest_buffer_m([]) == pytest.approx(aoi._DEFAULT_BUFFER_M)
+
+
+def test_suggest_buffer_default_when_all_paths_blank():
+    # Images present but every path resolves to empty -> default buffer.
+    assert aoi.suggest_buffer_m([{"path": ""}, {"other": "x"}]) == \
+        pytest.approx(aoi._DEFAULT_BUFFER_M)
+
+
+def test_suggest_buffer_default_when_projection_error(monkeypatch):
+    # Geometry resolves, but the footprint projection raises for every sample
+    # -> no reaches collected -> default buffer.
+    monkeypatch.setattr(aoi, "_frame_geometry", lambda p: object())
+    with patch("core.services.coverage.kernel.project_footprint_corners",
+               side_effect=RuntimeError("projection failed")):
+        buf = aoi.suggest_buffer_m([{"path": "a.jpg"}], params=PodParams())
+    assert buf == pytest.approx(aoi._DEFAULT_BUFFER_M)
+
+
+def test_suggest_buffer_floors_at_min(monkeypatch):
+    # Tiny footprint reach floors up to _MIN_BUFFER_M (a 50 m multiple).
+    monkeypatch.setattr(aoi, "_frame_geometry", lambda p: object())
+    with patch("core.services.coverage.kernel.project_footprint_corners",
+               return_value=[(10.0, 10.0)]):
+        buf = aoi.suggest_buffer_m([{"path": "a.jpg"}], params=PodParams())
+    assert buf == pytest.approx(aoi._MIN_BUFFER_M)
+
+
+def test_suggest_buffer_rounds_up_to_50_step(monkeypatch):
+    # Reach of 120 m rounds up to the next tidy 50 m step -> 150 m.
+    monkeypatch.setattr(aoi, "_frame_geometry", lambda p: object())
+    with patch("core.services.coverage.kernel.project_footprint_corners",
+               return_value=[(120.0, 0.0)]):
+        buf = aoi.suggest_buffer_m([{"path": "a.jpg"}], params=PodParams())
+    assert buf == pytest.approx(150.0)
+    assert buf % 50.0 == 0

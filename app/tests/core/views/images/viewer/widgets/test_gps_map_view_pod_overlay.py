@@ -73,3 +73,42 @@ def test_reanchor_on_zoom_doubles_position_and_scale(app):
     assert pos16.x() == pytest.approx(pos15.x() * 2, rel=1e-6)
     assert pos16.y() == pytest.approx(pos15.y() * 2, rel=1e-6)
     assert sx16 == pytest.approx(sx15 * 2, rel=1e-6)
+
+
+def test_render_map_readds_pod_overlay_after_scene_clear(app):
+    """render_map() clears the scene but must re-add the retained POD overlay.
+
+    scene.clear() destroys every graphics item (including the overlay), yet the
+    Python-side state (_pod_pixmap / _pod_transform6 / _pod_visible / opacity)
+    survives, so render_map() must rebuild a fresh pod_overlay_item at the right
+    z-value and opacity.
+    """
+    view = GPSMapView()
+    view.current_zoom = 15
+
+    # Minimal GPS data so render_map() gets past its early `if not gps_data`.
+    view.gps_data = [{"latitude": 38.70, "longitude": -120.50, "name": "A", "index": 0}]
+    view.calculate_bounds()
+
+    # Stub tile loading (no debounce timer / no network) and pin the zoom calc so
+    # the test never depends on an unshown viewport's size.
+    view.load_visible_tiles = lambda: None
+    view.tile_loader.calculate_zoom_for_bounds = lambda *a, **k: 15
+
+    # Retain overlay state, with a distinctive opacity to prove it is preserved.
+    view.set_pod_overlay(QPixmap(4, 4), _transform6())
+    view.set_pod_overlay_opacity(0.42)
+    old_item = view.pod_overlay_item
+    assert old_item is not None
+
+    view.render_map()
+
+    # A fresh item exists (scene.clear() dropped the previous one).
+    assert view.pod_overlay_item is not None
+    assert view.pod_overlay_item is not old_item
+    # It lives in the current scene at the reserved z-value...
+    assert view.pod_overlay_item.scene() is view.scene
+    assert view.pod_overlay_item in view.scene.items()
+    assert view.pod_overlay_item.zValue() == POD_OVERLAY_Z
+    # ...and keeps the opacity that was set before the re-render.
+    assert view.pod_overlay_item.opacity() == pytest.approx(0.42)

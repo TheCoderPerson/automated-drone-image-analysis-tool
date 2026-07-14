@@ -206,3 +206,68 @@ def test_real_image_frame_geometry_and_yaw_parity():
     assert fg.bearing_confidence == 1.0
     assert -180.0 <= fg.pitch_deg <= 180.0
     assert fg.agl_m > 0
+
+
+# --- ImageService.get_frame_geometry caching (determinism) ---
+
+def test_get_frame_geometry_caches_per_args(synthetic_service):
+    """Same (custom_altitude_ft, agl_override_ft) -> cached object, computed once;
+    a different arg combination recomputes (cache keyed per-args)."""
+    svc = synthetic_service
+    sentinel_a = MagicMock(name="fg_a")
+    sentinel_b = MagicMock(name="fg_b")
+    with patch(
+        "core.services.image.FrameGeometry.FrameGeometry.from_image_service",
+        side_effect=[sentinel_a, sentinel_b],
+    ) as spy:
+        first = svc.get_frame_geometry(custom_altitude_ft=400.0, agl_override_ft=None)
+        second = svc.get_frame_geometry(custom_altitude_ft=400.0, agl_override_ft=None)
+        # Identical args: same object returned, from_image_service invoked once.
+        assert first is sentinel_a
+        assert second is sentinel_a
+        assert first is second
+        assert spy.call_count == 1
+
+        # A different (custom_altitude_ft, agl_override_ft) combo recomputes.
+        third = svc.get_frame_geometry(custom_altitude_ft=500.0, agl_override_ft=None)
+        assert third is sentinel_b
+        assert spy.call_count == 2
+
+        # And a distinct agl_override_ft (custom held constant) is also a new key.
+        with patch(
+            "core.services.image.FrameGeometry.FrameGeometry.from_image_service",
+            return_value=MagicMock(name="fg_c"),
+        ) as spy2:
+            svc.get_frame_geometry(custom_altitude_ft=400.0, agl_override_ft=200.0)
+            assert spy2.call_count == 1
+
+
+def test_get_frame_geometry_cache_ignores_bearing_quality(synthetic_service):
+    """Cache key is (custom_altitude_ft, agl_override_ft) only: a changed
+    bearing_quality with the same altitude args returns the cached object and does
+    NOT trigger a recompute (documented keying in get_frame_geometry)."""
+    svc = synthetic_service
+    sentinel = MagicMock(name="fg")
+    with patch(
+        "core.services.image.FrameGeometry.FrameGeometry.from_image_service",
+        return_value=sentinel,
+    ) as spy:
+        first = svc.get_frame_geometry(custom_altitude_ft=None, agl_override_ft=None,
+                                       bearing_quality='good')
+        second = svc.get_frame_geometry(custom_altitude_ft=None, agl_override_ft=None,
+                                        bearing_quality='gap')
+        assert first is second is sentinel
+        assert spy.call_count == 1
+
+
+def test_get_frame_geometry_caches_none_result(synthetic_service):
+    """A None result (e.g. no GPS) is cached too: the second call with the same
+    args does not re-invoke from_image_service."""
+    svc = synthetic_service
+    with patch(
+        "core.services.image.FrameGeometry.FrameGeometry.from_image_service",
+        return_value=None,
+    ) as spy:
+        assert svc.get_frame_geometry(custom_altitude_ft=None, agl_override_ft=None) is None
+        assert svc.get_frame_geometry(custom_altitude_ft=None, agl_override_ft=None) is None
+        assert spy.call_count == 1

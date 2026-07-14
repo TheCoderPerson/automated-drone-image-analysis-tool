@@ -284,3 +284,32 @@ def test_add_xmp_fields_multi_namespace_round_trip():
     finally:
         if os.path.exists(tmp_path):
             os.unlink(tmp_path)
+
+
+def test_get_xmp_data_direct_delegates_to_parse_xmp_direct():
+    """The public get_xmp_data_direct wrapper must delegate straight to
+    _parse_xmp_direct and return its result unchanged -- no extra processing,
+    no ExifTool spawn. Regression guard for the POD-pass hot path added during
+    the Coverage/POD merge (PR #119)."""
+    sentinel = {'drone-dji:RelativeAltitude': '+275.00', 'GimbalYawDegree': '+45.00'}
+    with patch.object(MetaDataHelper, '_parse_xmp_direct',
+                      return_value=sentinel) as direct, \
+            patch.object(MetaDataHelper, 'get_meta_data_exiftool') as exiftool:
+        result = MetaDataHelper.get_xmp_data_direct('/some/image.jpg')
+
+    # Exact delegation: the wrapper returns the very object it received.
+    assert result is sentinel
+    direct.assert_called_once_with('/some/image.jpg')
+    exiftool.assert_not_called()  # subprocess-free wrapper
+
+
+def test_get_xmp_data_direct_matches_parse_on_real_image(example_image_path):
+    """On a real testData image the public wrapper returns a dict identical to
+    the private _parse_xmp_direct it wraps (no divergence between the two)."""
+    expected = MetaDataHelper._parse_xmp_direct(example_image_path)
+    result = MetaDataHelper.get_xmp_data_direct(example_image_path)
+
+    assert isinstance(result, dict)
+    assert result == expected
+    # DJI_0082.JPG carries real drone XMP, so the direct parse is non-empty.
+    assert result

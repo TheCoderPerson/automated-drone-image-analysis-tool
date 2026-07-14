@@ -185,3 +185,93 @@ def test_on_pod_display_changed_sets_and_clears_overlay(app):
     ctrl.on_pod_display_changed(False, 'pod', 60)
     assert ctrl._pod_overlay_enabled is False
     view.clear_pod_overlay.assert_called_once()
+
+
+# ---------------- _show_pod_inspect_menu ----------------
+
+
+def _capture_inspect_menu(ctrl, sample, lat=38.71, lon=-120.49):
+    """Invoke _show_pod_inspect_menu with a non-modal QMenu and return the menu
+    it built.
+
+    The real ``QMenu.exec`` opens a blocking modal popup, which would hang a
+    headless test run. Monkeypatching ``QMenu.exec`` on the C++ class does not
+    take effect (Shiboken does not dispatch through it), so instead we swap the
+    module-level ``QMenu`` name the controller imports for a real QMenu subclass
+    whose ``exec`` is a no-op and which records each instance it creates. That
+    keeps addAction/addSeparator/actions() behaving exactly like the real menu.
+
+    map_dialog is left at its default None so the menu parent is None; a
+    MagicMock map_view is not a valid QWidget parent for QMenu.
+    """
+    from unittest.mock import patch
+    from PySide6.QtWidgets import QMenu
+
+    built = []
+
+    class _NoExecMenu(QMenu):
+        def __init__(self, *a, **k):
+            super().__init__(*a, **k)
+            built.append(self)
+
+        def exec(self, *a, **k):
+            return None
+
+        exec_ = exec
+
+    target = 'core.controllers.images.viewer.GPSMapController.QMenu'
+    with patch(target, _NoExecMenu):
+        ctrl._show_pod_inspect_menu(sample, lat, lon)
+    assert built, "expected the controller to build a QMenu"
+    return built[-1]
+
+
+def _menu_texts(menu):
+    return [a.text() for a in menu.actions() if not a.isSeparator()]
+
+
+def test_show_pod_inspect_menu_builds_header_limit_and_frame_actions(app):
+    ctrl = _controller(app)  # parent.images = [{"name": "A"}, {"name": "B"}]
+    sample = {'pod': 0.6, 'looks': 2, 'limiting_factor': LIMIT_CANOPY, 'frames': [0, 1]}
+
+    menu = _capture_inspect_menu(ctrl, sample)
+    assert menu is not None
+    texts = _menu_texts(menu)
+
+    # Header: POD percent (0.6 -> 60) and look count.
+    assert any('POD' in t and '60' in t and '2' in t for t in texts)
+
+    # Limiting-factor line rendered via _limit_label (LIMIT_CANOPY -> "Canopy").
+    label = ctrl._limit_label(LIMIT_CANOPY)
+    assert any(label in t for t in texts)
+
+    # Both frames map to valid image slots -> two "View" actions, in order.
+    view_texts = [t for t in texts if t.startswith('View')]
+    assert view_texts == ['View A', 'View B']
+
+
+def test_show_pod_inspect_menu_caps_frame_actions_at_eight(app):
+    ctrl = _controller(app)
+    ctrl.parent.images = [{"name": f"img{i}"} for i in range(12)]
+    sample = {'pod': 0.9, 'looks': 5, 'limiting_factor': LIMIT_CANOPY,
+              'frames': list(range(12))}
+
+    menu = _capture_inspect_menu(ctrl, sample)
+    view_texts = [t for t in _menu_texts(menu) if t.startswith('View')]
+
+    # frames[:8] -> exactly eight View actions even though 12 frames were given.
+    assert len(view_texts) == 8
+    assert view_texts[0] == 'View img0'
+    assert view_texts[-1] == 'View img7'
+
+
+def test_show_pod_inspect_menu_skips_out_of_range_frames(app):
+    ctrl = _controller(app)  # only 2 images: A, B
+    sample = {'pod': 0.3, 'looks': 1, 'limiting_factor': LIMIT_CANOPY,
+              'frames': [0, 1, 5, 99, -3]}
+
+    menu = _capture_inspect_menu(ctrl, sample)
+    view_texts = [t for t in _menu_texts(menu) if t.startswith('View')]
+
+    # Only indices within [0, image_count) become View actions.
+    assert view_texts == ['View A', 'View B']

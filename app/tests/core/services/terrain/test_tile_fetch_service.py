@@ -120,3 +120,110 @@ def test_fetch_cancel(tmp_path):
     result = svc.fetch_meta_canopy((-120.50, 38.70, -120.40, 38.80), str(tmp_path),
                                    cancel_check=lambda: True)
     assert result.cancelled is True
+
+
+# --- manifest merge / dedupe (incremental fetches accumulate, not clobber) ---
+
+def test_fetch_meta_manifest_merges_existing_rows(tmp_path):
+    """A pre-existing manifest row survives a later canopy fetch into the same dir."""
+    manifest = tmp_path / "chm_manifest.csv"
+    fields = ['filename', 'product', 'minX', 'minY', 'maxX', 'maxY']
+    # Seed a manifest as if a prior AOI had already been fetched here.
+    with open(manifest, 'w', newline='') as fh:
+        w = csv.DictWriter(fh, fieldnames=fields)
+        w.writeheader()
+        w.writerow({'filename': 'chm_SEED.tif', 'product': 'meta_chm',
+                    'minX': -121.0, 'minY': 39.0, 'maxX': -120.9, 'maxY': 39.1})
+
+    svc = _svc(lambda url, params, n: _Resp(200))
+    result = svc.fetch_meta_canopy((-120.50, 38.70, -120.49, 38.71), str(tmp_path))
+
+    assert result.tiles_written >= 1
+    assert result.manifest_path and os.path.exists(result.manifest_path)
+    assert os.path.basename(result.manifest_path) == "chm_manifest.csv"
+
+    with open(result.manifest_path, newline="") as fh:
+        reader = csv.DictReader(fh)
+        assert reader.fieldnames == fields          # restricted to declared fields
+        names = [row['filename'] for row in reader]
+
+    # Pre-existing row preserved AND newly fetched tile(s) appended.
+    assert 'chm_SEED.tif' in names
+    assert any(n != 'chm_SEED.tif' for n in names)
+    assert len(names) >= 2
+    assert len(names) == len(set(names))            # deduped by filename
+
+
+def test_write_manifest_dedupes_by_filename_on_refetch(tmp_path):
+    """Re-writing the same filename updates the row instead of duplicating it."""
+    manifest = str(tmp_path / "chm_manifest.csv")
+    TileFetchService._write_manifest(
+        [{'filename': 'chm_X.tif', 'product': 'meta_chm',
+          'minX': 1, 'minY': 2, 'maxX': 3, 'maxY': 4}],
+        manifest, include_product=True)
+    # Second (incremental) write re-fetches chm_X.tif with new bounds and adds chm_Y.tif.
+    TileFetchService._write_manifest(
+        [{'filename': 'chm_X.tif', 'product': 'meta_chm',
+          'minX': 10, 'minY': 20, 'maxX': 30, 'maxY': 40},
+         {'filename': 'chm_Y.tif', 'product': 'meta_chm',
+          'minX': 5, 'minY': 6, 'maxX': 7, 'maxY': 8}],
+        manifest, include_product=True)
+
+    with open(manifest, newline="") as fh:
+        rows = list(csv.DictReader(fh))
+    by_name = {r['filename']: r for r in rows}
+    assert len(rows) == 2                            # no duplicate chm_X row
+    assert set(by_name) == {'chm_X.tif', 'chm_Y.tif'}
+    assert by_name['chm_X.tif']['minX'] == '10'      # newest values win
+
+
+def test_write_manifest_restricts_to_declared_fields(tmp_path):
+    """Unexpected columns in an existing manifest are dropped on merge."""
+    manifest = str(tmp_path / "dem_manifest.csv")
+    with open(manifest, 'w', newline='') as fh:
+        w = csv.writer(fh)
+        w.writerow(['filename', 'minX', 'minY', 'maxX', 'maxY', 'extra'])
+        w.writerow(['dem_0_0.tif', '1', '2', '3', '4', 'junk'])
+
+    TileFetchService._write_manifest(
+        [{'filename': 'dem_1_1.tif', 'minX': 5, 'minY': 6, 'maxX': 7, 'maxY': 8}],
+        manifest, include_product=False)
+
+    with open(manifest, newline="") as fh:
+        reader = csv.DictReader(fh)
+        assert reader.fieldnames == ['filename', 'minX', 'minY', 'maxX', 'maxY']
+        rows = list(reader)
+    names = {r['filename'] for r in rows}
+    assert names == {'dem_0_0.tif', 'dem_1_1.tif'}   # existing row preserved
+    assert all('extra' not in r for r in rows)       # unexpected column dropped
+
+
+# --- download-failure accounting ---
+
+def test_fetch_3dep_http_500_accounts_failure(tmp_path):
+    """A single-tile AOI that always 500s records a download-failed error."""
+    svc = _svc(lambda url, params, n: _Resp(500))
+    result = svc.fetch_3dep_dem((-120.50, 38.70, -120.49, 38.71), str(tmp_path),
+                                tile_px=2048, native_res_m=1.0)
+    assert result.tiles_written == 0
+    assert result.tiles_failed >= 1
+    assert ("dem_0_0.tif", "download failed") in result.errors
+    assert result.manifest_path is None              # nothing written -> no manifest
+
+
+def test_fetch_3dep_request_exception_is_swallowed(tmp_path):
+    """_get_with_retry catches request exceptions and keeps going (no raise)."""
+    import requests
+
+    def handler(url, params, n):
+        raise requests.exceptions.ConnectionError("boom")
+
+    svc = _svc(handler)
+    # Must not propagate the exception out of the fetch.
+    result = svc.fetch_3dep_dem((-120.50, 38.70, -120.49, 38.71), str(tmp_path),
+                                tile_px=2048, native_res_m=1.0)
+    assert result.tiles_failed >= 1
+    assert ("dem_0_0.tif", "download failed") in result.errors
+    # Each of the initial call and the one blind retry exhausts MAX_RETRIES attempts,
+    # proving exceptions were swallowed and the loop continued rather than aborting.
+    assert len(svc.session.calls) == TileFetchService.MAX_RETRIES * 2

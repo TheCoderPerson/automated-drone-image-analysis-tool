@@ -139,3 +139,83 @@ def test_write_all_outputs(tmp_path, small_result):
     for p in paths.values():
         import os
         assert os.path.exists(p)
+
+
+# --- P3 writer edge cases (compute_gap_polygons / build_stats) ---
+
+
+def _edge_spec():
+    """A standalone lattice spec (3 m cells, 100x80) for edge-case grids."""
+    minx, miny = lonlat_to_mercator(-120.50, 38.70)
+    return make_lattice_spec((minx, miny, minx + 300.0, miny + 240.0), 3.0)
+
+
+def test_compute_gap_polygons_hull_none_whole_grid(small_result):
+    """hull_3857=None takes the whole-grid path: no clipping, gaps everywhere
+    POD < threshold are reported."""
+    spec, result = small_result
+    # small_result: POD is 0 on the border, 0.8 in the centre patch. With no hull
+    # the entire sub-threshold border participates.
+    polys = writers.compute_gap_polygons(
+        result.pod, result.look_count, result.transform,
+        None, gap_threshold=0.25)
+    assert len(polys) >= 1
+    # The whole-grid gap area is substantial (the full uncovered border), and it
+    # never exceeds the total grid area.
+    cell_area = abs(result.transform.a * result.transform.e)
+    total_grid_area = spec.height * spec.width * cell_area
+    gap_area = sum(p.area for p in polys)
+    assert 0.0 < gap_area <= total_grid_area
+
+
+def test_compute_gap_polygons_no_subthreshold_cells_returns_empty():
+    """A grid whose POD is everywhere >= threshold has no gaps -> []."""
+    spec = _edge_spec()
+    pod = np.full((spec.height, spec.width), 0.80, dtype=np.float32)
+    look = np.full((spec.height, spec.width), 3, dtype=np.uint16)
+    # Whole-grid path (hull=None): nothing is below 0.25.
+    assert writers.compute_gap_polygons(
+        pod, look, spec.transform, None, gap_threshold=0.25) == []
+    # And with a hull covering the grid the result is likewise empty.
+    hull = box(*spec.bounds)
+    assert writers.compute_gap_polygons(
+        pod, look, spec.transform, hull, gap_threshold=0.25) == []
+
+
+def test_compute_gap_polygons_min_area_cells_filters_small_gaps():
+    """min_area_cells drops gaps smaller than the threshold; a lower threshold
+    keeps the same gap."""
+    spec = _edge_spec()
+    pod = np.full((spec.height, spec.width), 0.80, dtype=np.float32)
+    look = np.full((spec.height, spec.width), 3, dtype=np.uint16)
+    # A tiny 1x2-cell gap (2 cells, area = 2 * cell_area).
+    pod[5, 5] = 0.0
+    pod[5, 6] = 0.0
+
+    # Default min_area_cells (4) requires >= 4 cells -> the 2-cell gap is dropped.
+    dropped = writers.compute_gap_polygons(
+        pod, look, spec.transform, None, gap_threshold=0.25)
+    assert dropped == []
+
+    # Lowering the threshold to 1 cell keeps it.
+    kept = writers.compute_gap_polygons(
+        pod, look, spec.transform, None, gap_threshold=0.25, min_area_cells=1)
+    assert len(kept) == 1
+    cell_area = abs(spec.transform.a * spec.transform.e)
+    assert kept[0].area == pytest.approx(2 * cell_area, rel=1e-6)
+
+
+def test_build_stats_mean_pod_zero_when_nothing_covered():
+    """With no covered cells, mean_pod_covered is 0.0 and covered area is 0."""
+    spec = _edge_spec()
+    # Non-zero POD values, but look_count is all zero -> nothing is 'covered'.
+    pod = np.full((spec.height, spec.width), 0.80, dtype=np.float32)
+    look = np.zeros((spec.height, spec.width), dtype=np.uint16)
+    params = PodParams()
+    stats = writers.build_stats(
+        pod, look, spec.transform, skipped=[], gap_polygons=[], params=params,
+        canopy_source="none", terrain_info={"name": "NAVD88"})
+    assert stats["mean_pod_covered"] == 0.0
+    assert stats["area_sqm"]["looks_ge_1"] == 0.0
+    assert stats["gaps"]["count"] == 0
+    assert stats["gaps"]["area_sqm"] == 0.0

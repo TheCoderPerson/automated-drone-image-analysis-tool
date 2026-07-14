@@ -126,3 +126,122 @@ def test_budget_refusal_returns_false():
 ])
 def test_bin_for_frame_table(yaw, pitch, expected):
     assert MissionAccumulator.bin_for_frame(yaw, pitch, PodParams()) == expected
+
+
+# --- limiting-factor tracking (best_factor follows the highest-POD look) -------
+#
+# add_frame records a per-cell limiting-factor code (frame_factor) but only where
+# the frame's capped POD exceeds the running best POD, so the mission-wide
+# limiting-factor grid always reflects the *best look* at each cell. finalize()
+# then stamps LIMIT_NO_LOOKS wherever no positive look ever landed.
+
+from core.services.coverage.contracts import (  # noqa: E402
+    LIMIT_NO_LOOKS, LIMIT_TERRAIN, LIMIT_CANOPY,
+)
+
+
+def _const_factor(spec, code):
+    return np.full((spec.height, spec.width), code, dtype=np.uint8)
+
+
+def _region(spec, transform, shape):
+    """(r0, c0) of ``spec``'s top-left cell within the finalized mission grid.
+
+    Rebuilds the mission GridSpec from finalize()'s returned transform + array
+    shape (public data only) so tests can index the exact frame footprint inside
+    the coarse-snapped mission grid.
+    """
+    from core.services.terrain.grid import (
+        GridSpec, WEB_MERCATOR_CRS, integer_offset,
+    )
+    mission = GridSpec(crs=WEB_MERCATOR_CRS, transform=transform,
+                       width=int(shape[1]), height=int(shape[0]))
+    return integer_offset(spec, mission)
+
+
+def test_best_factor_follows_higher_pod_added_second():
+    # Same region, same bin. The second (higher-POD) frame's factor must win.
+    acc, _ = _fresh()
+    spec = _spec()
+    acc.add_frame(0, _const_pod(spec, 0.4), spec, 0.0, -90.0, 1.0,
+                  frame_factor=_const_factor(spec, LIMIT_TERRAIN))
+    acc.add_frame(1, _const_pod(spec, 0.6), spec, 0.0, -90.0, 1.0,
+                  frame_factor=_const_factor(spec, LIMIT_CANOPY))
+    _, look, limiting, _, transform = acc.finalize()
+
+    r0, c0 = _region(spec, transform, limiting.shape)
+    region = limiting[r0:r0 + spec.height, c0:c0 + spec.width]
+    assert np.all(region == LIMIT_CANOPY)
+    # And the whole footprint was actually looked at.
+    assert np.all(look[r0:r0 + spec.height, c0:c0 + spec.width] > 0)
+
+
+def test_best_factor_not_overwritten_by_lower_pod():
+    # Higher-POD frame first; a later lower-POD look must NOT replace its factor.
+    acc, _ = _fresh()
+    spec = _spec()
+    acc.add_frame(0, _const_pod(spec, 0.6), spec, 0.0, -90.0, 1.0,
+                  frame_factor=_const_factor(spec, LIMIT_CANOPY))
+    acc.add_frame(1, _const_pod(spec, 0.4), spec, 0.0, -90.0, 1.0,
+                  frame_factor=_const_factor(spec, LIMIT_TERRAIN))
+    _, _, limiting, _, transform = acc.finalize()
+
+    r0, c0 = _region(spec, transform, limiting.shape)
+    region = limiting[r0:r0 + spec.height, c0:c0 + spec.width]
+    assert np.all(region == LIMIT_CANOPY)
+
+
+def test_best_factor_equal_pod_does_not_overwrite():
+    # best_factor updates only where capped POD *exceeds* (strict >) the running
+    # best; an equal-POD later look must not flip the factor.
+    acc, _ = _fresh()
+    spec = _spec()
+    acc.add_frame(0, _const_pod(spec, 0.5), spec, 0.0, -90.0, 1.0,
+                  frame_factor=_const_factor(spec, LIMIT_TERRAIN))
+    acc.add_frame(1, _const_pod(spec, 0.5), spec, 0.0, -90.0, 1.0,
+                  frame_factor=_const_factor(spec, LIMIT_CANOPY))
+    _, _, limiting, _, transform = acc.finalize()
+
+    r0, c0 = _region(spec, transform, limiting.shape)
+    region = limiting[r0:r0 + spec.height, c0:c0 + spec.width]
+    assert np.all(region == LIMIT_TERRAIN)
+
+
+def test_best_factor_tracks_higher_pod_per_cell():
+    # Two overlapping frames whose POD dominance splits left/right. best_factor
+    # must be chosen per cell from whichever frame had the higher capped POD.
+    acc, _ = _fresh()
+    spec = _spec()
+    h, w = spec.height, spec.width
+    half = w // 2
+
+    pod1 = np.full((h, w), 0.3, dtype=np.float32)
+    pod1[:, :half] = 0.7                       # frame 1 wins the left half
+    pod2 = np.full((h, w), 0.3, dtype=np.float32)
+    pod2[:, half:] = 0.7                       # frame 2 wins the right half
+
+    acc.add_frame(0, pod1, spec, 0.0, -90.0, 1.0,
+                  frame_factor=_const_factor(spec, LIMIT_TERRAIN))
+    acc.add_frame(1, pod2, spec, 0.0, -90.0, 1.0,
+                  frame_factor=_const_factor(spec, LIMIT_CANOPY))
+    _, _, limiting, _, transform = acc.finalize()
+
+    r0, c0 = _region(spec, transform, limiting.shape)
+    region = limiting[r0:r0 + h, c0:c0 + w]
+    assert np.all(region[:, :half] == LIMIT_TERRAIN)
+    assert np.all(region[:, half:] == LIMIT_CANOPY)
+
+
+def test_finalize_stamps_no_looks_on_never_looked_cells():
+    # The coarse-snapped mission grid is larger than a single frame, so cells
+    # outside the frame are never looked and finalize must stamp LIMIT_NO_LOOKS
+    # there, while looked cells retain their tracked limiting factor.
+    acc, _ = _fresh()
+    spec = _spec()
+    acc.add_frame(0, _const_pod(spec, 0.5), spec, 0.0, -90.0, 1.0,
+                  frame_factor=_const_factor(spec, LIMIT_CANOPY))
+    _, look, limiting, _, _ = acc.finalize()
+
+    assert np.any(look == 0)                    # there really are unseen cells
+    assert np.all(limiting[look == 0] == LIMIT_NO_LOOKS)
+    assert np.all(limiting[look > 0] == LIMIT_CANOPY)

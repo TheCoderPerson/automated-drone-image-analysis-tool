@@ -66,3 +66,94 @@ def test_set_pod_available_keeps_canopy_state(dialog):
     keys = _mode_keys(dialog)
     assert model.item(keys.index("pod")).isEnabled()
     assert model.item(keys.index("canopy")).isEnabled()
+
+
+# ---------------------------------------------------------------------------
+# pod_display_changed(enabled, mode_key, opacity) signal emission (P2)
+# ---------------------------------------------------------------------------
+
+
+def test_pod_toggle_emits_pod_display_changed(dialog, qtbot):
+    """Checking the POD button emits pod_display_changed with the current
+    combo mode key and slider opacity value."""
+    dialog.set_overlay_availability(True, True)  # all modes available, toggle enabled
+    # Pick a known, non-default mode + opacity so we can assert they drive the payload.
+    dialog.pod_mode_combo.setCurrentIndex(_mode_keys(dialog).index("looks"))
+    dialog.pod_opacity_slider.setValue(42)
+
+    with qtbot.waitSignal(dialog.pod_display_changed, timeout=1000) as blocker:
+        dialog.pod_toggle_btn.setChecked(True)
+
+    enabled, mode_key, opacity = blocker.args
+    assert enabled is True
+    assert mode_key == "looks"
+    assert opacity == 42
+
+
+def test_pod_untoggle_emits_disabled(dialog, qtbot):
+    """Unchecking the POD button emits with enabled=False."""
+    dialog.set_overlay_availability(True, True)
+    dialog.pod_toggle_btn.setChecked(True)  # turn on first
+
+    with qtbot.waitSignal(dialog.pod_display_changed, timeout=1000) as blocker:
+        dialog.pod_toggle_btn.setChecked(False)
+
+    enabled, _mode_key, _opacity = blocker.args
+    assert enabled is False
+
+
+def test_mode_combo_change_drives_emitted_mode(dialog, qtbot):
+    """Changing the combo selection re-emits pod_display_changed with the new
+    stable mode key (itemData), not the localized label."""
+    dialog.set_overlay_availability(True, True)
+    dialog.pod_toggle_btn.setChecked(True)
+    keys = _mode_keys(dialog)
+
+    with qtbot.waitSignal(dialog.pod_display_changed, timeout=1000) as blocker:
+        dialog.pod_mode_combo.setCurrentIndex(keys.index("canopy"))
+
+    enabled, mode_key, _opacity = blocker.args
+    assert enabled is True
+    assert mode_key == "canopy"
+
+
+def test_slider_value_drives_emitted_opacity(dialog, qtbot):
+    """The opacity slider value is folded into the payload of the next
+    enable/mode emission."""
+    dialog.set_overlay_availability(True, True)
+    dialog.pod_opacity_slider.setValue(15)
+
+    with qtbot.waitSignal(dialog.pod_display_changed, timeout=1000) as blocker:
+        dialog.pod_toggle_btn.setChecked(True)
+
+    _enabled, _mode_key, opacity = blocker.args
+    assert opacity == 15
+
+
+def test_slider_move_does_not_emit_pod_display_changed(dialog):
+    """Opacity is pure view state: moving the slider updates the map view
+    directly and MUST NOT emit pod_display_changed (avoids recompute churn)."""
+    dialog.set_overlay_availability(True, True)
+    dialog.pod_toggle_btn.setChecked(True)
+
+    received = []
+    dialog.pod_display_changed.connect(lambda *args: received.append(args))
+    dialog.pod_opacity_slider.setValue(dialog.pod_opacity_slider.value() + 5)
+
+    assert received == []
+
+
+def test_toggle_gates_combo_and_slider_enabled_state(dialog):
+    """The POD toggle gates the mode combo and opacity slider: they are only
+    interactive while the overlay is enabled."""
+    dialog.set_overlay_availability(True, True)
+    assert not dialog.pod_mode_combo.isEnabled()
+    assert not dialog.pod_opacity_slider.isEnabled()
+
+    dialog.pod_toggle_btn.setChecked(True)
+    assert dialog.pod_mode_combo.isEnabled()
+    assert dialog.pod_opacity_slider.isEnabled()
+
+    dialog.pod_toggle_btn.setChecked(False)
+    assert not dialog.pod_mode_combo.isEnabled()
+    assert not dialog.pod_opacity_slider.isEnabled()

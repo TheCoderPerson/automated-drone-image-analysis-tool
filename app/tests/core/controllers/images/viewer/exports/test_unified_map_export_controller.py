@@ -1,7 +1,7 @@
 """Unit tests for UnifiedMapExportController."""
 
 import pytest
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, patch, call
 from PySide6.QtWidgets import QDialog
 
 from core.controllers.images.viewer.exports.UnifiedMapExportController import (
@@ -381,3 +381,183 @@ def test_pod_only_export_is_valid(controller):
 
     MockQMB.warning.assert_not_called()
     controller._run_pod_export.assert_called_once()
+
+
+# ---------------------------------------------------------------------------
+# POD controller slots: error / cancel / finished-show-on-map
+# ---------------------------------------------------------------------------
+
+def test_on_pod_error_rejects_dialog_logs_and_shows_critical(controller):
+    """_on_pod_error rejects the visible dialog, logs, and shows a critical box."""
+    controller.logger = MagicMock()
+    controller.pod_progress_dialog = MagicMock()
+    controller.pod_progress_dialog.isVisible.return_value = True
+    with patch(
+        "core.controllers.images.viewer.exports.UnifiedMapExportController.QMessageBox"
+    ) as MockQMB:
+        controller._on_pod_error("boom")
+
+    controller.pod_progress_dialog.reject.assert_called_once()
+    controller.logger.error.assert_called_once()
+    assert "boom" in controller.logger.error.call_args[0][0]
+    MockQMB.critical.assert_called_once()
+
+
+def test_on_pod_error_skips_reject_when_not_visible(controller):
+    """When the dialog is not visible, no reject() is issued but critical still shows."""
+    controller.logger = MagicMock()
+    controller.pod_progress_dialog = MagicMock()
+    controller.pod_progress_dialog.isVisible.return_value = False
+    with patch(
+        "core.controllers.images.viewer.exports.UnifiedMapExportController.QMessageBox"
+    ) as MockQMB:
+        controller._on_pod_error("boom")
+
+    controller.pod_progress_dialog.reject.assert_not_called()
+    MockQMB.critical.assert_called_once()
+
+
+def test_on_pod_cancelled_terminates_thread_rejects_and_toasts(controller):
+    """_on_pod_cancelled terminates+waits the running thread, rejects, and toasts."""
+    controller.pod_thread = MagicMock()
+    controller.pod_thread.isRunning.return_value = True
+    controller.pod_progress_dialog = MagicMock()
+    controller.pod_progress_dialog.isVisible.return_value = True
+
+    controller._on_pod_cancelled()
+
+    controller.pod_thread.terminate.assert_called_once()
+    controller.pod_thread.wait.assert_called_once()
+    controller.pod_progress_dialog.reject.assert_called_once()
+    controller.parent.status_controller.show_toast.assert_called_once()
+
+
+def test_on_pod_cancelled_no_terminate_when_thread_not_running(controller):
+    """A non-running thread is not terminated, but the dialog/toast still resolve."""
+    controller.pod_thread = MagicMock()
+    controller.pod_thread.isRunning.return_value = False
+    controller.pod_progress_dialog = MagicMock()
+    controller.pod_progress_dialog.isVisible.return_value = True
+
+    controller._on_pod_cancelled()
+
+    controller.pod_thread.terminate.assert_not_called()
+    controller.pod_thread.wait.assert_not_called()
+    controller.pod_progress_dialog.reject.assert_called_once()
+    controller.parent.status_controller.show_toast.assert_called_once()
+
+
+def test_on_pod_finished_shows_on_map_when_requested(controller):
+    """When a pending result exists and show-on-map was requested, the overlay is shown."""
+    controller.pod_progress_dialog = MagicMock()
+    controller._pending_pod_result = _make_result()
+    controller._show_pod_on_map_requested = True
+
+    gmc = MagicMock()
+    controller.parent.gps_map_controller = gmc
+
+    controller._on_pod_finished()
+
+    controller.pod_progress_dialog.accept.assert_called_once()
+    controller.parent.status_controller.show_toast.assert_called_once()
+    # show_map() must be called before enable_pod_overlay().
+    assert gmc.mock_calls == [call.show_map(), call.enable_pod_overlay()]
+    # Pending result is cleared after handling.
+    assert controller._pending_pod_result is None
+
+
+def test_on_pod_finished_no_map_when_not_requested(controller):
+    """With show-on-map not requested, the overlay is left untouched."""
+    controller.pod_progress_dialog = MagicMock()
+    controller._pending_pod_result = _make_result()
+    controller._show_pod_on_map_requested = False
+
+    gmc = MagicMock()
+    controller.parent.gps_map_controller = gmc
+
+    controller._on_pod_finished()
+
+    gmc.show_map.assert_not_called()
+    gmc.enable_pod_overlay.assert_not_called()
+    assert controller._pending_pod_result is None
+
+
+def test_on_pod_finished_no_map_when_no_pending_result(controller):
+    """Without a pending result, the overlay is not shown even if requested."""
+    controller.pod_progress_dialog = MagicMock()
+    controller._pending_pod_result = None
+    controller._show_pod_on_map_requested = True
+
+    gmc = MagicMock()
+    controller.parent.gps_map_controller = gmc
+
+    controller._on_pod_finished()
+
+    gmc.show_map.assert_not_called()
+    gmc.enable_pod_overlay.assert_not_called()
+
+
+# ---------------------------------------------------------------------------
+# CalTopo branch of show_export_dialog with include_pod
+# ---------------------------------------------------------------------------
+
+def test_show_export_dialog_caltopo_with_pod_folder_chosen(controller):
+    """CalTopo + POD: a chosen folder starts the POD export with that directory."""
+    controller._export_to_caltopo = MagicMock()
+    controller._run_pod_export = MagicMock()
+    with patch(
+        "core.controllers.images.viewer.exports.UnifiedMapExportController.MapExportDialog"
+    ) as MockDialog, patch(
+        "core.controllers.images.viewer.exports.UnifiedMapExportController.CalTopoMethodDialog"
+    ) as MockMethod, patch(
+        "core.controllers.images.viewer.exports.UnifiedMapExportController.QFileDialog"
+    ) as MockFile:
+        d = MockDialog.return_value
+        d.exec.return_value = QDialog.Accepted
+        d.get_export_type.return_value = "caltopo"
+        d.should_include_locations.return_value = True
+        d.should_include_images_without_flagged_aois.return_value = False
+        d.should_include_flagged_aois.return_value = False
+        d.should_include_coverage.return_value = False
+        d.should_include_pod.return_value = True
+        d.should_show_pod_on_map.return_value = True
+        d.should_include_images.return_value = True
+        MockMethod.return_value.exec.return_value = QDialog.Accepted
+        MockMethod.return_value.get_selected_method.return_value = "browser"
+        MockFile.getExistingDirectory.return_value = "/pod/folder"
+
+        controller.show_export_dialog()
+
+    controller._export_to_caltopo.assert_called_once()
+    controller._run_pod_export.assert_called_once_with("/pod/folder", True)
+
+
+def test_show_export_dialog_caltopo_with_pod_folder_cancelled(controller):
+    """CalTopo + POD: an empty folder selection does not start the POD export."""
+    controller._export_to_caltopo = MagicMock()
+    controller._run_pod_export = MagicMock()
+    with patch(
+        "core.controllers.images.viewer.exports.UnifiedMapExportController.MapExportDialog"
+    ) as MockDialog, patch(
+        "core.controllers.images.viewer.exports.UnifiedMapExportController.CalTopoMethodDialog"
+    ) as MockMethod, patch(
+        "core.controllers.images.viewer.exports.UnifiedMapExportController.QFileDialog"
+    ) as MockFile:
+        d = MockDialog.return_value
+        d.exec.return_value = QDialog.Accepted
+        d.get_export_type.return_value = "caltopo"
+        d.should_include_locations.return_value = True
+        d.should_include_images_without_flagged_aois.return_value = False
+        d.should_include_flagged_aois.return_value = False
+        d.should_include_coverage.return_value = False
+        d.should_include_pod.return_value = True
+        d.should_show_pod_on_map.return_value = False
+        d.should_include_images.return_value = True
+        MockMethod.return_value.exec.return_value = QDialog.Accepted
+        MockMethod.return_value.get_selected_method.return_value = "browser"
+        MockFile.getExistingDirectory.return_value = ""
+
+        controller.show_export_dialog()
+
+    controller._export_to_caltopo.assert_called_once()
+    controller._run_pod_export.assert_not_called()

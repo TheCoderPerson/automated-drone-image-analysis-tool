@@ -1,6 +1,6 @@
 """Tests for CanopyServiceFactory.create_from_settings and the create_canopy_service alias."""
 
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 from core.services.terrain.CanopyServiceFactory import (
     CanopyServiceFactory,
@@ -50,3 +50,20 @@ def test_available_kinds_shape():
     ids = [k['id'] for k in kinds]
     assert ids == ['none', 'landfire', 'meta']
     assert all('label' in k and 'requires_paths' in k for k in kinds)
+
+
+def test_construction_raises_returns_none(tmp_path):
+    """When CanopyService construction raises, the factory's try/except must
+    swallow the error and disable canopy (return None) rather than propagate."""
+    manifest = tmp_path / "m.csv"
+    manifest.write_text("filename,product,minX,minY,maxX,maxY\n")
+    s = _settings({'CanopyKind': 'meta',
+                   'CanopyManifestPath': str(manifest),
+                   'CanopyTilesDir': str(tmp_path)})
+
+    # The factory imports CanopyService inside create_from_settings via
+    # `from core.services.terrain.CanopyService import CanopyService`, so the
+    # name is resolved from that module at call time. Patch it there to raise.
+    with patch('core.services.terrain.CanopyService.CanopyService',
+               side_effect=RuntimeError("boom")):
+        assert CanopyServiceFactory.create_from_settings(s) is None

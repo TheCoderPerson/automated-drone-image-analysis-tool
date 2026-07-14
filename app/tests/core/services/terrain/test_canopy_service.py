@@ -15,6 +15,7 @@ from core.services.terrain.CanopyService import (
     evh_code_to_meters,
     evc_code_to_fraction,
     KIND_META,
+    PRODUCT_CC_PCT,
 )
 from core.services.terrain.grid import (
     lonlat_to_mercator,
@@ -149,3 +150,77 @@ def test_landfire_without_product_column_refuses(tmp_path):
     svc = CanopyService(manifest, str(tmp_path), kind='landfire')
     # EVH/EVC indistinguishable without 'product' -> manifest refused -> no tiles.
     assert svc.sample_grid_spec(_spec()) is None
+
+
+# --- landfire_cc_pct decode branch ---
+
+def _write_tile_data(path, data, dtype, nodata=None):
+    """Write a full 2-D ``data`` array (not a constant) over the shared bbox."""
+    rows, cols = data.shape
+    transform = from_bounds(_MINX, _MINY, _MAXX, _MAXY, cols, rows)
+    with rasterio.open(path, "w", driver="GTiff", height=rows, width=cols, count=1,
+                       dtype=dtype, crs="EPSG:3857", transform=transform,
+                       nodata=nodata) as dst:
+        dst.write(data.astype(dtype), 1)
+
+
+def test_cc_pct_decode_values():
+    """P2/P3 landfire_cc_pct decode: percent->fraction, clip>100, negatives->NaN."""
+    raw = np.array([-1, 0, 55, 150], dtype=np.int16)
+    out = CanopyService._decode(PRODUCT_CC_PCT, raw, None)
+    assert np.isnan(out[0])                       # -1 -> NaN (nodata sentinel)
+    assert out[1] == pytest.approx(0.0)           # 0% -> 0.0
+    assert out[2] == pytest.approx(0.55)          # 55% -> 0.55
+    assert out[3] == pytest.approx(1.0)           # 150 clipped to 100% -> 1.0
+    assert out.dtype == np.float32
+
+
+def test_cc_pct_sample_grid_spec_cover(tmp_path):
+    """landfire_cc_pct routed through sample_grid_spec decodes cover, no derive."""
+    _write_tile(tmp_path / "cc.tif", 55, "int16")   # 55% -> 0.55 cover
+    manifest = _manifest(tmp_path, [{'filename': 'cc.tif', 'product': 'landfire_cc_pct'}])
+    svc = CanopyService(manifest, str(tmp_path), kind='landfire')
+    spec = _spec()
+    sample = svc.sample_grid_spec(spec)
+    assert sample is not None
+    ch, cw = spec.height // 2, spec.width // 2
+    assert sample.cover[ch, cw] == pytest.approx(0.55, abs=0.02)
+    # cc_pct is a cover-only product: no height tile -> chm defaults to 0 and cover
+    # is genuine (not synthesized) so cover_derived stays False.
+    assert sample.cover_derived is False
+    assert sample.chm[ch, cw] == pytest.approx(0.0, abs=0.01)
+    svc.close()
+
+
+# --- cover derivation into NaN holes (need = isnan(cover) & chm>0) ---
+
+def test_cover_derived_fills_evc_nodata_holes(tmp_path):
+    """EVC cover with a central nodata hole is filled from CHM only in the hole,
+    while decoded EVC cover is preserved everywhere it is present."""
+    # Constant EVH tile -> 50 m canopy everywhere (chm > 0 across the grid).
+    _write_tile(tmp_path / "evh.tif", 150, "int16")
+    # EVC tile: outer region code 155 (-> 0.55), central block code 99 (fill -> NaN).
+    evc = np.full((24, 24), 155, dtype=np.int16)
+    evc[8:16, 8:16] = 99
+    _write_tile_data(tmp_path / "evc.tif", evc, "int16")
+    manifest = _manifest(tmp_path, [
+        {'filename': 'evh.tif', 'product': 'landfire_evh'},
+        {'filename': 'evc.tif', 'product': 'landfire_evc'},
+    ])
+    svc = CanopyService(manifest, str(tmp_path), kind='landfire')
+    spec = _spec()
+    sample = svc.sample_grid_spec(spec)
+    assert sample is not None
+
+    ch, cw = spec.height // 2, spec.width // 2       # deep inside the nodata hole
+    outer_r, outer_c = spec.height // 8, spec.width // 8  # deep inside the 0.55 region
+
+    # chm is present (50 m) everywhere including the hole.
+    assert sample.chm[ch, cw] == pytest.approx(50.0, abs=0.5)
+    # Hole: cover was NaN but chm>0 -> filled = clip(50/20,0,1)*0.9 = 0.9 (not 0.0).
+    assert sample.cover[ch, cw] == pytest.approx(0.9, abs=0.02)
+    # Elsewhere: decoded EVC cover (0.55) is preserved, not overwritten.
+    assert sample.cover[outer_r, outer_c] == pytest.approx(0.55, abs=0.03)
+    # Any derivation flips the flag.
+    assert sample.cover_derived is True
+    svc.close()

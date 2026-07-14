@@ -120,3 +120,220 @@ def test_processed_result_has_products():
     assert result.frame_index is not None
     assert 'area_sqm' in result.stats
     assert result.stats['terrain']['name'] == 'FLAT'
+
+
+# ---------------------------------------------------------------------------
+# P2: error / edge-path coverage (canopy branches, nadir-elevation fallback,
+# no-DEM-at-nadir skip, and the ExifTool safety-net retry in _frame_geometry).
+# ---------------------------------------------------------------------------
+
+import math  # noqa: E402
+from unittest.mock import patch, MagicMock  # noqa: E402
+
+from core.services.terrain.grid import lonlat_to_mercator  # noqa: E402
+from core.services.coverage.contracts import SKIP_NO_DEM_AT_NADIR  # noqa: E402
+from helpers.MetaDataHelper import MetaDataHelper  # noqa: E402
+from helpers.LocationInfo import LocationInfo  # noqa: E402
+
+
+class _CanopySample:
+    """Minimal canopy sample exposing the .chm / .cover ndarrays the service reads."""
+    def __init__(self, chm, cover):
+        self.chm = chm
+        self.cover = cover
+
+
+class _FakeCanopy:
+    """Canopy provider returning uniform CHM/cover co-registered to the frame spec."""
+    source_name = "TEST_CHM"
+
+    def __init__(self, chm_h=5.0, cover=0.8):
+        self.chm_h = chm_h
+        self.cover = cover
+        self.calls = 0
+
+    def sample_grid_spec(self, spec):
+        self.calls += 1
+        chm = np.full((spec.height, spec.width), self.chm_h, dtype=np.float32)
+        cov = np.full((spec.height, spec.width), self.cover, dtype=np.float32)
+        return _CanopySample(chm, cov)
+
+
+class _NoneCanopy:
+    """Canopy provider whose sample misses the footprint (returns None)."""
+    source_name = "EMPTY_CHM"
+
+    def sample_grid_spec(self, spec):
+        return None
+
+
+class _RaisingCanopy:
+    """Canopy provider whose sample raises (e.g. a tile read failure)."""
+    source_name = "BROKEN_CHM"
+
+    def sample_grid_spec(self, spec):
+        raise RuntimeError("canopy read failed")
+
+
+class _NadirNanTerrain:
+    """Finite DEM everywhere except NaN in the 2x2 block around the camera nadir.
+
+    That is exactly the block ``GridSample.sample_bilinear`` reads, so the nadir
+    bilinear sample returns None and the median-of-finite-DEM fallback fires.
+    """
+    def __init__(self, lon, lat, elev=100.0):
+        self.provider = _FakeProvider()
+        self.lon = lon
+        self.lat = lat
+        self.elev = elev
+
+    def sample_grid_spec(self, spec):
+        data = np.full((spec.height, spec.width), self.elev, dtype=np.float32)
+        cam_x, cam_y = lonlat_to_mercator(self.lon, self.lat)
+        rows, cols = spec.world_to_index(cam_x, cam_y)
+        r0 = int(math.floor(float(rows)))
+        c0 = int(math.floor(float(cols)))
+        for rr in (r0, r0 + 1):
+            for cc in (c0, c0 + 1):
+                if 0 <= rr < spec.height and 0 <= cc < spec.width:
+                    data[rr, cc] = np.nan
+        return GridSample(data=data, transform=spec.transform, crs=spec.crs,
+                          datum_note="nadir-nan")
+
+
+class _AllNanTerrain:
+    """DEM sample that co-registers but is entirely nodata (all NaN)."""
+    def __init__(self):
+        self.provider = _FakeProvider()
+
+    def sample_grid_spec(self, spec):
+        data = np.full((spec.height, spec.width), np.nan, dtype=np.float32)
+        return GridSample(data=data, transform=spec.transform, crs=spec.crs,
+                          datum_note="all-nan")
+
+
+def _nadir_image(name='a'):
+    return {'name': name, '_fg': make_fg(pitch=-90.0, yaw=0.0)}
+
+
+def test_canopy_lowers_pod_and_records_source():
+    """A canopy providing CHM/cover must be sampled, attenuate POD via
+    Beer-Lambert transmittance, and surface its source name in the stats."""
+    base = _service(_FlatTerrain())
+    base_result = base.calculate([_nadir_image()])
+
+    svc = _service(_FlatTerrain())
+    canopy = _FakeCanopy()
+    svc.canopy = canopy
+    result = svc.calculate([_nadir_image()])
+
+    assert canopy.calls == 1                     # the canopy was actually sampled
+    assert result.image_count == 1
+    assert result.stats['canopy']['source'] == 'TEST_CHM'
+    assert base_result.stats['canopy']['source'] == 'none'
+    # Foliage attenuation must reduce mean POD relative to the bare-earth run.
+    assert result.stats['mean_pod_covered'] < base_result.stats['mean_pod_covered']
+
+
+def test_canopy_sample_none_skips_canopy_but_processes():
+    """When the canopy sample returns None the frame is still placed with no
+    attenuation (identical mean POD to the bare-earth run)."""
+    base = _service(_FlatTerrain())
+    base_result = base.calculate([_nadir_image()])
+
+    svc = _service(_FlatTerrain())
+    svc.canopy = _NoneCanopy()
+    result = svc.calculate([_nadir_image()])
+
+    assert result.image_count == 1
+    # Source name still reflects the configured provider even when sampling missed.
+    assert result.stats['canopy']['source'] == 'EMPTY_CHM'
+    # No CHM/cover -> transmittance 1.0 -> POD unchanged vs. bare earth.
+    assert result.stats['mean_pod_covered'] == pytest.approx(
+        base_result.stats['mean_pod_covered'])
+
+
+def test_canopy_sample_raises_logs_warning_and_skips_canopy():
+    """A raising canopy sample is caught, logged as a warning, and the canopy is
+    dropped for that frame (the frame is not marked SKIP_ERROR)."""
+    svc = _service(_FlatTerrain())
+    svc.canopy = _RaisingCanopy()
+    svc.logger = MagicMock()
+    result = svc.calculate([_nadir_image()])
+
+    assert result.image_count == 1
+    assert result.skipped == []
+    assert svc.logger.warning.called
+    warn_text = " ".join(str(c.args[0]) for c in svc.logger.warning.call_args_list)
+    assert "Canopy sample failed" in warn_text
+
+
+def test_nadir_nan_falls_back_to_median_dem():
+    """NaN DEM at the camera-nadir cell (finite elsewhere) must not skip the
+    frame: the median-of-finite-DEM fallback supplies the nadir elevation."""
+    svc = _service(_NadirNanTerrain(lon=-120.5, lat=38.7))
+    result = svc.calculate([_nadir_image(name='g')])
+
+    assert result.image_count == 1
+    assert result.skipped == []
+    assert result.pod.ndim == 2 and result.pod.size > 0
+
+
+def test_all_nan_dem_skips_no_dem_at_nadir():
+    """An entirely-NaN DEM sample (no finite cells) skips the frame with the
+    SKIP_NO_DEM_AT_NADIR reason rather than crashing."""
+    svc = _service(_AllNanTerrain())
+    result = svc.calculate([_nadir_image(name='g')])
+
+    assert result.image_count == 0
+    assert dict(result.skipped)['g'] == SKIP_NO_DEM_AT_NADIR
+
+
+def test_frame_geometry_retries_merged_reader_when_direct_misses_pose():
+    """When the fast direct XMP parse misses pose (fg is None) but the image is
+    GPS-tagged, _frame_geometry must retry with the ExifTool-backed merged reader
+    and build a FrameGeometry from it."""
+    svc = CoveragePodService(terrain=_FlatTerrain(), canopy=None,
+                             params=PodParams(grid_res_m=3.0))
+
+    direct_xmp = {'no_pose': True}
+    merged_xmp = {'drone-dji:GimbalPitchDegree': '-90.0'}
+    good_fg = make_fg(pitch=-90.0)
+
+    def fake_build(image, path, exif_data, xmp_data):
+        # Direct read misses pose -> None; merged read supplies it -> FrameGeometry.
+        return good_fg if xmp_data is merged_xmp else None
+
+    with patch.object(MetaDataHelper, 'get_exif_data_piexif', return_value={'exif': 1}), \
+            patch.object(MetaDataHelper, 'get_xmp_data_direct',
+                         return_value=direct_xmp) as m_direct, \
+            patch.object(MetaDataHelper, 'get_xmp_data_merged',
+                         return_value=merged_xmp) as m_merged, \
+            patch.object(LocationInfo, 'get_gps',
+                         return_value={'latitude': 38.7, 'longitude': -120.5}) as m_gps:
+        svc._build_frame_geometry = fake_build
+        fg = svc._frame_geometry({'path': '/fake/img.jpg'})
+
+    assert fg is good_fg
+    m_direct.assert_called_once_with('/fake/img.jpg')
+    m_merged.assert_called_once_with('/fake/img.jpg')   # the retry actually fired
+    m_gps.assert_called_once()                           # retry is GPS-gated
+
+
+def test_frame_geometry_no_retry_when_no_gps():
+    """The merged-reader retry is GPS-gated: with no GPS fix, _frame_geometry
+    returns None without spawning the expensive ExifTool merged read."""
+    svc = CoveragePodService(terrain=_FlatTerrain(), canopy=None,
+                             params=PodParams(grid_res_m=3.0))
+
+    with patch.object(MetaDataHelper, 'get_exif_data_piexif', return_value={}), \
+            patch.object(MetaDataHelper, 'get_xmp_data_direct',
+                         return_value={}) as m_direct, \
+            patch.object(MetaDataHelper, 'get_xmp_data_merged') as m_merged, \
+            patch.object(LocationInfo, 'get_gps', return_value=None):
+        svc._build_frame_geometry = lambda image, path, exif_data, xmp_data: None
+        fg = svc._frame_geometry({'path': '/fake/img.jpg'})
+
+    assert fg is None
+    m_direct.assert_called_once()
+    m_merged.assert_not_called()

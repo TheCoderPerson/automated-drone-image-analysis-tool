@@ -138,3 +138,33 @@ def test_wgs84_bounds_rejects_non_3857():
                     width=1, height=1)
     with pytest.raises(ValueError):
         spec.wgs84_bounds()
+
+
+def test_make_lattice_spec_rejects_zero_cell_size():
+    with pytest.raises(ValueError):
+        make_lattice_spec((0.0, 0.0, 30.0, 30.0), 0.0)
+
+
+def test_make_lattice_spec_rejects_negative_cell_size():
+    with pytest.raises(ValueError):
+        make_lattice_spec((0.0, 0.0, 30.0, 30.0), -3.0)
+
+
+def test_make_lattice_spec_rejects_degenerate_bounds_x():
+    # maxx < minx is degenerate.
+    with pytest.raises(ValueError):
+        make_lattice_spec((40.0, 0.0, 10.0, 30.0), 3.0)
+
+
+def test_make_lattice_spec_rejects_degenerate_bounds_y():
+    # maxy < miny is degenerate.
+    with pytest.raises(ValueError):
+        make_lattice_spec((0.0, 55.0, 30.0, 20.0), 3.0)
+
+
+def test_make_lattice_spec_allows_zero_extent_bounds():
+    # maxx == minx and maxy == miny is NOT degenerate (only strict < is);
+    # the helper always yields at least a 1x1 grid.
+    spec = make_lattice_spec((30.0, 30.0, 30.0, 30.0), 3.0)
+    assert spec.width >= 1
+    assert spec.height >= 1
