@@ -2,6 +2,9 @@
 *.swp
 *.user
 
+# Claude Code local settings (machine-local, do not track)
+.claude/settings.local.json
+
 # Python
 __pycache__/
 *.pyc

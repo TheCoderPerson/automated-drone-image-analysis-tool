@@ -22,7 +22,8 @@ from helpers.LocationInfo import LocationInfo
 class ImageService:
     """Service to calculate various drone and image attributes based on metadata."""
 
-    def __init__(self, path, mask_path=None, img_array=None, calculated_bearing=None):
+    def __init__(self, path, mask_path=None, img_array=None, calculated_bearing=None,
+                 exif_data=None, xmp_data=None):
         """
         Initializes the ImageService by extracting Exif and XMP metadata.
 
@@ -33,9 +34,13 @@ class ImageService:
                                               If provided, skips loading from disk.
             calculated_bearing (float, optional): Calculated bearing in degrees [0, 360).
                                                  Used as fallback if EXIF bearing is missing.
+            exif_data (dict, optional): Pre-read EXIF data. Skips the piexif read when given.
+            xmp_data (dict, optional): Pre-read XMP data. Skips the (ExifTool) XMP read when
+                                       given — used by bulk callers (e.g. the POD pass) to
+                                       avoid launching one ExifTool process per image.
         """
-        self.exif_data = MetaDataHelper.get_exif_data_piexif(path)
-        self.xmp_data = MetaDataHelper.get_xmp_data_merged(path)
+        self.exif_data = exif_data if exif_data is not None else MetaDataHelper.get_exif_data_piexif(path)
+        self.xmp_data = xmp_data if xmp_data is not None else MetaDataHelper.get_xmp_data_merged(path)
         self.drone_make = MetaDataHelper.get_drone_make(self.exif_data)
         self.path = path
         self.mask_path = mask_path
@@ -175,7 +180,23 @@ class ImageService:
         Returns:
             float or None: Camera yaw in degrees (0-360), or None if unavailable.
         """
+        return self.get_camera_yaw_with_source()[0]
+
+    def get_camera_yaw_with_source(self):
+        """
+        Get the camera yaw together with the source that provided it.
+
+        Same priority chain and roll-flip normalization as :meth:`get_camera_yaw`,
+        but also reports which rung of the chain fired so callers (e.g.
+        FrameGeometry) can attach a confidence to track-interpolated yaw.
+
+        Returns:
+            tuple[float | None, str | None]: (yaw_deg in [0, 360), source) where
+            source is 'gimbal', 'flight', 'calculated', or None when no yaw is
+            available.
+        """
         yaw = None
+        source = None
 
         # Prefer gimbal yaw if available (actual camera direction)
         if self.xmp_data is not None and self.drone_make is not None:
@@ -183,19 +204,24 @@ class ImageService:
             if gimbal_yaw is not None:
                 try:
                     yaw = float(gimbal_yaw)
+                    source = 'gimbal'
                 except (TypeError, ValueError):
                     pass
 
         # Fall back to flight yaw (drone body direction)
         if yaw is None:
-            yaw = self._get_drone_orientation()
+            flight_yaw = self._get_drone_orientation()
+            if flight_yaw is not None:
+                yaw = flight_yaw
+                source = 'flight'
 
         # Final fallback: use calculated bearing if available
         if yaw is None and self.calculated_bearing is not None:
             yaw = self.calculated_bearing
+            source = 'calculated'
 
         if yaw is None:
-            return None
+            return None, None
 
         # Normalize to 0-360 range
         if yaw < 0:
@@ -210,7 +236,7 @@ class ImageService:
         if gimbal_roll is not None and abs(gimbal_roll) > 90:
             yaw = (yaw + 180) % 360
 
-        return yaw
+        return yaw, source
 
     def get_camera_intrinsics(self):
         """
@@ -411,11 +437,42 @@ class ImageService:
 
     # ---------------- terrain helpers ----------------
 
+    def get_frame_geometry(self, custom_altitude_ft=None, bearing_quality=None,
+                           agl_override_ft=None):
+        """Collect this image's camera pose + intrinsics as a FrameGeometry.
+
+        A public, terrain-free snapshot (see
+        :class:`core.services.image.FrameGeometry.FrameGeometry`) consumed by the
+        Coverage/POD pipeline and, internally, by :meth:`_get_projection_context`.
+        Cached per ``(custom_altitude_ft, agl_override_ft)``. Returns None when
+        GPS, intrinsics, image size, or a positive AGL is unavailable.
+        """
+        cache_key = (custom_altitude_ft, agl_override_ft)
+        cache = getattr(self, '_frame_geometry_cache', None)
+        if cache is None:
+            cache = {}
+            self._frame_geometry_cache = cache
+        if cache_key in cache:
+            return cache[cache_key]
+
+        from core.services.image.FrameGeometry import FrameGeometry
+        fg = FrameGeometry.from_image_service(
+            self,
+            custom_altitude_ft=custom_altitude_ft,
+            bearing_quality=bearing_quality,
+            agl_override_ft=agl_override_ft,
+        )
+        cache[cache_key] = fg
+        return fg
+
     def _get_projection_context(self, custom_altitude_ft=None):
         """Collect drone pose, intrinsics and per-image terrain data needed for
         per-pixel projection. Caches the result on the instance so repeated
         per-pixel queries (e.g. dragging the person-reference overlay) don't
         re-read EXIF or re-query the DEM for the drone position.
+
+        Built on top of :meth:`get_frame_geometry` (pose + intrinsics), then
+        augmented with the terrain reconciliation fields.
 
         Returns:
             dict or None: projection context, or None if any required data is
@@ -427,36 +484,20 @@ class ImageService:
             return cached
 
         try:
-            gps_coords = LocationInfo.get_gps(exif_data=self.exif_data)
-            if not gps_coords:
-                return None
-            drone_lat = gps_coords['latitude']
-            drone_lon = gps_coords['longitude']
-
-            intrinsics = self.get_camera_intrinsics()
-            if intrinsics is None:
-                return None
-
+            # Preserve the historical guard: this path requires the pixel array
+            # (per-pixel projection callers always have it loaded).
             if self.img_array is None:
                 return None
-            img_h, img_w = self.img_array.shape[:2]
 
-            yaw = self.get_camera_yaw() or 0.0
-            pitch = self.get_camera_pitch()
-            if pitch is None:
-                pitch = -90.0
-            roll = self.get_gimbal_roll() or 0.0
-            if abs(roll) > 90.0:
-                roll = 0.0
-
-            if custom_altitude_ft is not None and custom_altitude_ft > 0:
-                reported_agl = custom_altitude_ft / 3.28084
-            else:
-                reported_agl = self.get_relative_altitude('m') or 0.0
-            if reported_agl <= 0:
+            fg = self.get_frame_geometry(custom_altitude_ft=custom_altitude_ft)
+            if fg is None:
                 return None
 
-            absolute_alt = self.get_asl_altitude('m')
+            drone_lat = fg.lat
+            drone_lon = fg.lon
+            img_h, img_w = self.img_array.shape[:2]
+            reported_agl = fg.agl_m
+            absolute_alt = fg.asl_alt_m
 
             # Lazy import to avoid pulling the terrain stack when unused.
             try:
@@ -486,12 +527,12 @@ class ImageService:
                 'img_h': img_h,
                 'cx': img_w / 2.0,
                 'cy': img_h / 2.0,
-                'focal_mm': intrinsics['focal_length_mm'],
-                'sensor_w_mm': intrinsics['sensor_width_mm'],
-                'sensor_h_mm': intrinsics['sensor_height_mm'],
-                'pitch': pitch,
-                'yaw': yaw,
-                'roll': roll,
+                'focal_mm': fg.focal_mm,
+                'sensor_w_mm': fg.sensor_mm[0],
+                'sensor_h_mm': fg.sensor_mm[1],
+                'pitch': fg.pitch_deg,
+                'yaw': fg.yaw_deg,
+                'roll': fg.roll_deg,
                 'reported_agl': reported_agl,
                 'drone_terrain_elev_m': drone_terrain_elev_m,
                 'drone_absolute_elev_m': drone_absolute_elev_m,

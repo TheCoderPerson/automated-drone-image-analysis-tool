@@ -12,6 +12,11 @@ from core.services.terrain import (
     PROVIDER_USGS_3DEP_LOCAL,
     DEFAULT_PROVIDER_ID,
 )
+from core.services.terrain.CanopyServiceFactory import (
+    CanopyServiceFactory,
+    CANOPY_KIND_NONE,
+    DEFAULT_CANOPY_KIND,
+)
 from helpers.PickleHelper import PickleHelper
 from helpers.TranslationMixin import TranslationMixin
 
@@ -47,6 +52,7 @@ class Preferences(TranslationMixin, QDialog, Ui_Preferences):
         self._terrain_service = None
         self._add_language_selection()
         self._add_terrain_provider_section()
+        self._add_canopy_source_section()
         self._arrange_terrain_controls()
         self._load_settings()
         self._connect_signals()
@@ -152,6 +158,54 @@ class Preferences(TranslationMixin, QDialog, Ui_Preferences):
         # Place the card at the bottom of the settings area.
         layout.addWidget(self.terrainCard)
 
+    def _add_canopy_source_section(self):
+        """Add a Canopy/vegetation source group: kind combo + manifest/tiles paths.
+
+        Code-built to match the sibling terrain-provider section (also code-built,
+        not in Preferences.ui); a documented CLAUDE.md 2.6 family exception.
+        """
+        self.canopySourceGroup = QGroupBox(self.tr("Canopy Data Source"), self.mainWidget)
+        layout = QVBoxLayout(self.canopySourceGroup)
+
+        combo_row = QHBoxLayout()
+        combo_label = QLabel(self.tr("Source:"), self.canopySourceGroup)
+        self.canopyKindComboBox = QComboBox(self.canopySourceGroup)
+        for kind in CanopyServiceFactory.available_kinds():
+            self.canopyKindComboBox.addItem(kind['label'], kind['id'])
+        combo_row.addWidget(combo_label)
+        combo_row.addWidget(self.canopyKindComboBox, 1)
+        layout.addLayout(combo_row)
+
+        manifest_row = QHBoxLayout()
+        self.canopyManifestLabel = QLabel(self.tr("Manifest CSV:"), self.canopySourceGroup)
+        self.canopyManifestEdit = QLineEdit(self.canopySourceGroup)
+        self.canopyManifestEdit.setPlaceholderText(self.tr("Path to the canopy manifest CSV"))
+        self.canopyManifestButton = QPushButton(self.tr("Browse..."), self.canopySourceGroup)
+        manifest_row.addWidget(self.canopyManifestLabel)
+        manifest_row.addWidget(self.canopyManifestEdit, 1)
+        manifest_row.addWidget(self.canopyManifestButton)
+        layout.addLayout(manifest_row)
+
+        tiles_row = QHBoxLayout()
+        self.canopyTilesLabel = QLabel(self.tr("Tiles directory:"), self.canopySourceGroup)
+        self.canopyTilesEdit = QLineEdit(self.canopySourceGroup)
+        self.canopyTilesEdit.setPlaceholderText(self.tr("Folder containing the GeoTIFF tiles"))
+        self.canopyTilesButton = QPushButton(self.tr("Browse..."), self.canopySourceGroup)
+        tiles_row.addWidget(self.canopyTilesLabel)
+        tiles_row.addWidget(self.canopyTilesEdit, 1)
+        tiles_row.addWidget(self.canopyTilesButton)
+        layout.addLayout(tiles_row)
+
+        fetch_row = QHBoxLayout()
+        fetch_row.addStretch()
+        self.canopyFetchButton = QPushButton(self.tr("Download tiles..."), self.canopySourceGroup)
+        self.canopyFetchButton.setToolTip(self.tr(
+            "Download DEM and/or canopy tiles for an area of interest and register them here."))
+        fetch_row.addWidget(self.canopyFetchButton)
+        layout.addLayout(fetch_row)
+
+        self.verticalLayout_2.insertWidget(2, self.canopySourceGroup)
+
     def _load_settings(self):
         """Loads the settings from SettingsService and updates the UI accordingly."""
         lang = self.parent.settings_service.get_setting('Language', 'en')
@@ -194,6 +248,15 @@ class Preferences(TranslationMixin, QDialog, Ui_Preferences):
         self.terrain3DEPTilesEdit.setText(tiles_dir)
         self._refresh_terrain_provider_visibility()
 
+        # Canopy source selection + paths
+        canopy_kind = self.parent.settings_service.get_setting('CanopyKind', DEFAULT_CANOPY_KIND) or DEFAULT_CANOPY_KIND
+        cidx = self.canopyKindComboBox.findData(canopy_kind)
+        if cidx >= 0:
+            self.canopyKindComboBox.setCurrentIndex(cidx)
+        self.canopyManifestEdit.setText(self.parent.settings_service.get_setting('CanopyManifestPath', '') or '')
+        self.canopyTilesEdit.setText(self.parent.settings_service.get_setting('CanopyTilesDir', '') or '')
+        self._refresh_canopy_visibility()
+
         drone_sensor_version = PickleHelper.get_drone_sensor_file_version()
         self.dronSensorVersionLabel.setText(
             self.tr("{version}_{date}").format(
@@ -222,6 +285,12 @@ class Preferences(TranslationMixin, QDialog, Ui_Preferences):
         self.terrain3DEPTilesEdit.editingFinished.connect(self._update_terrain_3dep_tiles)
         self.terrain3DEPManifestButton.clicked.connect(self._browse_terrain_3dep_manifest)
         self.terrain3DEPTilesButton.clicked.connect(self._browse_terrain_3dep_tiles)
+        self.canopyKindComboBox.currentIndexChanged.connect(self._update_canopy_kind)
+        self.canopyManifestEdit.editingFinished.connect(self._update_canopy_manifest)
+        self.canopyTilesEdit.editingFinished.connect(self._update_canopy_tiles)
+        self.canopyManifestButton.clicked.connect(self._browse_canopy_manifest)
+        self.canopyTilesButton.clicked.connect(self._browse_canopy_tiles)
+        self.canopyFetchButton.clicked.connect(self._open_tile_fetch_dialog)
         self.droneSensorButton.clicked.connect(self._droneSensorButton_clicked)
 
     def _update_max_aois(self):
@@ -305,6 +374,74 @@ class Preferences(TranslationMixin, QDialog, Ui_Preferences):
         if directory:
             self.terrain3DEPTilesEdit.setText(directory)
             self._update_terrain_3dep_tiles()
+
+    # ---- Canopy source ----
+
+    def _refresh_canopy_visibility(self):
+        """Show/hide the canopy path fields based on the selected source kind."""
+        needs_paths = self.canopyKindComboBox.currentData() != CANOPY_KIND_NONE
+        for w in (
+            self.canopyManifestLabel, self.canopyManifestEdit, self.canopyManifestButton,
+            self.canopyTilesLabel, self.canopyTilesEdit, self.canopyTilesButton,
+        ):
+            w.setVisible(needs_paths)
+
+    def _update_canopy_kind(self):
+        kind = self.canopyKindComboBox.currentData() or DEFAULT_CANOPY_KIND
+        self.parent.settings_service.set_setting('CanopyKind', kind)
+        self._refresh_canopy_visibility()
+
+    def _update_canopy_manifest(self):
+        self.parent.settings_service.set_setting(
+            'CanopyManifestPath', self.canopyManifestEdit.text().strip())
+
+    def _update_canopy_tiles(self):
+        self.parent.settings_service.set_setting(
+            'CanopyTilesDir', self.canopyTilesEdit.text().strip())
+
+    def _browse_canopy_manifest(self):
+        start_dir = self.canopyManifestEdit.text() or os.path.expanduser("~")
+        filename, _ = QFileDialog.getOpenFileName(
+            self, self.tr("Select canopy manifest CSV"), start_dir,
+            self.tr("CSV files (*.csv);;All files (*)"))
+        if filename:
+            self.canopyManifestEdit.setText(filename)
+            self._update_canopy_manifest()
+
+    def _browse_canopy_tiles(self):
+        start_dir = self.canopyTilesEdit.text() or os.path.expanduser("~")
+        directory = QFileDialog.getExistingDirectory(
+            self, self.tr("Select canopy tiles directory"), start_dir)
+        if directory:
+            self.canopyTilesEdit.setText(directory)
+            self._update_canopy_tiles()
+
+    def _open_tile_fetch_dialog(self):
+        """Open the Download Tiles dialog and register any downloaded paths."""
+        try:
+            from core.controllers.images.viewer.exports.TileFetchController import TileFetchController
+        except Exception as e:
+            QMessageBox.information(
+                self, self.tr("Download Tiles"),
+                self.tr("The tile downloader is unavailable:\n{error}").format(error=str(e)))
+            return
+        # If a mission is loaded in the viewer, hand its images to the fetch
+        # dialog so it can auto-fill the AOI (no manual coordinates needed).
+        mission_images = None
+        viewer = getattr(self.parent, 'viewer', None)
+        if viewer is not None:
+            mission_images = getattr(viewer, 'source_images', None) or getattr(viewer, 'images', None)
+
+        controller = TileFetchController(self, self.parent.settings_service, logger=None)
+        controller.run_fetch(mission_images=mission_images)
+        # Reflect any settings the fetch registered back into the fields.
+        self.canopyManifestEdit.setText(self.parent.settings_service.get_setting('CanopyManifestPath', '') or '')
+        self.canopyTilesEdit.setText(self.parent.settings_service.get_setting('CanopyTilesDir', '') or '')
+        canopy_kind = self.parent.settings_service.get_setting('CanopyKind', DEFAULT_CANOPY_KIND) or DEFAULT_CANOPY_KIND
+        cidx = self.canopyKindComboBox.findData(canopy_kind)
+        if cidx >= 0:
+            self.canopyKindComboBox.setCurrentIndex(cidx)
+        self._refresh_canopy_visibility()
 
     def _update_terrain_elevation(self, checked: bool):
         """Update whether terrain elevation data should be used for AOI positioning."""

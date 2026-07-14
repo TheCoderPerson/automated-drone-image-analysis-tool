@@ -1344,6 +1344,10 @@ class Viewer(TranslationMixin, QMainWindow, Ui_Viewer):
             self.coverage_extent_export = CoverageExtentExportController(self, self.logger)
             self.unified_map_export = UnifiedMapExportController(self, self.logger)
 
+            # Session cache for the last Coverage/POD run (viewer overlay reuses it).
+            from core.services.coverage.CoverageResultCache import CoverageResultCache
+            self.pod_result_cache = CoverageResultCache()
+
             # Force the layout to update and ensure proper sizing
             if hasattr(self, 'verticalLayout_3') and self.verticalLayout_3:
                 self.verticalLayout_3.update()

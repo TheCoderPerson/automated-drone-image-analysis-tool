@@ -410,6 +410,17 @@ class MetaDataHelper:
             return {}
 
     @staticmethod
+    def get_xmp_data_direct(file_path: str) -> dict:
+        """Parse XMP (incl. extended XMP) straight from the file bytes.
+
+        Public, subprocess-free wrapper around :meth:`_parse_xmp_direct`. Far
+        cheaper than :meth:`get_xmp_data_merged` when reading many files (e.g.
+        the POD pass, which would otherwise launch ~one ExifTool process per
+        image). Returns the merged XMP dict, or {} if none is found.
+        """
+        return MetaDataHelper._parse_xmp_direct(file_path)
+
+    @staticmethod
     def get_xmp_data(file_path, parse=False):
         """
         Retrieves XMP metadata as raw XML or parsed dict.

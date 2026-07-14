@@ -127,6 +127,105 @@ class USGS3DEPProvider(ElevationProvider):
                 return self._tiles[idx]
         return None
 
+    def lookup_tiles_bbox(self, min_lon: float, min_lat: float,
+                          max_lon: float, max_lat: float) -> list:
+        """Return all manifest entries whose lat/lon bbox intersects the query bbox.
+
+        Unlike :meth:`lookup_tile` (a single containing tile for a point), the
+        grid path needs every tile overlapping the footprint so the mosaic is
+        complete.
+        """
+        if self._strtree is None:
+            return None
+        from shapely.geometry import box
+        query = box(min_lon, min_lat, max_lon, max_lat)
+        candidates = self._strtree.query(query)
+        tiles = []
+        seen = set()
+        for c in candidates:
+            # STRtree.query returns geoms in shapely 1.x, indices in 2.x.
+            if hasattr(c, 'intersects'):
+                geom = c
+                idx = self._strtree_geoms.index(geom)
+            else:
+                idx = int(c)
+                geom = self._strtree_geoms[idx]
+            if idx in seen:
+                continue
+            if geom.intersects(query):
+                seen.add(idx)
+                tiles.append(self._tiles[idx])
+        return tiles
+
+    def sample_grid_spec(self, spec):
+        """Windowed-reproject fast path: mosaic intersecting tiles onto ``spec``.
+
+        Reprojects each intersecting local GeoTIFF into the requested EPSG:3857
+        grid with bilinear resampling, merging first-writer-wins. Returns None
+        when no tile intersects or rasterio is unavailable.
+        """
+        import numpy as np
+        from .grid import GridSample
+
+        tiles = self.lookup_tiles_bbox(*spec.wgs84_bounds())
+        if not tiles:
+            return None
+
+        try:
+            import rasterio  # noqa: F401
+            from rasterio.warp import reproject, Resampling
+        except ImportError as e:
+            self.logger.error(f"USGS3DEPProvider: rasterio required for sample_grid_spec: {e}")
+            return None
+
+        from .grid import read_window
+
+        dest = np.full((spec.height, spec.width), np.nan, dtype=np.float32)
+        merged_any = False
+        for tile in tiles:
+            ds = self._get_dataset(tile['full_path'])
+            if ds is None:
+                continue
+            src_nodata = ds.nodatavals[0] if ds.nodatavals else None
+            # Read only the footprint window so large 3DEP tiles never load in full.
+            raw, win_transform = read_window(ds, spec, src_nodata)
+            if raw is None:
+                continue
+            src = raw.astype(np.float32)
+            if src_nodata is not None:
+                src[src == src_nodata] = np.nan
+            tmp = np.full((spec.height, spec.width), np.nan, dtype=np.float32)
+            try:
+                reproject(
+                    source=src,
+                    destination=tmp,
+                    src_transform=win_transform,
+                    src_crs=ds.crs,
+                    src_nodata=np.nan,
+                    dst_transform=spec.transform,
+                    dst_crs=spec.crs,
+                    dst_nodata=np.nan,
+                    resampling=Resampling.bilinear,
+                )
+            except Exception as e:
+                self.logger.warning(
+                    f"USGS3DEPProvider: reproject failed for {tile['filename']}: {e}"
+                )
+                continue
+            dest = np.where(np.isnan(dest), tmp, dest)
+            merged_any = True
+
+        if not merged_any:
+            return None
+
+        # Mask residual 3DEP nodata sentinels that survived as finite values.
+        dest[np.abs(dest) > 1e6] = np.nan
+
+        datum = self.get_datum_info()
+        datum_note = f"{datum.get('type', '')} {datum.get('name', '')} ({datum.get('geoid_model', '')})".strip()
+        return GridSample(data=dest, transform=spec.transform, crs=spec.crs,
+                          datum_note=datum_note)
+
     def _get_dataset(self, full_path: str):
         """LRU-cached rasterio dataset open."""
         if full_path in self._open_datasets:

@@ -11,7 +11,13 @@ from PySide6.QtWidgets import (
     QLabel, QMenu, QApplication
 )
 from PySide6.QtCore import Qt, Signal, QPointF, QRectF, QTimer, QEvent
-from PySide6.QtGui import QPen, QBrush, QColor, QPainterPath, QWheelEvent, QMouseEvent, QPainter, QPixmap, QFont, QPalette, QPolygonF
+from PySide6.QtGui import QPen, QBrush, QColor, QPainterPath, QWheelEvent, QMouseEvent, QPainter, QPixmap, QFont, QPalette, QPolygonF, QTransform
+
+# Half the Web Mercator world extent in meters (pi * 6378137); the scene is a
+# slippy-map plane, so an EPSG:3857 raster maps onto it with a pure scale+shift.
+WEB_MERCATOR_ORIGIN_SHIFT = 20037508.342789244
+# z-value for the POD overlay: above basemap tiles (-100), below flight path (5).
+POD_OVERLAY_Z = -50
 from core.views.images.viewer.widgets.MapTileLoader import MapTileLoader
 from core.services.image.ImageService import ImageService
 from core.services.image.AOIService import AOIService, _get_terrain_service
@@ -80,6 +86,13 @@ class GPSMapView(TranslationMixin, QGraphicsView):
         self.zoom_fov_box = None
         self._fov_cache = None  # Cached FOV params: gsd_m, width, height, bearing, lat, lon
         self._last_visible_rect = None  # Last visible rect for map zoom redraws
+
+        # POD coverage overlay (a georeferenced EPSG:3857 raster as a pixmap item)
+        self.pod_overlay_item = None
+        self._pod_pixmap = None
+        self._pod_transform6 = None   # (a, b, c, d, e, f) affine of the pixmap in EPSG:3857
+        self._pod_opacity = 0.7
+        self._pod_visible = False
 
         # Map bounds
         self.min_lat = None
@@ -422,6 +435,74 @@ class GPSMapView(TranslationMixin, QGraphicsView):
 
         return lat, lon
 
+    # ---------------- POD coverage overlay ----------------
+
+    def set_pod_overlay(self, pixmap, transform6):
+        """Show a georeferenced POD raster on the map.
+
+        Args:
+            pixmap: a ready QPixmap (RGBA) built from the POD/look-count LUT.
+            transform6: (a, b, c, d, e, f) affine coefficients of ``pixmap`` in
+                EPSG:3857 (north-up, square pixels: b == d == 0, e < 0).
+        """
+        self._pod_pixmap = pixmap
+        self._pod_transform6 = tuple(float(v) for v in transform6)
+        self._pod_visible = True
+        self._add_pod_overlay_item()
+
+    def clear_pod_overlay(self):
+        """Remove the POD overlay and forget its raster."""
+        self._pod_visible = False
+        self._pod_pixmap = None
+        self._pod_transform6 = None
+        self._remove_pod_overlay_item()
+
+    def set_pod_overlay_visible(self, visible):
+        self._pod_visible = bool(visible)
+        if self._pod_visible:
+            self._add_pod_overlay_item()
+        else:
+            self._remove_pod_overlay_item()
+
+    def set_pod_overlay_opacity(self, opacity):
+        self._pod_opacity = max(0.0, min(1.0, float(opacity)))
+        if self.pod_overlay_item is not None:
+            self.pod_overlay_item.setOpacity(self._pod_opacity)
+
+    def _remove_pod_overlay_item(self):
+        if self.pod_overlay_item is not None:
+            try:
+                if self.pod_overlay_item.scene() == self.scene:
+                    self.scene.removeItem(self.pod_overlay_item)
+            except RuntimeError:
+                pass
+            self.pod_overlay_item = None
+
+    def _add_pod_overlay_item(self):
+        if not self._pod_visible or self._pod_pixmap is None:
+            return
+        self._remove_pod_overlay_item()
+        item = QGraphicsPixmapItem(self._pod_pixmap)
+        item.setZValue(POD_OVERLAY_Z)
+        item.setOpacity(self._pod_opacity)
+        item.setTransformationMode(Qt.TransformationMode.SmoothTransformation)
+        self.scene.addItem(item)
+        self.pod_overlay_item = item
+        self._position_pod_overlay()
+
+    def _position_pod_overlay(self):
+        """Place the overlay so its EPSG:3857 affine lines up with the scene."""
+        if self.pod_overlay_item is None or self._pod_transform6 is None:
+            return
+        a, b, c, d, e, f = self._pod_transform6
+        world = 256 * (2 ** self.current_zoom)
+        k = world / (2 * WEB_MERCATOR_ORIGIN_SHIFT)     # scene units per 3857 meter
+        self.pod_overlay_item.setPos((c + WEB_MERCATOR_ORIGIN_SHIFT) * k,
+                                     (WEB_MERCATOR_ORIGIN_SHIFT - f) * k)
+        t = QTransform()
+        t.scale(a * k, -e * k)                          # e < 0 for north-up -> positive y scale
+        self.pod_overlay_item.setTransform(t)
+
     def render_map(self):
         """Render map tiles and GPS points."""
         # Store AOI data temporarily if present
@@ -455,6 +536,9 @@ class GPSMapView(TranslationMixin, QGraphicsView):
         # Load tiles and draw points
         self.load_visible_tiles()
         self.draw_gps_points()
+
+        # Re-add the POD overlay (scene.clear() dropped the item; state survives).
+        self._add_pod_overlay_item()
 
         # Restore AOI marker if it was present
         if temp_aoi_data and temp_aoi_color:
@@ -988,6 +1072,9 @@ class GPSMapView(TranslationMixin, QGraphicsView):
         # Update scene rect
         world_size = 256 * (2 ** self.current_zoom)
         self.scene.setSceneRect(-world_size / 2, -world_size / 2, world_size * 2, world_size * 2)
+
+        # Re-anchor the POD overlay to the new zoom scale.
+        self._position_pod_overlay()
 
         # Update GPS point positions
         for i, point_item in enumerate(self.point_items):

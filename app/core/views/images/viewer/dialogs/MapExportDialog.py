@@ -97,6 +97,28 @@ class MapExportDialog(TranslationMixin, QDialog):
         data_group.setLayout(data_layout)
         layout.addWidget(data_group)
 
+        # Probability-of-Detection (POD) coverage
+        self.pod_group = QGroupBox(self.tr("Probability of Detection (POD)"))
+        pod_layout = QVBoxLayout()
+
+        self.include_pod = QCheckBox(self.tr("POD coverage heatmap (terrain-aware)"))
+        self.include_pod.setChecked(False)  # heavy compute -> opt-in
+        self.include_pod.setToolTip(self.tr(
+            "Compute a terrain and canopy aware probability-of-detection raster for the whole "
+            "mission (all non-hidden images, independent of the selections above). Writes "
+            "coverage_pod.tif, coverage_looks.tif, coverage_gaps.geojson and stats.json. The "
+            "GeoTIFF can be imported into CalTopo Map Sheets. May take several minutes."))
+
+        self.show_pod_on_map = QCheckBox(self.tr("Show on map when complete"))
+        self.show_pod_on_map.setChecked(True)  # spec 4.1: default on
+        self.show_pod_on_map.setEnabled(False)
+        self.include_pod.toggled.connect(self.show_pod_on_map.setEnabled)
+
+        pod_layout.addWidget(self.include_pod)
+        pod_layout.addWidget(self.show_pod_on_map)
+        self.pod_group.setLayout(pod_layout)
+        layout.addWidget(self.pod_group)
+
         # CalTopo-specific options
         self.caltopo_options_group = QGroupBox(self.tr("CalTopo Options"))
         caltopo_options_layout = QVBoxLayout()
@@ -187,6 +209,24 @@ class MapExportDialog(TranslationMixin, QDialog):
             bool: True if images without flagged AOIs should be included
         """
         return self.include_images_without_flagged_aois.isChecked()
+
+    def should_include_pod(self):
+        """
+        Check if the POD coverage heatmap should be computed.
+
+        Returns:
+            bool: True if the POD pass should run and write outputs
+        """
+        return self.include_pod.isChecked()
+
+    def should_show_pod_on_map(self):
+        """
+        Check if the POD result should be shown on the viewer map when complete.
+
+        Returns:
+            bool: True if POD is enabled and the show-on-map option is set
+        """
+        return self.include_pod.isChecked() and self.show_pod_on_map.isChecked()
 
     def _on_export_type_changed(self):
         """Handle export type radio button changes."""

@@ -7,9 +7,22 @@ import tempfile
 from PIL import Image
 import io
 
-from core.services.terrain.TerrainService import TerrainService, ElevationResult
+from core.services.terrain.TerrainService import TerrainService as _TerrainService, ElevationResult
+from core.services.terrain.TerrainProviderFactory import PROVIDER_TERRARIUM
 from core.services.terrain.TerrainCacheService import TerrainCacheService
 from core.services.terrain.GeoidService import GeoidService
+
+
+def TerrainService(**kwargs):
+    """Construct a TerrainService pinned to the Terrarium provider.
+
+    Without an explicit provider_id, TerrainService reads TerrainProviderId
+    from the machine's real settings, so a developer who has configured the
+    3DEP local provider would silently flip these tests onto a different
+    backend. Pinning keeps them hermetic.
+    """
+    kwargs.setdefault('provider_id', PROVIDER_TERRARIUM)
+    return _TerrainService(**kwargs)
 
 
 class TestElevationResult:
