@@ -33,7 +33,6 @@ class AlignImageDialog(TranslationMixin, QDialog):
             saved_alignment (dict): Optional previously saved alignment to resume.
         """
         super().__init__(parent)
-        self._estimated_corners = list(estimated_corners)
         self._showing_satellite = True
         self._setup_ui(offline_only)
         self._apply_translations()
@@ -196,10 +195,9 @@ class AlignImageDialog(TranslationMixin, QDialog):
             self.basemap_button.setText(self.tr("Show Satellite"))
 
     def _on_reset(self):
-        """Restore the corners, tie points and rotation to the initial estimate."""
-        self.view.reset_corners(self._estimated_corners)
-        self.view.set_image_rotation(self._initial_rotation)
-        self._set_rotation_controls(self._initial_rotation)
+        """Restore the corners, tie points and rotation to the metadata estimate."""
+        self.view.reset_to_estimate()
+        self._set_rotation_controls(self.view.get_rotation())
 
     def _on_tile_error(self, message):
         """Briefly surface a map tile loading error."""

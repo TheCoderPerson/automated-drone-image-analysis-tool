@@ -183,6 +183,11 @@ class AlignImageView(QGraphicsView):
         self._footprint_rect = None   # QRectF of the estimated footprint
         self._fitted = False
 
+        # Metadata estimate, remembered so Reset can restore it: the camera
+        # heading orients the photo, the corners size and centre the footprint.
+        self._estimated_corners = []
+        self._estimate_rotation = 0.0
+
         # Debounced tile loading after pan.
         self._tile_timer = QTimer(self)
         self._tile_timer.setSingleShot(True)
@@ -247,10 +252,16 @@ class AlignImageView(QGraphicsView):
             corners = list(saved_alignment['corners'])
             rotation = saved_alignment.get('rotation', 0.0)
             saved_ties = saved_alignment.get('tie_points') or []
+            seed_from_image = False
         else:
             corners = list(estimated_corners)
             rotation = bearing or 0.0
             saved_ties = []
+            seed_from_image = True
+
+        # Remember the metadata estimate for Reset (see reset_to_estimate).
+        self._estimated_corners = list(estimated_corners)
+        self._estimate_rotation = bearing or 0.0
 
         # Local-coordinate origin: the footprint centre. Every scene coordinate
         # is then a small offset from it.
@@ -263,21 +274,18 @@ class AlignImageView(QGraphicsView):
             sum(p.x() for p in corner_scene) / 4.0,
             sum(p.y() for p in corner_scene) / 4.0,
         )
-
-        # Drone image: scale to the footprint width, rotate, centre on the footprint.
         footprint_w = math.hypot(
             corner_scene[1].x() - corner_scene[0].x(),
             corner_scene[1].y() - corner_scene[0].y(),
         )
-        scale = footprint_w / img_w if img_w else 1.0
+
+        # Drone image: scale to the footprint width, rotate, centre on the footprint.
         self.drone_item = QGraphicsPixmapItem(pixmap)
         self.drone_item.setTransformationMode(Qt.TransformationMode.SmoothTransformation)
         self.drone_item.setTransformOriginPoint(img_w / 2.0, img_h / 2.0)
-        self.drone_item.setScale(scale)
-        self.drone_item.setRotation(rotation)
-        self.drone_item.setPos(center.x() - img_w / 2.0, center.y() - img_h / 2.0)
         self.drone_item.setZValue(-200)
         self.scene.addItem(self.drone_item)
+        self._layout_drone_image(center, footprint_w, rotation)
 
         # FOV overlay quad.
         self.fov_polygon = QGraphicsPolygonItem(QPolygonF(corner_scene))
@@ -301,6 +309,15 @@ class AlignImageView(QGraphicsView):
         # user can see which corner of the photo each corner handle belongs to.
         self._create_corner_markers(img_w, img_h)
 
+        # For a fresh estimate, seed the handles on the photo's own pixel corners
+        # so the quad starts as the photo outline with each handle sitting on its
+        # colour-matched corner square. (The metadata corner estimate uses a
+        # different corner/winding convention, so seeding straight from it would
+        # start the quad mirrored and rotated away from the photo.) A resumed
+        # alignment keeps its saved corners exactly as placed.
+        if seed_from_image:
+            self._seed_handles_from_image()
+
         # Restore saved tie points.
         for tie in saved_ties:
             u, v, lat, lon = tie
@@ -322,6 +339,42 @@ class AlignImageView(QGraphicsView):
             self.fov_polygon.setPolygon(
                 QPolygonF([handle.pos() for handle in self.corner_handles])
             )
+
+    def _layout_drone_image(self, center, footprint_w, rotation):
+        """Scale, rotate and centre the drone image to fill a footprint.
+
+        Args:
+            center (QPointF): Footprint centre in scene coordinates.
+            footprint_w (float): Footprint top-edge width in scene units; the
+                image is scaled uniformly so its width matches it.
+            rotation (float): Image rotation in degrees (the camera heading).
+        """
+        if self.drone_item is None:
+            return
+        pixmap = self.drone_item.pixmap()
+        img_w = pixmap.width()
+        img_h = pixmap.height()
+        scale = footprint_w / img_w if img_w else 1.0
+        self.drone_item.setScale(scale)
+        self.drone_item.setRotation(rotation)
+        self.drone_item.setPos(center.x() - img_w / 2.0, center.y() - img_h / 2.0)
+
+    def _seed_handles_from_image(self):
+        """Place the four corner handles on the drone image's own pixel corners.
+
+        This makes the FOV quad start as the photo's outline, with each handle
+        sitting exactly on its colour-matched corner square, so aligning is a
+        matter of nudging corners rather than untangling a mirrored estimate.
+        """
+        if self.drone_item is None or len(self.corner_handles) != 4:
+            return
+        pixmap = self.drone_item.pixmap()
+        w = float(pixmap.width())
+        h = float(pixmap.height())
+        pixel_corners = [(0.0, 0.0), (w, 0.0), (w, h), (0.0, h)]
+        for handle, (px, py) in zip(self.corner_handles, pixel_corners):
+            handle.setPos(self.drone_item.mapToScene(QPointF(px, py)))
+        self._rebuild_fov_polygon()
 
     def _create_corner_markers(self, img_w, img_h):
         """Mark the drone image's four pixel corners with the handle colours.
@@ -470,14 +523,30 @@ class AlignImageView(QGraphicsView):
             result.append((pixel.x(), pixel.y(), lat, lon))
         return result
 
-    def reset_corners(self, estimated_corners):
-        """Restore the four corners to the estimate and clear tie points."""
-        corner_scene = [self.lat_lon_to_scene(lat, lon) for lat, lon in estimated_corners]
-        for handle, scene_point in zip(self.corner_handles, corner_scene):
-            handle.setPos(scene_point)
-        self._rebuild_fov_polygon()
+    def reset_to_estimate(self):
+        """Restore the drone image and corners to the metadata estimate.
+
+        Re-lays the photo on the estimated footprint at the camera heading,
+        re-seeds the corner handles on the photo's pixel corners, and clears any
+        tie points - the same starting state as a fresh (unsaved) alignment.
+        """
+        if self.drone_item is None or len(self._estimated_corners) != 4:
+            return
         for tie in list(self.tie_points):
             self.remove_tie_point(tie)
+        corner_scene = [self.lat_lon_to_scene(lat, lon)
+                        for lat, lon in self._estimated_corners]
+        center = QPointF(
+            sum(p.x() for p in corner_scene) / 4.0,
+            sum(p.y() for p in corner_scene) / 4.0,
+        )
+        footprint_w = math.hypot(
+            corner_scene[1].x() - corner_scene[0].x(),
+            corner_scene[1].y() - corner_scene[0].y(),
+        )
+        self._layout_drone_image(center, footprint_w, self._estimate_rotation)
+        self._update_corner_markers()
+        self._seed_handles_from_image()
 
     # --- Tile loading ---
 

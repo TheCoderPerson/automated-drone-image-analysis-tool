@@ -52,8 +52,11 @@ class AlignImageController(QObject):
             self._toast(self.tr("This image has no GPS data and cannot be aligned"))
             return
 
-        estimated_corners = self._get_estimated_corners(image, gps)
-        bearing = image.get('bearing') or 0.0
+        estimated_corners, camera_yaw = self._get_estimated_corners(image, gps)
+        # Orient the photo to the authoritative camera heading (gimbal/flight yaw)
+        # used by the footprint estimate, so it starts lined up with the map;
+        # fall back to the image's calculated bearing when yaw is unavailable.
+        bearing = camera_yaw if camera_yaw is not None else (image.get('bearing') or 0.0)
         offline_only = self._is_offline_only()
         saved_alignment = image.get('fov_alignment')
 
@@ -115,27 +118,35 @@ class AlignImageController(QObject):
 
         Any existing alignment is stripped first so the estimate reflects the
         original metadata - this is what the dialog's Reset restores to.
+
+        Returns:
+            tuple: (corners, camera_yaw) where corners is a list of four
+            (lat, lon) tuples (TL, TR, BR, BL) and camera_yaw is the heading in
+            degrees used to build the estimate, or None if it was unavailable.
         """
+        camera_yaw = None
         try:
             custom_alt = getattr(self.parent, 'custom_agl_altitude_ft', None)
             use_terrain = getattr(self.parent, 'use_terrain_elevation', True)
             service = CoverageExtentService(custom_altitude_ft=custom_alt, logger=self.logger, use_terrain=use_terrain)
             image_for_estimate = {k: v for k, v in image.items() if k != 'fov_alignment'}
             corners = service.get_image_fov_corners(image_for_estimate)
+            camera_yaw = service.last_camera_yaw
             if corners and len(corners) == 4:
-                return corners
+                return corners, camera_yaw
         except Exception as e:
             self.logger.warning(f"AlignImageController: FOV estimate failed - {e}")
 
         # Fallback: a default square centred on the drone GPS.
         lat0, lon0 = gps['latitude'], gps['longitude']
         half = _DEFAULT_FOOTPRINT_HALF_M
-        return [
+        corners = [
             local_enu_to_gps(-half, half, lat0, lon0),   # TL
             local_enu_to_gps(half, half, lat0, lon0),    # TR
             local_enu_to_gps(half, -half, lat0, lon0),   # BR
             local_enu_to_gps(-half, -half, lat0, lon0),  # BL
         ]
+        return corners, camera_yaw
 
     def _is_offline_only(self):
         """Return whether the OfflineOnly preference is enabled."""

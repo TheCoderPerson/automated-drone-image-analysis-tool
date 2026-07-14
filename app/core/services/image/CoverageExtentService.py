@@ -41,6 +41,11 @@ class CoverageExtentService:
         self.logger = logger or LoggerService()
         self.use_terrain = use_terrain
         self.earth_radius = 6371000  # meters
+        # Camera yaw (deg) used by the most recent FOV polygon calculation, or
+        # None when unavailable. Lets callers (the Align Image dialog) orient the
+        # drone photo to the same heading that seeded the footprint estimate,
+        # without decoding the image a second time.
+        self.last_camera_yaw: Optional[float] = None
 
     def calculate_coverage_extents(self, images: List[Dict[str, Any]], progress_callback=None, cancel_check=None) -> Dict[str, Any]:
         """
@@ -180,6 +185,7 @@ class CoverageExtentService:
         Returns:
             List of (latitude, longitude) tuples for polygon corners, or None if calculation fails
         """
+        self.last_camera_yaw = None
         try:
             # A manually aligned image's user-placed corners are its FOV.
             refinement = image.get('fov_alignment')
@@ -263,6 +269,7 @@ class CoverageExtentService:
 
             # Get drone orientation (bearing)
             bearing = image_service.get_camera_yaw()
+            self.last_camera_yaw = bearing
             if bearing is None:
                 bearing = 0  # Default to north if bearing not available
 

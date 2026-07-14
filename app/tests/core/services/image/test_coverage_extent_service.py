@@ -86,7 +86,7 @@ class _FakeImageService:
     """Configurable stand-in for ImageService in the FOV polygon path."""
 
     def __init__(self, terrain_gsd_cm=None, terrain_agl_m=None, flat_gsd_cm=4.0,
-                 roll_deg=0.0, reported_agl_m=100.0):
+                 roll_deg=0.0, reported_agl_m=100.0, yaw_deg=0.0):
         import math as _math
         self._math = _math
         self.terrain_gsd_cm = terrain_gsd_cm
@@ -94,6 +94,7 @@ class _FakeImageService:
         self.flat_gsd_cm = flat_gsd_cm
         self.roll_deg = roll_deg
         self.reported_agl_m = reported_agl_m
+        self.yaw_deg = yaw_deg
         self.img_array = MagicMock(shape=(3000, 4000))
         self.compute_calls = []
         self.average_calls = []
@@ -105,7 +106,7 @@ class _FakeImageService:
         return self.roll_deg
 
     def get_camera_yaw(self):
-        return 0.0
+        return self.yaw_deg
 
     def get_relative_altitude(self, unit):
         assert unit == 'm'
@@ -190,6 +191,20 @@ def test_fov_polygon_use_terrain_false_uses_flat_gsd():
     # Roll offset falls back to the reported AGL (100 m)
     expected_offset = -100.0 * math.tan(math.radians(22.5))
     assert _centroid_east_m(corners) == pytest.approx(expected_offset, rel=0.01)
+
+
+def test_fov_polygon_records_camera_yaw():
+    """The camera yaw used is exposed for the Align Image dialog to reuse."""
+    if not _SHAPELY_AVAILABLE:
+        pytest.skip(f"Shapely not available: {_SHAPELY_IMPORT_ERROR}")
+    fake = _FakeImageService(flat_gsd_cm=4.0, yaw_deg=97.5)
+    service = CoverageExtentService(use_terrain=False)
+    assert service.last_camera_yaw is None  # nothing computed yet
+
+    corners = _fov_corners_with(service, fake)
+
+    assert corners is not None and len(corners) == 4
+    assert service.last_camera_yaw == pytest.approx(97.5)
 
 
 def test_fov_polygon_falls_back_to_flat_when_terrain_unavailable():
