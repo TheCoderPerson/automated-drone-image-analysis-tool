@@ -28,7 +28,12 @@ class CanopyServiceFactory:
         manifest = settings_service.get_setting('CanopyManifestPath', '')
         tiles_dir = settings_service.get_setting('CanopyTilesDir', '')
         if not manifest or not tiles_dir:
-            LoggerService().warning("CanopyServiceFactory: paths unset; canopy disabled.")
+            # Expected steady state for any mission without canopy configured
+            # (and it is re-checked every results-viewer / map open), so this is
+            # informational, not a warning — nothing is wrong.
+            LoggerService().info(
+                "CanopyServiceFactory: no canopy source configured (paths unset); "
+                "canopy overlay unavailable.")
             return None
 
         try:

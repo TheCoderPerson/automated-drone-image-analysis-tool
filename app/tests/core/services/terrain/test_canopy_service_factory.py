@@ -29,6 +29,17 @@ def test_landfire_missing_paths_returns_none():
     assert CanopyServiceFactory.create_from_settings(s) is None
 
 
+def test_missing_paths_logs_info_not_warning():
+    """No canopy source configured is the expected steady state (re-checked on
+    every viewer/map open), so it is logged at INFO, not WARNING."""
+    s = _settings({'CanopyKind': 'meta'})   # kind set, paths empty
+    with patch('core.services.terrain.CanopyServiceFactory.LoggerService') as MockLog:
+        logger = MockLog.return_value
+        assert CanopyServiceFactory.create_from_settings(s) is None
+    logger.info.assert_called_once()
+    logger.warning.assert_not_called()
+
+
 def test_meta_with_paths_builds_service(tmp_path):
     manifest = tmp_path / "m.csv"
     manifest.write_text("filename,product,minX,minY,maxX,maxY\n")

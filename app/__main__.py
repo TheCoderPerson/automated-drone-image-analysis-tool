@@ -406,6 +406,14 @@ if __name__ == "__main__":
 
     freeze_support()
 
+    # Logging policy (baked in): packaged/production builds record warnings and
+    # errors only; running from source stays verbose (DEBUG). Override in the
+    # field with the ADIAT_LOG_LEVEL env var (e.g. ADIAT_LOG_LEVEL=DEBUG). This
+    # runs before both the GUI and the batch CLI so both honor it; see
+    # LoggerService.resolve_log_level. (LoggerService also applies this by
+    # default, so any earlier log line is already at the right level.)
+    LoggerService.set_level()
+
     # Headless batch mode: "python app batch --input <parent> --output <root>"
     # (or "ADIAT.exe batch ..." in the packaged build).
     # Falls through to the normal GUI startup when no batch subcommand is given.

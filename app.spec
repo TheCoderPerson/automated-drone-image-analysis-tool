@@ -18,6 +18,13 @@ translation_candidates = [
 ]
 translation_datas = [(path, 'translations') for path in translation_candidates if os.path.exists(path)]
 
+# Runtime hook: default packaged builds to WARNING-level logging so shipped apps
+# don't accumulate verbose debug/info logs on users' machines. It runs inside the
+# frozen app at startup (a spec-level env assignment would only affect the build
+# machine). setdefault keeps ADIAT_LOG_LEVEL overridable for field debugging; the
+# policy also matches LoggerService.resolve_log_level's sys.frozen default.
+adiat_runtime_hooks = [os.path.join(spec_dir, 'runtime_hooks', 'set_log_level.py')]
+
 if platform.system() == 'Windows':
     a = Analysis(['app/__main__.py'],
                 pathex=['app'],
@@ -90,7 +97,7 @@ if platform.system() == 'Windows':
                     'algorithms.streaming.ColorAnomalyAndMotionDetection.views.ColorAnomalyAndMotionDetectionControlWidget',
                 ],
                 hookspath=None,
-                runtime_hooks=None,
+                runtime_hooks=adiat_runtime_hooks,
                 excludes=['PyQt5', 'PyQt6'],
                 cipher=block_cipher)
 elif platform.system() == 'Darwin':
@@ -162,7 +169,7 @@ elif platform.system() == 'Darwin':
                         'algorithms.streaming.ColorAnomalyAndMotionDetection.views.ColorAnomalyAndMotionDetectionControlWidget',
                     ],
                     hookspath=None,
-                    runtime_hooks=None,
+                    runtime_hooks=adiat_runtime_hooks,
                     excludes=['PyQt5', 'PyQt6'],
                     cipher=block_cipher)
 
