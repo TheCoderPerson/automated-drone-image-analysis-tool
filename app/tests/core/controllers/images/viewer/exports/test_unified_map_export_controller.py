@@ -357,11 +357,17 @@ def test_pod_thread_emits_error(tmp_path):
     assert len(errors) == 1 and "kaboom" in errors[0]
 
 
-def test_on_pod_completed_populates_cache(controller):
+def test_on_pod_completed_populates_cache_with_fingerprint(controller):
+    """The cached result carries the terrain/canopy config fingerprint so a
+    later source change can mark it stale."""
     controller.parent.pod_result_cache = MagicMock()
+    controller.parent.settings_service.get_setting.side_effect = \
+        lambda k, default='': {'TerrainProviderId': 'usgs_3dep_local'}.get(k, '')
     result = _make_result()
     controller._on_pod_completed(result)
-    controller.parent.pod_result_cache.set_result.assert_called_once_with(result)
+    args = controller.parent.pod_result_cache.set_result.call_args.args
+    assert args[0] is result
+    assert isinstance(args[1], str) and 'usgs_3dep_local' in args[1]
 
 
 def test_run_pod_public_wrapper_delegates(controller):

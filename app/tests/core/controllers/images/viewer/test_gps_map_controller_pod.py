@@ -359,6 +359,7 @@ def test_refresh_overlay_availability_reports_pod_and_canopy(app):
     ctrl.map_dialog = MagicMock()
     cache = MagicMock()
     cache.has_result.return_value = True
+    cache.is_stale.return_value = False
     ctrl.parent.pod_result_cache = cache
     ctrl._canopy_service = MagicMock(return_value=MagicMock())  # configured
     ctrl._refresh_overlay_availability()
@@ -370,9 +371,28 @@ def test_refresh_overlay_availability_no_canopy_no_pod(app):
     ctrl.map_dialog = MagicMock()
     cache = MagicMock()
     cache.has_result.return_value = False
+    cache.is_stale.return_value = False
     ctrl.parent.pod_result_cache = cache
     ctrl._canopy_service = MagicMock(return_value=None)  # unconfigured
     ctrl._refresh_overlay_availability()
+    ctrl.map_dialog.set_overlay_availability.assert_called_once_with(False, False)
+
+
+def test_refresh_overlay_availability_drops_stale_pod_result(app):
+    """A cached POD result computed under a different terrain/canopy config is
+    invalidated (with a toast) instead of being silently re-rendered."""
+    ctrl = _controller(app)
+    ctrl.map_dialog = MagicMock()
+    cache = MagicMock()
+    cache.is_stale.return_value = True
+    cache.has_result.return_value = False   # post-invalidate state
+    ctrl.parent.pod_result_cache = cache
+    ctrl._canopy_service = MagicMock(return_value=None)
+
+    ctrl._refresh_overlay_availability()
+
+    cache.invalidate.assert_called_once()
+    ctrl.parent.status_controller.show_toast.assert_called_once()
     ctrl.map_dialog.set_overlay_availability.assert_called_once_with(False, False)
 
 
@@ -658,3 +678,108 @@ def test_prompt_body_warns_about_meta_wri_override(app):
     body = mb.question.call_args.args[2]
     assert "Meta/WRI" in body
     assert "LANDFIRE" in body
+
+
+# ---------------------------------------------------------------------------
+# Pre-POD local-DEM coverage confirmation
+# ---------------------------------------------------------------------------
+
+_GPS = [{'latitude': 38.70, 'longitude': -120.50},
+        {'latitude': 38.72, 'longitude': -120.46}]
+
+_LOCAL_3DEP = {'TerrainProviderId': 'usgs_3dep_local',
+               'Terrain3DEPManifestPath': 'C:/dem/m.csv',
+               'Terrain3DEPTilesDir': 'C:/dem/tiles'}
+
+
+def _ctrl_with_settings(app, values):
+    ctrl = _controller(app)
+    ctrl.map_dialog = MagicMock()
+    ctrl.gps_data = list(_GPS)
+    ctrl.parent.settings_service.get_setting.side_effect = \
+        lambda k, default='': values.get(k, default)
+    return ctrl
+
+
+def _probe_ctx(coverage):
+    probe = MagicMock()
+    probe.covers.return_value = coverage
+    return patch("core.services.terrain.USGS3DEPProvider.USGS3DEPProvider",
+                 return_value=probe), probe
+
+
+def test_pod_coverage_check_passes_for_online_provider(app):
+    ctrl = _ctrl_with_settings(app, {'TerrainProviderId': 'terrarium'})
+    with patch("core.services.terrain.USGS3DEPProvider.USGS3DEPProvider") as MockP:
+        assert ctrl._confirm_local_dem_coverage() is True
+    MockP.assert_not_called()
+
+
+def test_pod_coverage_check_passes_on_full_coverage(app):
+    ctrl = _ctrl_with_settings(app, _LOCAL_3DEP)
+    ctx, probe = _probe_ctx('full')
+    with ctx, patch(
+            "core.controllers.images.viewer.GPSMapController.QMessageBox") as mb:
+        assert ctrl._confirm_local_dem_coverage() is True
+    probe.covers.assert_called_once()
+    probe.close.assert_called_once()
+    mb.assert_not_called()
+    # Full coverage never consumes the one-per-session prompt.
+    assert ctrl._dem_coverage_prompt_shown is False
+
+
+def test_pod_coverage_partial_continue_proceeds(app):
+    ctrl = _ctrl_with_settings(app, _LOCAL_3DEP)
+    ctx, _ = _probe_ctx('partial')
+    with ctx, patch(
+            "core.controllers.images.viewer.GPSMapController.QMessageBox") as MockBox:
+        box = MockBox.return_value
+        download_btn, continue_btn = MagicMock(), MagicMock()
+        box.addButton.side_effect = [download_btn, continue_btn]
+        box.clickedButton.return_value = continue_btn
+
+        assert ctrl._confirm_local_dem_coverage() is True
+
+    box.exec.assert_called_once()
+    assert ctrl._dem_coverage_prompt_shown is True
+
+
+def test_pod_coverage_none_download_defers(app):
+    ctrl = _ctrl_with_settings(app, _LOCAL_3DEP)
+    ctrl.on_canopy_download_requested = MagicMock()
+    ctx, _ = _probe_ctx('none')
+    with ctx, patch(
+            "core.controllers.images.viewer.GPSMapController.QMessageBox") as MockBox:
+        box = MockBox.return_value
+        download_btn, continue_btn = MagicMock(), MagicMock()
+        box.addButton.side_effect = [download_btn, continue_btn]
+        box.clickedButton.return_value = download_btn
+
+        assert ctrl._confirm_local_dem_coverage() is False
+
+    ctrl.on_canopy_download_requested.assert_called_once()
+
+
+def test_pod_coverage_prompt_only_once_per_session(app):
+    ctrl = _ctrl_with_settings(app, _LOCAL_3DEP)
+    ctrl._dem_coverage_prompt_shown = True
+    with patch("core.services.terrain.USGS3DEPProvider.USGS3DEPProvider") as MockP:
+        assert ctrl._confirm_local_dem_coverage() is True
+    MockP.assert_not_called()
+
+
+def test_pod_coverage_probe_failure_does_not_block(app):
+    ctrl = _ctrl_with_settings(app, _LOCAL_3DEP)
+    with patch("core.services.terrain.USGS3DEPProvider.USGS3DEPProvider",
+               side_effect=RuntimeError("pandas missing")):
+        assert ctrl._confirm_local_dem_coverage() is True
+
+
+def test_pod_calculate_defers_when_user_downloads_first(app):
+    ctrl = _controller(app)
+    ctrl._confirm_local_dem_coverage = MagicMock(return_value=False)
+    ctrl.parent.unified_map_export = MagicMock()
+
+    ctrl.on_pod_calculate_requested()
+
+    ctrl.parent.unified_map_export.run_pod.assert_not_called()

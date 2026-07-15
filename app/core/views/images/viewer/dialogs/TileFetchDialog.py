@@ -19,6 +19,17 @@ class TileFetchDialog(TranslationMixin, QDialog):
     # is a stable key ('mission' or 'folder'). The controller owns the actual
     # fill logic (it has the mission images and the folder picker).
     fill_source_activated = Signal(str)
+    # Emitted after the user manually edits any AOI bounds field, so the
+    # controller can re-evaluate dataset coverage for the new area.
+    aoi_changed = Signal()
+
+    # Dataset coverage statuses (see set_dataset_status). Stable keys; the
+    # controller computes them from the registered manifests.
+    STATUS_COVERED = 'covered'
+    STATUS_PARTIAL = 'partial'
+    STATUS_NONE = 'none'
+    STATUS_UNREGISTERED = 'unregistered'
+    STATUS_UNKNOWN = 'unknown'
 
     def __init__(self, parent=None, default_bounds=None, has_mission=False,
                  default_output_dir=None, default_dem_checked=True):
@@ -75,6 +86,8 @@ class TileFetchDialog(TranslationMixin, QDialog):
         self.max_lat_edit = QLineEdit()
         for e in (self.min_lon_edit, self.min_lat_edit, self.max_lon_edit, self.max_lat_edit):
             e.setValidator(QDoubleValidator())
+            # Manual edits re-evaluate what the registered tiles already cover.
+            e.editingFinished.connect(self.aoi_changed.emit)
         if default_bounds:
             self.set_aoi(default_bounds)
         grid.addWidget(QLabel(self.tr("Min longitude:")), 0, 0)
@@ -110,10 +123,14 @@ class TileFetchDialog(TranslationMixin, QDialog):
             "USGS 3DEP provides 1 m local elevation. Optional when you already "
             "have a terrain source configured (AWS Terrain Tiles online, or "
             "downloaded 3DEP) — enable it to download higher-resolution data."))
+        self.dem_status_label = self._make_status_label()
         self.canopy_checkbox = QCheckBox(self.tr("Meta/WRI Canopy Height"))
         self.canopy_checkbox.setChecked(True)
+        self.canopy_status_label = self._make_status_label()
         data_layout.addWidget(self.dem_checkbox)
+        data_layout.addWidget(self.dem_status_label)
         data_layout.addWidget(self.canopy_checkbox)
+        data_layout.addWidget(self.canopy_status_label)
         data_group.setLayout(data_layout)
         layout.addWidget(data_group)
 
@@ -142,6 +159,57 @@ class TileFetchDialog(TranslationMixin, QDialog):
         buttons.addWidget(self.download_button)
         buttons.addWidget(self.cancel_button)
         layout.addLayout(buttons)
+
+    @staticmethod
+    def _make_status_label():
+        """Small indented caption under a dataset checkbox; hidden until set."""
+        label = QLabel()
+        label.setWordWrap(True)
+        label.setIndent(22)
+        label.setVisible(False)
+        return label
+
+    # status key -> (text builder key, color); texts live in _status_text so
+    # they run through tr() at display time.
+    _STATUS_COLORS = {
+        'covered': "#00C853",
+        'partial': "#E6A700",
+        'none': "#E6A700",
+        'unregistered': "#909090",
+    }
+
+    def _status_text(self, status, dataset):
+        if status == self.STATUS_COVERED:
+            return self.tr("This area is already covered by your registered tiles.")
+        if status == self.STATUS_PARTIAL:
+            return self.tr("Partially covered by your registered tiles — "
+                           "downloading fills the gaps.")
+        if status == self.STATUS_NONE:
+            return self.tr("Your registered tiles do not cover this area.")
+        if status == self.STATUS_UNREGISTERED:
+            if dataset == 'dem':
+                return self.tr("No local elevation tiles registered — online AWS "
+                               "Terrain Tiles (~30 m) serve as the baseline.")
+            return self.tr("No canopy source is configured yet.")
+        return ""
+
+    def set_dataset_status(self, dem_status, canopy_status):
+        """Show per-dataset coverage of the current AOI under each checkbox.
+
+        Statuses are the STATUS_* keys; STATUS_UNKNOWN hides the caption.
+        """
+        for label, status, dataset in (
+            (self.dem_status_label, dem_status, 'dem'),
+            (self.canopy_status_label, canopy_status, 'canopy'),
+        ):
+            text = self._status_text(status, dataset)
+            if not text:
+                label.setVisible(False)
+                continue
+            label.setText(text)
+            color = self._STATUS_COLORS.get(status, "#909090")
+            label.setStyleSheet(f"color: {color};")
+            label.setVisible(True)
 
     def _browse_output(self):
         directory = QFileDialog.getExistingDirectory(self, self.tr("Select output folder"))

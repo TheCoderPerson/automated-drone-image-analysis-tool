@@ -76,6 +76,7 @@ class GPSMapController(QObject):
         self._canopy_pending_opacity = 70
         self._tile_fetch_controller = None
         self._canopy_prompt_shown = False  # one-time "download canopy?" prompt per session
+        self._dem_coverage_prompt_shown = False  # one-time partial-DEM warning per session
 
         # Coalesce zoom-FOV updates. Viewer.viewChanged fires up to twice per
         # wheel notch, and each forward reruns the map's terrain-projected FOV
@@ -160,12 +161,35 @@ class GPSMapController(QObject):
         if self.map_dialog is None:
             return
         cache = self._pod_cache()
+        self._invalidate_stale_pod_cache(cache)
         pod_available = cache is not None and cache.has_result()
         canopy_available = self._canopy_service() is not None
         if hasattr(self.map_dialog, 'set_overlay_availability'):
             self.map_dialog.set_overlay_availability(pod_available, canopy_available)
         elif hasattr(self.map_dialog, 'set_pod_available'):
             self.map_dialog.set_pod_available(pod_available)
+
+    def _invalidate_stale_pod_cache(self, cache):
+        """Drop a cached POD result computed under a different terrain/canopy
+        configuration: re-rendering it would silently show data from sources
+        the user has since switched away from."""
+        if cache is None or not hasattr(cache, 'is_stale'):
+            return
+        try:
+            from core.services.coverage.CoverageResultCache import config_fingerprint
+            settings = getattr(self.parent, 'settings_service', None)
+            if cache.is_stale(config_fingerprint(settings)):
+                cache.invalidate()
+                self.logger.info(
+                    "POD overlay: cached result predates a terrain/canopy source "
+                    "change; recalculate to refresh it.")
+                if hasattr(self.parent, 'status_controller'):
+                    self.parent.status_controller.show_toast(
+                        self.tr("POD overlay cleared — the elevation/canopy source "
+                                "changed. Recalculate to refresh it."),
+                        5000, color="#FFA726")
+        except Exception as e:
+            self.logger.warning(f"POD staleness check failed: {e}")
 
     def on_canopy_download_requested(self):
         """Run the tile-fetch flow for this mission, then refresh availability so
@@ -211,6 +235,76 @@ class GPSMapController(QObject):
         if resp == QMessageBox.StandardButton.Yes:
             self.on_pod_calculate_requested()
 
+    def _mission_gps_bounds(self):
+        """(min_lon, min_lat, max_lon, max_lat) of the mission GPS, or None."""
+        lats = [d['latitude'] for d in self.gps_data if 'latitude' in d]
+        lons = [d['longitude'] for d in self.gps_data if 'longitude' in d]
+        if not lats or not lons:
+            return None
+        return (min(lons), min(lats), max(lons), max(lats))
+
+    def _confirm_local_dem_coverage(self):
+        """Once per session before a POD run: if the active local DEM only
+        partially covers (or misses) the mission, say so and offer the
+        download. Returns False when the user chose to download tiles first
+        (the POD run is deferred), True to proceed.
+
+        Proceeding is safe either way — uncovered frames fall back to online
+        AWS Terrain Tiles — so this is an offer, not a gate.
+        """
+        if self._dem_coverage_prompt_shown:
+            return True
+        settings = getattr(self.parent, 'settings_service', None)
+        bounds = self._mission_gps_bounds()
+        if settings is None or bounds is None:
+            return True
+        try:
+            provider_id = settings.get_setting('TerrainProviderId', '') or ''
+            manifest = settings.get_setting('Terrain3DEPManifestPath', '')
+            tiles = settings.get_setting('Terrain3DEPTilesDir', '')
+        except Exception:
+            return True
+        if provider_id != 'usgs_3dep_local' or not (manifest and tiles):
+            return True
+
+        try:
+            from core.services.terrain.USGS3DEPProvider import USGS3DEPProvider
+            probe = USGS3DEPProvider(manifest, tiles)
+            try:
+                coverage = probe.covers(bounds)
+            finally:
+                probe.close()
+        except Exception as e:
+            self.logger.warning(f"POD DEM coverage check failed: {e}")
+            return True
+        if coverage == 'full':
+            return True
+
+        self._dem_coverage_prompt_shown = True
+        if coverage == 'partial':
+            detail = self.tr("Your local USGS 3DEP tiles only partially cover "
+                             "this mission.")
+        else:
+            detail = self.tr("Your local USGS 3DEP tiles do not cover this "
+                             "mission.")
+        box = QMessageBox(self.map_dialog)
+        box.setIcon(QMessageBox.Icon.Information)
+        box.setWindowTitle(self.tr("Local Elevation Coverage"))
+        box.setText(detail + "\n\n" + self.tr(
+            "Frames outside the local tiles will use online AWS Terrain Tiles "
+            "(~30 m) elevation instead. You can download 1 m tiles for this "
+            "area first, or continue with the fallback."))
+        download_btn = box.addButton(self.tr("Download Tiles..."),
+                                     QMessageBox.ButtonRole.ActionRole)
+        continue_btn = box.addButton(self.tr("Continue"),
+                                     QMessageBox.ButtonRole.AcceptRole)
+        box.setDefaultButton(continue_btn)
+        box.exec()
+        if box.clickedButton() is download_btn:
+            self.on_canopy_download_requested()
+            return False
+        return True
+
     def on_pod_calculate_requested(self):
         """Run the POD coverage calculation from the map view.
 
@@ -219,6 +313,8 @@ class GPSMapController(QObject):
         cache, and overlay enablement all stay in one place. Outputs land in
         ``<results>/coverage_pod``.
         """
+        if not self._confirm_local_dem_coverage():
+            return
         export_controller = getattr(self.parent, 'unified_map_export', None)
         if export_controller is None or not hasattr(export_controller, 'run_pod'):
             try:

@@ -841,3 +841,134 @@ def test_on_fill_source_dispatches_to_fill_methods(app):
     ctrl._on_fill_source(dialog, None)
     ctrl._fill_aoi.assert_not_called()
     ctrl._fill_from_folder.assert_not_called()
+
+
+# --- AOI coverage captions + coverage-aware DEM default ---------------------
+
+from core.views.images.viewer.dialogs.TileFetchDialog import (  # noqa: E402
+    TileFetchDialog,
+    TileFetchDialog as _D,
+)
+
+_BOUNDS = (-120.5, 38.7, -120.4, 38.8)
+
+
+def _probe(covers):
+    p = MagicMock()
+    p.covers.return_value = covers
+    return p
+
+
+def test_coverage_status_maps_covers_results(app):
+    ctrl = TileFetchController(MagicMock(), MagicMock())
+    assert ctrl._coverage_status(None, _BOUNDS) == _D.STATUS_UNREGISTERED
+    assert ctrl._coverage_status(_probe('full'), _BOUNDS) == _D.STATUS_COVERED
+    assert ctrl._coverage_status(_probe('partial'), _BOUNDS) == _D.STATUS_PARTIAL
+    assert ctrl._coverage_status(_probe('none'), _BOUNDS) == _D.STATUS_NONE
+    broken = MagicMock()
+    broken.covers.side_effect = RuntimeError("no shapely")
+    assert ctrl._coverage_status(broken, _BOUNDS) == _D.STATUS_UNKNOWN
+
+
+def test_refresh_coverage_unknown_without_bounds(app):
+    ctrl = TileFetchController(MagicMock(), MagicMock())
+    dialog = TileFetchDialog()   # empty AOI fields
+    ctrl._refresh_dialog_coverage(dialog)
+    assert dialog.dem_status_label.isHidden()
+    assert dialog.canopy_status_label.isHidden()
+
+
+def test_refresh_coverage_sets_captions_and_defaults_covered(app):
+    """Fully covered AOI: caption shown, DEM defaults off on fill events."""
+    ctrl = TileFetchController(MagicMock(), MagicMock())
+    ctrl._coverage_probes = {'dem': _probe('full'), 'canopy': _probe('partial')}
+    dialog = TileFetchDialog()
+    dialog.set_aoi(_BOUNDS)
+    dialog.dem_checkbox.setChecked(True)
+
+    ctrl._refresh_dialog_coverage(dialog, apply_defaults=True)
+
+    assert dialog.dem_checkbox.isChecked() is False
+    assert "already covered" in dialog.dem_status_label.text()
+    assert "Partially covered" in dialog.canopy_status_label.text()
+
+
+def test_refresh_coverage_gap_turns_dem_on(app):
+    """Registered local DEM with a coverage gap: DEM defaults ON (fills gaps)."""
+    ctrl = TileFetchController(MagicMock(), MagicMock())
+    ctrl._coverage_probes = {'dem': _probe('partial'), 'canopy': None}
+    dialog = TileFetchDialog()
+    dialog.set_aoi(_BOUNDS)
+    dialog.dem_checkbox.setChecked(False)
+
+    ctrl._refresh_dialog_coverage(dialog, apply_defaults=True)
+
+    assert dialog.dem_checkbox.isChecked() is True
+
+
+def test_refresh_coverage_no_defaults_on_manual_edit(app):
+    """apply_defaults=False (manual AOI edits) never flips checkboxes."""
+    ctrl = TileFetchController(MagicMock(), MagicMock())
+    ctrl._coverage_probes = {'dem': _probe('full'), 'canopy': None}
+    dialog = TileFetchDialog()
+    dialog.set_aoi(_BOUNDS)
+    dialog.dem_checkbox.setChecked(True)
+
+    ctrl._refresh_dialog_coverage(dialog, apply_defaults=False)
+
+    assert dialog.dem_checkbox.isChecked() is True    # untouched
+    assert "already covered" in dialog.dem_status_label.text()
+
+
+def test_refresh_coverage_never_touches_canopy_checkbox(app):
+    ctrl = TileFetchController(MagicMock(), MagicMock())
+    ctrl._coverage_probes = {'dem': None, 'canopy': _probe('full')}
+    dialog = TileFetchDialog()
+    dialog.set_aoi(_BOUNDS)
+    assert dialog.canopy_checkbox.isChecked() is True
+
+    ctrl._refresh_dialog_coverage(dialog, apply_defaults=True)
+
+    assert dialog.canopy_checkbox.isChecked() is True
+
+
+def test_coverage_probes_built_from_settings_and_closed(app):
+    """Probes come from the registered paths and are closed after run_fetch."""
+    from unittest.mock import patch
+    from PySide6.QtWidgets import QDialog
+
+    settings = MagicMock()
+    settings.get_setting.side_effect = lambda k, default='': {
+        'Terrain3DEPManifestPath': 'C:/dem/m.csv',
+        'Terrain3DEPTilesDir': 'C:/dem/tiles',
+    }.get(k, default)
+    ctrl = TileFetchController(MagicMock(), settings)
+
+    dem_probe = MagicMock()
+    canopy_probe = MagicMock()
+    with patch("core.services.terrain.USGS3DEPProvider.USGS3DEPProvider",
+               return_value=dem_probe) as MockDem, \
+         patch("core.services.terrain.CanopyServiceFactory.create_canopy_service",
+               return_value=canopy_probe), \
+         patch(f"{_MODULE}.TileFetchDialog") as MockDlg, \
+         patch(f"{_MODULE}.QMessageBox"):
+        dlg = MockDlg.return_value
+        dlg.exec.return_value = QDialog.Rejected
+        dlg.get_bounds.return_value = _BOUNDS
+        ctrl.run_fetch()
+
+    MockDem.assert_called_once_with('C:/dem/m.csv', 'C:/dem/tiles')
+    dem_probe.close.assert_called_once()
+    canopy_probe.close.assert_called_once()
+    assert ctrl._coverage_probes is None
+
+
+def test_coverage_probes_none_when_unregistered(app):
+    settings = MagicMock()
+    settings.get_setting.return_value = ''
+    ctrl = TileFetchController(MagicMock(), settings)
+    from unittest.mock import patch
+    with patch("core.services.terrain.CanopyServiceFactory.create_canopy_service",
+               return_value=None):
+        probes = ctrl._get_coverage_probes()
+    assert probes == {'dem': None, 'canopy': None}

@@ -205,3 +205,48 @@ def test_download_button_not_gated_by_bounds_validity(app, qtbot):
 
     assert d.result() == QDialog.Accepted
     assert d.get_bounds() is None
+
+
+# ---------------------------------------------------------------------------
+# Dataset coverage captions + aoi_changed
+# ---------------------------------------------------------------------------
+
+
+def test_status_labels_hidden_by_default(app):
+    d = TileFetchDialog()
+    assert d.dem_status_label.isHidden()
+    assert d.canopy_status_label.isHidden()
+
+
+def test_set_dataset_status_shows_texts(app):
+    d = TileFetchDialog()
+    d.set_dataset_status(TileFetchDialog.STATUS_COVERED, TileFetchDialog.STATUS_PARTIAL)
+    assert not d.dem_status_label.isHidden()
+    assert "already covered" in d.dem_status_label.text()
+    assert not d.canopy_status_label.isHidden()
+    assert "Partially covered" in d.canopy_status_label.text()
+
+
+def test_set_dataset_status_unknown_hides(app):
+    d = TileFetchDialog()
+    d.set_dataset_status(TileFetchDialog.STATUS_COVERED, TileFetchDialog.STATUS_COVERED)
+    d.set_dataset_status(TileFetchDialog.STATUS_UNKNOWN, TileFetchDialog.STATUS_UNKNOWN)
+    assert d.dem_status_label.isHidden()
+    assert d.canopy_status_label.isHidden()
+
+
+def test_set_dataset_status_unregistered_texts_differ_by_dataset(app):
+    d = TileFetchDialog()
+    d.set_dataset_status(TileFetchDialog.STATUS_UNREGISTERED,
+                         TileFetchDialog.STATUS_UNREGISTERED)
+    assert "AWS Terrain Tiles" in d.dem_status_label.text()
+    assert "canopy" in d.canopy_status_label.text().lower()
+
+
+def test_manual_bounds_edit_emits_aoi_changed(app, qtbot):
+    d = _shown_dialog(qtbot)
+    received = []
+    d.aoi_changed.connect(lambda: received.append(True))
+    d.min_lon_edit.setText("-120.5")
+    d.min_lon_edit.editingFinished.emit()
+    assert received == [True]

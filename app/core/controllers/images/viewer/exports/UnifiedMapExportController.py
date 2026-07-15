@@ -663,7 +663,11 @@ class UnifiedMapExportController(TranslationMixin):
         self._pending_pod_result = result
         cache = getattr(self.parent, 'pod_result_cache', None)
         if cache is not None:
-            cache.set_result(result)
+            # Record the terrain/canopy config so a later source change can
+            # mark this result stale instead of silently re-rendering it.
+            from core.services.coverage.CoverageResultCache import config_fingerprint
+            fingerprint = config_fingerprint(getattr(self.parent, 'settings_service', None))
+            cache.set_result(result, fingerprint)
 
     def _pod_completion_summary(self, result):
         """(message, color) telling the truth about a finished POD pass.

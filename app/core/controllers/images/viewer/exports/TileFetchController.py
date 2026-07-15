@@ -95,6 +95,9 @@ class TileFetchController(TranslationMixin):
         # dialog was dismissed or the download cancelled/failed before
         # finishing) — lets callers chain follow-up steps after a download.
         self.last_results = None
+        # Lazily-built {'dem', 'canopy'} probes for AOI coverage captions;
+        # scoped to one run_fetch and closed when its dialog closes.
+        self._coverage_probes = None
 
     def _elevation_already_available(self):
         """True when the configured terrain provider already yields usable
@@ -120,15 +123,23 @@ class TileFetchController(TranslationMixin):
     def run_fetch(self, default_bounds=None, mission_images=None, default_output_dir=None):
         self.last_results = None
         self._mission_images = mission_images
+        self._coverage_probes = None
         dialog = TileFetchDialog(self.parent, default_bounds=default_bounds,
                                  has_mission=bool(mission_images),
                                  default_output_dir=default_output_dir,
                                  default_dem_checked=not self._elevation_already_available())
         dialog.fill_source_activated.connect(lambda key: self._on_fill_source(dialog, key))
+        # Manual bounds edits only refresh the captions; they never flip a
+        # checkbox the user may already have set deliberately.
+        dialog.aoi_changed.connect(
+            lambda: self._refresh_dialog_coverage(dialog, apply_defaults=False))
         if mission_images:
             self._fill_aoi(dialog, mission_images, "loaded mission", warn_if_empty=False)
+        self._refresh_dialog_coverage(dialog, apply_defaults=True)
 
-        if dialog.exec() != QDialog.Accepted:
+        accepted = dialog.exec() == QDialog.Accepted
+        self._close_coverage_probes()
+        if not accepted:
             return
 
         bounds = dialog.get_bounds()
@@ -169,6 +180,80 @@ class TileFetchController(TranslationMixin):
 
     _IMAGE_GLOBS = ("*.jpg", "*.jpeg", "*.JPG", "*.JPEG", "*.tif", "*.tiff", "*.png")
 
+    # ---- AOI coverage against the registered local datasets ----
+
+    def _get_coverage_probes(self):
+        """Lazily build {'dem': provider|None, 'canopy': service|None} from the
+        registered settings paths. None = nothing registered/buildable. Built
+        once per run_fetch (manifest indexing is not free) and closed after."""
+        if self._coverage_probes is not None:
+            return self._coverage_probes
+        dem = canopy = None
+        if self.settings_service is not None:
+            try:
+                manifest = self.settings_service.get_setting('Terrain3DEPManifestPath', '')
+                tiles = self.settings_service.get_setting('Terrain3DEPTilesDir', '')
+                if manifest and tiles:
+                    from core.services.terrain.USGS3DEPProvider import USGS3DEPProvider
+                    dem = USGS3DEPProvider(manifest, tiles)
+            except Exception as e:
+                self.logger.warning(f"Coverage probe: local DEM unavailable: {e}")
+            try:
+                from core.services.terrain.CanopyServiceFactory import create_canopy_service
+                canopy = create_canopy_service(self.settings_service)
+            except Exception as e:
+                self.logger.warning(f"Coverage probe: canopy unavailable: {e}")
+        self._coverage_probes = {'dem': dem, 'canopy': canopy}
+        return self._coverage_probes
+
+    def _close_coverage_probes(self):
+        """Release probe resources (open rasterio handles block re-downloads
+        into the same folder on Windows)."""
+        probes = self._coverage_probes or {}
+        self._coverage_probes = None
+        for probe in probes.values():
+            close = getattr(probe, 'close', None)
+            if callable(close):
+                try:
+                    close()
+                except Exception:
+                    pass
+
+    @staticmethod
+    def _coverage_status(probe, bounds):
+        """Map a probe + AOI to a TileFetchDialog.STATUS_* key."""
+        from core.views.images.viewer.dialogs.TileFetchDialog import TileFetchDialog as D
+        if probe is None:
+            return D.STATUS_UNREGISTERED
+        try:
+            return {
+                'full': D.STATUS_COVERED,
+                'partial': D.STATUS_PARTIAL,
+                'none': D.STATUS_NONE,
+            }.get(probe.covers(bounds), D.STATUS_UNKNOWN)
+        except Exception:
+            return D.STATUS_UNKNOWN
+
+    def _refresh_dialog_coverage(self, dialog, apply_defaults=False):
+        """Update the dialog's per-dataset coverage captions for its current
+        AOI, and (on fill events only) re-default the DEM checkbox: off when
+        the area is already fully covered, on when registered tiles exist but
+        leave a gap. The canopy checkbox default is never touched."""
+        from core.views.images.viewer.dialogs.TileFetchDialog import TileFetchDialog as D
+        bounds = dialog.get_bounds()
+        if bounds is None:
+            dialog.set_dataset_status(D.STATUS_UNKNOWN, D.STATUS_UNKNOWN)
+            return
+        probes = self._get_coverage_probes()
+        dem_status = self._coverage_status(probes.get('dem'), bounds)
+        canopy_status = self._coverage_status(probes.get('canopy'), bounds)
+        dialog.set_dataset_status(dem_status, canopy_status)
+        if apply_defaults:
+            if dem_status == D.STATUS_COVERED:
+                dialog.dem_checkbox.setChecked(False)
+            elif dem_status in (D.STATUS_PARTIAL, D.STATUS_NONE):
+                dialog.dem_checkbox.setChecked(True)
+
     def _on_fill_source(self, dialog, key):
         """Dispatch an AOI fill-source choice from the dialog's dropdown."""
         if key == 'mission':
@@ -197,6 +282,8 @@ class TileFetchController(TranslationMixin):
                 buffer_m = suggest_buffer_m(images)
                 dialog.set_buffer(buffer_m)
             dialog.set_aoi(pad_bounds(raw, buffer_m))
+            # A fill is an explicit area choice: refresh captions AND defaults.
+            self._refresh_dialog_coverage(dialog, apply_defaults=True)
         finally:
             QApplication.restoreOverrideCursor()
 
