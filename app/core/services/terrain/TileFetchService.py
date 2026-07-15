@@ -39,14 +39,44 @@ OUTCOME_ABSENT = 'absent'        # confirmed 403/404 -> sparse coverage, benign
 OUTCOME_FAILED = 'failed'        # anything else -> a real failure to surface
 OUTCOME_CANCELLED = 'cancelled'
 
+
+def _platform_data_root() -> Path:
+    """Per-user application-data folder following each OS's convention."""
+    import sys
+    if sys.platform == 'win32':
+        base = os.environ.get('LOCALAPPDATA')
+        if base:
+            return Path(base) / 'ADIAT'
+    elif sys.platform == 'darwin':
+        return Path.home() / 'Library' / 'Application Support' / 'ADIAT'
+    else:
+        xdg = os.environ.get('XDG_DATA_HOME')
+        base = Path(xdg) if xdg else Path.home() / '.local' / 'share'
+        return base / 'adiat'
+    return Path.home() / '.adiat'
+
+
 # Central tile library: the default download destination. Unlike a mission's
 # results folder it is stable and mission-independent, so downloads accumulate
 # (manifests merge) instead of each mission's registration replacing the last.
-DEFAULT_LIBRARY_ROOT = Path.home() / '.adiat' / 'terrain_library'
+# Lives in the platform's standard per-user app-data location.
+DEFAULT_LIBRARY_ROOT = _platform_data_root() / 'terrain_library'
+
+# Pre-standard-paths location; still served if it already holds tiles.
+LEGACY_LIBRARY_ROOT = Path.home() / '.adiat' / 'terrain_library'
 
 
 def library_root() -> str:
-    """The central tile-library folder (created on demand by the fetch)."""
+    """The central tile-library folder (created on demand by the fetch).
+
+    An existing, non-empty legacy library keeps being used so previously
+    downloaded tiles are never stranded by the default moving.
+    """
+    try:
+        if LEGACY_LIBRARY_ROOT.is_dir() and any(LEGACY_LIBRARY_ROOT.iterdir()):
+            return str(LEGACY_LIBRARY_ROOT)
+    except OSError:
+        pass
     return str(DEFAULT_LIBRARY_ROOT)
 
 

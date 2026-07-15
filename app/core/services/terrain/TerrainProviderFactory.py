@@ -28,12 +28,20 @@ class TerrainProviderFactory:
         provider_id = provider_id or DEFAULT_PROVIDER_ID
 
         if provider_id == PROVIDER_USGS_3DEP_LOCAL:
+            import os
             manifest = settings_service.get_setting('Terrain3DEPManifestPath', '')
             tiles_dir = settings_service.get_setting('Terrain3DEPTilesDir', '')
             if not manifest or not tiles_dir:
                 logger.warning(
                     "TerrainProviderFactory: 3DEP paths not set in Preferences; "
                     "falling back to Terrarium."
+                )
+                return TerrariumProvider()
+            if not os.path.isfile(manifest) or not os.path.isdir(tiles_dir):
+                logger.warning(
+                    f"TerrainProviderFactory: registered 3DEP data is missing on "
+                    f"disk (manifest: {manifest}); falling back to Terrarium. "
+                    "Re-download or fix the paths in Preferences."
                 )
                 return TerrariumProvider()
             try:

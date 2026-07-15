@@ -5475,52 +5475,52 @@ Vuoi continuare?</translation>
         <translation>I dati di copertura sono pronti. Calcolare ora la heatmap della probabilità di rilevamento per questa missione? (Può richiedere diversi minuti.)</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="286"/>
+        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="291"/>
         <source>Your local USGS 3DEP tiles only partially cover this mission.</source>
         <translation>I tile locali USGS 3DEP coprono solo parzialmente questa missione.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="289"/>
+        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="294"/>
         <source>Your local USGS 3DEP tiles do not cover this mission.</source>
         <translation>I tile locali USGS 3DEP non coprono questa missione.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="293"/>
+        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="298"/>
         <source>Local Elevation Coverage</source>
         <translation>Copertura dell&apos;elevazione locale</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="295"/>
+        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="300"/>
         <source>Frames outside the local tiles will use online AWS Terrain Tiles (~30 m) elevation instead. You can download 1 m tiles for this area first, or continue with the fallback.</source>
         <translation>I fotogrammi fuori dai tile locali useranno l&apos;elevazione online di AWS Terrain Tiles (~30 m). Puoi prima scaricare i tile a 1 m per quest&apos;area oppure continuare con il fallback.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="298"/>
+        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="303"/>
         <source>Download Tiles...</source>
         <translation>Scarica tile...</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="300"/>
+        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="305"/>
         <source>Continue</source>
         <translation>Continua</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="329"/>
+        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="334"/>
         <source>POD calculation is unavailable</source>
         <translation>Il calcolo POD non è disponibile</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="348"/>
+        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="353"/>
         <source>The tile downloader is unavailable</source>
         <translation>Il downloader delle tile non è disponibile</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="378"/>
+        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="383"/>
         <source>Download Canopy Data?</source>
         <translation>Scaricare i dati della chioma?</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="379"/>
+        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="384"/>
         <source>No canopy-height data is configured for this mission.
 
 Download elevation and canopy tiles for this area now so the canopy overlay and terrain-aware detection coverage can use them?
@@ -5533,72 +5533,72 @@ Scaricare ora le tile di elevazione e chioma per quest&apos;area affinché la so
 Questo scarica l&apos;altezza chioma Meta/WRI (1 m) e la imposta come origine dati chioma, sostituendo qualsiasi selezione LANDFIRE (le tile LANDFIRE devono essere aggiunte manualmente).</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="574"/>
+        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="579"/>
         <source>Not covered — no looks</source>
         <translation>Non coperto — nessuna osservazione</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="575"/>
+        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="580"/>
         <source>Terrain occlusion</source>
         <translation>Occlusione del terreno</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="576"/>
+        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="581"/>
         <source>Canopy</source>
         <translation>Chioma</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="577"/>
+        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="582"/>
         <source>Image resolution (GSD)</source>
         <translation>Risoluzione immagine (GSD)</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="578"/>
+        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="583"/>
         <source>None</source>
         <translation>Nessuno</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="580"/>
+        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="585"/>
         <source>Unknown</source>
         <translation>Sconosciuto</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="760"/>
+        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="765"/>
         <source>Building canopy overlay...</source>
         <translation>Creazione della sovrapposizione della chioma...</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="786"/>
+        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="791"/>
         <source>No canopy data covers this area</source>
         <translation>Nessun dato sulla chioma copre quest&apos;area</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="837"/>
+        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="842"/>
         <source>POD: {pod}% (beta)   Looks: {looks}</source>
         <translation>POD: {pod}% (beta)   Osservazioni: {looks}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="840"/>
+        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="845"/>
         <source>Limiting factor: {factor}</source>
         <translation>Fattore limitante: {factor}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="848"/>
+        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="853"/>
         <source>Image {n}</source>
         <translation>Immagine {n}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="849"/>
+        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="854"/>
         <source>View {name}</source>
         <translation>Vista {name}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="852"/>
+        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="857"/>
         <source>Find location in images</source>
         <translation>Trova posizione nelle immagini</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="988"/>
+        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="993"/>
         <source>GPS coordinate not in any images</source>
         <translation>Coordinata GPS non presente in nessuna immagine</translation>
     </message>
@@ -10339,6 +10339,7 @@ Le modifiche si applicano immediatamente a tutte le finestre.</translation>
     </message>
     <message>
         <location filename="../app/core/controllers/Preferences.py" line="142"/>
+        <location filename="../app/core/controllers/Preferences.py" line="378"/>
         <source>3DEP is inactive until both paths are set — the AWS Terrain Tiles baseline is used. Use Download tiles… or Browse.</source>
         <translation>3DEP è inattivo finché non vengono impostati entrambi i percorsi: viene usata la base AWS Terrain Tiles. Usa Scarica tile… o Sfoglia.</translation>
     </message>
@@ -10369,77 +10370,87 @@ Le modifiche si applicano immediatamente a tutte le finestre.</translation>
     </message>
     <message>
         <location filename="../app/core/controllers/Preferences.py" line="300"/>
-        <location filename="../app/core/controllers/Preferences.py" line="621"/>
+        <location filename="../app/core/controllers/Preferences.py" line="644"/>
         <source>{version}_{date}</source>
         <translation>{version}_{date}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/Preferences.py" line="405"/>
+        <location filename="../app/core/controllers/Preferences.py" line="384"/>
+        <source>The registered 3DEP files no longer exist on disk — the AWS Terrain Tiles baseline is used. Re-download or fix the paths.</source>
+        <translation>I file 3DEP registrati non esistono più sul disco: viene usata la base AWS Terrain Tiles. Scarica di nuovo o correggi i percorsi.</translation>
+    </message>
+    <message>
+        <location filename="../app/core/controllers/Preferences.py" line="416"/>
         <source>Select 3DEP manifest CSV</source>
         <translation>Seleziona CSV manifest 3DEP</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/Preferences.py" line="407"/>
-        <location filename="../app/core/controllers/Preferences.py" line="459"/>
+        <location filename="../app/core/controllers/Preferences.py" line="418"/>
+        <location filename="../app/core/controllers/Preferences.py" line="482"/>
         <source>CSV files (*.csv);;All files (*)</source>
         <translation>File CSV (*.csv);;Tutti i file (*)</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/Preferences.py" line="417"/>
+        <location filename="../app/core/controllers/Preferences.py" line="428"/>
         <source>Select 3DEP tiles directory</source>
         <translation>Seleziona cartella tile 3DEP</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/Preferences.py" line="458"/>
+        <location filename="../app/core/controllers/Preferences.py" line="457"/>
+        <source>The registered canopy files no longer exist on disk — canopy is disabled. Re-download or fix the paths.</source>
+        <translation>I file della chioma registrati non esistono più sul disco: la chioma è disattivata. Scarica di nuovo o correggi i percorsi.</translation>
+    </message>
+    <message>
+        <location filename="../app/core/controllers/Preferences.py" line="481"/>
         <source>Select canopy manifest CSV</source>
         <translation>Seleziona il CSV manifest della chioma</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/Preferences.py" line="467"/>
+        <location filename="../app/core/controllers/Preferences.py" line="490"/>
         <source>Select canopy tiles directory</source>
         <translation>Seleziona la cartella delle tile della chioma</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/Preferences.py" line="478"/>
+        <location filename="../app/core/controllers/Preferences.py" line="501"/>
         <source>Download Tiles</source>
         <translation>Scarica tile</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/Preferences.py" line="479"/>
+        <location filename="../app/core/controllers/Preferences.py" line="502"/>
         <source>The tile downloader is unavailable:
 {error}</source>
         <translation>Il downloader delle tile non è disponibile:
 {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/Preferences.py" line="552"/>
+        <location filename="../app/core/controllers/Preferences.py" line="575"/>
         <source>{tiles} tiles ({size_mb:.1f} MB)</source>
         <translation>{tiles} tasselli ({size_mb:.1f} MB)</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/Preferences.py" line="544"/>
+        <location filename="../app/core/controllers/Preferences.py" line="567"/>
         <source>Not available</source>
         <translation>Non disponibile</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/Preferences.py" line="564"/>
-        <location filename="../app/core/controllers/Preferences.py" line="572"/>
-        <location filename="../app/core/controllers/Preferences.py" line="600"/>
+        <location filename="../app/core/controllers/Preferences.py" line="587"/>
+        <location filename="../app/core/controllers/Preferences.py" line="595"/>
+        <location filename="../app/core/controllers/Preferences.py" line="623"/>
         <source>Error</source>
         <translation>Errore</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/Preferences.py" line="573"/>
+        <location filename="../app/core/controllers/Preferences.py" line="596"/>
         <source>Terrain service not available.</source>
         <translation>Servizio terreno non disponibile.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/Preferences.py" line="579"/>
+        <location filename="../app/core/controllers/Preferences.py" line="602"/>
         <source>Clear Terrain Cache</source>
         <translation>Cancella Cache Terreno</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/Preferences.py" line="581"/>
+        <location filename="../app/core/controllers/Preferences.py" line="604"/>
         <source>Are you sure you want to clear all cached terrain elevation data?
 
 This will require re-downloading tiles when terrain elevation is used.</source>
@@ -10448,22 +10459,22 @@ This will require re-downloading tiles when terrain elevation is used.</source>
 Ciò richiederà il nuovo download dei tasselli quando verrà utilizzata l&apos;elevazione del terreno.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/Preferences.py" line="594"/>
+        <location filename="../app/core/controllers/Preferences.py" line="617"/>
         <source>Cache Cleared</source>
         <translation>Cache Cancellata</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/Preferences.py" line="595"/>
+        <location filename="../app/core/controllers/Preferences.py" line="618"/>
         <source>Cleared {count} cached terrain tiles.</source>
         <translation>Cancellati {count} tasselli di terreno dalla cache.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/Preferences.py" line="601"/>
+        <location filename="../app/core/controllers/Preferences.py" line="624"/>
         <source>Failed to clear cache: {error}</source>
         <translation>Impossibile cancellare la cache: {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/Preferences.py" line="608"/>
+        <location filename="../app/core/controllers/Preferences.py" line="631"/>
         <source>Select a Drone Sensor File</source>
         <translation>Seleziona un File Sensore Drone</translation>
     </message>
@@ -10510,6 +10521,7 @@ Ciò richiederà il nuovo download dei tasselli quando verrà utilizzata l&apos;
     </message>
     <message>
         <location filename="../app/core/controllers/Preferences.py" line="226"/>
+        <location filename="../app/core/controllers/Preferences.py" line="451"/>
         <source>Canopy is disabled until both paths are set — use Download tiles… or Browse.</source>
         <translation>La chioma è disabilitata finché entrambi i percorsi non sono impostati — usa Scarica tile… o Sfoglia.</translation>
     </message>
@@ -10519,22 +10531,22 @@ Ciò richiederà il nuovo download dei tasselli quando verrà utilizzata l&apos;
         <translation>Scarica le tile DEM e/o chioma per un&apos;area di interesse e registrale qui. Nota: il download della chioma usa dati Meta/WRI e li registra come origine dati chioma.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/Preferences.py" line="561"/>
+        <location filename="../app/core/controllers/Preferences.py" line="584"/>
         <source>N/A (local tiles)</source>
         <translation>N/D (tile locali)</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/Preferences.py" line="610"/>
+        <location filename="../app/core/controllers/Preferences.py" line="633"/>
         <source>CSV Files (*.csv)</source>
         <translation>File CSV (*.csv)</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/Preferences.py" line="636"/>
+        <location filename="../app/core/controllers/Preferences.py" line="659"/>
         <source>Restart Required</source>
         <translation>Riavvio Richiesto</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/Preferences.py" line="637"/>
+        <location filename="../app/core/controllers/Preferences.py" line="660"/>
         <source>Please restart the application for language changes to take effect.</source>
         <translation>Riavvia l&apos;applicazione affinché le modifiche alla lingua abbiano effetto.</translation>
     </message>
@@ -14052,67 +14064,67 @@ Aggressivo</translation>
 <context>
     <name>TileFetchController</name>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="148"/>
+        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="150"/>
         <source>Invalid Area</source>
         <translation>Area non valida</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="149"/>
+        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="151"/>
         <source>Please enter a valid bounding box.</source>
         <translation>Inserisci un riquadro di delimitazione valido.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="152"/>
+        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="154"/>
         <source>No Output Folder</source>
         <translation>Nessuna cartella di output</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="153"/>
+        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="155"/>
         <source>Please choose an output folder.</source>
         <translation>Scegli una cartella di output.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="156"/>
+        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="158"/>
         <source>No Dataset</source>
         <translation>Nessun set di dati</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="157"/>
+        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="159"/>
         <source>Please select at least one dataset.</source>
         <translation>Seleziona almeno un set di dati.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="276"/>
+        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="280"/>
         <source>No GPS Found</source>
         <translation>Nessun GPS trovato</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="277"/>
+        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="281"/>
         <source>No GPS positions were found in the {source} images.</source>
         <translation>Nessuna posizione GPS trovata nelle immagini di {source}.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="292"/>
+        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="296"/>
         <source>Select image folder</source>
         <translation>Seleziona la cartella delle immagini</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="301"/>
+        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="305"/>
         <source>No Images</source>
         <translation>Nessuna immagine</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="302"/>
+        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="306"/>
         <source>No images were found in the selected folder.</source>
         <translation>Nessuna immagine trovata nella cartella selezionata.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="348"/>
+        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="352"/>
         <source>Replace Canopy Source?</source>
         <translation>Sostituire l&apos;origine dati chioma?</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="349"/>
+        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="353"/>
         <source>A LANDFIRE canopy source is currently configured.
 
 Register the downloaded Meta/WRI canopy tiles instead? (Your LANDFIRE files stay on disk; only the selected source changes.)</source>
@@ -14121,78 +14133,78 @@ Register the downloaded Meta/WRI canopy tiles instead? (Your LANDFIRE files stay
 Registrare invece le tile chioma Meta/WRI scaricate? (I file LANDFIRE restano su disco; cambia solo l&apos;origine selezionata.)</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="358"/>
+        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="362"/>
         <source>Elevation (DEM)</source>
         <translation>Elevazione (DEM)</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="358"/>
+        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="362"/>
         <source>Canopy height</source>
         <translation>Altezza della chioma</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="375"/>
+        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="379"/>
         <source>{product}: cancelled before completion.</source>
         <translation>{product}: annullato prima del completamento.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="377"/>
+        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="381"/>
         <source>{product}: {failed} tile(s) failed to download.</source>
         <translation>{product}: {failed} tile non scaricate.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="380"/>
+        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="384"/>
         <source>{product}: no data covers this area.</source>
         <translation>{product}: nessun dato copre quest&apos;area.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="382"/>
+        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="386"/>
         <source>{product}: nothing was downloaded.</source>
         <translation>{product}: non è stato scaricato nulla.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="389"/>
+        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="393"/>
         <source>{product}: registered as the active source.</source>
         <translation>{product}: registrato come origine attiva.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="392"/>
+        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="396"/>
         <source>{product}: NOT registered (no usable tiles).</source>
         <translation>{product}: NON registrato (nessuna tile utilizzabile).</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="401"/>
+        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="405"/>
         <source>Download Finished with Problems</source>
         <translation>Download completato con problemi</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="407"/>
+        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="411"/>
         <source>Download Complete</source>
         <translation>Download completato</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="396"/>
-        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="403"/>
+        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="400"/>
+        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="407"/>
         <source>Downloaded {count} tiles.</source>
         <translation>Scaricate {count} tile.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="418"/>
+        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="422"/>
         <source>Download Cancelled</source>
         <translation>Download annullato</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="419"/>
+        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="423"/>
         <source>The download was cancelled. No tiles were registered.</source>
         <translation>Il download è stato annullato. Nessuna tile è stata registrata.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="426"/>
+        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="430"/>
         <source>Download Error</source>
         <translation>Errore di download</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="427"/>
+        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="431"/>
         <source>Tile download failed:
 {error}</source>
         <translation>Download delle tile non riuscito:

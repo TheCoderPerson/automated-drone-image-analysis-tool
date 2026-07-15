@@ -371,10 +371,21 @@ class Preferences(TranslationMixin, QDialog, Ui_Preferences):
         ):
             w.setVisible(is_local)
         if hasattr(self, 'terrain3DEPPathsWarningLabel'):
-            incomplete = is_local and not (
-                self.terrain3DEPManifestEdit.text().strip()
-                and self.terrain3DEPTilesEdit.text().strip())
-            self.terrain3DEPPathsWarningLabel.setVisible(incomplete)
+            manifest = self.terrain3DEPManifestEdit.text().strip()
+            tiles = self.terrain3DEPTilesEdit.text().strip()
+            if is_local and not (manifest and tiles):
+                self.terrain3DEPPathsWarningLabel.setText(self.tr(
+                    "3DEP is inactive until both paths are set — the AWS Terrain "
+                    "Tiles baseline is used. Use Download tiles… or Browse."))
+                self.terrain3DEPPathsWarningLabel.setVisible(True)
+            elif is_local and not (os.path.isfile(manifest) and os.path.isdir(tiles)):
+                # Registered but gone from disk (results folder moved/deleted).
+                self.terrain3DEPPathsWarningLabel.setText(self.tr(
+                    "The registered 3DEP files no longer exist on disk — the AWS "
+                    "Terrain Tiles baseline is used. Re-download or fix the paths."))
+                self.terrain3DEPPathsWarningLabel.setVisible(True)
+            else:
+                self.terrain3DEPPathsWarningLabel.setVisible(False)
 
     def _update_terrain_provider(self):
         """Persist the active terrain provider id and refresh dependent UI."""
@@ -433,9 +444,21 @@ class Preferences(TranslationMixin, QDialog, Ui_Preferences):
         ):
             w.setVisible(needs_paths)
         if hasattr(self, 'canopyPathsWarningLabel'):
-            incomplete = needs_paths and not (
-                self.canopyManifestEdit.text().strip() and self.canopyTilesEdit.text().strip())
-            self.canopyPathsWarningLabel.setVisible(incomplete)
+            manifest = self.canopyManifestEdit.text().strip()
+            tiles = self.canopyTilesEdit.text().strip()
+            if needs_paths and not (manifest and tiles):
+                self.canopyPathsWarningLabel.setText(self.tr(
+                    "Canopy is disabled until both paths are set — "
+                    "use Download tiles… or Browse."))
+                self.canopyPathsWarningLabel.setVisible(True)
+            elif needs_paths and not (os.path.isfile(manifest) and os.path.isdir(tiles)):
+                # Registered but gone from disk (results folder moved/deleted).
+                self.canopyPathsWarningLabel.setText(self.tr(
+                    "The registered canopy files no longer exist on disk — canopy "
+                    "is disabled. Re-download or fix the paths."))
+                self.canopyPathsWarningLabel.setVisible(True)
+            else:
+                self.canopyPathsWarningLabel.setVisible(False)
 
     def _update_canopy_kind(self):
         kind = self.canopyKindComboBox.currentData() or DEFAULT_CANOPY_KIND

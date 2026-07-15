@@ -267,6 +267,11 @@ class GPSMapController(QObject):
             return True
         if provider_id != 'usgs_3dep_local' or not (manifest and tiles):
             return True
+        if not (os.path.isfile(manifest) and os.path.isdir(tiles)):
+            # Dangling registration: the factory already falls back to the
+            # online baseline, so a "your 3DEP doesn't cover this" prompt
+            # would be misleading.
+            return True
 
         try:
             from core.services.terrain.USGS3DEPProvider import USGS3DEPProvider

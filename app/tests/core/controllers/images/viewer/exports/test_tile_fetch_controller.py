@@ -768,13 +768,25 @@ def test_elevation_available_when_provider_unset_defaults_to_terrarium(app):
     assert ctrl._elevation_already_available() is True
 
 
-def test_elevation_available_for_registered_local_3dep(app):
-    """Local 3DEP with valid manifest+tiles paths is already usable."""
+def test_elevation_available_for_registered_local_3dep(app, tmp_path):
+    """Local 3DEP with valid manifest+tiles paths (existing on disk) is usable."""
+    manifest = tmp_path / "dem_manifest.csv"
+    manifest.write_text("filename,minX,minY,maxX,maxY\n")
     ctrl = TileFetchController(MagicMock(), _settings_with({
         'TerrainProviderId': 'usgs_3dep_local',
-        'Terrain3DEPManifestPath': 'C:/dem/manifest.csv',
-        'Terrain3DEPTilesDir': 'C:/dem/tiles'}))
+        'Terrain3DEPManifestPath': str(manifest),
+        'Terrain3DEPTilesDir': str(tmp_path)}))
     assert ctrl._elevation_already_available() is True
+
+
+def test_elevation_not_available_when_3dep_files_missing(app, tmp_path):
+    """Registered paths that dangle (moved/deleted results folder) are NOT a
+    usable elevation source - the DEM download should default back on."""
+    ctrl = TileFetchController(MagicMock(), _settings_with({
+        'TerrainProviderId': 'usgs_3dep_local',
+        'Terrain3DEPManifestPath': str(tmp_path / "gone" / "dem_manifest.csv"),
+        'Terrain3DEPTilesDir': str(tmp_path / "gone")}))
+    assert ctrl._elevation_already_available() is False
 
 
 def test_elevation_not_available_for_3dep_without_paths(app):
@@ -932,15 +944,17 @@ def test_refresh_coverage_never_touches_canopy_checkbox(app):
     assert dialog.canopy_checkbox.isChecked() is True
 
 
-def test_coverage_probes_built_from_settings_and_closed(app):
+def test_coverage_probes_built_from_settings_and_closed(app, tmp_path):
     """Probes come from the registered paths and are closed after run_fetch."""
     from unittest.mock import patch
     from PySide6.QtWidgets import QDialog
 
+    manifest = tmp_path / "dem_manifest.csv"
+    manifest.write_text("filename,minX,minY,maxX,maxY\n")
     settings = MagicMock()
     settings.get_setting.side_effect = lambda k, default='': {
-        'Terrain3DEPManifestPath': 'C:/dem/m.csv',
-        'Terrain3DEPTilesDir': 'C:/dem/tiles',
+        'Terrain3DEPManifestPath': str(manifest),
+        'Terrain3DEPTilesDir': str(tmp_path),
     }.get(k, default)
     ctrl = TileFetchController(MagicMock(), settings)
 
@@ -957,10 +971,30 @@ def test_coverage_probes_built_from_settings_and_closed(app):
         dlg.get_bounds.return_value = _BOUNDS
         ctrl.run_fetch()
 
-    MockDem.assert_called_once_with('C:/dem/m.csv', 'C:/dem/tiles')
+    MockDem.assert_called_once_with(str(manifest), str(tmp_path))
     dem_probe.close.assert_called_once()
     canopy_probe.close.assert_called_once()
     assert ctrl._coverage_probes is None
+
+
+def test_coverage_probe_skips_dangling_dem_paths(app, tmp_path):
+    """Registered-but-missing 3DEP paths read as 'nothing registered'."""
+    from unittest.mock import patch
+
+    settings = MagicMock()
+    settings.get_setting.side_effect = lambda k, default='': {
+        'Terrain3DEPManifestPath': str(tmp_path / "gone" / "m.csv"),
+        'Terrain3DEPTilesDir': str(tmp_path / "gone"),
+    }.get(k, default)
+    ctrl = TileFetchController(MagicMock(), settings)
+
+    with patch("core.services.terrain.USGS3DEPProvider.USGS3DEPProvider") as MockDem, \
+         patch("core.services.terrain.CanopyServiceFactory.create_canopy_service",
+               return_value=None):
+        probes = ctrl._get_coverage_probes()
+
+    MockDem.assert_not_called()
+    assert probes['dem'] is None
 
 
 def test_coverage_probes_none_when_unregistered(app):

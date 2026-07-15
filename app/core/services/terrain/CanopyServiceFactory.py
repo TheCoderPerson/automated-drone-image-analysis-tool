@@ -7,6 +7,8 @@ Terrain3DEP* pattern. Returns None when unconfigured, which the POD pipeline
 treats as "no canopy" (transmittance = 1).
 """
 
+import os
+
 from core.services.LoggerService import LoggerService
 
 CANOPY_KIND_NONE = 'none'
@@ -34,6 +36,15 @@ class CanopyServiceFactory:
             LoggerService().info(
                 "CanopyServiceFactory: no canopy source configured (paths unset); "
                 "canopy overlay unavailable.")
+            return None
+        if not os.path.isfile(manifest) or not os.path.isdir(tiles_dir):
+            # Registered paths that dangle (results folder moved/deleted) must
+            # not construct a service that error-logs on every open; say what
+            # happened once and disable canopy cleanly.
+            LoggerService().warning(
+                f"CanopyServiceFactory: registered canopy data is missing on disk "
+                f"(manifest: {manifest}); canopy disabled. Re-download or fix the "
+                "paths in Preferences.")
             return None
 
         try:

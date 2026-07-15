@@ -145,12 +145,47 @@ def test_3dep_warning_shown_when_local_selected_without_paths(preferences):
     assert "inactive" in preferences.terrain3DEPPathsWarningLabel.text()
 
 
-def test_3dep_warning_clears_once_both_paths_set(preferences):
+def test_3dep_warning_clears_once_both_paths_set(preferences, tmp_path):
+    manifest = tmp_path / "dem_manifest.csv"
+    manifest.write_text("filename,minX,minY,maxX,maxY\n")
     idx = preferences.terrainProviderComboBox.findData('usgs_3dep_local')
     preferences.terrainProviderComboBox.setCurrentIndex(idx)
-    preferences.terrain3DEPManifestEdit.setText("C:/dem/dem_manifest.csv")
+    preferences.terrain3DEPManifestEdit.setText(str(manifest))
     preferences._update_terrain_3dep_manifest()
     assert not preferences.terrain3DEPPathsWarningLabel.isHidden()  # tiles still missing
-    preferences.terrain3DEPTilesEdit.setText("C:/dem")
+    preferences.terrain3DEPTilesEdit.setText(str(tmp_path))
     preferences._update_terrain_3dep_tiles()
     assert preferences.terrain3DEPPathsWarningLabel.isHidden()
+
+
+def test_3dep_warning_flags_missing_files(preferences, tmp_path):
+    """Paths set but gone from disk (moved/deleted results folder) show the
+    dangling-registration message, not the paths-unset one."""
+    idx = preferences.terrainProviderComboBox.findData('usgs_3dep_local')
+    preferences.terrainProviderComboBox.setCurrentIndex(idx)
+    preferences.terrain3DEPManifestEdit.setText(str(tmp_path / "gone" / "m.csv"))
+    preferences.terrain3DEPTilesEdit.setText(str(tmp_path / "gone"))
+    preferences._refresh_terrain_provider_visibility()
+    assert not preferences.terrain3DEPPathsWarningLabel.isHidden()
+    assert "no longer exist" in preferences.terrain3DEPPathsWarningLabel.text()
+
+
+def test_3dep_warning_hidden_when_files_exist(preferences, tmp_path):
+    manifest = tmp_path / "dem_manifest.csv"
+    manifest.write_text("filename,minX,minY,maxX,maxY\n")
+    idx = preferences.terrainProviderComboBox.findData('usgs_3dep_local')
+    preferences.terrainProviderComboBox.setCurrentIndex(idx)
+    preferences.terrain3DEPManifestEdit.setText(str(manifest))
+    preferences.terrain3DEPTilesEdit.setText(str(tmp_path))
+    preferences._refresh_terrain_provider_visibility()
+    assert preferences.terrain3DEPPathsWarningLabel.isHidden()
+
+
+def test_canopy_warning_flags_missing_files(preferences, tmp_path):
+    cidx = preferences.canopyKindComboBox.findData('meta')
+    preferences.canopyKindComboBox.setCurrentIndex(cidx)
+    preferences.canopyManifestEdit.setText(str(tmp_path / "gone" / "chm_manifest.csv"))
+    preferences.canopyTilesEdit.setText(str(tmp_path / "gone"))
+    preferences._refresh_canopy_visibility()
+    assert not preferences.canopyPathsWarningLabel.isHidden()
+    assert "no longer exist" in preferences.canopyPathsWarningLabel.text()

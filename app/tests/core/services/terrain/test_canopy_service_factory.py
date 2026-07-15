@@ -78,3 +78,26 @@ def test_construction_raises_returns_none(tmp_path):
     with patch('core.services.terrain.CanopyService.CanopyService',
                side_effect=RuntimeError("boom")):
         assert CanopyServiceFactory.create_from_settings(s) is None
+
+
+def test_registered_but_missing_on_disk_returns_none_with_warning(tmp_path):
+    """Dangling registration (results folder moved/deleted) must disable canopy
+    cleanly with a WARNING - not construct a service that ERROR-logs 'manifest
+    not found' on every viewer/map open."""
+    s = _settings({'CanopyKind': 'meta',
+                   'CanopyManifestPath': str(tmp_path / "gone" / "chm_manifest.csv"),
+                   'CanopyTilesDir': str(tmp_path / "gone")})
+    with patch('core.services.terrain.CanopyServiceFactory.LoggerService') as MockLog:
+        logger = MockLog.return_value
+        assert CanopyServiceFactory.create_from_settings(s) is None
+    logger.warning.assert_called_once()
+    assert "missing on disk" in logger.warning.call_args.args[0]
+
+
+def test_manifest_present_but_tiles_dir_missing_returns_none(tmp_path):
+    manifest = tmp_path / "m.csv"
+    manifest.write_text("filename,product,minX,minY,maxX,maxY\n")
+    s = _settings({'CanopyKind': 'meta',
+                   'CanopyManifestPath': str(manifest),
+                   'CanopyTilesDir': str(tmp_path / "nonexistent_tiles")})
+    assert CanopyServiceFactory.create_from_settings(s) is None

@@ -117,7 +117,9 @@ class TileFetchController(TranslationMixin):
         if provider == PROVIDER_USGS_3DEP_LOCAL:
             manifest = self.settings_service.get_setting('Terrain3DEPManifestPath', '')
             tiles = self.settings_service.get_setting('Terrain3DEPTilesDir', '')
-            return bool(manifest and tiles)
+            # Paths that dangle (moved/deleted results folder) are not usable.
+            return bool(manifest and tiles
+                        and os.path.isfile(manifest) and os.path.isdir(tiles))
         return False
 
     def run_fetch(self, default_bounds=None, mission_images=None, default_output_dir=None):
@@ -193,7 +195,9 @@ class TileFetchController(TranslationMixin):
             try:
                 manifest = self.settings_service.get_setting('Terrain3DEPManifestPath', '')
                 tiles = self.settings_service.get_setting('Terrain3DEPTilesDir', '')
-                if manifest and tiles:
+                # Dangling paths read as "nothing registered", not an error.
+                if (manifest and tiles
+                        and os.path.isfile(manifest) and os.path.isdir(tiles)):
                     from core.services.terrain.USGS3DEPProvider import USGS3DEPProvider
                     dem = USGS3DEPProvider(manifest, tiles)
             except Exception as e:

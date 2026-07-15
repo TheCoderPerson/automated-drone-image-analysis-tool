@@ -492,3 +492,39 @@ def test_offline_only_initialized_from_settings(tmp_path):
                           provider_id=PROVIDER_TERRARIUM, settings_service=settings)
 
     assert svc.offline_only is True
+
+
+# ---------------------------------------------------------------------------
+# Factory: dangling 3DEP registration falls back to the online baseline
+# ---------------------------------------------------------------------------
+
+def test_factory_falls_back_when_3dep_files_missing(tmp_path):
+    """Registered 3DEP paths that no longer exist on disk (moved/deleted
+    results folder) must fall back to Terrarium with a warning instead of
+    building a provider that ERROR-logs on first use."""
+    from core.services.terrain.TerrainProviderFactory import TerrainProviderFactory
+    from core.services.terrain.ElevationProvider import TerrariumProvider
+
+    settings = MagicMock()
+    settings.get_setting.side_effect = lambda k, d='': {
+        'Terrain3DEPManifestPath': str(tmp_path / "gone" / "dem_manifest.csv"),
+        'Terrain3DEPTilesDir': str(tmp_path / "gone"),
+    }.get(k, d)
+
+    provider = TerrainProviderFactory.create('usgs_3dep_local', settings)
+    assert isinstance(provider, TerrariumProvider)
+
+
+def test_factory_builds_3dep_when_files_exist(tmp_path):
+    from core.services.terrain.TerrainProviderFactory import TerrainProviderFactory
+
+    manifest = tmp_path / "dem_manifest.csv"
+    manifest.write_text("filename,minX,minY,maxX,maxY\n")
+    settings = MagicMock()
+    settings.get_setting.side_effect = lambda k, d='': {
+        'Terrain3DEPManifestPath': str(manifest),
+        'Terrain3DEPTilesDir': str(tmp_path),
+    }.get(k, d)
+
+    provider = TerrainProviderFactory.create('usgs_3dep_local', settings)
+    assert provider.get_provider_kind() == 'local_geotiff'

@@ -687,9 +687,15 @@ def test_prompt_body_warns_about_meta_wri_override(app):
 _GPS = [{'latitude': 38.70, 'longitude': -120.50},
         {'latitude': 38.72, 'longitude': -120.46}]
 
-_LOCAL_3DEP = {'TerrainProviderId': 'usgs_3dep_local',
-               'Terrain3DEPManifestPath': 'C:/dem/m.csv',
-               'Terrain3DEPTilesDir': 'C:/dem/tiles'}
+
+def _local_3dep_values(tmp_path):
+    """Settings for a local-3DEP registration whose files exist on disk
+    (the coverage check validates existence before probing)."""
+    manifest = tmp_path / "dem_manifest.csv"
+    manifest.write_text("filename,minX,minY,maxX,maxY\n")
+    return {'TerrainProviderId': 'usgs_3dep_local',
+            'Terrain3DEPManifestPath': str(manifest),
+            'Terrain3DEPTilesDir': str(tmp_path)}
 
 
 def _ctrl_with_settings(app, values):
@@ -715,8 +721,8 @@ def test_pod_coverage_check_passes_for_online_provider(app):
     MockP.assert_not_called()
 
 
-def test_pod_coverage_check_passes_on_full_coverage(app):
-    ctrl = _ctrl_with_settings(app, _LOCAL_3DEP)
+def test_pod_coverage_check_passes_on_full_coverage(app, tmp_path):
+    ctrl = _ctrl_with_settings(app, _local_3dep_values(tmp_path))
     ctx, probe = _probe_ctx('full')
     with ctx, patch(
             "core.controllers.images.viewer.GPSMapController.QMessageBox") as mb:
@@ -728,8 +734,8 @@ def test_pod_coverage_check_passes_on_full_coverage(app):
     assert ctrl._dem_coverage_prompt_shown is False
 
 
-def test_pod_coverage_partial_continue_proceeds(app):
-    ctrl = _ctrl_with_settings(app, _LOCAL_3DEP)
+def test_pod_coverage_partial_continue_proceeds(app, tmp_path):
+    ctrl = _ctrl_with_settings(app, _local_3dep_values(tmp_path))
     ctx, _ = _probe_ctx('partial')
     with ctx, patch(
             "core.controllers.images.viewer.GPSMapController.QMessageBox") as MockBox:
@@ -744,8 +750,8 @@ def test_pod_coverage_partial_continue_proceeds(app):
     assert ctrl._dem_coverage_prompt_shown is True
 
 
-def test_pod_coverage_none_download_defers(app):
-    ctrl = _ctrl_with_settings(app, _LOCAL_3DEP)
+def test_pod_coverage_none_download_defers(app, tmp_path):
+    ctrl = _ctrl_with_settings(app, _local_3dep_values(tmp_path))
     ctrl.on_canopy_download_requested = MagicMock()
     ctx, _ = _probe_ctx('none')
     with ctx, patch(
@@ -760,16 +766,16 @@ def test_pod_coverage_none_download_defers(app):
     ctrl.on_canopy_download_requested.assert_called_once()
 
 
-def test_pod_coverage_prompt_only_once_per_session(app):
-    ctrl = _ctrl_with_settings(app, _LOCAL_3DEP)
+def test_pod_coverage_prompt_only_once_per_session(app, tmp_path):
+    ctrl = _ctrl_with_settings(app, _local_3dep_values(tmp_path))
     ctrl._dem_coverage_prompt_shown = True
     with patch("core.services.terrain.USGS3DEPProvider.USGS3DEPProvider") as MockP:
         assert ctrl._confirm_local_dem_coverage() is True
     MockP.assert_not_called()
 
 
-def test_pod_coverage_probe_failure_does_not_block(app):
-    ctrl = _ctrl_with_settings(app, _LOCAL_3DEP)
+def test_pod_coverage_probe_failure_does_not_block(app, tmp_path):
+    ctrl = _ctrl_with_settings(app, _local_3dep_values(tmp_path))
     with patch("core.services.terrain.USGS3DEPProvider.USGS3DEPProvider",
                side_effect=RuntimeError("pandas missing")):
         assert ctrl._confirm_local_dem_coverage() is True
@@ -840,3 +846,15 @@ def test_canopy_service_unfingerprinted_cache_is_trusted(app):
     with patch.object(GPSMapController, '_canopy_config_fingerprint',
                       return_value='meta|C:/m.csv|C:/tiles'):
         assert ctrl._canopy_service() is svc
+
+
+def test_pod_coverage_check_skips_dangling_registration(app, tmp_path):
+    """Registered 3DEP paths missing on disk: the factory falls back to the
+    online baseline, so no 3DEP-coverage prompt is shown."""
+    values = {'TerrainProviderId': 'usgs_3dep_local',
+              'Terrain3DEPManifestPath': str(tmp_path / "gone" / "m.csv"),
+              'Terrain3DEPTilesDir': str(tmp_path / "gone")}
+    ctrl = _ctrl_with_settings(app, values)
+    with patch("core.services.terrain.USGS3DEPProvider.USGS3DEPProvider") as MockP:
+        assert ctrl._confirm_local_dem_coverage() is True
+    MockP.assert_not_called()

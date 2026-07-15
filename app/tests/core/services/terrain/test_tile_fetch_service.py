@@ -497,11 +497,39 @@ def test_fetch_meta_windowed_absent_probe_skips(tmp_path):
 
 # --- central tile library + collision-safe DEM naming -------------------------
 
-def test_library_root_is_stable_and_user_scoped():
-    from core.services.terrain.TileFetchService import library_root
-    root = library_root()
-    assert root == library_root()                    # stable across calls
-    assert '.adiat' in root and 'terrain_library' in root
+def test_library_root_is_stable_and_platform_standard(tmp_path, monkeypatch):
+    """The library lives in the platform's per-user app-data location."""
+    import importlib
+    tfs = importlib.import_module('core.services.terrain.TileFetchService')
+    # Point the legacy root at an empty location so the platform path wins.
+    monkeypatch.setattr(tfs, 'LEGACY_LIBRARY_ROOT', tmp_path / "no_legacy")
+    root = tfs.library_root()
+    assert root == tfs.library_root()                # stable across calls
+    assert root == str(tfs.DEFAULT_LIBRARY_ROOT)
+    assert 'terrain_library' in root
+    # Windows: %LOCALAPPDATA%\ADIAT; macOS: Application Support; Linux: XDG.
+    assert 'ADIAT' in root or 'adiat' in root
+
+
+def test_library_root_prefers_populated_legacy_location(tmp_path, monkeypatch):
+    """A pre-existing legacy library (~/.adiat) keeps being served so old
+    downloads are never stranded by the default moving."""
+    import importlib
+    tfs = importlib.import_module('core.services.terrain.TileFetchService')
+    legacy = tmp_path / "legacy_lib"
+    legacy.mkdir()
+    (legacy / "dem").mkdir()
+    monkeypatch.setattr(tfs, 'LEGACY_LIBRARY_ROOT', legacy)
+    assert tfs.library_root() == str(legacy)
+
+
+def test_library_root_ignores_empty_legacy_location(tmp_path, monkeypatch):
+    import importlib
+    tfs = importlib.import_module('core.services.terrain.TileFetchService')
+    legacy = tmp_path / "legacy_lib"
+    legacy.mkdir()   # exists but empty -> platform default wins
+    monkeypatch.setattr(tfs, 'LEGACY_LIBRARY_ROOT', legacy)
+    assert tfs.library_root() == str(tfs.DEFAULT_LIBRARY_ROOT)
 
 
 def test_dem_filenames_carry_aoi_digest(tmp_path):
