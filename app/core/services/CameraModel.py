@@ -54,10 +54,20 @@ class CameraModel:
         self.agl_m = float(agl_m)
         self.width = float(width)
         self.height = float(height)
+        self.pitch_deg = float(pitch_deg)  # -90 = nadir (straight down)
 
         # Intrinsics: focal length in pixels, principal point at image centre.
-        self.fx = focal_mm / (sensor_w_mm / width)
-        self.fy = focal_mm / (sensor_h_mm / height)
+        # Sensors have square pixels, so fx == fy. The datasheet sensor size
+        # describes the *full* sensor, but many images are a cropped-aspect
+        # readout (e.g. a 16:9 frame crops the sensor height, a 4:3 frame crops
+        # a 3:2 sensor's width). On the cropped axis, datasheet_mm / image_px
+        # overstates the pixel pitch and would shrink that axis' focal length,
+        # skewing the projection. The uncropped axis yields the true pitch, so
+        # take the smaller of the two (the cropped axis is always the inflated
+        # one) and apply it to both axes.
+        pixel_pitch_mm = min(sensor_w_mm / width, sensor_h_mm / height)
+        self.fx = focal_mm / pixel_pitch_mm
+        self.fy = self.fx
         self.cx = width / 2.0
         self.cy = height / 2.0
 

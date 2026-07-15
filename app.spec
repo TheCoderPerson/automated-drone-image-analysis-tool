@@ -3,6 +3,8 @@ import glob
 import os
 # -*- mode: python -*-
 
+from PyInstaller.utils.hooks import collect_data_files, collect_submodules
+
 block_cipher = None
 
 try:
@@ -17,6 +19,19 @@ translation_candidates = [
     os.path.join(spec_dir, 'translations', 'app_nl.qm'),
 ]
 translation_datas = [(path, 'translations') for path in translation_candidates if os.path.exists(path)]
+
+# timezonefinder ships its boundary polygons as package data and tzdata ships
+# the IANA zone database; both are loaded at runtime (Person Size Reference
+# shadow fallback: GPS position -> IANA zone -> UTC). PyInstaller's static
+# analysis does not pick up these data files, so collect them explicitly.
+tz_datas = collect_data_files('timezonefinder') + collect_data_files('tzdata')
+# tzdata exposes each IANA area as its own subpackage; zoneinfo loads them via
+# importlib.resources, so every submodule must be an explicit hidden import or
+# ZoneInfo(...) raises ZoneInfoNotFoundError in the frozen app and the
+# GPS-timezone shadow fallback silently goes unavailable. Collect them here
+# rather than relying on PyInstaller's bundled hook-zoneinfo chain, which only
+# injects tzdata on Windows.
+tz_hiddenimports = ['tzdata'] + collect_submodules('tzdata')
 
 # Runtime hook: default packaged builds to WARNING-level logging so shipped apps
 # don't accumulate verbose debug/info logs on users' machines. It runs inside the
@@ -44,11 +59,15 @@ if platform.system() == 'Windows':
                     # AI Person Detector models
                     ('app/algorithms/models/AIPersonDetector/ai_person_model_V3_640.onnx', 'algorithms/models/AIPersonDetector'),
                     ('app/algorithms/models/AIPersonDetector/ai_person_model_V3_1024.onnx', 'algorithms/models/AIPersonDetector')
-                    ] + translation_datas,
+                    ] + translation_datas + tz_datas,
 
                 hiddenimports=[
                     'shapely',
                     'shapely.geometry',
+                    # timezonefinder + its h3 backend power the GPS-position ->
+                    # timezone shadow fallback in Person Size Reference.
+                    'timezonefinder',
+                    'h3',
                     # pysolar dispatches between numeric_numpy / numeric_python at runtime;
                     # PyInstaller's static analysis misses the fallback path.
                     'pysolar',
@@ -95,7 +114,7 @@ if platform.system() == 'Windows':
                     'algorithms.streaming.ColorAnomalyAndMotionDetection.services.utils',
                     'algorithms.streaming.ColorAnomalyAndMotionDetection.views',
                     'algorithms.streaming.ColorAnomalyAndMotionDetection.views.ColorAnomalyAndMotionDetectionControlWidget',
-                ],
+                ] + tz_hiddenimports,
                 hookspath=None,
                 runtime_hooks=adiat_runtime_hooks,
                 excludes=['PyQt5', 'PyQt6'],
@@ -117,10 +136,14 @@ elif platform.system() == 'Darwin':
                         # AI Person Detector models
                         ('app/algorithms/models/AIPersonDetector/ai_person_model_V3_640.onnx', 'algorithms/models/AIPersonDetector'),
                         ('app/algorithms/models/AIPersonDetector/ai_person_model_V3_1024.onnx', 'algorithms/models/AIPersonDetector')
-                        ] + translation_datas,
+                        ] + translation_datas + tz_datas,
                     hiddenimports=[
                         'shapely',
                         'shapely.geometry',
+                        # timezonefinder + its h3 backend power the GPS-position
+                        # -> timezone shadow fallback in Person Size Reference.
+                        'timezonefinder',
+                        'h3',
                         # pysolar dispatches between numeric_numpy / numeric_python at runtime;
                         # PyInstaller's static analysis misses the fallback path.
                         'pysolar',
@@ -167,7 +190,7 @@ elif platform.system() == 'Darwin':
                         'algorithms.streaming.ColorAnomalyAndMotionDetection.services.utils',
                         'algorithms.streaming.ColorAnomalyAndMotionDetection.views',
                         'algorithms.streaming.ColorAnomalyAndMotionDetection.views.ColorAnomalyAndMotionDetectionControlWidget',
-                    ],
+                    ] + tz_hiddenimports,
                     hookspath=None,
                     runtime_hooks=adiat_runtime_hooks,
                     excludes=['PyQt5', 'PyQt6'],

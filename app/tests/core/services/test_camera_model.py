@@ -115,7 +115,57 @@ def test_from_image_service():
     assert v == pytest.approx(HEIGHT / 2.0, abs=1e-6)
 
 
+def test_square_pixels_on_cropped_aspect():
+    """A 16:9 frame on a 3:2 sensor must still yield square pixels (fx == fy).
+
+    DJI Air 2S 1" sensor is 13.2 x 8.8 mm (3:2); a 16:9 still is 5472 x 3078,
+    which crops the sensor height. Using the datasheet height directly would
+    make fy ~18% smaller than fx and skew the vertical projection.
+    """
+    cam = CameraModel(46.0, -90.0, 0.0, 8.38, 13.2, 8.8, 5472, 3078)
+    assert cam.fx == pytest.approx(cam.fy)
+    # True pitch comes from the uncropped (width) axis: 13.2 / 5472.
+    assert cam.fx == pytest.approx(8.38 / (13.2 / 5472))
+
+
+def test_square_pixels_when_width_is_cropped():
+    """When the width is the cropped axis, the height pitch is the true one."""
+    # 4:3 image on a 3:2 (APS-C) sensor crops the width.
+    cam = CameraModel(100.0, -90.0, 0.0, 24.0, 23.5, 15.6, 4000, 3000)
+    assert cam.fx == pytest.approx(cam.fy)
+    assert cam.fx == pytest.approx(24.0 / (15.6 / 3000))
+
+
 def test_from_image_service_missing_intrinsics_returns_none():
     service = MagicMock()
     service.get_camera_intrinsics.return_value = None
     assert CameraModel.from_image_service(service) is None
+
+
+def test_pitch_deg_is_stored():
+    assert _nadir().pitch_deg == pytest.approx(-90.0)
+    assert _oblique(-45.0).pitch_deg == pytest.approx(-45.0)
+
+
+def test_footprint_stays_compact_off_nadir():
+    """The flat overhead footprint must not 'lay over' as it moves off-nadir.
+
+    A standing person's 3D hull smears radially (H*R/(agl-H)); the footprint
+    is flat (z=0) so it stays person-sized anywhere in the frame.
+    """
+    from core.services.PersonModel import build_footprint_points
+
+    cam = CameraModel(46.0, -90.0, 0.0, 8.38, 13.2, 8.8, 5472, 3078)
+    gsd_m = cam.agl_m / cam.fx  # metres per pixel at nadir
+    footprint = build_footprint_points(1.70, "standing")
+
+    def width_m(east_m):
+        us = []
+        for px, py, pz in footprint:
+            uv = cam.project(0.0 + py, east_m + px, 46.0 - pz)
+            if uv:
+                us.append(uv[0])
+        return (max(us) - min(us)) * gsd_m
+
+    for east in (0.0, 20.0, 40.0):
+        assert width_m(east) < 0.6  # ~0.44 m shoulders, never a 1.8 m smear

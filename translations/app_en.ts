@@ -4163,205 +4163,215 @@ Click on images to move them to the Selected section above.</translation>
     </message>
     <message>
         <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="112"/>
+        <source>Review Selected Batch</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="116"/>
+        <source>Open the selected batch&apos;s results in the Viewer to review (same as double-clicking the batch).</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="122"/>
         <source>Load Review XML</source>
         <translation>Load Review XML</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="118"/>
-        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="624"/>
+        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="128"/>
+        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="658"/>
         <source>Export Consolidated Results</source>
         <translation>Export Consolidated Results</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="130"/>
+        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="140"/>
         <source>Project Information</source>
         <translation>Project Information</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="135"/>
+        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="145"/>
         <source>No project loaded</source>
         <translation>No project loaded</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="137"/>
+        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="147"/>
         <source>Project:</source>
         <translation>Project:</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="142"/>
+        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="152"/>
         <source>Created by:</source>
         <translation>Created by:</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="147"/>
+        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="157"/>
         <source>Date:</source>
         <translation>Date:</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="166"/>
+        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="176"/>
         <source>Total Batches</source>
         <translation>Total Batches</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="167"/>
+        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="177"/>
         <source>Total Images</source>
         <translation>Total Images</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="168"/>
+        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="178"/>
         <source>Total Reviews</source>
         <translation>Total Reviews</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="169"/>
-        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="317"/>
-        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="351"/>
+        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="179"/>
+        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="327"/>
+        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="361"/>
         <source>Reviewers</source>
         <translation>Reviewers</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="179"/>
+        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="189"/>
         <source>Review Progress</source>
         <translation>Review Progress</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="184"/>
+        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="194"/>
         <source>Overall Completion:</source>
         <translation>Overall Completion:</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="189"/>
+        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="199"/>
         <source>0%</source>
         <translation>0%</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="203"/>
+        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="213"/>
         <source>Not Reviewed</source>
         <translation>Not Reviewed</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="212"/>
+        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="222"/>
         <source>In Progress</source>
         <translation>In Progress</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="221"/>
+        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="231"/>
         <source>Complete</source>
         <translation>Complete</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="229"/>
+        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="239"/>
         <source>AOI Summary</source>
         <translation>AOI Summary</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="237"/>
+        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="247"/>
         <source>Total AOIs</source>
         <translation>Total AOIs</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="245"/>
+        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="255"/>
         <source>Flagged AOIs</source>
         <translation>Flagged AOIs</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="252"/>
+        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="262"/>
         <source>Active Reviewers</source>
         <translation>Active Reviewers</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="254"/>
-        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="680"/>
+        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="264"/>
+        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="714"/>
         <source>No reviewers yet</source>
         <translation>No reviewers yet</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="302"/>
+        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="312"/>
         <source>Batch review status and assignments. Load reviewer XMLs to update progress. Double-click a batch to open its results in the Viewer.</source>
         <translation>Batch review status and assignments. Load reviewer XMLs to update progress. Double-click a batch to open its results in the Viewer.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="313"/>
+        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="323"/>
         <source>Batch ID</source>
         <translation>Batch ID</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="314"/>
+        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="324"/>
         <source>Algorithm</source>
         <translation>Algorithm</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="315"/>
+        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="325"/>
         <source>Images</source>
         <translation>Images</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="316"/>
+        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="326"/>
         <source>Reviews</source>
         <translation>Reviews</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="318"/>
+        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="328"/>
         <source>Status</source>
         <translation>Status</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="339"/>
+        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="349"/>
         <source>Consolidated AOI data from all reviews. Shows flag counts and reviewer comments.</source>
         <translation>Consolidated AOI data from all reviews. Shows flag counts and reviewer comments.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="348"/>
+        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="358"/>
         <source>Image</source>
         <translation>Image</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="349"/>
+        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="359"/>
         <source>Location</source>
         <translation>Location</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="350"/>
+        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="360"/>
         <source>Flag Count</source>
         <translation>Flag Count</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="352"/>
+        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="362"/>
         <source>Comments</source>
         <translation>Comments</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="369"/>
+        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="379"/>
         <source>New Search Project</source>
         <translation>New Search Project</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="370"/>
+        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="380"/>
         <source>Enter project name:</source>
         <translation>Enter project name:</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="379"/>
+        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="389"/>
         <source>Coordinator Information</source>
         <translation>Coordinator Information</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="380"/>
+        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="390"/>
         <source>Enter your name:</source>
         <translation>Enter your name:</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="389"/>
+        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="399"/>
         <source>Select Batch Files</source>
         <translation>Select Batch Files</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="390"/>
+        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="400"/>
         <source>Select Initial Batch XML Files</source>
         <translation>Select Initial Batch XML Files</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="393"/>
+        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="403"/>
         <source>You can select multiple ADIAT_Data.xml files from different folders.
 
 Tips:
@@ -4376,111 +4386,118 @@ Tips:
 • Each batch should be a processed ADIAT_Data.xml file</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="407"/>
+        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="417"/>
         <source>Select Batch ADIAT_Data.xml Files (Hold Ctrl to select multiple)</source>
         <translation>Select Batch ADIAT_Data.xml Files (Hold Ctrl to select multiple)</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="409"/>
-        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="424"/>
-        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="524"/>
-        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="571"/>
-        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="626"/>
+        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="419"/>
+        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="434"/>
+        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="558"/>
+        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="605"/>
+        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="660"/>
         <source>XML Files (*.xml)</source>
         <translation>XML Files (*.xml)</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="422"/>
+        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="432"/>
         <source>Save Search Project</source>
         <translation>Save Search Project</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="434"/>
-        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="467"/>
-        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="483"/>
-        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="543"/>
-        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="607"/>
-        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="633"/>
+        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="444"/>
+        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="473"/>
+        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="517"/>
+        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="577"/>
+        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="641"/>
+        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="667"/>
         <source>Success</source>
         <translation>Success</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="435"/>
+        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="445"/>
         <source>Search project &apos;{project}&apos; created successfully!</source>
         <translation>Search project &apos;{project}&apos; created successfully!</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="442"/>
-        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="446"/>
-        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="473"/>
-        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="487"/>
-        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="613"/>
-        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="637"/>
+        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="452"/>
+        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="456"/>
+        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="492"/>
+        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="506"/>
+        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="521"/>
+        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="647"/>
+        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="671"/>
         <source>Error</source>
         <translation>Error</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="443"/>
+        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="453"/>
         <source>Failed to save project file.</source>
         <translation>Failed to save project file.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="446"/>
+        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="456"/>
         <source>Failed to create project.</source>
         <translation>Failed to create project.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="452"/>
+        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="462"/>
         <source>Open Search Project</source>
         <translation>Open Search Project</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="454"/>
+        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="464"/>
         <source>Search Project Files (ADIAT_Search_*.xml);;All XML Files (*.xml)</source>
         <translation>Search Project Files (ADIAT_Search_*.xml);;All XML Files (*.xml)</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="468"/>
+        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="474"/>
         <source>Project loaded successfully!</source>
         <translation>Project loaded successfully!</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="474"/>
+        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="493"/>
+        <source>Search project file not found:
+{path}</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="507"/>
         <source>Failed to load project file.</source>
         <translation>Failed to load project file.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="484"/>
+        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="518"/>
         <source>Project saved successfully!</source>
         <translation>Project saved successfully!</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="487"/>
+        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="521"/>
         <source>Failed to save project.</source>
         <translation>Failed to save project.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="494"/>
+        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="528"/>
         <source>No Project</source>
         <translation>No Project</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="495"/>
+        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="529"/>
         <source>Please create or open a project first.</source>
         <translation>Please create or open a project first.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="502"/>
+        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="536"/>
         <source>Add Batches</source>
         <translation>Add Batches</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="503"/>
+        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="537"/>
         <source>Add More Batch XML Files</source>
         <translation>Add More Batch XML Files</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="506"/>
+        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="540"/>
         <source>Select additional ADIAT_Data.xml batch files to add to this search.
 
 Tips:
@@ -4497,78 +4514,88 @@ Tips:
 • New batches will be numbered sequentially</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="522"/>
+        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="556"/>
         <source>Select Batch ADIAT_Data.xml Files to Add (Hold Ctrl to select multiple)</source>
         <translation>Select Batch ADIAT_Data.xml Files to Add (Hold Ctrl to select multiple)</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="545"/>
+        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="579"/>
         <source>Successfully added {count} batch(es) to the project!
 Total batches: {total}</source>
         <translation>Successfully added {count} batch(es) to the project!
 Total batches: {total}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="555"/>
+        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="589"/>
         <source>No Batches Added</source>
         <translation>No Batches Added</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="557"/>
+        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="591"/>
         <source>No batches were added. Check that the XML files are valid ADIAT_Data.xml files.</source>
         <translation>No batches were added. Check that the XML files are valid ADIAT_Data.xml files.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="569"/>
+        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="603"/>
         <source>Select Reviewer&apos;s ADIAT_Data.xml File</source>
         <translation>Select Reviewer&apos;s ADIAT_Data.xml File</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="582"/>
+        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="616"/>
         <source>No Batches</source>
         <translation>No Batches</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="583"/>
+        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="617"/>
         <source>No batches found in project.</source>
         <translation>No batches found in project.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="591"/>
+        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="625"/>
         <source>Select Batch</source>
         <translation>Select Batch</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="592"/>
+        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="626"/>
         <source>Which batch does this review belong to?</source>
         <translation>Which batch does this review belong to?</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="608"/>
+        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="642"/>
         <source>Review data loaded and merged successfully!</source>
         <translation>Review data loaded and merged successfully!</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="614"/>
+        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="648"/>
         <source>Failed to load review data.</source>
         <translation>Failed to load review data.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="634"/>
+        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="668"/>
         <source>Consolidated results exported to:
 {path}</source>
         <translation>Consolidated results exported to:
 {path}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="637"/>
+        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="671"/>
         <source>Failed to export results.</source>
         <translation>Failed to export results.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="663"/>
+        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="697"/>
         <source>{value}%</source>
         <translation>{value}%</translation>
+    </message>
+    <message>
+        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="758"/>
+        <source>No Batch Selected</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="759"/>
+        <source>Select a batch in the table, then click Review Selected Batch.</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
@@ -8904,6 +8931,7 @@ The Results Viewer provides:
 Use to review, verify, and export analysis results.</translation>
     </message>
     <message>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="1589"/>
         <location filename="../resources/views/images/MainWindow.ui" line="1018"/>
         <source> View Results</source>
         <translation> View Results</translation>
@@ -9163,7 +9191,7 @@ Ask questions, report issues, and suggest new features.</translation>
         <translation>Automated Drone Image Analysis Tool v{version} - Sponsored by TEXSAR</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="260"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="265"/>
         <source>Select the detection algorithm for your image analysis task:
 
 HSV COLOR RANGE: Detects brightly colored objects (clothing, vehicles, tents)
@@ -9240,208 +9268,223 @@ AI PERSON DETECTOR: Deep learning model for accurate people detection
   • Limitation: Only detects people, slower processing</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="339"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="344"/>
         <source>Select AOI Highlight Color</source>
         <translation>Select AOI Highlight Color</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="353"/>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="371"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="358"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="376"/>
         <source>Select Directory</source>
         <translation>Select Directory</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="388"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="393"/>
         <source>Select a Reference Image</source>
         <translation>Select a Reference Image</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="390"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="395"/>
         <source>Images (*.png *.jpg)</source>
         <translation>Images (*.png *.jpg)</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="438"/>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="470"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="443"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="475"/>
         <source>Value Adjusted</source>
         <translation>Value Adjusted</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="440"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="445"/>
         <source>Maximum area has been adjusted to {value} pixels to maintain valid range.
 (Minimum area must be less than maximum area)</source>
         <translation>Maximum area has been adjusted to {value} pixels to maintain valid range.
 (Minimum area must be less than maximum area)</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="472"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="477"/>
         <source>Minimum area has been adjusted to {value} pixels to maintain valid range.
 (Maximum area must be greater than minimum area)</source>
         <translation>Minimum area has been adjusted to {value} pixels to maintain valid range.
 (Maximum area must be greater than minimum area)</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="586"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="591"/>
         <source>Please set the input and output directories.</source>
         <translation>Please set the input and output directories.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="592"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="598"/>
         <source>--- Starting image processing ---</source>
         <translation>--- Starting image processing ---</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="782"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="794"/>
         <source>Could not parse XML file. Check file paths in &quot;{file_name}&quot;</source>
         <translation>Could not parse XML file. Check file paths in &quot;{file_name}&quot;</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="805"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="817"/>
         <source>Area of Interest Limit ({limit}) exceeded. Continue?</source>
         <translation>Area of Interest Limit ({limit}) exceeded. Continue?</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="808"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="820"/>
         <source>Area of Interest Limit Exceeded</source>
         <translation>Area of Interest Limit Exceeded</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="860"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="872"/>
         <source>--- Image Processing Completed ---</source>
         <translation>--- Image Processing Completed ---</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="861"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="873"/>
         <source>Image processing complete</source>
         <translation>Image processing complete</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="864"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="876"/>
         <source>{count} images with areas of interest identified</source>
         <translation>{count} images with areas of interest identified</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="870"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="882"/>
         <source>No areas of interest identified</source>
         <translation>No areas of interest identified</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="945"/>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="1358"/>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="1381"/>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="1404"/>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="1420"/>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="1436"/>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="1452"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="966"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="1406"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="1429"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="1459"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="1475"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="1491"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="1507"/>
         <source>Error</source>
         <translation>Error</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="955"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="976"/>
         <source>Select File</source>
         <translation>Select File</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="955"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="976"/>
         <source>XML Files (*.xml);;All Files (*)</source>
         <translation>XML Files (*.xml);;All Files (*)</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="976"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="997"/>
         <source>Select Results Folder</source>
         <translation>Select Results Folder</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="1009"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="1030"/>
         <source>Failed to scan folder: {error}</source>
         <translation>Failed to scan folder: {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="1031"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="1052"/>
         <source>No Results Found</source>
         <translation>No Results Found</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="1032"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="1053"/>
         <source>No ADIAT_DATA.XML files were found in the selected folder.</source>
         <translation>No ADIAT_DATA.XML files were found in the selected folder.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="1049"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="1070"/>
         <source>Failed to display results: {error}</source>
         <translation>Failed to display results: {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="1060"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="1081"/>
         <source>Scan failed: {error}</source>
         <translation>Scan failed: {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="1103"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="1124"/>
         <source>Failed to open viewer: {error}</source>
         <translation>Failed to open viewer: {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="1123"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="1150"/>
         <source>The selected file is not a valid XML file: {path}</source>
         <translation>The selected file is not a valid XML file: {path}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="1304"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="1352"/>
         <source>Error Loading Results</source>
         <translation>Error Loading Results</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="1305"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="1353"/>
         <source>Failed to load results file:
 {error}</source>
         <translation>Failed to load results file:
 {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="1359"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="1407"/>
         <source>Failed to open Streaming Detector:
 {error}</source>
         <translation>Failed to open Streaming Detector:
 {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="1382"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="1430"/>
         <source>Failed to open Flight Viewer:
 {error}</source>
         <translation>Failed to open Flight Viewer:
 {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="1405"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="1460"/>
         <source>Failed to open Search Coordinator:
 {error}</source>
         <translation>Failed to open Search Coordinator:
 {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="1421"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="1476"/>
         <source>Failed to open Help documentation:
 {error}</source>
         <translation>Failed to open Help documentation:
 {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="1437"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="1492"/>
         <source>Failed to open Community Help:
 {error}</source>
         <translation>Failed to open Community Help:
 {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="1453"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="1508"/>
         <source>Failed to open YouTube Channel:
 {error}</source>
         <translation>Failed to open YouTube Channel:
 {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="1578"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="1583"/>
+        <source> Open Search Coordinator</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="1585"/>
+        <source>Open the Search Coordinator to review every batch in this run.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="1591"/>
+        <source>Open the Results Viewer to review detection results.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="1658"/>
         <source>Invalid Value</source>
         <translation>Invalid Value</translation>
     </message>
@@ -10129,152 +10172,152 @@ Still missing:
 <context>
     <name>PersonReferenceDialog</name>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="271"/>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="277"/>
         <source>Person Size Reference</source>
         <translation>Person Size Reference</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="278"/>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="284"/>
         <source>Reference Person</source>
         <translation>Reference Person</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="297"/>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="303"/>
         <source>Standing</source>
         <translation>Standing</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="299"/>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="305"/>
         <source>Lying down</source>
         <translation>Lying down</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="301"/>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="307"/>
         <source>Sitting</source>
         <translation>Sitting</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="310"/>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="316"/>
         <source>Show shadows (from capture time)</source>
         <translation>Show shadows (from capture time)</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="313"/>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="319"/>
         <source>Use terrain elevation (DEM)</source>
         <translation>Use terrain elevation (DEM)</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="322"/>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="328"/>
         <source>Rotate the person on the ground to line it up with an object</source>
         <translation>Rotate the person on the ground to line it up with an object</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="327"/>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="333"/>
         <source>Click to choose overlay color</source>
         <translation>Click to choose overlay color</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="335"/>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="341"/>
         <source>Size:</source>
         <translation>Size:</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="336"/>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="342"/>
         <source>Show:</source>
         <translation>Show:</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="337"/>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="343"/>
         <source>Rotation:</source>
         <translation>Rotation:</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="353"/>
-        <source>Drag the white handle to position the reference person. The silhouettes are projected at true perspective scale for this image&apos;s camera angle - they foreshorten toward oblique edges.</source>
-        <translation>Drag the white handle to position the reference person. The silhouettes are projected at true perspective scale for this image&apos;s camera angle - they foreshorten toward oblique edges.</translation>
-    </message>
-    <message>
-        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="340"/>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="346"/>
         <source>Color:</source>
         <translation>Color:</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="361"/>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="359"/>
+        <source>Drag the white handle to position the reference person. Silhouettes are drawn at true ground scale for this image&apos;s altitude and camera angle.</source>
+        <translation>Drag the white handle to position the reference person. Silhouettes are drawn at true ground scale for this image&apos;s altitude and camera angle.</translation>
+    </message>
+    <message>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="367"/>
         <source>Recenter</source>
         <translation>Recenter</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="362"/>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="368"/>
         <source>Close</source>
         <translation>Close</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="417"/>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="423"/>
         <source>Perspective overlay unavailable: this image is missing the altitude or lens metadata needed to project a person.</source>
         <translation>Perspective overlay unavailable: this image is missing the altitude or lens metadata needed to project a person.</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="435"/>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="441"/>
         <source>no image loaded</source>
         <translation>no image loaded</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="440"/>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="446"/>
         <source>image metadata could not be read</source>
         <translation>image metadata could not be read</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="444"/>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="450"/>
         <source>image has no GPS coordinates</source>
         <translation>image has no GPS coordinates</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="456"/>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="462"/>
         <source>capture time / timezone not in metadata</source>
         <translation>capture time / timezone not in metadata</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="462"/>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="468"/>
         <source>sun position could not be computed</source>
         <translation>sun position could not be computed</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="471"/>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="477"/>
         <source>Sun at capture: {elev:.0f}° above horizon, azimuth {az:.0f}°.</source>
         <translation>Sun at capture: {elev:.0f}° above horizon, azimuth {az:.0f}°.</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="476"/>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="482"/>
         <source>Capture time zone estimated from GPS location.</source>
         <translation>Capture time zone estimated from GPS location.</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="481"/>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="487"/>
         <source>the sun was below the horizon at capture</source>
         <translation>the sun was below the horizon at capture</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="483"/>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="489"/>
         <source>sun position unavailable</source>
         <translation>sun position unavailable</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="484"/>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="490"/>
         <source>Shadow unavailable: {reason}.</source>
         <translation>Shadow unavailable: {reason}.</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="575"/>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="589"/>
         <source>Place the person and shadow on the DEM terrain surface</source>
         <translation>Place the person and shadow on the DEM terrain surface</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="579"/>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="593"/>
         <source>Terrain (DEM) data is not available for this image</source>
         <translation>Terrain (DEM) data is not available for this image</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="832"/>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="853"/>
         <source>Choose Overlay Color</source>
         <translation>Choose Overlay Color</translation>
     </message>

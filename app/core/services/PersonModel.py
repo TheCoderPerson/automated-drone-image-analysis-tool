@@ -96,3 +96,23 @@ def build_points(height_m: float, pose: str) -> List[Point3D]:
     if pose == "sitting":
         return build_sitting_points(height_m)
     raise ValueError(f"PersonModel.build_points: unsupported pose {pose!r}")
+
+
+def build_footprint_points(height_m: float, pose: str,
+                           ring_count: int = 48) -> List[Point3D]:
+    """Flat overhead footprint (all z = 0) of an upright person.
+
+    This is the person's horizontal extent as seen from directly above - the
+    shape a spotter actually looks for on near-nadir imagery. Projecting the
+    full 3D column instead makes a standing figure 'lay over' into a long
+    radial smear at any off-centre placement (layover ~= H*R/(agl-H)), which
+    is geometrically correct but useless as a size reference. Keeping the
+    footprint flat gives a compact, person-sized shape wherever it is placed.
+    """
+    h = float(height_m)
+    if pose == "standing":
+        return _ellipse_ring(0.130 * h, 0.095 * h, 0.0, ring_count)
+    if pose == "sitting":
+        return _ellipse_ring(0.150 * h, 0.150 * h, 0.0, ring_count)
+    raise ValueError(
+        f"PersonModel.build_footprint_points: unsupported pose {pose!r}")

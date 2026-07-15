@@ -109,6 +109,16 @@ class CoordinatorWindow(TranslationMixin, QMainWindow):
         bottom_layout = QHBoxLayout()
         bottom_layout.setSpacing(10)
 
+        self.review_batch_btn = QPushButton(self.tr("Review Selected Batch"))
+        self.review_batch_btn.setMinimumHeight(40)
+        self.review_batch_btn.setEnabled(False)
+        self.review_batch_btn.setToolTip(
+            self.tr("Open the selected batch's results in the Viewer to review "
+                    "(same as double-clicking the batch).")
+        )
+        self.review_batch_btn.clicked.connect(self._review_selected_batch)
+        bottom_layout.addWidget(self.review_batch_btn)
+
         self.load_review_btn = QPushButton(self.tr("Load Review XML"))
         self.load_review_btn.setMinimumHeight(40)
         self.load_review_btn.setEnabled(False)
@@ -457,22 +467,46 @@ class CoordinatorWindow(TranslationMixin, QMainWindow):
         if not file_path:
             return
 
-        self.project_service = SearchProjectService(file_path)
-        if self.project_service.load_project(file_path):
-            self.project_path = file_path
-            self._update_all_displays()
-            self._enable_project_controls(True)
+        if self.load_project_file(file_path):
             QMessageBox.information(
                 self,
                 self.tr("Success"),
                 self.tr("Project loaded successfully!")
             )
-        else:
+
+    def load_project_file(self, file_path):
+        """Load an existing search project from a known path (no file dialog).
+
+        Lets callers such as the main window open a project directly (e.g. the
+        Search Coordinator project produced by a batch run).
+
+        Args:
+            file_path (str): Path to the search project XML file.
+
+        Returns:
+            bool: True if the project loaded successfully.
+        """
+        if not file_path or not os.path.isfile(file_path):
             QMessageBox.critical(
                 self,
                 self.tr("Error"),
-                self.tr("Failed to load project file.")
+                self.tr("Search project file not found:\n{path}").format(path=file_path)
             )
+            return False
+
+        self.project_service = SearchProjectService(file_path)
+        if self.project_service.load_project(file_path):
+            self.project_path = file_path
+            self._update_all_displays()
+            self._enable_project_controls(True)
+            return True
+
+        QMessageBox.critical(
+            self,
+            self.tr("Error"),
+            self.tr("Failed to load project file.")
+        )
+        return False
 
     def _save_project(self):
         """Save the current project."""
@@ -711,6 +745,22 @@ class CoordinatorWindow(TranslationMixin, QMainWindow):
                 status_item.setForeground(QColor("#27ae60"))
             self.batch_table.setItem(row, 5, status_item)
 
+    def _review_selected_batch(self):
+        """Open the currently selected batch in the Viewer for review.
+
+        Button equivalent of double-clicking a batch row, giving the review
+        entry point a visible control rather than a hidden gesture.
+        """
+        row = self.batch_table.currentRow()
+        if row < 0:
+            QMessageBox.information(
+                self,
+                self.tr("No Batch Selected"),
+                self.tr("Select a batch in the table, then click Review Selected Batch.")
+            )
+            return
+        self._open_batch_in_viewer(row, 0)
+
     def _open_batch_in_viewer(self, row, column):
         """Open the double-clicked batch's results in the image Viewer.
 
@@ -802,5 +852,6 @@ class CoordinatorWindow(TranslationMixin, QMainWindow):
         """Enable or disable project-related controls."""
         self.save_project_btn.setEnabled(enabled)
         self.add_batch_btn.setEnabled(enabled)
+        self.review_batch_btn.setEnabled(enabled)
         self.load_review_btn.setEnabled(enabled)
         self.export_results_btn.setEnabled(enabled)

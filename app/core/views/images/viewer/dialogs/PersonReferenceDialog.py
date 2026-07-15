@@ -42,8 +42,16 @@ from core.services.shadow.SolarPosition import (
     resolve_capture_utc, get_solar_position, SolarTimeUnresolvable,
 )
 
-# Persisted setting key for the user's preferred overlay color.
+# Persisted setting keys. The overlay is a recurring reference tool, so the
+# user's last choices (colour, size class, which poses/shadow/terrain are on)
+# are restored on the next open.
 SETTING_OVERLAY_COLOR = 'PersonReferenceOverlayColor'
+SETTING_SIZE_KEY = 'PersonReferenceSizeKey'
+SETTING_SHOW_STANDING = 'PersonReferenceShowStanding'
+SETTING_SHOW_RECUMBENT = 'PersonReferenceShowRecumbent'
+SETTING_SHOW_SITTING = 'PersonReferenceShowSitting'
+SETTING_SHOW_SHADOWS = 'PersonReferenceShowShadows'
+SETTING_USE_TERRAIN = 'PersonReferenceUseTerrain'
 DEFAULT_OVERLAY_COLOR = '#00ff00'  # bright green
 
 # Reference size classes: key, label, standing height (inches), weight (lb).
@@ -65,6 +73,12 @@ EARTH_RADIUS_M = 6378137.0
 # A person lying down is a low slab; this fraction of their standing height
 # is the body thickness used to cast the recumbent shadow.
 RECUMBENT_THICKNESS_FRACTION = 0.12
+
+# On near-nadir imagery a standing person is drawn as a flat overhead
+# footprint (no vertical layover). Beyond this many degrees off straight-down
+# the camera is oblique enough that the full 3D upright figure reads correctly
+# and is projected instead.
+NADIR_PITCH_TOLERANCE_DEG = 15.0
 
 
 def _build_recumbent_path(height_cm):
@@ -235,6 +249,7 @@ class PersonReferenceDialog(TranslationMixin, QDialog):
         self.sun_elev = None
         self.sun_az = None
         self.sun_error = None
+        self.sun_time_source = None
 
         # DEM terrain state for the current image.
         self.terrain_service = None
@@ -279,14 +294,18 @@ class PersonReferenceDialog(TranslationMixin, QDialog):
                 w_kg = round(weight_lb * 0.4536, 1)
                 text = f"{self.tr(label)}  ({h_cm} cm, {w_kg} kg)"
             self.size_combo.addItem(text, key)
-        self.size_combo.setCurrentIndex(1)
+        saved_size = self._settings_service.get_setting(SETTING_SIZE_KEY)
+        saved_idx = self.size_combo.findData(saved_size) if saved_size else -1
+        self.size_combo.setCurrentIndex(saved_idx if saved_idx >= 0 else 1)
+        self.size_key = self.size_combo.currentData()
 
+        get_bool = self._settings_service.get_bool_setting
         self.standing_check = QCheckBox(self.tr("Standing"))
-        self.standing_check.setChecked(True)
+        self.standing_check.setChecked(get_bool(SETTING_SHOW_STANDING, True))
         self.recumbent_check = QCheckBox(self.tr("Lying down"))
-        self.recumbent_check.setChecked(True)
+        self.recumbent_check.setChecked(get_bool(SETTING_SHOW_RECUMBENT, True))
         self.sitting_check = QCheckBox(self.tr("Sitting"))
-        self.sitting_check.setChecked(False)
+        self.sitting_check.setChecked(get_bool(SETTING_SHOW_SITTING, False))
         poses_row = QHBoxLayout()
         poses_row.addWidget(self.standing_check)
         poses_row.addWidget(self.recumbent_check)
@@ -295,10 +314,10 @@ class PersonReferenceDialog(TranslationMixin, QDialog):
         poses_widget.setLayout(poses_row)
 
         self.shadow_check = QCheckBox(self.tr("Show shadows (from capture time)"))
-        self.shadow_check.setChecked(True)
+        self.shadow_check.setChecked(get_bool(SETTING_SHOW_SHADOWS, True))
 
         self.terrain_check = QCheckBox(self.tr("Use terrain elevation (DEM)"))
-        self.terrain_check.setChecked(True)
+        self.terrain_check.setChecked(get_bool(SETTING_USE_TERRAIN, True))
 
         # Ground rotation of the person, for lining a pose up with an object.
         self.rotation_spin = QSpinBox()
@@ -337,9 +356,9 @@ class PersonReferenceDialog(TranslationMixin, QDialog):
         self.sun_label.setStyleSheet("QLabel { color: gray; }")
 
         instructions = QLabel(self.tr(
-            "Drag the white handle to position the reference person. The "
-            "silhouettes are projected at true perspective scale for this "
-            "image's camera angle - they foreshorten toward oblique edges."
+            "Drag the white handle to position the reference person. "
+            "Silhouettes are drawn at true ground scale for this image's "
+            "altitude and camera angle."
         ))
         instructions.setWordWrap(True)
         instructions.setStyleSheet("QLabel { color: gray; }")
@@ -417,6 +436,7 @@ class PersonReferenceDialog(TranslationMixin, QDialog):
         self.sun_elev = None
         self.sun_az = None
         self.sun_error = None
+        self.sun_time_source = None
         if not self.image_path:
             self.sun_error = self.tr("no image loaded")
             return
@@ -436,10 +456,12 @@ class PersonReferenceDialog(TranslationMixin, QDialog):
         except Exception:
             xmp = None
         try:
-            utc, _source = resolve_capture_utc(exif, xmp)
+            utc, source = resolve_capture_utc(
+                exif, xmp, lat=self.drone_lat, lon=self.drone_lon)
         except SolarTimeUnresolvable:
             self.sun_error = self.tr("capture time / timezone not in metadata")
             return
+        self.sun_time_source = source
         try:
             elev, az = get_solar_position(self.drone_lat, self.drone_lon, utc)
         except Exception:
@@ -451,10 +473,14 @@ class PersonReferenceDialog(TranslationMixin, QDialog):
     def _update_sun_label(self):
         """Refresh the sun-info line and enable/disable the shadow toggle."""
         if self.sun_elev is not None and self.sun_elev > 0:
-            self.sun_label.setText(self.tr(
+            text = self.tr(
                 "Sun at capture: {elev:.0f}° above horizon, "
                 "azimuth {az:.0f}°."
-            ).format(elev=self.sun_elev, az=self.sun_az))
+            ).format(elev=self.sun_elev, az=self.sun_az)
+            if self.sun_time_source == 'exif_local_tz_from_gps':
+                text += " " + self.tr(
+                    "Capture time zone estimated from GPS location.")
+            self.sun_label.setText(text)
             self.shadow_check.setEnabled(True)
         else:
             if self.sun_elev is not None and self.sun_elev <= 0:
@@ -473,7 +499,7 @@ class PersonReferenceDialog(TranslationMixin, QDialog):
         scene = self.image_viewer.scene
 
         self.anchor_item = _AnchorHandle(self)
-        self.anchor_item.setPos(self._viewport_center_scene())
+        self.anchor_item.setPos(self._default_anchor_scene())
         scene.addItem(self.anchor_item)
 
         # Shadow sits below the silhouettes; silhouettes below the handle.
@@ -513,6 +539,14 @@ class PersonReferenceDialog(TranslationMixin, QDialog):
     def _selected_height_cm(self):
         idx = max(0, self.size_combo.currentIndex())
         return SIZE_CLASSES[idx][2] * CM_PER_INCH
+
+    def _is_near_nadir(self):
+        """True when the camera looks close enough to straight down that a
+        standing figure should be drawn as a flat overhead footprint rather
+        than a laid-over 3D column."""
+        if self.camera is None:
+            return True
+        return abs(self.camera.pitch_deg + 90.0) < NADIR_PITCH_TOLERANCE_DEG
 
     def _foot_ned(self):
         """Ground point (NED, metres from the camera) under the anchor handle.
@@ -709,13 +743,20 @@ class PersonReferenceDialog(TranslationMixin, QDialog):
             'standing': self.standing_check.isChecked(),
             'sitting': self.sitting_check.isChecked(),
         }
+        near_nadir = self._is_near_nadir()
         for pose, enabled in upright.items():
             item = self.pose_items.get(pose)
             if item is None:
                 continue
             path = None
             if enabled and foot is not None:
-                points = self._orient(PersonModel.build_points(height_m, pose))
+                if near_nadir:
+                    # Flat overhead footprint: compact and person-sized
+                    # everywhere, instead of a radial layover smear.
+                    model = PersonModel.build_footprint_points(height_m, pose)
+                else:
+                    model = PersonModel.build_points(height_m, pose)
+                points = self._orient(model)
                 path = self._hull_path(self._project_person_local(points, foot))
             item.setPath(path or QPainterPath())
             item.setVisible(path is not None)
@@ -827,6 +868,25 @@ class PersonReferenceDialog(TranslationMixin, QDialog):
         except Exception:
             return self.image_viewer.sceneRect().center()
 
+    def _default_anchor_scene(self):
+        """Initial person placement: the ground point directly under the drone.
+
+        The nadir projects to a compact, upright silhouette, so the overlay
+        opens sensibly no matter how the image is zoomed when the tool is
+        triggered (previously it dropped the person at the zoomed viewport
+        centre, which lands off-nadir and looks like an elongated smear).
+        Falls back to the image centre, then the viewport centre.
+        """
+        if self.camera is not None:
+            nadir = self.camera.project(0.0, 0.0, self.camera.agl_m)
+            if nadir is not None:
+                u, v = nadir
+                if (0.0 <= u <= self.camera.width
+                        and 0.0 <= v <= self.camera.height):
+                    return QPointF(u, v)
+            return QPointF(self.camera.width / 2.0, self.camera.height / 2.0)
+        return self._viewport_center_scene()
+
     def _show_status(self, message):
         if message:
             self.status_label.setText(message)
@@ -837,14 +897,25 @@ class PersonReferenceDialog(TranslationMixin, QDialog):
     # ---------------- event handlers ----------------
     def _on_params_changed(self, *_):
         self.size_key = self.size_combo.currentData()
+        self._persist_settings()
         self._render_all()
+
+    def _persist_settings(self):
+        """Persist the reference-person choices for the next time the tool opens."""
+        s = self._settings_service
+        s.set_setting(SETTING_SIZE_KEY, self.size_combo.currentData())
+        s.set_setting(SETTING_SHOW_STANDING, self.standing_check.isChecked())
+        s.set_setting(SETTING_SHOW_RECUMBENT, self.recumbent_check.isChecked())
+        s.set_setting(SETTING_SHOW_SITTING, self.sitting_check.isChecked())
+        s.set_setting(SETTING_SHOW_SHADOWS, self.shadow_check.isChecked())
+        s.set_setting(SETTING_USE_TERRAIN, self.terrain_check.isChecked())
 
     def _on_anchor_moved(self):
         self._render_all()
 
     def _recenter(self):
         if self.anchor_item is not None:
-            self.anchor_item.setPos(self._viewport_center_scene())
+            self.anchor_item.setPos(self._default_anchor_scene())
             self._render_all()
 
     # ---------------- close ----------------

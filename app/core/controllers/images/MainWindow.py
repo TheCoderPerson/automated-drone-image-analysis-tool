@@ -135,6 +135,11 @@ class MainWindow(TranslationMixin, QMainWindow, Ui_MainWindow):
 
         # Add Coordinator functionality
         self.coordinator_window = None
+        # The results button doubles as an "Open Search Coordinator" button
+        # after a batch run; track which action it currently performs and the
+        # project it would open.
+        self._view_results_mode = 'results'
+        self._search_project_path = None
         if hasattr(self, 'actionCoordinator'):
             self.actionCoordinator.triggered.connect(self._open_coordinator)
 
@@ -588,6 +593,7 @@ class MainWindow(TranslationMixin, QMainWindow, Ui_MainWindow):
                 return
 
             self._set_StartButton(False)
+            self._set_view_results_mode('results')
             self._set_ViewResultsButton(False)
             self._add_log_entry(self.tr("--- Starting image processing ---"))
 
@@ -765,8 +771,14 @@ class MainWindow(TranslationMixin, QMainWindow, Ui_MainWindow):
 
     def _viewResultsButton_clicked(self):
         """
-        Launches the image viewer to display analysis results.
+        Opens the results for the most recent run.
+
+        After a batch run this button opens the Search Coordinator for the
+        generated project; otherwise it launches the single-run image viewer.
         """
+        if self._view_results_mode == 'coordinator':
+            self._open_coordinator(self._search_project_path)
+            return
         QApplication.setOverrideCursor(Qt.WaitCursor)
         file = pathlib.Path(self.results_path)
         if file.is_file():
@@ -907,6 +919,15 @@ class MainWindow(TranslationMixin, QMainWindow, Ui_MainWindow):
         for thread, worker in self.__threads:
             thread.quit()
 
+        # A batch run has no single results file to view; repurpose the results
+        # button to open the generated Search Coordinator project instead.
+        if search_project_path:
+            self._set_view_results_mode('coordinator', search_project_path)
+            self._set_ViewResultsButton(True)
+        else:
+            self._set_view_results_mode('results')
+            self._set_ViewResultsButton(False)
+
         message = (
             f"Batch processing finished.\n\n"
             f"{succeeded} folder(s) succeeded, {failed} folder(s) failed."
@@ -927,7 +948,7 @@ class MainWindow(TranslationMixin, QMainWindow, Ui_MainWindow):
             msg.addButton(QMessageBox.Close)
             msg.exec()
             if msg.clickedButton() == open_button:
-                self._open_coordinator()
+                self._open_coordinator(search_project_path)
         else:
             msg.setStandardButtons(QMessageBox.Ok)
             msg.exec()
@@ -1113,7 +1134,13 @@ class MainWindow(TranslationMixin, QMainWindow, Ui_MainWindow):
             full_path (str): Path to the XML file.
         """
         try:
+            # A Search Coordinator project links multiple batches; open it in
+            # the Coordinator rather than the single-run Viewer.
+            if self._is_search_project_xml(full_path):
+                self._open_coordinator(full_path)
+                return
             image_count = self._get_settings_from_xml(full_path)
+            self._set_view_results_mode('results')
             if image_count > 0:
                 self._set_ViewResultsButton(True)
             self.AdvancedFeaturesWidget.setVisible(not self.algorithmWidget.is_thermal)
@@ -1124,6 +1151,27 @@ class MainWindow(TranslationMixin, QMainWindow, Ui_MainWindow):
             )
         except Exception as e:
             self.logger.error(e)
+
+    def _is_search_project_xml(self, full_path):
+        """
+        Detects whether an XML file is a Search Coordinator project.
+
+        Search Coordinator projects (ADIAT_Search_*.xml) use a <search_project>
+        root element, whereas single-run results (ADIAT_Data.xml) use <data>.
+        Only the root element is read.
+
+        Args:
+            full_path (str): Path to the XML file.
+
+        Returns:
+            bool: True if the file is a Search Coordinator project.
+        """
+        try:
+            for _event, elem in ET.iterparse(full_path, events=('start',)):
+                return elem.tag == 'search_project'
+        except (ET.ParseError, OSError):
+            return False
+        return False
 
     def _get_settings_from_xml(self, full_path):
         """
@@ -1382,9 +1430,14 @@ class MainWindow(TranslationMixin, QMainWindow, Ui_MainWindow):
                 self.tr("Failed to open Flight Viewer:\n{error}").format(error=str(e))
             )
 
-    def _open_coordinator(self):
+    def _open_coordinator(self, project_path=None):
         """
         Opens the Search Coordinator window for managing multi-batch review projects.
+
+        Args:
+            project_path (str): Optional Search Coordinator project file to load
+                once the window is open. Ignored when it is not a real file
+                (e.g. the boolean emitted by a menu action's triggered signal).
         """
         try:
             if self.coordinator_window is None or not self.coordinator_window.isVisible():
@@ -1397,6 +1450,8 @@ class MainWindow(TranslationMixin, QMainWindow, Ui_MainWindow):
                 # Bring existing window to front
                 self.coordinator_window.raise_()
                 self.coordinator_window.activateWindow()
+            if isinstance(project_path, str) and os.path.isfile(project_path):
+                self.coordinator_window.load_project_file(project_path)
         except Exception as e:
             self.logger.error(f"Error opening Coordinator: {e}")
             QMessageBox.critical(
@@ -1510,6 +1565,31 @@ class MainWindow(TranslationMixin, QMainWindow, Ui_MainWindow):
             enabled (bool): True to enable, False to disable.
         """
         self.viewResultsButton.setEnabled(enabled)
+
+    def _set_view_results_mode(self, mode, project_path=None):
+        """
+        Switches the results button between opening a single run's Viewer and
+        opening the Search Coordinator for a batch run.
+
+        Args:
+            mode (str): 'results' for the single-run Viewer (default), or
+                'coordinator' to open the Search Coordinator.
+            project_path (str): Search Coordinator project file to open when
+                mode is 'coordinator'.
+        """
+        self._view_results_mode = mode
+        if mode == 'coordinator':
+            self._search_project_path = project_path
+            self.viewResultsButton.setText(self.tr(" Open Search Coordinator"))
+            self.viewResultsButton.setToolTip(
+                self.tr("Open the Search Coordinator to review every batch in this run.")
+            )
+        else:
+            self._search_project_path = None
+            self.viewResultsButton.setText(self.tr(" View Results"))
+            self.viewResultsButton.setToolTip(
+                self.tr("Open the Results Viewer to review detection results.")
+            )
 
     def _set_defaults(self):
         """

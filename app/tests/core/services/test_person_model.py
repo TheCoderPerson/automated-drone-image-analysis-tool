@@ -3,6 +3,7 @@
 import pytest
 
 from core.services.PersonModel import (
+    build_footprint_points,
     build_points,
     build_sitting_points,
     build_standing_points,
@@ -41,3 +42,23 @@ def test_points_are_nonempty_3d_tuples():
         points = build_points(1.8, pose)
         assert len(points) > 20
         assert all(len(p) == 3 for p in points)
+
+
+def test_footprint_points_are_flat():
+    """The overhead footprint has no vertical extent (all z == 0)."""
+    for pose in ("standing", "sitting"):
+        points = build_footprint_points(1.8, pose)
+        assert points, "footprint must not be empty"
+        assert all(p[2] == pytest.approx(0.0, abs=1e-9) for p in points)
+
+
+def test_footprint_width_matches_standing_shoulders():
+    """Standing footprint spans the shoulder ellipse, not the full height."""
+    points = build_footprint_points(1.8, "standing")
+    max_half_width = max(abs(p[0]) for p in points)
+    assert max_half_width == pytest.approx(0.130 * 1.8, rel=0.01)
+
+
+def test_footprint_rejects_recumbent():
+    with pytest.raises(ValueError):
+        build_footprint_points(1.8, "recumbent")
