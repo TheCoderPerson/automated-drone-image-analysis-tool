@@ -404,13 +404,13 @@ class Ui_Preferences(object):
 #endif // QT_CONFIG(tooltip)
         self.offlineOnlyCheckBox.setText(QCoreApplication.translate("Preferences", u"Enable", None))
 #if QT_CONFIG(tooltip)
-        self.terrainElevationLabel.setToolTip(QCoreApplication.translate("Preferences", u"Use terrain elevation data (DTM/DSM) for more accurate AOI GPS coordinate calculations.\n"
-"When enabled, uses online elevation data to account for terrain variations.\n"
+        self.terrainElevationLabel.setToolTip(QCoreApplication.translate("Preferences", u"Use terrain elevation data (DEM/DTM/DSM) for more accurate AOI GPS coordinate calculations.\n"
+"When enabled, uses online or local elevation data to account for terrain variations.\n"
 "When disabled, assumes flat terrain at takeoff altitude.", None))
 #endif // QT_CONFIG(tooltip)
         self.terrainElevationLabel.setText(QCoreApplication.translate("Preferences", u"Use Terrain Elevation:", None))
 #if QT_CONFIG(tooltip)
-        self.terrainElevationCheckBox.setToolTip(QCoreApplication.translate("Preferences", u"Enable terrain-corrected AOI positioning using DTM/DSM elevation data.\n"
+        self.terrainElevationCheckBox.setToolTip(QCoreApplication.translate("Preferences", u"Enable terrain-corrected AOI positioning using DEM/DTM/DSM elevation data.\n"
 "\u2022 When enabled: Downloads and caches elevation tiles for accurate positioning\n"
 "\u2022 When disabled: Uses flat terrain assumption (faster, works offline)\n"
 "Terrain data is cached locally and works offline after first download.", None))

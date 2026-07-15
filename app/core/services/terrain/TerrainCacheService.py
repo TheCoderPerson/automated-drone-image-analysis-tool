@@ -51,10 +51,9 @@ class TerrainCacheService:
             self.cache_dir = self.DEFAULT_CACHE_DIR
 
         self.provider = provider or TerrariumProvider()
-        self.provider_name = self.provider.get_provider_name().replace(' ', '_').replace('(', '').replace(')', '')
 
         # Create cache directory structure
-        self.tiles_dir = self.cache_dir / 'tiles' / 'terrarium'
+        self.tiles_dir = self.cache_dir / 'tiles' / 'terrain_tiles'
         self.tiles_dir.mkdir(parents=True, exist_ok=True)
 
         # Load or create metadata

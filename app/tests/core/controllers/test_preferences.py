@@ -43,6 +43,43 @@ def _card_children(card):
     return [layout.itemAt(i).widget() for i in range(layout.count())]
 
 
+# ---------------------------------------------------------------------------
+# Terrain cache display
+# ---------------------------------------------------------------------------
+
+def test_terrain_cache_local_provider_shows_na_not_error(preferences):
+    """A local-only provider (USGS 3DEP GeoTIFFs) has no download cache, so
+    get_service_info() reports cache=None. That must read 'N/A (local tiles)',
+    NOT 'Error' (regression: info.get('cache', {}) returned None and
+    None.get(...) blew up into the swallowed 'Error')."""
+    service = MagicMock()
+    service.get_service_info.return_value = {
+        'provider': 'USGS 3DEP 1m (Local GeoTIFF)', 'cache': None}
+    preferences._get_terrain_service = MagicMock(return_value=service)
+
+    preferences._update_terrain_cache_display()
+
+    assert preferences.terrainCacheSizeLabel.text() == "N/A (local tiles)"
+
+
+def test_terrain_cache_online_provider_shows_tiles_and_size(preferences):
+    """A caching provider (Terrain Tiles) reports tile count and size."""
+    service = MagicMock()
+    service.get_service_info.return_value = {
+        'provider': 'AWS Terrain Tiles', 'cache': {'total_tiles': 12, 'total_size_mb': 3.5}}
+    preferences._get_terrain_service = MagicMock(return_value=service)
+
+    preferences._update_terrain_cache_display()
+
+    assert preferences.terrainCacheSizeLabel.text() == "12 tiles (3.5 MB)"
+
+
+def test_terrain_cache_no_service_shows_not_available(preferences):
+    preferences._get_terrain_service = MagicMock(return_value=None)
+    preferences._update_terrain_cache_display()
+    assert preferences.terrainCacheSizeLabel.text() == "Not available"
+
+
 def test_terrain_card_groups_all_three_controls(preferences):
     """The three related terrain controls live inside one Terrain card, in
     order: Use Terrain Elevation, Elevation Source, Terrain Cache."""

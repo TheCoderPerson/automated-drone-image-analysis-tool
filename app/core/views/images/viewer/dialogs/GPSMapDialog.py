@@ -141,7 +141,7 @@ class GPSMapDialog(TranslationMixin, QDialog):
         controls_layout.addWidget(self.pod_toggle_btn)
 
         self.pod_mode_combo = QComboBox()
-        self.pod_mode_combo.addItem(self.tr("POD"), "pod")          # itemData = stable key
+        self.pod_mode_combo.addItem(self.tr("POD (beta)"), "pod")   # itemData = stable key
         self.pod_mode_combo.addItem(self.tr("Look count"), "looks")
         self.pod_mode_combo.addItem(self.tr("Canopy height"), "canopy")
         self.pod_mode_combo.setEnabled(False)

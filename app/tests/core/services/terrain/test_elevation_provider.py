@@ -16,7 +16,7 @@ class TestTerrariumProvider:
         """Test provider initializes correctly."""
         provider = TerrariumProvider()
         assert provider.timeout == 10.0
-        assert provider.get_provider_name() == "AWS Terrain Tiles (Terrarium)"
+        assert provider.get_provider_name() == "AWS Terrain Tiles"
 
     def test_get_tile_url(self):
         """Test tile URL generation."""

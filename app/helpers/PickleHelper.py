@@ -139,7 +139,11 @@ class PickleHelper:
                     break
                 m = re.match(r'^#\s*(version|date)\s*:\s*(.+?)\s*$', line, re.IGNORECASE)
                 if m:
-                    key, value = m.group(1).lower(), m.group(2)
+                    key = m.group(1).lower()
+                    # A spreadsheet re-save (Excel/Sheets/Calc) pads every row,
+                    # including these comment lines, with trailing commas to
+                    # match the data columns. Strip them so the value stays clean.
+                    value = m.group(2).rstrip(', \t')
                     if key == 'version':
                         version = value
                     elif key == 'date':

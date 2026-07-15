@@ -711,7 +711,7 @@ class GPSMapController(QObject):
     def _show_pod_inspect_menu(self, sample, lat, lon):
         view = self.map_dialog.map_view if self.map_dialog else None
         menu = QMenu(view)
-        hdr = menu.addAction(self.tr("POD: {pod}%   Looks: {looks}").format(
+        hdr = menu.addAction(self.tr("POD: {pod}% (beta)   Looks: {looks}").format(
             pod=round(sample['pod'] * 100), looks=sample['looks']))
         hdr.setEnabled(False)
         lim = menu.addAction(self.tr("Limiting factor: {factor}").format(

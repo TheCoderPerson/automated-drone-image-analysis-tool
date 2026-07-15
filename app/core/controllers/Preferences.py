@@ -6,6 +6,7 @@ from PySide6.QtWidgets import (
     QPushButton, QLineEdit, QGroupBox
 )
 from core.views.Preferences_ui import Ui_Preferences
+from core.services.LoggerService import LoggerService
 from core.services.SettingsService import SettingsService
 from core.services.terrain import (
     TerrainProviderFactory,
@@ -509,9 +510,12 @@ class Preferences(TranslationMixin, QDialog, Ui_Preferences):
 
         try:
             service = self._get_terrain_service()
-            if service:
-                info = service.get_service_info()
-                cache_info = info.get('cache', {})
+            if not service:
+                self.terrainCacheSizeLabel.setText(self.tr("Not available"))
+                return
+            info = service.get_service_info()
+            cache_info = info.get('cache')
+            if cache_info:
                 tiles = cache_info.get('total_tiles', 0)
                 size_mb = cache_info.get('total_size_mb', 0)
                 self.terrainCacheSizeLabel.setText(
@@ -521,8 +525,12 @@ class Preferences(TranslationMixin, QDialog, Ui_Preferences):
                     )
                 )
             else:
-                self.terrainCacheSizeLabel.setText(self.tr("Not available"))
-        except Exception:
+                # Local-only providers (e.g. USGS 3DEP local GeoTIFFs) download
+                # nothing, so there is no cache (get_service_info reports
+                # cache=None). That's expected, not an error.
+                self.terrainCacheSizeLabel.setText(self.tr("N/A (local tiles)"))
+        except Exception as e:
+            LoggerService().error(f"Preferences: terrain cache display failed: {e}")
             self.terrainCacheSizeLabel.setText(self.tr("Error"))
 
     def _clear_terrain_cache(self):

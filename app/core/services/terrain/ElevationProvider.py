@@ -247,7 +247,7 @@ class TerrariumProvider(ElevationProvider):
         return elevation
 
     def get_provider_name(self) -> str:
-        return "AWS Terrain Tiles (Terrarium)"
+        return "AWS Terrain Tiles"
 
     def get_datum_info(self) -> dict:
         return {

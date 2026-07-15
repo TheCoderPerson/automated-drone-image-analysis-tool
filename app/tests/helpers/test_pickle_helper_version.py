@@ -1,8 +1,45 @@
 """Tests for PickleHelper version parsing, including beta build numbers."""
 
+import os
+import tempfile
+
 import pytest
 
 from helpers.PickleHelper import PickleHelper
+
+
+def _write_csv(tmpdir, contents):
+    path = os.path.join(tmpdir, 'drones.csv')
+    with open(path, 'w', encoding='utf-8') as f:
+        f.write(contents)
+    return path
+
+
+def test_read_meta_header_parses_clean_values():
+    with tempfile.TemporaryDirectory() as tmpdir:
+        path = _write_csv(
+            tmpdir,
+            "# version: 1.2.1\n# date: 2026-05-29\nManufacturer,Model\nDJI,Mavic\n",
+        )
+        assert PickleHelper._read_meta_header(path) == ('1.2.1', '2026-05-29')
+
+
+def test_read_meta_header_strips_spreadsheet_padding_commas():
+    # Excel/Sheets/Calc pad every row, including these comment lines, with
+    # trailing commas to match the data columns; the header must stay clean.
+    with tempfile.TemporaryDirectory() as tmpdir:
+        path = _write_csv(
+            tmpdir,
+            "# version: 1.2.1,,,,,,,,\n# date: 2026-05-29,,,,,,,,\n"
+            "Manufacturer,Model\nDJI,Mavic\n",
+        )
+        assert PickleHelper._read_meta_header(path) == ('1.2.1', '2026-05-29')
+
+
+def test_read_meta_header_missing_fields_default_to_empty():
+    with tempfile.TemporaryDirectory() as tmpdir:
+        path = _write_csv(tmpdir, "Manufacturer,Model\nDJI,Mavic\n")
+        assert PickleHelper._read_meta_header(path) == ('', '')
 
 
 def test_version_to_tuple_release_has_zero_label_and_build():

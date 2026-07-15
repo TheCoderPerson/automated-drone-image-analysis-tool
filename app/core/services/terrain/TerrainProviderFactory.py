@@ -53,7 +53,7 @@ class TerrainProviderFactory:
         return [
             {
                 'id': PROVIDER_TERRARIUM,
-                'label': 'AWS Terrarium (online, ~30 m global)',
+                'label': 'AWS Terrain Tiles (online, ~30 m global)',
                 'requires_paths': False,
             },
             {

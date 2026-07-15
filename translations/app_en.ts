@@ -5539,8 +5539,8 @@ This downloads Meta/WRI canopy height (1 m) and sets it as the canopy source, re
     </message>
     <message>
         <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="714"/>
-        <source>POD: {pod}%   Looks: {looks}</source>
-        <translation>POD: {pod}%   Looks: {looks}</translation>
+        <source>POD: {pod}% (beta)   Looks: {looks}</source>
+        <translation>POD: {pod}% (beta)   Looks: {looks}</translation>
     </message>
     <message>
         <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="717"/>
@@ -5613,8 +5613,8 @@ This downloads Meta/WRI canopy height (1 m) and sets it as the canopy source, re
     </message>
     <message>
         <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="144"/>
-        <source>POD</source>
-        <translation>POD</translation>
+        <source>POD (beta)</source>
+        <translation>POD (beta)</translation>
     </message>
     <message>
         <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="145"/>
@@ -10499,28 +10499,28 @@ When enabled, the app skips any network calls (map tiles, CalTopo exports) and w
     </message>
     <message>
         <location filename="../resources/views/Preferences.ui" line="399"/>
-        <source>Use terrain elevation data (DTM/DSM) for more accurate AOI GPS coordinate calculations.
-When enabled, uses online elevation data to account for terrain variations.
+        <source>Use terrain elevation data (DEM/DTM/DSM) for more accurate AOI GPS coordinate calculations.
+When enabled, uses online or local elevation data to account for terrain variations.
 When disabled, assumes flat terrain at takeoff altitude.</source>
-        <translation>Use terrain elevation data (DTM/DSM) for more accurate AOI GPS coordinate calculations.
-When enabled, uses online elevation data to account for terrain variations.
+        <translation>Use terrain elevation data (DEM/DTM/DSM) for more accurate AOI GPS coordinate calculations.
+When enabled, uses online or local elevation data to account for terrain variations.
 When disabled, assumes flat terrain at takeoff altitude.</translation>
+    </message>
+    <message>
+        <location filename="../resources/views/Preferences.ui" line="416"/>
+        <source>Enable terrain-corrected AOI positioning using DEM/DTM/DSM elevation data.
+• When enabled: Downloads and caches elevation tiles for accurate positioning
+• When disabled: Uses flat terrain assumption (faster, works offline)
+Terrain data is cached locally and works offline after first download.</source>
+        <translation>Enable terrain-corrected AOI positioning using DEM/DTM/DSM elevation data.
+• When enabled: Downloads and caches elevation tiles for accurate positioning
+• When disabled: Uses flat terrain assumption (faster, works offline)
+Terrain data is cached locally and works offline after first download.</translation>
     </message>
     <message>
         <location filename="../resources/views/Preferences.ui" line="404"/>
         <source>Use Terrain Elevation:</source>
         <translation>Use Terrain Elevation:</translation>
-    </message>
-    <message>
-        <location filename="../resources/views/Preferences.ui" line="416"/>
-        <source>Enable terrain-corrected AOI positioning using DTM/DSM elevation data.
-• When enabled: Downloads and caches elevation tiles for accurate positioning
-• When disabled: Uses flat terrain assumption (faster, works offline)
-Terrain data is cached locally and works offline after first download.</source>
-        <translation>Enable terrain-corrected AOI positioning using DTM/DSM elevation data.
-• When enabled: Downloads and caches elevation tiles for accurate positioning
-• When disabled: Uses flat terrain assumption (faster, works offline)
-Terrain data is cached locally and works offline after first download.</translation>
     </message>
     <message>
         <location filename="../resources/views/Preferences.ui" line="440"/>
@@ -10607,154 +10607,159 @@ All changes are saved automatically when modified.</source>
 All changes are saved automatically when modified.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/Preferences.py" line="68"/>
+        <location filename="../app/core/controllers/Preferences.py" line="69"/>
         <source>Language:</source>
         <translation>Language:</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/Preferences.py" line="97"/>
+        <location filename="../app/core/controllers/Preferences.py" line="98"/>
         <source>Elevation Source:</source>
         <translation>Elevation Source:</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/Preferences.py" line="107"/>
-        <location filename="../app/core/controllers/Preferences.py" line="181"/>
+        <location filename="../app/core/controllers/Preferences.py" line="108"/>
+        <location filename="../app/core/controllers/Preferences.py" line="182"/>
         <source>Manifest CSV:</source>
         <translation>Manifest CSV:</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/Preferences.py" line="109"/>
+        <location filename="../app/core/controllers/Preferences.py" line="110"/>
         <source>Path to dem_manifest.csv</source>
         <translation>Path to dem_manifest.csv</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/Preferences.py" line="110"/>
-        <location filename="../app/core/controllers/Preferences.py" line="121"/>
-        <location filename="../app/core/controllers/Preferences.py" line="184"/>
-        <location filename="../app/core/controllers/Preferences.py" line="194"/>
+        <location filename="../app/core/controllers/Preferences.py" line="111"/>
+        <location filename="../app/core/controllers/Preferences.py" line="122"/>
+        <location filename="../app/core/controllers/Preferences.py" line="185"/>
+        <location filename="../app/core/controllers/Preferences.py" line="195"/>
         <source>Browse...</source>
         <translation>Browse...</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/Preferences.py" line="118"/>
-        <location filename="../app/core/controllers/Preferences.py" line="191"/>
+        <location filename="../app/core/controllers/Preferences.py" line="119"/>
+        <location filename="../app/core/controllers/Preferences.py" line="192"/>
         <source>Tiles directory:</source>
         <translation>Tiles directory:</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/Preferences.py" line="120"/>
-        <location filename="../app/core/controllers/Preferences.py" line="193"/>
+        <location filename="../app/core/controllers/Preferences.py" line="121"/>
+        <location filename="../app/core/controllers/Preferences.py" line="194"/>
         <source>Folder containing the GeoTIFF tiles</source>
         <translation>Folder containing the GeoTIFF tiles</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/Preferences.py" line="151"/>
+        <location filename="../app/core/controllers/Preferences.py" line="152"/>
         <source>Terrain</source>
         <translation>Terrain</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/Preferences.py" line="168"/>
+        <location filename="../app/core/controllers/Preferences.py" line="169"/>
         <source>Canopy Data Source</source>
         <translation>Canopy Data Source</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/Preferences.py" line="172"/>
+        <location filename="../app/core/controllers/Preferences.py" line="173"/>
         <source>Source:</source>
         <translation>Source:</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/Preferences.py" line="183"/>
+        <location filename="../app/core/controllers/Preferences.py" line="184"/>
         <source>Path to the canopy manifest CSV</source>
         <translation>Path to the canopy manifest CSV</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/Preferences.py" line="203"/>
+        <location filename="../app/core/controllers/Preferences.py" line="204"/>
         <source>Canopy is disabled until both paths are set — use Download tiles… or Browse.</source>
         <translation>Canopy is disabled until both paths are set — use Download tiles… or Browse.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/Preferences.py" line="213"/>
+        <location filename="../app/core/controllers/Preferences.py" line="214"/>
         <source>Download tiles...</source>
         <translation>Download tiles...</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/Preferences.py" line="215"/>
+        <location filename="../app/core/controllers/Preferences.py" line="216"/>
         <source>Download DEM and/or canopy tiles for an area of interest and register them here. Note: the canopy download uses Meta/WRI data and registers it as the canopy source.</source>
         <translation>Download DEM and/or canopy tiles for an area of interest and register them here. Note: the canopy download uses Meta/WRI data and registers it as the canopy source.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/Preferences.py" line="277"/>
-        <location filename="../app/core/controllers/Preferences.py" line="583"/>
+        <location filename="../app/core/controllers/Preferences.py" line="278"/>
+        <location filename="../app/core/controllers/Preferences.py" line="591"/>
         <source>{version}_{date}</source>
         <translation>{version}_{date}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/Preferences.py" line="374"/>
+        <location filename="../app/core/controllers/Preferences.py" line="375"/>
         <source>Select 3DEP manifest CSV</source>
         <translation>Select 3DEP manifest CSV</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/Preferences.py" line="376"/>
-        <location filename="../app/core/controllers/Preferences.py" line="428"/>
+        <location filename="../app/core/controllers/Preferences.py" line="377"/>
+        <location filename="../app/core/controllers/Preferences.py" line="429"/>
         <source>CSV files (*.csv);;All files (*)</source>
         <translation>CSV files (*.csv);;All files (*)</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/Preferences.py" line="386"/>
+        <location filename="../app/core/controllers/Preferences.py" line="387"/>
         <source>Select 3DEP tiles directory</source>
         <translation>Select 3DEP tiles directory</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/Preferences.py" line="427"/>
+        <location filename="../app/core/controllers/Preferences.py" line="428"/>
         <source>Select canopy manifest CSV</source>
         <translation>Select canopy manifest CSV</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/Preferences.py" line="436"/>
+        <location filename="../app/core/controllers/Preferences.py" line="437"/>
         <source>Select canopy tiles directory</source>
         <translation>Select canopy tiles directory</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/Preferences.py" line="447"/>
+        <location filename="../app/core/controllers/Preferences.py" line="448"/>
         <source>Download Tiles</source>
         <translation>Download Tiles</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/Preferences.py" line="448"/>
+        <location filename="../app/core/controllers/Preferences.py" line="449"/>
         <source>The tile downloader is unavailable:
 {error}</source>
         <translation>The tile downloader is unavailable:
 {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/Preferences.py" line="518"/>
+        <location filename="../app/core/controllers/Preferences.py" line="522"/>
         <source>{tiles} tiles ({size_mb:.1f} MB)</source>
         <translation>{tiles} tiles ({size_mb:.1f} MB)</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/Preferences.py" line="524"/>
+        <location filename="../app/core/controllers/Preferences.py" line="514"/>
         <source>Not available</source>
         <translation>Not available</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/Preferences.py" line="526"/>
+        <location filename="../app/core/controllers/Preferences.py" line="531"/>
+        <source>N/A (local tiles)</source>
+        <translation>N/A (local tiles)</translation>
+    </message>
+    <message>
         <location filename="../app/core/controllers/Preferences.py" line="534"/>
-        <location filename="../app/core/controllers/Preferences.py" line="562"/>
+        <location filename="../app/core/controllers/Preferences.py" line="542"/>
+        <location filename="../app/core/controllers/Preferences.py" line="570"/>
         <source>Error</source>
         <translation>Error</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/Preferences.py" line="535"/>
+        <location filename="../app/core/controllers/Preferences.py" line="543"/>
         <source>Terrain service not available.</source>
         <translation>Terrain service not available.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/Preferences.py" line="541"/>
+        <location filename="../app/core/controllers/Preferences.py" line="549"/>
         <source>Clear Terrain Cache</source>
         <translation>Clear Terrain Cache</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/Preferences.py" line="543"/>
+        <location filename="../app/core/controllers/Preferences.py" line="551"/>
         <source>Are you sure you want to clear all cached terrain elevation data?
 
 This will require re-downloading tiles when terrain elevation is used.</source>
@@ -10763,37 +10768,37 @@ This will require re-downloading tiles when terrain elevation is used.</source>
 This will require re-downloading tiles when terrain elevation is used.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/Preferences.py" line="556"/>
+        <location filename="../app/core/controllers/Preferences.py" line="564"/>
         <source>Cache Cleared</source>
         <translation>Cache Cleared</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/Preferences.py" line="557"/>
+        <location filename="../app/core/controllers/Preferences.py" line="565"/>
         <source>Cleared {count} cached terrain tiles.</source>
         <translation>Cleared {count} cached terrain tiles.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/Preferences.py" line="563"/>
+        <location filename="../app/core/controllers/Preferences.py" line="571"/>
         <source>Failed to clear cache: {error}</source>
         <translation>Failed to clear cache: {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/Preferences.py" line="570"/>
+        <location filename="../app/core/controllers/Preferences.py" line="578"/>
         <source>Select a Drone Sensor File</source>
         <translation>Select a Drone Sensor File</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/Preferences.py" line="572"/>
+        <location filename="../app/core/controllers/Preferences.py" line="580"/>
         <source>CSV Files (*.csv)</source>
         <translation>CSV Files (*.csv)</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/Preferences.py" line="598"/>
+        <location filename="../app/core/controllers/Preferences.py" line="606"/>
         <source>Restart Required</source>
         <translation>Restart Required</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/Preferences.py" line="599"/>
+        <location filename="../app/core/controllers/Preferences.py" line="607"/>
         <source>Please restart the application for language changes to take effect.</source>
         <translation>Please restart the application for language changes to take effect.</translation>
     </message>
@@ -12800,13 +12805,13 @@ Detection was first seen at frame {frame}.</translation>
     </message>
     <message>
         <location filename="../resources/views/streaming/StreamingGuide.ui" line="532"/>
-        <source>Image Capture Information</source>
-        <translation>Image Capture Information</translation>
+        <source>Video Capture Information</source>
+        <translation>Video Capture Information</translation>
     </message>
     <message>
         <location filename="../resources/views/streaming/StreamingGuide.ui" line="554"/>
-        <source>What drone/camera was used to capture images?</source>
-        <translation>What drone/camera was used to capture images?</translation>
+        <source>What drone/camera was used to capture the video?</source>
+        <translation>What drone/camera was used to capture the video?</translation>
     </message>
     <message>
         <location filename="../resources/views/streaming/StreamingGuide.ui" line="584"/>
@@ -13997,67 +14002,67 @@ Aggressive</translation>
 <context>
     <name>TileFetchController</name>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="113"/>
+        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="137"/>
         <source>Invalid Area</source>
         <translation>Invalid Area</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="114"/>
+        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="138"/>
         <source>Please enter a valid bounding box.</source>
         <translation>Please enter a valid bounding box.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="117"/>
+        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="141"/>
         <source>No Output Folder</source>
         <translation>No Output Folder</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="118"/>
+        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="142"/>
         <source>Please choose an output folder.</source>
         <translation>Please choose an output folder.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="121"/>
+        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="145"/>
         <source>No Dataset</source>
         <translation>No Dataset</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="122"/>
+        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="146"/>
         <source>Please select at least one dataset.</source>
         <translation>Please select at least one dataset.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="167"/>
+        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="191"/>
         <source>No GPS Found</source>
         <translation>No GPS Found</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="168"/>
+        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="192"/>
         <source>No GPS positions were found in the {source} images.</source>
         <translation>No GPS positions were found in the {source} images.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="181"/>
+        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="205"/>
         <source>Select image folder</source>
         <translation>Select image folder</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="190"/>
+        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="214"/>
         <source>No Images</source>
         <translation>No Images</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="191"/>
+        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="215"/>
         <source>No images were found in the selected folder.</source>
         <translation>No images were found in the selected folder.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="237"/>
+        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="261"/>
         <source>Replace Canopy Source?</source>
         <translation>Replace Canopy Source?</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="238"/>
+        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="262"/>
         <source>A LANDFIRE canopy source is currently configured.
 
 Register the downloaded Meta/WRI canopy tiles instead? (Your LANDFIRE files stay on disk; only the selected source changes.)</source>
@@ -14066,78 +14071,78 @@ Register the downloaded Meta/WRI canopy tiles instead? (Your LANDFIRE files stay
 Register the downloaded Meta/WRI canopy tiles instead? (Your LANDFIRE files stay on disk; only the selected source changes.)</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="247"/>
+        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="271"/>
         <source>Elevation (DEM)</source>
         <translation>Elevation (DEM)</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="247"/>
+        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="271"/>
         <source>Canopy height</source>
         <translation>Canopy height</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="264"/>
+        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="288"/>
         <source>{product}: cancelled before completion.</source>
         <translation>{product}: cancelled before completion.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="266"/>
+        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="290"/>
         <source>{product}: {failed} tile(s) failed to download.</source>
         <translation>{product}: {failed} tile(s) failed to download.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="269"/>
+        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="293"/>
         <source>{product}: no data covers this area.</source>
         <translation>{product}: no data covers this area.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="271"/>
+        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="295"/>
         <source>{product}: nothing was downloaded.</source>
         <translation>{product}: nothing was downloaded.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="278"/>
+        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="302"/>
         <source>{product}: registered as the active source.</source>
         <translation>{product}: registered as the active source.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="281"/>
+        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="305"/>
         <source>{product}: NOT registered (no usable tiles).</source>
         <translation>{product}: NOT registered (no usable tiles).</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="290"/>
+        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="314"/>
         <source>Download Finished with Problems</source>
         <translation>Download Finished with Problems</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="296"/>
+        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="320"/>
         <source>Download Complete</source>
         <translation>Download Complete</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="285"/>
-        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="292"/>
+        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="309"/>
+        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="316"/>
         <source>Downloaded {count} tiles.</source>
         <translation>Downloaded {count} tiles.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="307"/>
+        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="331"/>
         <source>Download Cancelled</source>
         <translation>Download Cancelled</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="308"/>
+        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="332"/>
         <source>The download was cancelled. No tiles were registered.</source>
         <translation>The download was cancelled. No tiles were registered.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="315"/>
+        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="339"/>
         <source>Download Error</source>
         <translation>Download Error</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="316"/>
+        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="340"/>
         <source>Tile download failed:
 {error}</source>
         <translation>Tile download failed:
@@ -14147,107 +14152,112 @@ Register the downloaded Meta/WRI canopy tiles instead? (Your LANDFIRE files stay
 <context>
     <name>TileFetchDialog</name>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/TileFetchDialog.py" line="33"/>
+        <location filename="../app/core/views/images/viewer/dialogs/TileFetchDialog.py" line="37"/>
         <source>Download Coverage Data</source>
         <translation>Download Coverage Data</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/TileFetchDialog.py" line="41"/>
+        <location filename="../app/core/views/images/viewer/dialogs/TileFetchDialog.py" line="47"/>
         <source>Area of Interest (WGS84)</source>
         <translation>Area of Interest (WGS84)</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/TileFetchDialog.py" line="51"/>
+        <location filename="../app/core/views/images/viewer/dialogs/TileFetchDialog.py" line="57"/>
         <source>Fill area from</source>
         <translation>Fill area from</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/TileFetchDialog.py" line="56"/>
+        <location filename="../app/core/views/images/viewer/dialogs/TileFetchDialog.py" line="62"/>
         <source>Fill the area from the loaded mission&apos;s image GPS, or from an image folder.</source>
         <translation>Fill the area from the loaded mission&apos;s image GPS, or from an image folder.</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/TileFetchDialog.py" line="53"/>
+        <location filename="../app/core/views/images/viewer/dialogs/TileFetchDialog.py" line="59"/>
         <source>Loaded mission extent</source>
         <translation>Loaded mission extent</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/TileFetchDialog.py" line="54"/>
+        <location filename="../app/core/views/images/viewer/dialogs/TileFetchDialog.py" line="60"/>
         <source>Image folder...</source>
         <translation>Image folder...</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/TileFetchDialog.py" line="74"/>
+        <location filename="../app/core/views/images/viewer/dialogs/TileFetchDialog.py" line="80"/>
         <source>Min longitude:</source>
         <translation>Min longitude:</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/TileFetchDialog.py" line="76"/>
+        <location filename="../app/core/views/images/viewer/dialogs/TileFetchDialog.py" line="82"/>
         <source>Min latitude:</source>
         <translation>Min latitude:</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/TileFetchDialog.py" line="78"/>
+        <location filename="../app/core/views/images/viewer/dialogs/TileFetchDialog.py" line="84"/>
         <source>Max longitude:</source>
         <translation>Max longitude:</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/TileFetchDialog.py" line="80"/>
+        <location filename="../app/core/views/images/viewer/dialogs/TileFetchDialog.py" line="86"/>
         <source>Max latitude:</source>
         <translation>Max latitude:</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/TileFetchDialog.py" line="85"/>
+        <location filename="../app/core/views/images/viewer/dialogs/TileFetchDialog.py" line="91"/>
         <source>Footprint buffer (m):</source>
         <translation>Footprint buffer (m):</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/TileFetchDialog.py" line="90"/>
+        <location filename="../app/core/views/images/viewer/dialogs/TileFetchDialog.py" line="96"/>
         <source>Padding added around the camera positions so downloaded tiles cover the image footprints. Auto-sized from the mission; edit and re-fill to change.</source>
         <translation>Padding added around the camera positions so downloaded tiles cover the image footprints. Auto-sized from the mission; edit and re-fill to change.</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/TileFetchDialog.py" line="99"/>
+        <location filename="../app/core/views/images/viewer/dialogs/TileFetchDialog.py" line="105"/>
         <source>Datasets</source>
         <translation>Datasets</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/TileFetchDialog.py" line="101"/>
+        <location filename="../app/core/views/images/viewer/dialogs/TileFetchDialog.py" line="107"/>
         <source>USGS 3DEP DEM</source>
         <translation>USGS 3DEP DEM</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/TileFetchDialog.py" line="103"/>
+        <location filename="../app/core/views/images/viewer/dialogs/TileFetchDialog.py" line="110"/>
+        <source>USGS 3DEP provides 1 m local elevation. Optional when you already have a terrain source configured (AWS Terrain Tiles online, or downloaded 3DEP) — enable it to download higher-resolution data.</source>
+        <translation>USGS 3DEP provides 1 m local elevation. Optional when you already have a terrain source configured (AWS Terrain Tiles online, or downloaded 3DEP) — enable it to download higher-resolution data.</translation>
+    </message>
+    <message>
+        <location filename="../app/core/views/images/viewer/dialogs/TileFetchDialog.py" line="113"/>
         <source>Meta/WRI Canopy Height</source>
         <translation>Meta/WRI Canopy Height</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/TileFetchDialog.py" line="111"/>
+        <location filename="../app/core/views/images/viewer/dialogs/TileFetchDialog.py" line="121"/>
         <source>Output folder:</source>
         <translation>Output folder:</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/TileFetchDialog.py" line="115"/>
+        <location filename="../app/core/views/images/viewer/dialogs/TileFetchDialog.py" line="125"/>
         <source>Browse...</source>
         <translation>Browse...</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/TileFetchDialog.py" line="121"/>
+        <location filename="../app/core/views/images/viewer/dialogs/TileFetchDialog.py" line="131"/>
         <source>Register in Preferences when complete</source>
         <translation>Register in Preferences when complete</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/TileFetchDialog.py" line="127"/>
+        <location filename="../app/core/views/images/viewer/dialogs/TileFetchDialog.py" line="137"/>
         <source>Download</source>
         <translation>Download</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/TileFetchDialog.py" line="130"/>
+        <location filename="../app/core/views/images/viewer/dialogs/TileFetchDialog.py" line="140"/>
         <source>Cancel</source>
         <translation>Cancel</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/TileFetchDialog.py" line="137"/>
+        <location filename="../app/core/views/images/viewer/dialogs/TileFetchDialog.py" line="147"/>
         <source>Select output folder</source>
         <translation>Select output folder</translation>
     </message>

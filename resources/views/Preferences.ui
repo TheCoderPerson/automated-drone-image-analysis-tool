@@ -396,8 +396,8 @@ When enabled, the app skips any network calls (map tiles, CalTopo exports) and w
            </font>
           </property>
           <property name="toolTip">
-           <string>Use terrain elevation data (DTM/DSM) for more accurate AOI GPS coordinate calculations.
-When enabled, uses online elevation data to account for terrain variations.
+           <string>Use terrain elevation data (DEM/DTM/DSM) for more accurate AOI GPS coordinate calculations.
+When enabled, uses online or local elevation data to account for terrain variations.
 When disabled, assumes flat terrain at takeoff altitude.</string>
           </property>
           <property name="text">
@@ -413,7 +413,7 @@ When disabled, assumes flat terrain at takeoff altitude.</string>
            </font>
           </property>
           <property name="toolTip">
-           <string>Enable terrain-corrected AOI positioning using DTM/DSM elevation data.
+           <string>Enable terrain-corrected AOI positioning using DEM/DTM/DSM elevation data.
 • When enabled: Downloads and caches elevation tiles for accurate positioning
 • When disabled: Uses flat terrain assumption (faster, works offline)
 Terrain data is cached locally and works offline after first download.</string>
