@@ -207,7 +207,9 @@ def test_fetch_3dep_http_500_accounts_failure(tmp_path):
                                 tile_px=2048, native_res_m=1.0)
     assert result.tiles_written == 0
     assert result.tiles_failed >= 1
-    assert ("dem_0_0.tif", "download failed") in result.errors
+    # Filenames carry a per-AOI digest (library-safe): dem_<digest>_0_0.tif.
+    assert any(name.startswith("dem_") and name.endswith("_0_0.tif")
+               and reason == "download failed" for name, reason in result.errors)
     assert result.manifest_path is None              # nothing written -> no manifest
 
 
@@ -223,7 +225,8 @@ def test_fetch_3dep_request_exception_is_swallowed(tmp_path):
     result = svc.fetch_3dep_dem((-120.50, 38.70, -120.49, 38.71), str(tmp_path),
                                 tile_px=2048, native_res_m=1.0)
     assert result.tiles_failed >= 1
-    assert ("dem_0_0.tif", "download failed") in result.errors
+    assert any(name.startswith("dem_") and name.endswith("_0_0.tif")
+               and reason == "download failed" for name, reason in result.errors)
     # Each of the initial call and the one blind retry exhausts MAX_RETRIES attempts,
     # proving exceptions were swallowed and the loop continued rather than aborting.
     assert len(svc.session.calls) == TileFetchService.MAX_RETRIES * 2
@@ -490,3 +493,43 @@ def test_fetch_meta_windowed_absent_probe_skips(tmp_path):
     mock_win.assert_not_called()
     assert result.tiles_skipped >= 1
     assert result.tiles_failed == 0
+
+
+# --- central tile library + collision-safe DEM naming -------------------------
+
+def test_library_root_is_stable_and_user_scoped():
+    from core.services.terrain.TileFetchService import library_root
+    root = library_root()
+    assert root == library_root()                    # stable across calls
+    assert '.adiat' in root and 'terrain_library' in root
+
+
+def test_dem_filenames_carry_aoi_digest(tmp_path):
+    """Two different AOIs downloaded into the SAME folder must not overwrite
+    each other's tiles (the central-library contract)."""
+    svc = _svc(lambda url, params, n: _Resp(200, b"TIFFDATA"))
+    r1 = svc.fetch_3dep_dem((-120.50, 38.70, -120.49, 38.71), str(tmp_path),
+                            tile_px=2048, native_res_m=1.0)
+    svc2 = _svc(lambda url, params, n: _Resp(200, b"TIFFDATA"))
+    r2 = svc2.fetch_3dep_dem((-97.96, 30.65, -97.95, 30.66), str(tmp_path),
+                             tile_px=2048, native_res_m=1.0)
+
+    assert r1.tiles_written >= 1 and r2.tiles_written >= 1
+    with open(r2.manifest_path, newline="") as fh:
+        names = {row['filename'] for row in csv.DictReader(fh)}
+    # Both AOIs' tiles coexist in the merged manifest with distinct names.
+    assert len(names) >= 2
+    assert len({n.split('_')[1] for n in names}) == 2   # two distinct digests
+
+
+def test_same_aoi_redownload_is_idempotent(tmp_path):
+    """The same AOI re-downloaded reuses its filenames (overwrites, no growth)."""
+    bounds = (-120.50, 38.70, -120.49, 38.71)
+    svc = _svc(lambda url, params, n: _Resp(200, b"TIFFDATA"))
+    r1 = svc.fetch_3dep_dem(bounds, str(tmp_path), tile_px=2048, native_res_m=1.0)
+    svc2 = _svc(lambda url, params, n: _Resp(200, b"TIFFDATA"))
+    r2 = svc2.fetch_3dep_dem(bounds, str(tmp_path), tile_px=2048, native_res_m=1.0)
+
+    with open(r2.manifest_path, newline="") as fh:
+        rows = list(csv.DictReader(fh))
+    assert len(rows) == r1.tiles_written               # no duplicate rows

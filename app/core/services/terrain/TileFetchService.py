@@ -39,6 +39,16 @@ OUTCOME_ABSENT = 'absent'        # confirmed 403/404 -> sparse coverage, benign
 OUTCOME_FAILED = 'failed'        # anything else -> a real failure to surface
 OUTCOME_CANCELLED = 'cancelled'
 
+# Central tile library: the default download destination. Unlike a mission's
+# results folder it is stable and mission-independent, so downloads accumulate
+# (manifests merge) instead of each mission's registration replacing the last.
+DEFAULT_LIBRARY_ROOT = Path.home() / '.adiat' / 'terrain_library'
+
+
+def library_root() -> str:
+    """The central tile-library folder (created on demand by the fetch)."""
+    return str(DEFAULT_LIBRARY_ROOT)
+
 
 @dataclass
 class FetchResult:
@@ -362,6 +372,14 @@ class TileFetchService:
         rows = []
         total = n_x * n_y
         done = 0
+        # Per-AOI digest in the tile names so different AOIs sharing one folder
+        # (the central library) never overwrite each other's files; the same
+        # AOI re-downloaded overwrites its own tiles (idempotent), mirroring
+        # the canopy clip naming. Old digest-less names remain readable via
+        # their manifest rows.
+        aoi_digest = hashlib.md5(
+            f"{min_lon:.6f}_{min_lat:.6f}_{max_lon:.6f}_{max_lat:.6f}".encode()
+        ).hexdigest()[:8]
         for j in range(n_y):
             for i in range(n_x):
                 if cancel_check and cancel_check():
@@ -378,7 +396,7 @@ class TileFetchService:
                     'size': f"{cols},{rows_px}", 'format': 'tiff', 'pixelType': 'F32',
                     'interpolation': 'RSP_BilinearInterpolation', 'f': 'image',
                 }
-                filename = f"dem_{j}_{i}.tif"
+                filename = f"dem_{aoi_digest}_{j}_{i}.tif"
                 # Announce the tile BEFORE the transfer so the UI shows activity
                 # while the request is in flight.
                 if progress_callback:

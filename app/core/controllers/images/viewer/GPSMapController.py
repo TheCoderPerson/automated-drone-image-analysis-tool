@@ -71,6 +71,7 @@ class GPSMapController(QObject):
         self._max_overlay_dim = 2048
         self._canopy_svc = None
         self._canopy_svc_loaded = False
+        self._canopy_svc_fp = ''           # canopy settings the service was built from
         self._canopy_overlay_cache = None  # (spec key, pixmap, transform6)
         self._canopy_worker = None
         self._canopy_pending_opacity = 70
@@ -608,14 +609,40 @@ class GPSMapController(QObject):
             rgba = pod_to_rgba(result.pod, result.look_count, result.params)
         return self._rgba_to_pixmap(rgba, result.transform)
 
+    @staticmethod
+    def _canopy_config_fingerprint():
+        """Fingerprint of the canopy settings the cached service was built from."""
+        try:
+            from core.services.SettingsService import SettingsService
+            s = SettingsService()
+            return '|'.join(
+                str(s.get_setting(k, '') or '')
+                for k in ('CanopyKind', 'CanopyManifestPath', 'CanopyTilesDir'))
+        except Exception:
+            return ''
+
     def _canopy_service(self):
-        """Lazily build (and cache) the settings-configured CanopyService."""
+        """Lazily build (and cache) the settings-configured CanopyService.
+
+        The cache is fingerprinted against the canopy settings: changing the
+        source in Preferences while the map is open rebuilds the service on
+        next access instead of silently serving the old source's data.
+        """
+        fingerprint = self._canopy_config_fingerprint()
+        # An empty recorded fingerprint means "unknown provenance" (e.g. a
+        # directly injected service) and is trusted, mirroring
+        # CoverageResultCache.is_stale's convention.
+        if (self._canopy_svc_loaded and self._canopy_svc_fp
+                and fingerprint != self._canopy_svc_fp):
+            self._canopy_svc_loaded = False
+            self._canopy_overlay_cache = None   # old source's pixels are stale too
         if not self._canopy_svc_loaded:
             self._canopy_svc_loaded = True
+            self._canopy_svc_fp = fingerprint
             self._close_canopy_service()   # release the old source's datasets
             try:
-                from core.services.SettingsService import SettingsService
                 from core.services.terrain.CanopyServiceFactory import create_canopy_service
+                from core.services.SettingsService import SettingsService
                 self._canopy_svc = create_canopy_service(SettingsService())
             except Exception as e:
                 self.logger.warning(f"Canopy overlay: service unavailable: {e}")

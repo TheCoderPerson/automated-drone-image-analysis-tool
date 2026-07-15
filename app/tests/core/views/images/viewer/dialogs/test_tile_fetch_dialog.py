@@ -15,11 +15,17 @@ def app():
 
 
 def test_defaults(app):
+    from core.services.terrain.TileFetchService import library_root
     d = TileFetchDialog()
     assert d.want_dem() is True
     assert d.want_canopy() is True
     assert d.should_register() is True
-    assert d.get_output_dir() == ""
+    # The central library is the default destination: fixed path, no manual
+    # output editing, registration implicit (checkbox hidden).
+    assert d.get_destination() == "library"
+    assert d.get_output_dir() == library_root()
+    assert d.output_edit.isEnabled() is False
+    assert d.register_checkbox.isHidden() or not d.register_checkbox.isVisible()
 
 
 def test_dem_checkbox_defaults_off_when_flag_false(app):
@@ -82,10 +88,43 @@ def test_fill_combo_default_selection(app):
     assert TileFetchDialog(has_mission=False).fill_combo.currentIndex() == -1
 
 
-def test_default_output_dir_prefills_output_edit(app):
-    """The results folder is prefilled as the download destination."""
+def test_default_output_dir_enables_results_destination(app):
+    """A results folder adds the 'Mission results folder' destination; picking
+    it pins the output to that folder."""
     d = TileFetchDialog(default_output_dir="/mission/results")
+    keys = [d.destination_combo.itemData(i) for i in range(d.destination_combo.count())]
+    assert keys == ["library", "results", "custom"]
+
+    d.destination_combo.setCurrentIndex(d.destination_combo.findData("results"))
+    assert d.get_destination() == "results"
     assert d.get_output_dir() == "/mission/results"
+    assert d.output_edit.isEnabled() is False
+    assert d.should_register() is True   # checkbox visible again, still checked
+
+
+def test_no_results_destination_without_mission_folder(app):
+    d = TileFetchDialog()
+    keys = [d.destination_combo.itemData(i) for i in range(d.destination_combo.count())]
+    assert keys == ["library", "custom"]
+
+
+def test_custom_destination_enables_manual_output(app):
+    d = TileFetchDialog()
+    d.destination_combo.setCurrentIndex(d.destination_combo.findData("custom"))
+    assert d.output_edit.isEnabled() is True
+    assert d.output_button.isEnabled() is True
+    d.output_edit.setText("C:/tiles/here")
+    assert d.get_output_dir() == "C:/tiles/here"
+
+
+def test_library_destination_forces_registration(app):
+    """Unchecking register in custom mode does not survive a switch back to
+    the library (library downloads are always registered)."""
+    d = TileFetchDialog()
+    d.destination_combo.setCurrentIndex(d.destination_combo.findData("custom"))
+    d.register_checkbox.setChecked(False)
+    d.destination_combo.setCurrentIndex(d.destination_combo.findData("library"))
+    assert d.should_register() is True
 
 
 def test_set_aoi_and_buffer(app):
@@ -138,8 +177,10 @@ def test_fill_combo_placeholder_activation_is_noop(app, qtbot):
 
 
 def test_browse_button_updates_output_edit(app, qtbot, tmp_path):
-    """Clicking Browse... writes the chosen folder into the output edit."""
+    """Clicking Browse... writes the chosen folder into the output edit
+    (custom destination — the browse button is disabled for library/results)."""
     d = _shown_dialog(qtbot)
+    d.destination_combo.setCurrentIndex(d.destination_combo.findData("custom"))
     target = str(tmp_path)
     with patch("core.views.images.viewer.dialogs.TileFetchDialog.QFileDialog") as MockFile:
         MockFile.getExistingDirectory.return_value = target
@@ -152,6 +193,7 @@ def test_browse_button_updates_output_edit(app, qtbot, tmp_path):
 def test_browse_button_cancel_leaves_output_unchanged(app, qtbot):
     """A cancelled folder picker (empty string) must not clear the output edit."""
     d = _shown_dialog(qtbot)
+    d.destination_combo.setCurrentIndex(d.destination_combo.findData("custom"))
     d.output_edit.setText("C:/existing/output")
     with patch("core.views.images.viewer.dialogs.TileFetchDialog.QFileDialog") as MockFile:
         MockFile.getExistingDirectory.return_value = ""  # user cancelled

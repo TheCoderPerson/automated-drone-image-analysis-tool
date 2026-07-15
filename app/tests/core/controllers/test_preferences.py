@@ -120,3 +120,37 @@ def test_terrain_controls_not_left_in_top_level_layout(preferences):
     assert preferences.terrainProviderGroup not in top_level
     # Only the card itself represents them at the top level.
     assert preferences.terrainCard in top_level
+
+
+# ---------------------------------------------------------------------------
+# 3DEP inactive-until-configured warning + baseline note
+# ---------------------------------------------------------------------------
+
+def test_baseline_note_present(preferences):
+    """The card states the overlay semantics: AWS baseline always available,
+    3DEP adds local detail."""
+    assert "baseline" in preferences.terrainBaselineLabel.text()
+    assert not preferences.terrainBaselineLabel.isHidden()
+
+
+def test_3dep_warning_hidden_for_online_provider(preferences):
+    # Fixture provider is terrarium -> fields and warning hidden.
+    assert preferences.terrain3DEPPathsWarningLabel.isHidden()
+
+
+def test_3dep_warning_shown_when_local_selected_without_paths(preferences):
+    idx = preferences.terrainProviderComboBox.findData('usgs_3dep_local')
+    preferences.terrainProviderComboBox.setCurrentIndex(idx)
+    assert not preferences.terrain3DEPPathsWarningLabel.isHidden()
+    assert "inactive" in preferences.terrain3DEPPathsWarningLabel.text()
+
+
+def test_3dep_warning_clears_once_both_paths_set(preferences):
+    idx = preferences.terrainProviderComboBox.findData('usgs_3dep_local')
+    preferences.terrainProviderComboBox.setCurrentIndex(idx)
+    preferences.terrain3DEPManifestEdit.setText("C:/dem/dem_manifest.csv")
+    preferences._update_terrain_3dep_manifest()
+    assert not preferences.terrain3DEPPathsWarningLabel.isHidden()  # tiles still missing
+    preferences.terrain3DEPTilesEdit.setText("C:/dem")
+    preferences._update_terrain_3dep_tiles()
+    assert preferences.terrain3DEPPathsWarningLabel.isHidden()

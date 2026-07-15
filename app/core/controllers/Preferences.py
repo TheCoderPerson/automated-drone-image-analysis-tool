@@ -94,6 +94,17 @@ class Preferences(TranslationMixin, QDialog, Ui_Preferences):
         layout = QVBoxLayout(self.terrainProviderGroup)
         layout.setContentsMargins(0, 0, 0, 0)
 
+        # Baseline note: local 3DEP is an overlay on the always-available
+        # online baseline, not an either/or replacement (TerrainService falls
+        # back per-query outside local coverage).
+        self.terrainBaselineLabel = QLabel(
+            self.tr("AWS Terrain Tiles (online, ~30 m) is always available as the "
+                    "baseline; local USGS 3DEP adds 1 m detail where downloaded."),
+            self.terrainProviderGroup)
+        self.terrainBaselineLabel.setWordWrap(True)
+        self.terrainBaselineLabel.setStyleSheet("color: #909090;")
+        layout.addWidget(self.terrainBaselineLabel)
+
         combo_row = QHBoxLayout()
         combo_label = QLabel(self.tr("Elevation Source:"), self.terrainProviderGroup)
         self.terrainProviderComboBox = QComboBox(self.terrainProviderGroup)
@@ -124,6 +135,17 @@ class Preferences(TranslationMixin, QDialog, Ui_Preferences):
         tiles_row.addWidget(self.terrain3DEPTilesEdit, 1)
         tiles_row.addWidget(self.terrain3DEPTilesButton)
         layout.addLayout(tiles_row)
+
+        # Inline validation, mirroring the canopy section: a paths-requiring
+        # provider with empty paths silently runs on the online baseline.
+        self.terrain3DEPPathsWarningLabel = QLabel(
+            self.tr("3DEP is inactive until both paths are set — the AWS Terrain "
+                    "Tiles baseline is used. Use Download tiles… or Browse."),
+            self.terrainProviderGroup)
+        self.terrain3DEPPathsWarningLabel.setStyleSheet("color: #E6A700;")
+        self.terrain3DEPPathsWarningLabel.setWordWrap(True)
+        self.terrain3DEPPathsWarningLabel.setVisible(False)
+        layout.addWidget(self.terrain3DEPPathsWarningLabel)
 
         # Placement is handled by _arrange_terrain_controls, which nests this
         # section inside the "Terrain" card with the toggle and cache rows.
@@ -340,13 +362,19 @@ class Preferences(TranslationMixin, QDialog, Ui_Preferences):
         self.parent.settings_service.set_setting('OfflineOnly', bool(checked))
 
     def _refresh_terrain_provider_visibility(self):
-        """Show/hide the 3DEP path fields based on the active provider."""
+        """Show/hide the 3DEP path fields based on the active provider, and
+        surface the inactive-until-configured warning when paths are missing."""
         is_local = self.terrainProviderComboBox.currentData() == PROVIDER_USGS_3DEP_LOCAL
         for w in (
             self.terrain3DEPManifestLabel, self.terrain3DEPManifestEdit, self.terrain3DEPManifestButton,
             self.terrain3DEPTilesLabel, self.terrain3DEPTilesEdit, self.terrain3DEPTilesButton,
         ):
             w.setVisible(is_local)
+        if hasattr(self, 'terrain3DEPPathsWarningLabel'):
+            incomplete = is_local and not (
+                self.terrain3DEPManifestEdit.text().strip()
+                and self.terrain3DEPTilesEdit.text().strip())
+            self.terrain3DEPPathsWarningLabel.setVisible(incomplete)
 
     def _update_terrain_provider(self):
         """Persist the active terrain provider id and refresh dependent UI."""
@@ -361,12 +389,14 @@ class Preferences(TranslationMixin, QDialog, Ui_Preferences):
             'Terrain3DEPManifestPath', self.terrain3DEPManifestEdit.text().strip()
         )
         self._terrain_service = None
+        self._refresh_terrain_provider_visibility()
 
     def _update_terrain_3dep_tiles(self):
         self.parent.settings_service.set_setting(
             'Terrain3DEPTilesDir', self.terrain3DEPTilesEdit.text().strip()
         )
         self._terrain_service = None
+        self._refresh_terrain_provider_visibility()
 
     def _browse_terrain_3dep_manifest(self):
         start_dir = self.terrain3DEPManifestEdit.text() or os.path.expanduser("~")

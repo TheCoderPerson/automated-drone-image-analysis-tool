@@ -58,7 +58,7 @@ class TerrainProviderFactory:
             },
             {
                 'id': PROVIDER_USGS_3DEP_LOCAL,
-                'label': 'USGS 3DEP 1 m (local GeoTIFFs)',
+                'label': 'USGS 3DEP 1 m local tiles (AWS fallback outside coverage)',
                 'requires_paths': True,
             },
         ]

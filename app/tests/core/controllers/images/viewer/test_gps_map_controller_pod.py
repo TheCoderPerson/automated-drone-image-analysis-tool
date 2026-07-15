@@ -783,3 +783,60 @@ def test_pod_calculate_defers_when_user_downloads_first(app):
     ctrl.on_pod_calculate_requested()
 
     ctrl.parent.unified_map_export.run_pod.assert_not_called()
+
+
+# ---------------------------------------------------------------------------
+# Canopy service staleness-on-access (Preferences changed while map open)
+# ---------------------------------------------------------------------------
+
+def test_canopy_service_rebuilds_when_settings_change(app):
+    """Changing the canopy source in Preferences while the map is open must
+    rebuild the cached service on next access, not keep serving the old one."""
+    ctrl = _controller(app)
+    old_svc = MagicMock()
+    ctrl._canopy_svc = old_svc
+    ctrl._canopy_svc_loaded = True
+    ctrl._canopy_svc_fp = 'meta|C:/old/m.csv|C:/old/tiles'
+    ctrl._canopy_overlay_cache = ('spec', 'pixmap', 'transform')
+
+    new_svc = MagicMock()
+    with patch.object(GPSMapController, '_canopy_config_fingerprint',
+                      return_value='landfire|C:/new/m.csv|C:/new/tiles'), \
+         patch("core.services.terrain.CanopyServiceFactory.create_canopy_service",
+               return_value=new_svc):
+        result = ctrl._canopy_service()
+
+    assert result is new_svc
+    old_svc.close.assert_called_once()          # old datasets released
+    assert ctrl._canopy_overlay_cache is None   # stale pixels dropped
+    assert ctrl._canopy_svc_fp == 'landfire|C:/new/m.csv|C:/new/tiles'
+
+
+def test_canopy_service_kept_when_settings_unchanged(app):
+    ctrl = _controller(app)
+    svc = MagicMock()
+    ctrl._canopy_svc = svc
+    ctrl._canopy_svc_loaded = True
+    ctrl._canopy_svc_fp = 'meta|C:/m.csv|C:/tiles'
+
+    with patch.object(GPSMapController, '_canopy_config_fingerprint',
+                      return_value='meta|C:/m.csv|C:/tiles'), \
+         patch("core.services.terrain.CanopyServiceFactory.create_canopy_service") as factory:
+        result = ctrl._canopy_service()
+
+    assert result is svc
+    factory.assert_not_called()
+
+
+def test_canopy_service_unfingerprinted_cache_is_trusted(app):
+    """A service injected without provenance (tests, tooling) is never
+    invalidated by the fingerprint check."""
+    ctrl = _controller(app)
+    svc = MagicMock()
+    ctrl._canopy_svc = svc
+    ctrl._canopy_svc_loaded = True
+    ctrl._canopy_svc_fp = ''
+
+    with patch.object(GPSMapController, '_canopy_config_fingerprint',
+                      return_value='meta|C:/m.csv|C:/tiles'):
+        assert ctrl._canopy_service() is svc

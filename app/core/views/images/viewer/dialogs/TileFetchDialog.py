@@ -134,6 +134,26 @@ class TileFetchDialog(TranslationMixin, QDialog):
         data_group.setLayout(data_layout)
         layout.addWidget(data_group)
 
+        # Destination: the central library is the default so downloads
+        # accumulate in one mission-independent place; the results folder and
+        # custom destinations remain for field kits / portability.
+        self._default_output_dir = default_output_dir
+        dest_row = QHBoxLayout()
+        dest_row.addWidget(QLabel(self.tr("Store in:")))
+        self.destination_combo = QComboBox()
+        self.destination_combo.addItem(self.tr("Central tile library (recommended)"), "library")
+        if default_output_dir:
+            self.destination_combo.addItem(self.tr("Mission results folder"), "results")
+        self.destination_combo.addItem(self.tr("Custom folder..."), "custom")
+        self.destination_combo.setToolTip(self.tr(
+            "The central library collects tiles from all missions in one place "
+            "(they merge, nothing gets replaced) and registers automatically. "
+            "Choose the results folder or a custom folder to keep tiles beside "
+            "a specific mission instead."))
+        self.destination_combo.currentIndexChanged.connect(self._on_destination_changed)
+        dest_row.addWidget(self.destination_combo, 1)
+        layout.addLayout(dest_row)
+
         out_row = QHBoxLayout()
         out_row.addWidget(QLabel(self.tr("Output folder:")))
         self.output_edit = QLineEdit()
@@ -148,6 +168,9 @@ class TileFetchDialog(TranslationMixin, QDialog):
         self.register_checkbox = QCheckBox(self.tr("Register in Preferences when complete"))
         self.register_checkbox.setChecked(True)
         layout.addWidget(self.register_checkbox)
+        # Apply the default destination's field states (library: fixed path,
+        # always registered).
+        self._on_destination_changed()
 
         buttons = QHBoxLayout()
         buttons.addStretch()
@@ -210,6 +233,36 @@ class TileFetchDialog(TranslationMixin, QDialog):
             color = self._STATUS_COLORS.get(status, "#909090")
             label.setStyleSheet(f"color: {color};")
             label.setVisible(True)
+
+    def get_destination(self):
+        """Stable destination key: 'library' | 'results' | 'custom'."""
+        return self.destination_combo.currentData()
+
+    def _on_destination_changed(self):
+        """Reflect the chosen destination in the output field and register row.
+
+        The library destination pins the output to the central library path
+        and always registers (that's the point of the library: one stable,
+        accumulating source); the other destinations restore the manual
+        field + opt-in registration.
+        """
+        dest = self.get_destination()
+        if dest == 'library':
+            from core.services.terrain.TileFetchService import library_root
+            self.output_edit.setText(library_root())
+            self.output_edit.setEnabled(False)
+            self.output_button.setEnabled(False)
+            self.register_checkbox.setChecked(True)
+            self.register_checkbox.setVisible(False)
+            return
+        if dest == 'results' and self._default_output_dir:
+            self.output_edit.setText(self._default_output_dir)
+            self.output_edit.setEnabled(False)
+            self.output_button.setEnabled(False)
+        else:   # custom
+            self.output_edit.setEnabled(True)
+            self.output_button.setEnabled(True)
+        self.register_checkbox.setVisible(True)
 
     def _browse_output(self):
         directory = QFileDialog.getExistingDirectory(self, self.tr("Select output folder"))
