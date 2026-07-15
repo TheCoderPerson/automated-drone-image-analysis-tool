@@ -747,6 +747,79 @@ def test_run_fetch_passes_default_output_dir_to_dialog(app):
     assert kwargs.get("default_output_dir") == "/results/mission1"
 
 
+# --- 3DEP default gating (elevation already available) ---------------------
+
+def _settings_with(values):
+    """A settings mock whose get_setting reads from ``values`` (with defaults)."""
+    settings = MagicMock()
+    settings.get_setting.side_effect = lambda k, default='': values.get(k, default)
+    return settings
+
+
+def test_elevation_available_for_aws_terrain_tiles(app):
+    """AWS Terrain Tiles (terrarium) is online -> elevation already available."""
+    ctrl = TileFetchController(MagicMock(), _settings_with({'TerrainProviderId': 'terrarium'}))
+    assert ctrl._elevation_already_available() is True
+
+
+def test_elevation_available_when_provider_unset_defaults_to_terrarium(app):
+    """Unset provider resolves to the Terrarium default -> available."""
+    ctrl = TileFetchController(MagicMock(), _settings_with({}))
+    assert ctrl._elevation_already_available() is True
+
+
+def test_elevation_available_for_registered_local_3dep(app):
+    """Local 3DEP with valid manifest+tiles paths is already usable."""
+    ctrl = TileFetchController(MagicMock(), _settings_with({
+        'TerrainProviderId': 'usgs_3dep_local',
+        'Terrain3DEPManifestPath': 'C:/dem/manifest.csv',
+        'Terrain3DEPTilesDir': 'C:/dem/tiles'}))
+    assert ctrl._elevation_already_available() is True
+
+
+def test_elevation_not_available_for_3dep_without_paths(app):
+    """Provider is 3DEP-local but paths unset: chosen, not yet obtained -> the
+    download should default ON, so this reports not-available."""
+    ctrl = TileFetchController(MagicMock(), _settings_with({
+        'TerrainProviderId': 'usgs_3dep_local'}))
+    assert ctrl._elevation_already_available() is False
+
+
+def test_elevation_not_available_without_settings_service(app):
+    """No settings service -> can't tell -> offer the download (default on)."""
+    ctrl = TileFetchController(MagicMock(), None)
+    assert ctrl._elevation_already_available() is False
+
+
+def test_run_fetch_defaults_dem_off_when_elevation_available(app):
+    """With AWS Terrain Tiles active, the dialog opens with 3DEP unchecked."""
+    from unittest.mock import patch
+    from PySide6.QtWidgets import QDialog
+
+    ctrl = TileFetchController(MagicMock(), _settings_with({'TerrainProviderId': 'terrarium'}))
+    with patch(f"{_MODULE}.TileFetchDialog") as MockDlg, \
+         patch(f"{_MODULE}.QMessageBox"):
+        MockDlg.return_value.exec.return_value = QDialog.Rejected  # bail out early
+        ctrl.run_fetch()
+
+    assert MockDlg.call_args.kwargs.get("default_dem_checked") is False
+
+
+def test_run_fetch_defaults_dem_on_when_no_usable_elevation(app):
+    """Provider chosen as local 3DEP but not yet downloaded -> 3DEP checked."""
+    from unittest.mock import patch
+    from PySide6.QtWidgets import QDialog
+
+    ctrl = TileFetchController(MagicMock(), _settings_with({
+        'TerrainProviderId': 'usgs_3dep_local'}))
+    with patch(f"{_MODULE}.TileFetchDialog") as MockDlg, \
+         patch(f"{_MODULE}.QMessageBox"):
+        MockDlg.return_value.exec.return_value = QDialog.Rejected
+        ctrl.run_fetch()
+
+    assert MockDlg.call_args.kwargs.get("default_dem_checked") is True
+
+
 def test_on_fill_source_dispatches_to_fill_methods(app):
     """The dropdown's source key routes to the mission / folder fill logic."""
     ctrl = TileFetchController(MagicMock(), MagicMock())

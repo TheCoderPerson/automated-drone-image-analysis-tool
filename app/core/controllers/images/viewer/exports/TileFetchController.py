@@ -15,6 +15,8 @@ from PySide6.QtCore import QThread, Signal, Qt
 
 from core.services.LoggerService import LoggerService
 from core.services.terrain.TileFetchService import TileFetchService
+from core.services.terrain.TerrainProviderFactory import (
+    PROVIDER_TERRARIUM, PROVIDER_USGS_3DEP_LOCAL, DEFAULT_PROVIDER_ID)
 from core.views.images.viewer.dialogs.TileFetchDialog import TileFetchDialog
 from core.views.images.viewer.dialogs.ExportProgressDialog import ExportProgressDialog
 from helpers.TranslationMixin import TranslationMixin
@@ -94,12 +96,34 @@ class TileFetchController(TranslationMixin):
         # finishing) — lets callers chain follow-up steps after a download.
         self.last_results = None
 
+    def _elevation_already_available(self):
+        """True when the configured terrain provider already yields usable
+        elevation without this download, so the 3DEP box can default off.
+
+        AWS Terrain Tiles (terrarium) is online and always usable; local 3DEP
+        counts only once its manifest/tiles paths are set — before that the user
+        has chosen 3DEP but not yet obtained it, so the download should default
+        on. An unset provider resolves to the Terrarium default (usable).
+        """
+        if self.settings_service is None:
+            return False
+        provider = self.settings_service.get_setting(
+            'TerrainProviderId', DEFAULT_PROVIDER_ID) or DEFAULT_PROVIDER_ID
+        if provider == PROVIDER_TERRARIUM:
+            return True
+        if provider == PROVIDER_USGS_3DEP_LOCAL:
+            manifest = self.settings_service.get_setting('Terrain3DEPManifestPath', '')
+            tiles = self.settings_service.get_setting('Terrain3DEPTilesDir', '')
+            return bool(manifest and tiles)
+        return False
+
     def run_fetch(self, default_bounds=None, mission_images=None, default_output_dir=None):
         self.last_results = None
         self._mission_images = mission_images
         dialog = TileFetchDialog(self.parent, default_bounds=default_bounds,
                                  has_mission=bool(mission_images),
-                                 default_output_dir=default_output_dir)
+                                 default_output_dir=default_output_dir,
+                                 default_dem_checked=not self._elevation_already_available())
         dialog.fill_source_activated.connect(lambda key: self._on_fill_source(dialog, key))
         if mission_images:
             self._fill_aoi(dialog, mission_images, "loaded mission", warn_if_empty=False)

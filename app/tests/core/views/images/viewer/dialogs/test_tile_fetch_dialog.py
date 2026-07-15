@@ -22,6 +22,19 @@ def test_defaults(app):
     assert d.get_output_dir() == ""
 
 
+def test_dem_checkbox_defaults_off_when_flag_false(app):
+    """The controller passes default_dem_checked=False when a usable elevation
+    source already exists; the 3DEP box then starts unchecked (canopy unchanged)."""
+    d = TileFetchDialog(default_dem_checked=False)
+    assert d.want_dem() is False
+    assert d.want_canopy() is True
+
+
+def test_dem_checkbox_defaults_on_by_default(app):
+    """Absent the flag, the 3DEP box is checked (preserves prior behavior)."""
+    assert TileFetchDialog().want_dem() is True
+
+
 def test_prefill_and_bounds(app):
     d = TileFetchDialog(default_bounds=(-120.5, 38.7, -120.4, 38.8))
     assert d.get_bounds() == pytest.approx((-120.5, 38.7, -120.4, 38.8))

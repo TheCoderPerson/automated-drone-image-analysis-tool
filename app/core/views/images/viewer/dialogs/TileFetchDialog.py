@@ -21,21 +21,27 @@ class TileFetchDialog(TranslationMixin, QDialog):
     fill_source_activated = Signal(str)
 
     def __init__(self, parent=None, default_bounds=None, has_mission=False,
-                 default_output_dir=None):
+                 default_output_dir=None, default_dem_checked=True):
         """
         Args:
             default_bounds: optional (min_lon, min_lat, max_lon, max_lat) to prefill.
             has_mission: whether a mission is loaded (enables the mission fill action).
             default_output_dir: optional folder to prefill the output field (the
                 results folder, so downloaded tiles land beside the analysis).
+            default_dem_checked: initial state of the USGS 3DEP DEM checkbox. The
+                caller defaults it off when a usable terrain elevation source is
+                already configured (see TileFetchController), since 3DEP is a
+                resolution upgrade rather than a requirement.
         """
         super().__init__(parent)
         self.setWindowTitle(self.tr("Download Coverage Data"))
         self.setMinimumWidth(460)
-        self._setup_ui(default_bounds, has_mission, default_output_dir)
+        self._setup_ui(default_bounds, has_mission, default_output_dir,
+                       default_dem_checked)
         self._apply_translations()
 
-    def _setup_ui(self, default_bounds, has_mission, default_output_dir):
+    def _setup_ui(self, default_bounds, has_mission, default_output_dir,
+                  default_dem_checked=True):
         layout = QVBoxLayout(self)
 
         aoi_group = QGroupBox(self.tr("Area of Interest (WGS84)"))
@@ -99,7 +105,11 @@ class TileFetchDialog(TranslationMixin, QDialog):
         data_group = QGroupBox(self.tr("Datasets"))
         data_layout = QVBoxLayout()
         self.dem_checkbox = QCheckBox(self.tr("USGS 3DEP DEM"))
-        self.dem_checkbox.setChecked(True)
+        self.dem_checkbox.setChecked(default_dem_checked)
+        self.dem_checkbox.setToolTip(self.tr(
+            "USGS 3DEP provides 1 m local elevation. Optional when you already "
+            "have a terrain source configured (AWS Terrain Tiles online, or "
+            "downloaded 3DEP) — enable it to download higher-resolution data."))
         self.canopy_checkbox = QCheckBox(self.tr("Meta/WRI Canopy Height"))
         self.canopy_checkbox.setChecked(True)
         data_layout.addWidget(self.dem_checkbox)
