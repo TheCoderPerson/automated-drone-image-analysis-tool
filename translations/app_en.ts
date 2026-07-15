@@ -4164,12 +4164,12 @@ Click on images to move them to the Selected section above.</translation>
     <message>
         <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="112"/>
         <source>Review Selected Batch</source>
-        <translation type="unfinished"></translation>
+        <translation>Review Selected Batch</translation>
     </message>
     <message>
         <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="116"/>
         <source>Open the selected batch&apos;s results in the Viewer to review (same as double-clicking the batch).</source>
-        <translation type="unfinished"></translation>
+        <translation>Open the selected batch&apos;s results in the Viewer to review (same as double-clicking the batch).</translation>
     </message>
     <message>
         <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="122"/>
@@ -4459,7 +4459,8 @@ Tips:
         <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="493"/>
         <source>Search project file not found:
 {path}</source>
-        <translation type="unfinished"></translation>
+        <translation>Search project file not found:
+{path}</translation>
     </message>
     <message>
         <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="507"/>
@@ -4590,12 +4591,12 @@ Total batches: {total}</translation>
     <message>
         <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="758"/>
         <source>No Batch Selected</source>
-        <translation type="unfinished"></translation>
+        <translation>No Batch Selected</translation>
     </message>
     <message>
         <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="759"/>
         <source>Select a batch in the table, then click Review Selected Batch.</source>
-        <translation type="unfinished"></translation>
+        <translation>Select a batch in the table, then click Review Selected Batch.</translation>
     </message>
 </context>
 <context>
@@ -7390,7 +7391,7 @@ May detect shadows or dark unintended objects.</translation>
     <message>
         <location filename="../resources/views/images/ImageAnalysisGuide.ui" line="67"/>
         <source>Select a results file from a previous analysis: an ADIAT_Data.xml result, or a batch&apos;s Search Coordinator project (ADIAT_Search_*.xml).</source>
-        <translation type="unfinished"></translation>
+        <translation>Select a results file from a previous analysis: an ADIAT_Data.xml result, or a batch&apos;s Search Coordinator project (ADIAT_Search_*.xml).</translation>
     </message>
     <message>
         <location filename="../resources/views/images/ImageAnalysisGuide.ui" line="79"/>
@@ -9471,17 +9472,17 @@ AI PERSON DETECTOR: Deep learning model for accurate people detection
     <message>
         <location filename="../app/core/controllers/images/MainWindow.py" line="1588"/>
         <source> Open Search Coordinator</source>
-        <translation type="unfinished"></translation>
+        <translation> Open Search Coordinator</translation>
     </message>
     <message>
         <location filename="../app/core/controllers/images/MainWindow.py" line="1590"/>
         <source>Open the Search Coordinator to review every batch in this run.</source>
-        <translation type="unfinished"></translation>
+        <translation>Open the Search Coordinator to review every batch in this run.</translation>
     </message>
     <message>
         <location filename="../app/core/controllers/images/MainWindow.py" line="1596"/>
         <source>Open the Results Viewer to review detection results.</source>
-        <translation type="unfinished"></translation>
+        <translation>Open the Results Viewer to review detection results.</translation>
     </message>
     <message>
         <location filename="../app/core/controllers/images/MainWindow.py" line="1681"/>
@@ -11583,7 +11584,9 @@ Higher values = merge detections that are farther apart (may over-merge).</trans
         <source>The selected file does not appear to be an ADIAT_Data.xml result or an ADIAT_Search project file.
 
 Do you want to continue with this file?</source>
-        <translation type="unfinished"></translation>
+        <translation>The selected file does not appear to be an ADIAT_Data.xml result or an ADIAT_Search project file.
+
+Do you want to continue with this file?</translation>
     </message>
 </context>
 <context>

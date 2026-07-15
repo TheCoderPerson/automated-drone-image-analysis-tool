@@ -4164,12 +4164,12 @@ Haga clic en las imágenes para moverlas a la sección Seleccionadas de arriba.<
     <message>
         <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="112"/>
         <source>Review Selected Batch</source>
-        <translation type="unfinished"></translation>
+        <translation>Revisar lote seleccionado</translation>
     </message>
     <message>
         <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="116"/>
         <source>Open the selected batch&apos;s results in the Viewer to review (same as double-clicking the batch).</source>
-        <translation type="unfinished"></translation>
+        <translation>Abrir los resultados del lote seleccionado en el Visor para revisarlos (igual que al hacer doble clic en el lote).</translation>
     </message>
     <message>
         <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="122"/>
@@ -4459,7 +4459,8 @@ Consejos:
         <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="493"/>
         <source>Search project file not found:
 {path}</source>
-        <translation type="unfinished"></translation>
+        <translation>No se encontró el archivo del proyecto de búsqueda:
+{path}</translation>
     </message>
     <message>
         <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="507"/>
@@ -4590,12 +4591,12 @@ Lotes totales: {total}</translation>
     <message>
         <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="758"/>
         <source>No Batch Selected</source>
-        <translation type="unfinished"></translation>
+        <translation>Ningún lote seleccionado</translation>
     </message>
     <message>
         <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="759"/>
         <source>Select a batch in the table, then click Review Selected Batch.</source>
-        <translation type="unfinished"></translation>
+        <translation>Seleccione un lote de la tabla y, a continuación, haga clic en Revisar lote seleccionado.</translation>
     </message>
 </context>
 <context>
@@ -7390,7 +7391,7 @@ Puede detectar sombras u objetos oscuros no deseados.</translation>
     <message>
         <location filename="../resources/views/images/ImageAnalysisGuide.ui" line="67"/>
         <source>Select a results file from a previous analysis: an ADIAT_Data.xml result, or a batch&apos;s Search Coordinator project (ADIAT_Search_*.xml).</source>
-        <translation type="unfinished"></translation>
+        <translation>Seleccione un archivo de resultados de un análisis anterior: un resultado ADIAT_Data.xml o un proyecto de revisión por lotes del Coordinador de búsqueda (ADIAT_Search_*.xml).</translation>
     </message>
     <message>
         <location filename="../resources/views/images/ImageAnalysisGuide.ui" line="79"/>
@@ -9471,17 +9472,17 @@ DETECTOR DE PERSONAS CON IA: Modelo de aprendizaje profundo para detección prec
     <message>
         <location filename="../app/core/controllers/images/MainWindow.py" line="1588"/>
         <source> Open Search Coordinator</source>
-        <translation type="unfinished"></translation>
+        <translation> Abrir Coordinador de búsqueda</translation>
     </message>
     <message>
         <location filename="../app/core/controllers/images/MainWindow.py" line="1590"/>
         <source>Open the Search Coordinator to review every batch in this run.</source>
-        <translation type="unfinished"></translation>
+        <translation>Abra el Coordinador de búsqueda para revisar todos los lotes de esta ejecución.</translation>
     </message>
     <message>
         <location filename="../app/core/controllers/images/MainWindow.py" line="1596"/>
         <source>Open the Results Viewer to review detection results.</source>
-        <translation type="unfinished"></translation>
+        <translation>Abra el Visor de resultados para revisar los resultados de las detecciones.</translation>
     </message>
     <message>
         <location filename="../app/core/controllers/images/MainWindow.py" line="1681"/>
@@ -11583,7 +11584,9 @@ Valores mayores = fusionan detecciones más alejadas (puede agrupar de más).</t
         <source>The selected file does not appear to be an ADIAT_Data.xml result or an ADIAT_Search project file.
 
 Do you want to continue with this file?</source>
-        <translation type="unfinished"></translation>
+        <translation>El archivo seleccionado no parece ser un resultado ADIAT_Data.xml ni un archivo de proyecto ADIAT_Search.
+
+¿Desea continuar con este archivo?</translation>
     </message>
 </context>
 <context>

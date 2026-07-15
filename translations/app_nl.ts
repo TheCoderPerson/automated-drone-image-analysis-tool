@@ -4164,12 +4164,12 @@ Klik op afbeeldingen om ze naar de sectie Geselecteerd hierboven te verplaatsen.
     <message>
         <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="112"/>
         <source>Review Selected Batch</source>
-        <translation type="unfinished"></translation>
+        <translation>Geselecteerde batch beoordelen</translation>
     </message>
     <message>
         <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="116"/>
         <source>Open the selected batch&apos;s results in the Viewer to review (same as double-clicking the batch).</source>
-        <translation type="unfinished"></translation>
+        <translation>Open de resultaten van de geselecteerde batch in de Viewer om ze te beoordelen (hetzelfde als dubbelklikken op de batch).</translation>
     </message>
     <message>
         <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="122"/>
@@ -4459,7 +4459,8 @@ Tips:
         <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="493"/>
         <source>Search project file not found:
 {path}</source>
-        <translation type="unfinished"></translation>
+        <translation>Zoekprojectbestand niet gevonden:
+{path}</translation>
     </message>
     <message>
         <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="507"/>
@@ -4590,12 +4591,12 @@ Totaal aantal batches: {total}</translation>
     <message>
         <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="758"/>
         <source>No Batch Selected</source>
-        <translation type="unfinished"></translation>
+        <translation>Geen batch geselecteerd</translation>
     </message>
     <message>
         <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="759"/>
         <source>Select a batch in the table, then click Review Selected Batch.</source>
-        <translation type="unfinished"></translation>
+        <translation>Selecteer een batch in de tabel en klik vervolgens op Geselecteerde batch beoordelen.</translation>
     </message>
 </context>
 <context>
@@ -7390,7 +7391,7 @@ Kan schaduwen of donkere onbedoelde objecten detecteren.</translation>
     <message>
         <location filename="../resources/views/images/ImageAnalysisGuide.ui" line="67"/>
         <source>Select a results file from a previous analysis: an ADIAT_Data.xml result, or a batch&apos;s Search Coordinator project (ADIAT_Search_*.xml).</source>
-        <translation type="unfinished"></translation>
+        <translation>Selecteer een resultatenbestand van een eerdere analyse: een ADIAT_Data.xml-resultaat of een project voor batchcontrole van de Zoekcoördinator (ADIAT_Search_*.xml).</translation>
     </message>
     <message>
         <location filename="../resources/views/images/ImageAnalysisGuide.ui" line="79"/>
@@ -9471,17 +9472,17 @@ AI-PERSOONSDETECTOR: deep-learning model voor nauwkeurige persoonsdetectie
     <message>
         <location filename="../app/core/controllers/images/MainWindow.py" line="1588"/>
         <source> Open Search Coordinator</source>
-        <translation type="unfinished"></translation>
+        <translation> Zoekcoördinator openen</translation>
     </message>
     <message>
         <location filename="../app/core/controllers/images/MainWindow.py" line="1590"/>
         <source>Open the Search Coordinator to review every batch in this run.</source>
-        <translation type="unfinished"></translation>
+        <translation>Open de Zoekcoördinator om elke batch in deze run te beoordelen.</translation>
     </message>
     <message>
         <location filename="../app/core/controllers/images/MainWindow.py" line="1596"/>
         <source>Open the Results Viewer to review detection results.</source>
-        <translation type="unfinished"></translation>
+        <translation>Open de resultatenviewer om detectieresultaten te beoordelen.</translation>
     </message>
     <message>
         <location filename="../app/core/controllers/images/MainWindow.py" line="1681"/>
@@ -11583,7 +11584,9 @@ Hogere waarden = voeg verder uit elkaar liggende detecties samen (kan oversamenv
         <source>The selected file does not appear to be an ADIAT_Data.xml result or an ADIAT_Search project file.
 
 Do you want to continue with this file?</source>
-        <translation type="unfinished"></translation>
+        <translation>Het geselecteerde bestand lijkt geen ADIAT_Data.xml-resultaat of ADIAT_Search-projectbestand te zijn.
+
+Wilt u doorgaan met dit bestand?</translation>
     </message>
 </context>
 <context>

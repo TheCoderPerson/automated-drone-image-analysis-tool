@@ -4164,12 +4164,12 @@ Fai clic sulle immagini per spostarle nella sezione Selezionate in alto.</transl
     <message>
         <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="112"/>
         <source>Review Selected Batch</source>
-        <translation type="unfinished"></translation>
+        <translation>Esamina batch selezionato</translation>
     </message>
     <message>
         <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="116"/>
         <source>Open the selected batch&apos;s results in the Viewer to review (same as double-clicking the batch).</source>
-        <translation type="unfinished"></translation>
+        <translation>Apri i risultati del batch selezionato nel Visualizzatore per esaminarli (equivale a fare doppio clic sul batch).</translation>
     </message>
     <message>
         <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="122"/>
@@ -4459,7 +4459,8 @@ Suggerimenti:
         <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="493"/>
         <source>Search project file not found:
 {path}</source>
-        <translation type="unfinished"></translation>
+        <translation>File del progetto di ricerca non trovato:
+{path}</translation>
     </message>
     <message>
         <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="507"/>
@@ -4590,12 +4591,12 @@ Batch totali: {total}</translation>
     <message>
         <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="758"/>
         <source>No Batch Selected</source>
-        <translation type="unfinished"></translation>
+        <translation>Nessun batch selezionato</translation>
     </message>
     <message>
         <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="759"/>
         <source>Select a batch in the table, then click Review Selected Batch.</source>
-        <translation type="unfinished"></translation>
+        <translation>Seleziona un batch nella tabella, quindi fai clic su Esamina batch selezionato.</translation>
     </message>
 </context>
 <context>
@@ -7390,7 +7391,7 @@ Potrebbe rilevare ombre o oggetti scuri indesiderati.</translation>
     <message>
         <location filename="../resources/views/images/ImageAnalysisGuide.ui" line="67"/>
         <source>Select a results file from a previous analysis: an ADIAT_Data.xml result, or a batch&apos;s Search Coordinator project (ADIAT_Search_*.xml).</source>
-        <translation type="unfinished"></translation>
+        <translation>Seleziona un file di risultati da un&apos;analisi precedente: un risultato ADIAT_Data.xml oppure un progetto di revisione multi-batch del Coordinatore di Ricerca (ADIAT_Search_*.xml).</translation>
     </message>
     <message>
         <location filename="../resources/views/images/ImageAnalysisGuide.ui" line="79"/>
@@ -8523,17 +8524,17 @@ Risoluzioni più basse = elaborazione più veloce ma possono perdere oggetti pic
     <message>
         <location filename="../app/core/controllers/images/MainWindow.py" line="1588"/>
         <source> Open Search Coordinator</source>
-        <translation type="unfinished"></translation>
+        <translation> Apri Coordinatore di Ricerca</translation>
     </message>
     <message>
         <location filename="../app/core/controllers/images/MainWindow.py" line="1590"/>
         <source>Open the Search Coordinator to review every batch in this run.</source>
-        <translation type="unfinished"></translation>
+        <translation>Apri il Coordinatore di Ricerca per esaminare tutti i batch di questa esecuzione.</translation>
     </message>
     <message>
         <location filename="../app/core/controllers/images/MainWindow.py" line="1596"/>
         <source>Open the Results Viewer to review detection results.</source>
-        <translation type="unfinished"></translation>
+        <translation>Apri il Visualizzatore Risultati per esaminare i risultati dei rilevamenti.</translation>
     </message>
     <message>
         <location filename="../app/core/controllers/images/MainWindow.py" line="1681"/>
@@ -11583,7 +11584,9 @@ Valori più alti = unisce rilevamenti più distanti (può unire troppo).</transl
         <source>The selected file does not appear to be an ADIAT_Data.xml result or an ADIAT_Search project file.
 
 Do you want to continue with this file?</source>
-        <translation type="unfinished"></translation>
+        <translation>Il file selezionato non sembra essere un risultato ADIAT_Data.xml né un file di progetto ADIAT_Search.
+
+Vuoi continuare con questo file?</translation>
     </message>
 </context>
 <context>
