@@ -5502,7 +5502,7 @@ La máscara se escalará para ajustarse, lo que puede causar distorsión.
     <message>
         <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="300"/>
         <source>Continue</source>
-        <translation type="unfinished">Continuar</translation>
+        <translation>Continuar</translation>
     </message>
     <message>
         <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="329"/>
@@ -14342,22 +14342,27 @@ Register the downloaded Meta/WRI canopy tiles instead? (Your LANDFIRE files stay
         <translation>Parcialmente cubierto por sus teselas registradas; la descarga rellena los huecos.</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/TileFetchDialog.py" line="211"/>
-        <source>Your registered tiles do not cover this area.</source>
-        <translation>Sus teselas registradas no cubren esta área.</translation>
+        <location filename="../app/core/views/images/viewer/dialogs/TileFetchDialog.py" line="214"/>
+        <source>Your downloaded 1 m tiles don&apos;t include this area — without this download, online AWS Terrain Tiles (~30 m) are used here instead.</source>
+        <translation>Sus teselas de 1 m descargadas no incluyen esta área; sin esta descarga, aquí se usan los AWS Terrain Tiles en línea (~30 m).</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/TileFetchDialog.py" line="214"/>
+        <location filename="../app/core/views/images/viewer/dialogs/TileFetchDialog.py" line="217"/>
+        <source>Your downloaded canopy tiles don&apos;t include this area — without this download, POD runs with no canopy attenuation here.</source>
+        <translation>Sus teselas de dosel descargadas no incluyen esta área; sin esta descarga, el POD se ejecuta aquí sin atenuación del dosel.</translation>
+    </message>
+    <message>
+        <location filename="../app/core/views/images/viewer/dialogs/TileFetchDialog.py" line="222"/>
         <source>No local elevation tiles registered — online AWS Terrain Tiles (~30 m) serve as the baseline.</source>
         <translation>No hay teselas de elevación locales registradas; los AWS Terrain Tiles en línea (~30 m) sirven como base.</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/TileFetchDialog.py" line="216"/>
+        <location filename="../app/core/views/images/viewer/dialogs/TileFetchDialog.py" line="224"/>
         <source>No canopy source is configured yet.</source>
         <translation>Aún no se ha configurado una fuente de dosel.</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/TileFetchDialog.py" line="268"/>
+        <location filename="../app/core/views/images/viewer/dialogs/TileFetchDialog.py" line="276"/>
         <source>Select output folder</source>
         <translation>Seleccionar carpeta de salida</translation>
     </message>
@@ -14487,7 +14492,7 @@ Register the downloaded Meta/WRI canopy tiles instead? (Your LANDFIRE files stay
     <message>
         <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="769"/>
         <source>POD Overlay</source>
-        <translation type="unfinished">Superposición POD</translation>
+        <translation>Superposición POD</translation>
     </message>
     <message>
         <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="770"/>

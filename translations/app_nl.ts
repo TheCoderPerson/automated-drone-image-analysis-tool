@@ -5502,7 +5502,7 @@ Wilt u doorgaan?</translation>
     <message>
         <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="300"/>
         <source>Continue</source>
-        <translation type="unfinished">Doorgaan</translation>
+        <translation>Doorgaan</translation>
     </message>
     <message>
         <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="329"/>
@@ -14342,22 +14342,27 @@ In plaats daarvan de gedownloade Meta/WRI-kroontegels registreren? (Uw LANDFIRE-
         <translation>Gedeeltelijk gedekt door uw geregistreerde tegels — downloaden vult de gaten.</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/TileFetchDialog.py" line="211"/>
-        <source>Your registered tiles do not cover this area.</source>
-        <translation>Uw geregistreerde tegels dekken dit gebied niet.</translation>
+        <location filename="../app/core/views/images/viewer/dialogs/TileFetchDialog.py" line="214"/>
+        <source>Your downloaded 1 m tiles don&apos;t include this area — without this download, online AWS Terrain Tiles (~30 m) are used here instead.</source>
+        <translation>Uw gedownloade 1 m-tegels omvatten dit gebied niet — zonder deze download worden hier online AWS Terrain Tiles (~30 m) gebruikt.</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/TileFetchDialog.py" line="214"/>
+        <location filename="../app/core/views/images/viewer/dialogs/TileFetchDialog.py" line="217"/>
+        <source>Your downloaded canopy tiles don&apos;t include this area — without this download, POD runs with no canopy attenuation here.</source>
+        <translation>Uw gedownloade bladerdaktegels omvatten dit gebied niet — zonder deze download draait POD hier zonder bladerdakdemping.</translation>
+    </message>
+    <message>
+        <location filename="../app/core/views/images/viewer/dialogs/TileFetchDialog.py" line="222"/>
         <source>No local elevation tiles registered — online AWS Terrain Tiles (~30 m) serve as the baseline.</source>
         <translation>Geen lokale hoogtetegels geregistreerd — online AWS Terrain Tiles (~30 m) dienen als basis.</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/TileFetchDialog.py" line="216"/>
+        <location filename="../app/core/views/images/viewer/dialogs/TileFetchDialog.py" line="224"/>
         <source>No canopy source is configured yet.</source>
         <translation>Er is nog geen bladerdakbron geconfigureerd.</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/TileFetchDialog.py" line="268"/>
+        <location filename="../app/core/views/images/viewer/dialogs/TileFetchDialog.py" line="276"/>
         <source>Select output folder</source>
         <translation>Uitvoermap selecteren</translation>
     </message>
@@ -14487,7 +14492,7 @@ In plaats daarvan de gedownloade Meta/WRI-kroontegels registreren? (Uw LANDFIRE-
     <message>
         <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="769"/>
         <source>POD Overlay</source>
-        <translation type="unfinished">POD-overlay</translation>
+        <translation>POD-overlay</translation>
     </message>
     <message>
         <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="770"/>

@@ -5502,7 +5502,7 @@ Do you want to continue?</translation>
     <message>
         <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="300"/>
         <source>Continue</source>
-        <translation type="unfinished">Continue</translation>
+        <translation>Continue</translation>
     </message>
     <message>
         <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="329"/>
@@ -14342,22 +14342,27 @@ Register the downloaded Meta/WRI canopy tiles instead? (Your LANDFIRE files stay
         <translation>Partially covered by your registered tiles — downloading fills the gaps.</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/TileFetchDialog.py" line="211"/>
-        <source>Your registered tiles do not cover this area.</source>
-        <translation>Your registered tiles do not cover this area.</translation>
+        <location filename="../app/core/views/images/viewer/dialogs/TileFetchDialog.py" line="214"/>
+        <source>Your downloaded 1 m tiles don&apos;t include this area — without this download, online AWS Terrain Tiles (~30 m) are used here instead.</source>
+        <translation>Your downloaded 1 m tiles don&apos;t include this area — without this download, online AWS Terrain Tiles (~30 m) are used here instead.</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/TileFetchDialog.py" line="214"/>
+        <location filename="../app/core/views/images/viewer/dialogs/TileFetchDialog.py" line="217"/>
+        <source>Your downloaded canopy tiles don&apos;t include this area — without this download, POD runs with no canopy attenuation here.</source>
+        <translation>Your downloaded canopy tiles don&apos;t include this area — without this download, POD runs with no canopy attenuation here.</translation>
+    </message>
+    <message>
+        <location filename="../app/core/views/images/viewer/dialogs/TileFetchDialog.py" line="222"/>
         <source>No local elevation tiles registered — online AWS Terrain Tiles (~30 m) serve as the baseline.</source>
         <translation>No local elevation tiles registered — online AWS Terrain Tiles (~30 m) serve as the baseline.</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/TileFetchDialog.py" line="216"/>
+        <location filename="../app/core/views/images/viewer/dialogs/TileFetchDialog.py" line="224"/>
         <source>No canopy source is configured yet.</source>
         <translation>No canopy source is configured yet.</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/TileFetchDialog.py" line="268"/>
+        <location filename="../app/core/views/images/viewer/dialogs/TileFetchDialog.py" line="276"/>
         <source>Select output folder</source>
         <translation>Select output folder</translation>
     </message>
@@ -14487,7 +14492,7 @@ Register the downloaded Meta/WRI canopy tiles instead? (Your LANDFIRE files stay
     <message>
         <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="769"/>
         <source>POD Overlay</source>
-        <translation type="unfinished">POD Overlay</translation>
+        <translation>POD Overlay</translation>
     </message>
     <message>
         <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="770"/>

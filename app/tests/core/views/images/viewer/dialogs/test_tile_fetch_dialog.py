@@ -285,6 +285,18 @@ def test_set_dataset_status_unregistered_texts_differ_by_dataset(app):
     assert "canopy" in d.canopy_status_label.text().lower()
 
 
+def test_set_dataset_status_none_states_the_consequence(app):
+    """'Not covered' must say what actually happens, per dataset: DEM degrades
+    to the online AWS baseline; canopy has no fallback at all. (Regression:
+    the shared 'do not cover this area' text read as 'elevation won't work'
+    even though AWS fills in automatically.)"""
+    d = TileFetchDialog()
+    d.set_dataset_status(TileFetchDialog.STATUS_NONE, TileFetchDialog.STATUS_NONE)
+    assert "AWS Terrain Tiles" in d.dem_status_label.text()
+    assert "used here instead" in d.dem_status_label.text()
+    assert "no canopy attenuation" in d.canopy_status_label.text()
+
+
 def test_manual_bounds_edit_emits_aoi_changed(app, qtbot):
     d = _shown_dialog(qtbot)
     received = []

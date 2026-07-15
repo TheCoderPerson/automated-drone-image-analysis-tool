@@ -208,7 +208,15 @@ class TileFetchDialog(TranslationMixin, QDialog):
             return self.tr("Partially covered by your registered tiles — "
                            "downloading fills the gaps.")
         if status == self.STATUS_NONE:
-            return self.tr("Your registered tiles do not cover this area.")
+            # State the consequence, not just the fact: elevation degrades to
+            # the online baseline, canopy has no fallback at all.
+            if dataset == 'dem':
+                return self.tr("Your downloaded 1 m tiles don't include this area "
+                               "— without this download, online AWS Terrain Tiles "
+                               "(~30 m) are used here instead.")
+            return self.tr("Your downloaded canopy tiles don't include this area "
+                           "— without this download, POD runs with no canopy "
+                           "attenuation here.")
         if status == self.STATUS_UNREGISTERED:
             if dataset == 'dem':
                 return self.tr("No local elevation tiles registered — online AWS "
