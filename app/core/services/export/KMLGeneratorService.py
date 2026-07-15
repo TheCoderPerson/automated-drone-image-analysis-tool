@@ -92,14 +92,52 @@ class KMLGeneratorService:
         # Assign StyleMap to placemark
         pnt.stylemap = style_map
 
+    def add_pod_overlay(self, image_path, box, name="POD Coverage",
+                        description=None, packed=False, href=None):
+        """
+        Adds the POD heatmap as a KML GroundOverlay.
+
+        Args:
+            image_path (str): Path to the overlay PNG on disk.
+            box (dict): WGS84 bounds {'north', 'south', 'east', 'west'}.
+            name (str): Overlay name shown in the KML tree.
+            description (str): Optional description text.
+            packed (bool): Pack the image into the document so a .kmz save is
+                self-contained. When False, the overlay references ``href``
+                (or the absolute image path) instead.
+            href (str): Relative href to use when not packing (e.g. a sidecar
+                folder next to the .kml).
+
+        Returns:
+            The created GroundOverlay.
+        """
+        overlay = self.kml.newgroundoverlay(name=name)
+        if packed:
+            overlay.icon.href = self.kml.addfile(image_path)
+        else:
+            overlay.icon.href = href or image_path
+        overlay.latlonbox.north = box['north']
+        overlay.latlonbox.south = box['south']
+        overlay.latlonbox.east = box['east']
+        overlay.latlonbox.west = box['west']
+        if description:
+            overlay.description = description
+        return overlay
+
     def save_kml(self, path):
         """
         Saves the KML document to a file.
 
+        A ``.kmz`` path saves a zipped document (packing any files added via
+        ``add_pod_overlay(packed=True)``); anything else saves plain KML.
+
         Args:
             path (str): The file path where the KML document will be stored.
         """
-        self.kml.save(path)
+        if str(path).lower().endswith('.kmz'):
+            self.kml.savekmz(path)
+        else:
+            self.kml.save(path)
 
     def generate_kml_export(self, images, output_path, progress_callback=None, cancel_check=None):
         """

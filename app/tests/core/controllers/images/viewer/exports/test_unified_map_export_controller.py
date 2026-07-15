@@ -571,3 +571,136 @@ def test_show_export_dialog_caltopo_with_pod_folder_cancelled(controller):
 
     controller._export_to_caltopo.assert_called_once()
     controller._run_pod_export.assert_not_called()
+
+
+# ---------------------------------------------------------------------------
+# POD overlay embedding in the exported KML/KMZ
+# ---------------------------------------------------------------------------
+
+_BOX = {"north": 30.66, "south": 30.65, "east": -97.95, "west": -97.96}
+
+
+def _controller_with_kml_context(tmp_path, target_name="export.kml"):
+    ctrl = UnifiedMapExportController(_parent())
+    ctrl._kml_pod_target = str(tmp_path / target_name)
+    ctrl._last_kml_service = MagicMock()
+    ctrl._pod_last_output_dir = str(tmp_path / "export_coverage_pod")
+    return ctrl
+
+
+def test_on_pod_finished_embeds_overlay_for_kml_export(tmp_path):
+    """A KML export with POD gets the heatmap embedded and the file re-saved."""
+    ctrl = _controller_with_kml_context(tmp_path)
+    kml_service = ctrl._last_kml_service
+    kml_path = ctrl._kml_pod_target
+    ctrl.pod_progress_dialog = MagicMock()
+    result = _make_result()
+    result.stats = {"mean_pod_covered": 0.62}
+    ctrl._pending_pod_result = result
+    ctrl._show_pod_on_map_requested = False
+
+    with patch("core.services.coverage.writers.write_pod_overlay_png",
+               return_value=_BOX) as mock_png:
+        ctrl._on_pod_finished()
+
+    mock_png.assert_called_once()
+    png_path = mock_png.call_args.args[1]
+    assert png_path.endswith("pod_overlay.png")
+    kml_service.add_pod_overlay.assert_called_once()
+    kwargs = kml_service.add_pod_overlay.call_args.kwargs
+    assert kwargs["packed"] is False
+    # Relative sidecar href, forward slashes, pointing into the POD folder.
+    assert kwargs["href"] == "export_coverage_pod/pod_overlay.png"
+    assert "62" in kwargs["description"]
+    kml_service.save_kml.assert_called_once_with(kml_path)
+    assert ctrl._kml_pod_target is None   # one-shot
+
+
+def test_on_pod_finished_packs_overlay_for_kmz_export(tmp_path):
+    """A .kmz target packs the PNG into the archive instead of a sidecar href."""
+    ctrl = _controller_with_kml_context(tmp_path, target_name="export.kmz")
+    kml_service = ctrl._last_kml_service
+    ctrl.pod_progress_dialog = MagicMock()
+    ctrl._pending_pod_result = _make_result()
+    ctrl._show_pod_on_map_requested = False
+
+    with patch("core.services.coverage.writers.write_pod_overlay_png",
+               return_value=_BOX):
+        ctrl._on_pod_finished()
+
+    kwargs = kml_service.add_pod_overlay.call_args.kwargs
+    assert kwargs["packed"] is True
+    assert kwargs["href"] is None
+
+
+def test_on_pod_finished_no_embed_without_kml_context(controller):
+    """POD runs launched outside a KML export (map button, CalTopo) do not embed."""
+    controller.pod_progress_dialog = MagicMock()
+    controller._pending_pod_result = _make_result()
+    controller._show_pod_on_map_requested = False
+    controller._kml_pod_target = None
+    controller._last_kml_service = MagicMock()
+
+    with patch("core.services.coverage.writers.write_pod_overlay_png") as mock_png:
+        controller._on_pod_finished()
+
+    mock_png.assert_not_called()
+    controller._last_kml_service.add_pod_overlay.assert_not_called()
+
+
+def test_embed_failure_warns_but_leaves_export_intact(tmp_path):
+    """An embedding failure warns (products still on disk) and never raises."""
+    ctrl = _controller_with_kml_context(tmp_path)
+    ctrl.pod_progress_dialog = MagicMock()
+    ctrl._pending_pod_result = _make_result()
+    ctrl._show_pod_on_map_requested = False
+
+    with patch("core.services.coverage.writers.write_pod_overlay_png",
+               side_effect=RuntimeError("reproject failed")), \
+         patch("core.controllers.images.viewer.exports.UnifiedMapExportController.QMessageBox") as mb:
+        ctrl._on_pod_finished()   # must not raise
+
+    mb.warning.assert_called_once()
+    assert "reproject failed" in mb.warning.call_args.args[2]
+    ctrl._last_kml_service.save_kml.assert_not_called()
+
+
+def test_pod_cancel_and_error_clear_kml_embed_target(tmp_path):
+    """A cancelled or failed POD pass must not leave a stale embed target that
+    a later, unrelated POD run would then write into the old KML."""
+    for trigger in ("cancel", "error"):
+        ctrl = _controller_with_kml_context(tmp_path)
+        ctrl.pod_thread = MagicMock()
+        ctrl.pod_thread.isRunning.return_value = False
+        ctrl.pod_progress_dialog = MagicMock()
+        ctrl.pod_progress_dialog.isVisible.return_value = False
+        with patch("core.controllers.images.viewer.exports.UnifiedMapExportController.QMessageBox"):
+            if trigger == "cancel":
+                ctrl._on_pod_cancelled()
+            else:
+                ctrl._on_pod_error("boom")
+        assert ctrl._kml_pod_target is None, trigger
+
+
+def test_export_dialog_kml_with_pod_sets_embed_target(controller, tmp_path):
+    """The KML+POD flow arms the embed target with the chosen file path."""
+    kml_path = str(tmp_path / "out.kml")
+    controller._export_to_kml = MagicMock(return_value=kml_path)
+    controller._run_pod_export = MagicMock()
+    with patch(
+        "core.controllers.images.viewer.exports.UnifiedMapExportController.MapExportDialog"
+    ) as MockDialog:
+        d = MockDialog.return_value
+        d.exec.return_value = QDialog.Accepted
+        d.get_export_type.return_value = "kml"
+        d.should_include_locations.return_value = True
+        d.should_include_images_without_flagged_aois.return_value = False
+        d.should_include_flagged_aois.return_value = False
+        d.should_include_coverage.return_value = False
+        d.should_include_pod.return_value = True
+        d.should_show_pod_on_map.return_value = False
+
+        controller.show_export_dialog()
+
+    assert controller._kml_pod_target == kml_path
+    controller._run_pod_export.assert_called_once()

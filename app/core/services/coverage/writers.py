@@ -97,6 +97,36 @@ def write_pod_values_geotiff(path, pod: np.ndarray, look_count: np.ndarray,
         dst.update_tags(**tags)
 
 
+def write_pod_overlay_png(result, png_path: str) -> dict:
+    """Write the POD render as a north-up WGS84 PNG for KML GroundOverlays.
+
+    KML LatLonBox overlays are equirectangular, so the EPSG:3857 RGBA render
+    is reprojected to EPSG:4326 first (nearest neighbour keeps the discrete
+    colormap and the transparent no-look cells crisp). Returns the overlay's
+    WGS84 bounding box as {'north', 'south', 'east', 'west'}.
+    """
+    from PIL import Image
+    from rasterio.warp import calculate_default_transform, reproject, Resampling
+    from rasterio.transform import array_bounds
+
+    rgba = pod_to_rgba(result.pod, result.look_count, result.params)
+    rows, cols = rgba.shape[:2]
+    src_bounds = array_bounds(rows, cols, result.transform)
+    dst_transform, dst_w, dst_h = calculate_default_transform(
+        "EPSG:3857", "EPSG:4326", cols, rows, *src_bounds)
+    dst = np.zeros((dst_h, dst_w, 4), dtype=np.uint8)
+    for band in range(4):
+        reproject(
+            source=np.ascontiguousarray(rgba[:, :, band]),
+            destination=dst[:, :, band],
+            src_transform=result.transform, src_crs="EPSG:3857",
+            dst_transform=dst_transform, dst_crs="EPSG:4326",
+            resampling=Resampling.nearest)
+    Image.fromarray(dst, "RGBA").save(png_path)
+    west, south, east, north = array_bounds(dst_h, dst_w, dst_transform)
+    return {"north": north, "south": south, "east": east, "west": west}
+
+
 def write_looks_geotiff(path, look_count: np.ndarray, transform,
                         crs: str = "EPSG:3857") -> None:
     import rasterio

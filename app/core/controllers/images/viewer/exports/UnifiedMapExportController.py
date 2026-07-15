@@ -405,6 +405,12 @@ class UnifiedMapExportController(TranslationMixin):
         self.pod_thread = None
         self.pod_progress_dialog = None
         self._pending_pod_result = None
+        # KML/KMZ path a completed POD pass should embed its overlay into
+        # (None outside a KML export with POD selected), plus the service
+        # holding that document and the folder the POD products landed in.
+        self._kml_pod_target = None
+        self._last_kml_service = None
+        self._pod_last_output_dir = None
 
     def show_export_dialog(self):
         """Show the unified map export dialog and handle export based on selections."""
@@ -436,9 +442,13 @@ class UnifiedMapExportController(TranslationMixin):
 
             # Handle export based on type
             if export_type == 'kml':
+                self._kml_pod_target = None
                 kml_path = self._export_to_kml(include_locations, include_images_without_flagged_aois,
                                                include_flagged_aois, include_coverage)
                 if include_pod and kml_path:
+                    # Embed the heatmap into the just-saved document when the
+                    # POD pass completes (see _embed_pod_overlay_in_kml).
+                    self._kml_pod_target = kml_path
                     self._run_pod_export(self._pod_dir_for_kml(kml_path), show_pod_on_map)
             else:  # caltopo
                 # Show method selection dialog
@@ -478,12 +488,13 @@ class UnifiedMapExportController(TranslationMixin):
             include_coverage: Whether to include coverage extent
         """
         try:
-            # Show file save dialog
+            # Show file save dialog (KMZ packs the POD overlay image into a
+            # single self-contained file; plain KML references it as a sidecar).
             file_name, _ = QFileDialog.getSaveFileName(
                 self.parent,
                 self.tr("Save Map Export"),
                 "",
-                self.tr("KML files (*.kml)")
+                self.tr("KML files (*.kml);;KMZ files (*.kmz)")
             )
 
             if not file_name:  # User cancelled
@@ -500,6 +511,9 @@ class UnifiedMapExportController(TranslationMixin):
             # Create services
             kml_service = KMLGeneratorService(custom_altitude_ft=custom_alt, use_terrain=use_terrain)
             coverage_service = CoverageExtentService(custom_altitude_ft=custom_alt, logger=self.logger, use_terrain=use_terrain)
+            # Keep the document so a following POD pass can embed its overlay
+            # and re-save (see _embed_pod_overlay_in_kml).
+            self._last_kml_service = kml_service
 
             # Calculate total items for progress (will be recalculated in thread, but estimate here)
             total_items = 0
@@ -620,6 +634,7 @@ class UnifiedMapExportController(TranslationMixin):
 
         self._pending_pod_result = None
         self._show_pod_on_map_requested = show_on_map
+        self._pod_last_output_dir = output_dir
 
         self.pod_progress_dialog = ExportProgressDialog(
             self.parent, title="Coverage / POD", total_items=len(self.parent.images) + 2)
@@ -653,6 +668,10 @@ class UnifiedMapExportController(TranslationMixin):
     def _on_pod_finished(self):
         if self.pod_progress_dialog:
             self.pod_progress_dialog.accept()
+        # Embed the heatmap into the exported KML/KMZ before anything else so
+        # the file on disk is complete by the time the user is told about it.
+        if self._pending_pod_result is not None and self._kml_pod_target:
+            self._embed_pod_overlay_in_kml(self._pending_pod_result)
         if hasattr(self.parent, 'status_controller'):
             self.parent.status_controller.show_toast(
                 self.tr("POD coverage complete"), 3000, color="#00C853")
@@ -667,7 +686,58 @@ class UnifiedMapExportController(TranslationMixin):
                     self.logger.warning(f"Could not show POD overlay: {e}")
         self._pending_pod_result = None
 
+    def _embed_pod_overlay_in_kml(self, result):
+        """Embed the POD heatmap into the exported document as a GroundOverlay.
+
+        The plain export was already saved (crash-safe); this re-saves it with
+        the overlay added. A ``.kmz`` target packs the PNG into the archive
+        (self-contained); a ``.kml`` target references the PNG written into the
+        sibling POD products folder. Failure leaves the original export intact
+        and is surfaced as a warning, not an error.
+        """
+        kml_path = self._kml_pod_target
+        self._kml_pod_target = None
+        kml_service = self._last_kml_service
+        if kml_service is None:
+            return
+        try:
+            import os
+            from core.services.coverage.writers import write_pod_overlay_png
+
+            os.makedirs(self._pod_last_output_dir, exist_ok=True)
+            png_path = os.path.join(self._pod_last_output_dir, "pod_overlay.png")
+            box = write_pod_overlay_png(result, png_path)
+
+            packed = str(kml_path).lower().endswith('.kmz')
+            href = None
+            if not packed:
+                href = os.path.relpath(
+                    png_path, os.path.dirname(os.path.abspath(kml_path))
+                ).replace(os.sep, '/')
+
+            description = self.tr(
+                "Terrain and canopy aware probability-of-detection heatmap.")
+            mean_pod = (result.stats or {}).get('mean_pod_covered')
+            if mean_pod is not None:
+                description += "\n" + self.tr(
+                    "Mean POD over covered area: {pod}%").format(pod=round(mean_pod * 100))
+
+            kml_service.add_pod_overlay(
+                png_path, box, name=self.tr("POD Coverage"),
+                description=description, packed=packed, href=href)
+            kml_service.save_kml(kml_path)
+            self.logger.info(f"POD overlay embedded into {kml_path}")
+        except Exception as e:
+            # The GeoTIFF products still exist; only the KML embedding failed.
+            self.logger.error(f"Failed to embed POD overlay into {kml_path}: {e}")
+            QMessageBox.warning(
+                self.parent, self.tr("POD Overlay"),
+                self.tr("The POD coverage was computed, but embedding it into the "
+                        "exported file failed:\n{error}\n\nThe POD GeoTIFF products "
+                        "were still written next to the export.").format(error=str(e)))
+
     def _on_pod_cancelled(self):
+        self._kml_pod_target = None
         if self.pod_thread and self.pod_thread.isRunning():
             self.pod_thread.terminate()
             self.pod_thread.wait()
@@ -678,6 +748,7 @@ class UnifiedMapExportController(TranslationMixin):
                 self.tr("POD calculation cancelled"), 3000, color="#FFA726")
 
     def _on_pod_error(self, error_message):
+        self._kml_pod_target = None
         if self.pod_progress_dialog and self.pod_progress_dialog.isVisible():
             self.pod_progress_dialog.reject()
         self.logger.error(f"POD export error: {error_message}")

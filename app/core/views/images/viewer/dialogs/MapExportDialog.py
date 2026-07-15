@@ -105,9 +105,11 @@ class MapExportDialog(TranslationMixin, QDialog):
         self.include_pod.setChecked(False)  # heavy compute -> opt-in
         self.include_pod.setToolTip(self.tr(
             "Compute a terrain and canopy aware probability-of-detection raster for the whole "
-            "mission (all non-hidden images, independent of the selections above). Writes "
-            "coverage_pod.tif, coverage_looks.tif, coverage_gaps.geojson and stats.json. The "
-            "GeoTIFF can be imported into CalTopo Map Sheets. May take several minutes."))
+            "mission (all non-hidden images, independent of the selections above). KML exports "
+            "embed the heatmap in the KML/KMZ as an image overlay; the GeoTIFF products "
+            "(coverage_pod.tif, coverage_looks.tif, coverage_gaps.geojson, stats.json) are also "
+            "written — the GeoTIFF can be imported into CalTopo Map Sheets. May take several "
+            "minutes."))
 
         self.show_pod_on_map = QCheckBox(self.tr("Show on map when complete"))
         self.show_pod_on_map.setChecked(True)  # spec 4.1: default on

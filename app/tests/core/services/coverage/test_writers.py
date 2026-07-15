@@ -60,6 +60,39 @@ def test_pod_geotiff_roundtrip(tmp_path, small_result):
         assert ds.tags().get("ADIAT_PRODUCT") == "coverage_pod"
 
 
+def test_pod_overlay_png_roundtrip(tmp_path, small_result):
+    """The KML GroundOverlay product: a WGS84-reprojected RGBA PNG whose
+    returned LatLonBox matches the grid's geographic bounds."""
+    from PIL import Image
+    from rasterio.warp import transform_bounds
+    from rasterio.transform import array_bounds
+
+    spec, result = small_result
+    path = str(tmp_path / "pod_overlay.png")
+    box = writers.write_pod_overlay_png(result, path)
+
+    img = Image.open(path)
+    assert img.mode == "RGBA"
+    w, h = img.size
+    assert w > 0 and h > 0
+
+    # Box is a sane LatLonBox...
+    assert box["north"] > box["south"]
+    assert box["east"] > box["west"]
+    # ...matching the source grid's WGS84 bounds (reprojection preserves extent).
+    src_bounds = array_bounds(spec.height, spec.width, result.transform)
+    exp_w, exp_s, exp_e, exp_n = transform_bounds("EPSG:3857", "EPSG:4326", *src_bounds)
+    assert box["west"] == pytest.approx(exp_w, abs=1e-4)
+    assert box["south"] == pytest.approx(exp_s, abs=1e-4)
+    assert box["east"] == pytest.approx(exp_e, abs=1e-4)
+    assert box["north"] == pytest.approx(exp_n, abs=1e-4)
+
+    # Never-looked corners stay fully transparent; the covered middle doesn't.
+    px = img.load()
+    assert px[0, 0][3] == 0
+    assert px[w // 2, h // 2][3] > 0
+
+
 def test_pod_values_geotiff_roundtrip(tmp_path, small_result):
     spec, result = small_result
     path = str(tmp_path / "coverage_pod_values.tif")
