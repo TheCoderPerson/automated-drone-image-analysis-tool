@@ -117,14 +117,16 @@ class ReviewOrNewPage(BasePage):
         )
 
         if file_path:
-            # Validate that it's an ADIAT results file
-            if not os.path.basename(file_path).startswith('ADIAT_Data'):
+            # Accept a single-run result (ADIAT_Data.xml) or a batch's Search
+            # Coordinator project (ADIAT_Search_*.xml).
+            if not os.path.basename(file_path).startswith(('ADIAT_Data', 'ADIAT_Search')):
                 # Show warning but allow selection
                 reply = QMessageBox.warning(
                     self.dialog,
                     self.tr("File Name Warning"),
                     self.tr(
-                        "The selected file does not appear to be an ADIAT_Data.xml file.\n\n"
+                        "The selected file does not appear to be an ADIAT_Data.xml "
+                        "result or an ADIAT_Search project file.\n\n"
                         "Do you want to continue with this file?"
                     ),
                     QMessageBox.Yes | QMessageBox.No,

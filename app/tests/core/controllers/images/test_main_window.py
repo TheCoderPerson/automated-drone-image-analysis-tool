@@ -509,6 +509,22 @@ def test_load_search_project_routes_to_coordinator(main_window, tmp_path):
 
     open_coord.assert_called_once_with(project)
     get_settings.assert_not_called()
+    # The wizard review handler relies on this to skip the single-run Viewer.
+    assert main_window._view_results_mode == 'coordinator'
+    assert main_window._search_project_path == project
+    assert main_window.viewResultsButton.isEnabled()
+
+
+def test_results_button_widens_for_coordinator_label(main_window):
+    """The results button grows to fit the longer coordinator label."""
+    main_window._set_view_results_mode('results')
+    results_width = main_window.viewResultsButton.minimumWidth()
+
+    main_window._set_view_results_mode('coordinator', 'project.xml')
+    coordinator_width = main_window.viewResultsButton.minimumWidth()
+
+    assert results_width >= 150
+    assert coordinator_width > results_width
 
 
 def test_load_single_result_not_routed_to_coordinator(main_window, tmp_path):

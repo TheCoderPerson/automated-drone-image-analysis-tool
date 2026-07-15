@@ -314,8 +314,10 @@ def main():
             # Load the XML file
             try:
                 app._main_window._process_xml_file(review_file_path)
-                # Automatically open the Viewer
-                app._main_window._viewResultsButton_clicked()
+                # A Search Coordinator project is already opened by
+                # _process_xml_file; otherwise open the single-run Viewer.
+                if app._main_window._view_results_mode != 'coordinator':
+                    app._main_window._viewResultsButton_clicked()
             except Exception as e:
                 QMessageBox.critical(
                     app._main_window,

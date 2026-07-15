@@ -7389,8 +7389,8 @@ Puede detectar sombras u objetos oscuros no deseados.</translation>
     </message>
     <message>
         <location filename="../resources/views/images/ImageAnalysisGuide.ui" line="67"/>
-        <source>Please select the ADIAT_Data.xml file from previous analysis:</source>
-        <translation>Seleccione el archivo ADIAT_Data.xml del análisis anterior:</translation>
+        <source>Select a results file from a previous analysis: an ADIAT_Data.xml result, or a batch&apos;s Search Coordinator project (ADIAT_Search_*.xml).</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../resources/views/images/ImageAnalysisGuide.ui" line="79"/>
@@ -8931,7 +8931,7 @@ El Visor de resultados ofrece:
 Úselo para revisar, verificar y exportar los resultados del análisis.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="1589"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="1594"/>
         <location filename="../resources/views/images/MainWindow.ui" line="1018"/>
         <source> View Results</source>
         <translation> Ver resultados</translation>
@@ -9355,12 +9355,12 @@ DETECTOR DE PERSONAS CON IA: Modelo de aprendizaje profundo para detección prec
     </message>
     <message>
         <location filename="../app/core/controllers/images/MainWindow.py" line="966"/>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="1406"/>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="1429"/>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="1459"/>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="1475"/>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="1491"/>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="1507"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="1411"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="1434"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="1464"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="1480"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="1496"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="1512"/>
         <source>Error</source>
         <translation>Error</translation>
     </message>
@@ -9410,81 +9410,81 @@ DETECTOR DE PERSONAS CON IA: Modelo de aprendizaje profundo para detección prec
         <translation>Error al abrir el visor: {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="1150"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="1153"/>
         <source>The selected file is not a valid XML file: {path}</source>
         <translation>El archivo seleccionado no es un archivo XML válido: {path}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="1352"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="1357"/>
         <source>Error Loading Results</source>
         <translation>Error al cargar los resultados</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="1353"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="1358"/>
         <source>Failed to load results file:
 {error}</source>
         <translation>Error al cargar el archivo de resultados:
 {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="1407"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="1412"/>
         <source>Failed to open Streaming Detector:
 {error}</source>
         <translation>Error al abrir el Detector de transmisión:
 {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="1430"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="1435"/>
         <source>Failed to open Flight Viewer:
 {error}</source>
         <translation>No se pudo abrir el visor de vuelo:
 {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="1460"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="1465"/>
         <source>Failed to open Search Coordinator:
 {error}</source>
         <translation>Error al abrir el Coordinador de búsqueda:
 {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="1476"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="1481"/>
         <source>Failed to open Help documentation:
 {error}</source>
         <translation>Error al abrir la documentación de Ayuda:
 {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="1492"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="1497"/>
         <source>Failed to open Community Help:
 {error}</source>
         <translation>Error al abrir la Ayuda de la comunidad:
 {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="1508"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="1513"/>
         <source>Failed to open YouTube Channel:
 {error}</source>
         <translation>Error al abrir el canal de YouTube:
 {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="1583"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="1588"/>
         <source> Open Search Coordinator</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="1585"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="1590"/>
         <source>Open the Search Coordinator to review every batch in this run.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="1591"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="1596"/>
         <source>Open the Results Viewer to review detection results.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="1658"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="1681"/>
         <source>Invalid Value</source>
         <translation>Valor no válido</translation>
     </message>
@@ -11574,18 +11574,16 @@ Valores mayores = fusionan detecciones más alejadas (puede agrupar de más).</t
         <translation>Archivos XML (*.xml);;Todos los archivos (*)</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/guidePages/ReviewOrNewPage.py" line="125"/>
+        <location filename="../app/core/controllers/images/guidePages/ReviewOrNewPage.py" line="126"/>
         <source>File Name Warning</source>
         <translation>Advertencia de nombre de archivo</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/guidePages/ReviewOrNewPage.py" line="127"/>
-        <source>The selected file does not appear to be an ADIAT_Data.xml file.
+        <location filename="../app/core/controllers/images/guidePages/ReviewOrNewPage.py" line="128"/>
+        <source>The selected file does not appear to be an ADIAT_Data.xml result or an ADIAT_Search project file.
 
 Do you want to continue with this file?</source>
-        <translation>El archivo seleccionado no parece ser un archivo ADIAT_Data.xml.
-
-¿Desea continuar con este archivo?</translation>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>

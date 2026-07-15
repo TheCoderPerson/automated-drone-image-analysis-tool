@@ -1135,8 +1135,11 @@ class MainWindow(TranslationMixin, QMainWindow, Ui_MainWindow):
         """
         try:
             # A Search Coordinator project links multiple batches; open it in
-            # the Coordinator rather than the single-run Viewer.
+            # the Coordinator rather than the single-run Viewer, and repurpose
+            # the results button to reopen the same project.
             if self._is_search_project_xml(full_path):
+                self._set_view_results_mode('coordinator', full_path)
+                self._set_ViewResultsButton(True)
                 self._open_coordinator(full_path)
                 return
             image_count = self._get_settings_from_xml(full_path)
@@ -1343,8 +1346,10 @@ class MainWindow(TranslationMixin, QMainWindow, Ui_MainWindow):
                 # self.logger.info(f"Review requested for file: {file_path}")
                 # Load the XML file
                 self._process_xml_file(file_path)
-                # Automatically open the Viewer
-                self._viewResultsButton_clicked()
+                # A Search Coordinator project is already opened by
+                # _process_xml_file; otherwise open the single-run Viewer.
+                if self._view_results_mode != 'coordinator':
+                    self._viewResultsButton_clicked()
             except Exception as e:
                 self.logger.error(f"Error loading results file: {e}")
                 QMessageBox.critical(
@@ -1590,6 +1595,24 @@ class MainWindow(TranslationMixin, QMainWindow, Ui_MainWindow):
             self.viewResultsButton.setToolTip(
                 self.tr("Open the Results Viewer to review detection results.")
             )
+        # The button has a Fixed size policy and a 150px minimum sized for
+        # "View Results"; the longer coordinator label clips unless we widen
+        # the minimum to fit the current text and icon.
+        self._fit_view_results_button_width()
+
+    def _fit_view_results_button_width(self):
+        """
+        Widen the results button so its current label is not clipped.
+
+        The button has a Fixed size policy; a fixed 400px spacer sits beside it,
+        so the layout will not grant the button its preferred width and the
+        longer coordinator label clips. Raising the minimum width to the
+        button's size hint forces the layout to allocate the needed room, while
+        the shared 150px floor keeps parity with the Start/Cancel buttons for
+        short labels.
+        """
+        button = self.viewResultsButton
+        button.setMinimumWidth(max(150, button.sizeHint().width()))
 
     def _set_defaults(self):
         """
