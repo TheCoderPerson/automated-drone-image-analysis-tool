@@ -337,3 +337,31 @@ def test_frame_geometry_no_retry_when_no_gps():
     assert fg is None
     m_direct.assert_called_once()
     m_merged.assert_not_called()
+
+
+class _FallbackTerrain(_FlatTerrain):
+    """Flat DEM served through the online fallback (source-tagged)."""
+    def sample_grid_spec(self, spec):
+        sample = super().sample_grid_spec(spec)
+        sample.source = 'terrarium_fallback'
+        return sample
+
+
+def test_dem_fallback_frames_counted():
+    """Frames served by the Terrarium fallback are counted in the result and
+    stats so the completion UI can report the degraded resolution honestly."""
+    images = [{'name': f'g{i}', '_fg': make_fg(pitch=-90.0)} for i in range(3)]
+    svc = _service(_FallbackTerrain())
+    result = svc.calculate(images)
+
+    assert result.image_count == 3
+    assert result.dem_fallback_frames == 3
+    assert result.stats['dem_fallback_frames'] == 3
+
+
+def test_dem_fallback_zero_for_primary_served_frames():
+    images = [{'name': 'g', '_fg': make_fg(pitch=-90.0)}]
+    svc = _service(_FlatTerrain())
+    result = svc.calculate(images)
+    assert result.dem_fallback_frames == 0
+    assert result.stats['dem_fallback_frames'] == 0

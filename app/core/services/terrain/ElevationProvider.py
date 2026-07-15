@@ -42,6 +42,15 @@ class ElevationProvider(ABC):
         providers don't have anything to load up-front."""
         return None
 
+    def covers(self, bounds_wgs84) -> str:
+        """How much of ``bounds_wgs84`` (min_lon, min_lat, max_lon, max_lat)
+        this provider can serve: ``'full' | 'partial' | 'none'``.
+
+        Tiled-web providers are global, so the default reports 'full';
+        local providers override with a manifest-driven answer.
+        """
+        return 'full' if self.get_provider_kind() == 'tiled_web' else 'none'
+
     # Upper bound on cells the slow (per-point) grid fallback will sample before
     # refusing, so a mis-sized bbox can't spin for an hour of point queries.
     SLOW_GRID_CELL_LIMIT = 250_000

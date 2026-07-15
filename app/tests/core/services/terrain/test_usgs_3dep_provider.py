@@ -71,3 +71,31 @@ def test_missing_manifest_does_not_raise(tmp_path):
     provider = USGS3DEPProvider(str(tmp_path / "does_not_exist.csv"), str(tmp_path))
     assert provider.lookup_tile(38.5, -120.07) is None
     assert provider.sample_elevation(38.5, -120.07) is None
+
+
+# ---------------------------------------------------------------------------
+# covers(): manifest-driven AOI coverage classification
+# ---------------------------------------------------------------------------
+
+def test_covers_full_when_tiles_blanket_aoi(fake_manifest):
+    manifest, tiles_dir = fake_manifest
+    provider = USGS3DEPProvider(str(manifest), str(tiles_dir))
+    # Interior box well inside the two stacked tiles (-120.13..-120.01, 38.45..38.65).
+    assert provider.covers((-120.12, 38.46, -120.02, 38.64)) == 'full'
+
+
+def test_covers_partial_when_aoi_extends_past_tiles(fake_manifest):
+    manifest, tiles_dir = fake_manifest
+    provider = USGS3DEPProvider(str(manifest), str(tiles_dir))
+    assert provider.covers((-120.12, 38.46, -119.50, 38.64)) == 'partial'
+
+
+def test_covers_none_outside_all_tiles(fake_manifest):
+    manifest, tiles_dir = fake_manifest
+    provider = USGS3DEPProvider(str(manifest), str(tiles_dir))
+    assert provider.covers((-119.00, 30.00, -118.90, 30.10)) == 'none'
+
+
+def test_covers_none_with_unloaded_manifest(tmp_path):
+    provider = USGS3DEPProvider(str(tmp_path / "missing.csv"), str(tmp_path))
+    assert provider.covers((-120.12, 38.46, -120.02, 38.64)) == 'none'

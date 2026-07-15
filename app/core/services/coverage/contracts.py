@@ -93,6 +93,9 @@ class CoverageResult:
     limiting_factor: Optional[np.ndarray] = None    # uint8, same shape as pod
     frame_index: Optional[FrameIndex] = None
     params: object = None
+    # Frames whose DEM came from the online Terrarium fallback because the
+    # configured local tiles had no coverage there (0 when N/A).
+    dem_fallback_frames: int = 0
     _transformer: object = field(default=None, repr=False, compare=False)
 
     def sample(self, lat: float, lon: float) -> Optional[dict]:

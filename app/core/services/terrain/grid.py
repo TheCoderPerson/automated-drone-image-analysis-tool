@@ -126,6 +126,7 @@ class GridSample:
     transform: Affine
     crs: str
     datum_note: str             # e.g. "orthometric NAVD88 (GEOID18)"
+    source: Optional[str] = None  # e.g. 'terrarium_fallback' when a fallback served it
 
     @property
     def spec(self) -> GridSpec:
@@ -285,3 +286,42 @@ def integer_offset(child: GridSpec, parent: GridSpec,
             f"non-integer lattice offset: row={row_off}, col={col_off}"
         )
     return int(row_r), int(col_r)
+
+
+# Fraction of a query bbox that must be covered by tile bboxes to count as
+# 'full' coverage (tolerates hairline gaps from manifest rounding).
+COVERS_FULL_RATIO = 0.99
+
+COVERS_FULL = 'full'
+COVERS_PARTIAL = 'partial'
+COVERS_NONE = 'none'
+
+
+def bbox_coverage(tile_bboxes, bounds_wgs84,
+                  full_ratio: float = COVERS_FULL_RATIO) -> str:
+    """How much of a WGS84 bbox a set of tile bboxes covers.
+
+    Args:
+        tile_bboxes: iterable of (minX, minY, maxX, maxY) WGS84 tuples.
+        bounds_wgs84: (min_lon, min_lat, max_lon, max_lat) query box.
+        full_ratio: covered-area fraction at or above which coverage is 'full'.
+
+    Returns:
+        'full' | 'partial' | 'none'. A degenerate (zero-area) query box counts
+        as 'full' when any tile intersects it.
+    """
+    from shapely.geometry import box as shp_box
+    from shapely.ops import unary_union
+
+    query = shp_box(*bounds_wgs84)
+    boxes = [shp_box(*b) for b in tile_bboxes]
+    intersecting = [b for b in boxes if b.intersects(query)]
+    if not intersecting:
+        return COVERS_NONE
+    if query.area <= 0:
+        return COVERS_FULL
+    covered = unary_union(intersecting).intersection(query)
+    ratio = covered.area / query.area
+    if ratio >= full_ratio:
+        return COVERS_FULL
+    return COVERS_PARTIAL if ratio > 0 else COVERS_NONE

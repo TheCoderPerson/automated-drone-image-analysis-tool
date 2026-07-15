@@ -296,9 +296,15 @@ def test_pod_dir_for_kml():
     assert d == os.path.join("out", "mission_coverage_pod")
 
 
-def _make_result(cancelled=False):
+def _make_result(cancelled=False, skipped=None, image_count=1,
+                 dem_fallback_frames=0, stats=None):
     r = MagicMock()
     r.cancelled = cancelled
+    # Real values: _pod_completion_summary iterates skipped and does arithmetic.
+    r.skipped = skipped if skipped is not None else []
+    r.image_count = image_count
+    r.dem_fallback_frames = dem_fallback_frames
+    r.stats = stats if stats is not None else {}
     return r
 
 
@@ -704,3 +710,58 @@ def test_export_dialog_kml_with_pod_sets_embed_target(controller, tmp_path):
 
     assert controller._kml_pod_target == kml_path
     controller._run_pod_export.assert_called_once()
+
+
+# ---------------------------------------------------------------------------
+# Honest POD completion summary
+# ---------------------------------------------------------------------------
+
+def test_pod_summary_clean_run_is_green(controller):
+    msg, color = controller._pod_completion_summary(_make_result())
+    assert msg == "POD coverage complete"
+    assert color == "#00C853"
+
+
+def test_pod_summary_none_result_is_generic_green(controller):
+    msg, color = controller._pod_completion_summary(None)
+    assert msg == "POD coverage complete"
+    assert color == "#00C853"
+
+
+def test_pod_summary_hidden_skips_do_not_degrade(controller):
+    """User-hidden frames are a choice, not a data problem."""
+    result = _make_result(skipped=[("a.jpg", "hidden")], image_count=5)
+    msg, color = controller._pod_completion_summary(result)
+    assert color == "#00C853"
+
+
+def test_pod_summary_reports_skipped_and_no_dem_counts(controller):
+    result = _make_result(
+        skipped=[("a.jpg", "no_dem"), ("b.jpg", "no_dem_at_nadir"),
+                 ("c.jpg", "no_pose"), ("d.jpg", "hidden")],
+        image_count=7)
+    msg, color = controller._pod_completion_summary(result)
+    assert color == "#FFA726"
+    assert "3 of 10 frames skipped" in msg
+    assert "(2 without elevation data)" in msg
+
+
+def test_pod_summary_mentions_fallback_on_clean_run(controller):
+    result = _make_result(dem_fallback_frames=4)
+    msg, color = controller._pod_completion_summary(result)
+    assert color == "#00C853"
+    assert "4" in msg and "online" in msg
+
+
+def test_on_pod_finished_toasts_summary(controller):
+    """The toast shows the computed summary, not an unconditional 'complete'."""
+    controller.pod_progress_dialog = MagicMock()
+    controller._pending_pod_result = _make_result(
+        skipped=[("a.jpg", "no_dem")], image_count=1)
+    controller._show_pod_on_map_requested = False
+
+    controller._on_pod_finished()
+
+    args, kwargs = controller.parent.status_controller.show_toast.call_args
+    assert "skipped" in args[0]
+    assert kwargs.get("color") == "#FFA726"

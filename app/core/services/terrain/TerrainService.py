@@ -119,10 +119,25 @@ class TerrainService:
         self._enabled = True
 
         # When True, no method downloads elevation/geoid data over the network;
-        # only already-cached data is used. Set from the app's "Offline Only"
-        # preference by the caller (see AOIService._get_terrain_service). Acts
-        # as a floor: an explicit offline_only=True argument still wins.
+        # only already-cached data is used. Initialized from the app's
+        # "Offline Only" preference (callers may still override, see
+        # AOIService._get_terrain_service). Acts as a floor: an explicit
+        # offline_only=True argument still wins.
         self.offline_only = False
+        if settings_service is not None:
+            try:
+                self.offline_only = bool(
+                    settings_service.get_bool_setting('OfflineOnly', False))
+            except Exception:
+                self.offline_only = False
+
+        # Lazy Terrarium fallback used when a local-GeoTIFF provider has no
+        # coverage for a query. Local 3DEP is an accuracy upgrade over the
+        # global baseline, not a replacement for it: a mission outside the
+        # downloaded tiles must degrade to ~30 m online data, not to nothing.
+        self._fallback_provider = None
+        self._fallback_cache = None
+        self._fallback_logged = False
 
     def _build_cache(self) -> Optional[TerrainCacheService]:
         """Construct a tile cache only for tiled_web providers."""
@@ -141,6 +156,46 @@ class TerrainService:
                 pass
         self.provider = TerrainProviderFactory.create(provider_id, self._settings_service)
         self.cache = self._build_cache()
+        self._reset_fallback()
+
+    def _reset_fallback(self):
+        """Drop the lazily-built fallback pair (provider changed)."""
+        if self._fallback_provider is not None:
+            try:
+                self._fallback_provider.close()
+            except Exception:
+                pass
+        self._fallback_provider = None
+        self._fallback_cache = None
+        self._fallback_logged = False
+
+    def _get_fallback(self):
+        """(provider, cache) Terrarium pair for local-provider coverage gaps.
+
+        Built lazily and only when the primary provider is local-GeoTIFF;
+        returns (None, None) otherwise. Shares the tile cache directory with
+        the normal online path so fallback downloads are reusable.
+        """
+        if self.provider.get_provider_kind() != 'local_geotiff':
+            return None, None
+        if self._fallback_provider is None:
+            try:
+                self._fallback_provider = TerrariumProvider()
+                self._fallback_cache = TerrainCacheService(
+                    cache_dir=self._cache_dir, provider=self._fallback_provider)
+            except Exception as e:
+                self.logger.warning(f"TerrainService: fallback unavailable: {e}")
+                self._fallback_provider = None
+                self._fallback_cache = None
+                return None, None
+        return self._fallback_provider, self._fallback_cache
+
+    def _log_fallback_once(self, what: str):
+        if not self._fallback_logged:
+            self._fallback_logged = True
+            self.logger.info(
+                f"TerrainService: local DEM has no coverage for {what}; "
+                "falling back to AWS Terrain Tiles (~30 m).")
 
     def warmup(self) -> None:
         """Eagerly load the geoid grid and any provider-specific indices.
@@ -196,6 +251,11 @@ class TerrainService:
         if self.provider.get_provider_kind() == 'local_geotiff':
             elevation = self.provider.sample_elevation(lat, lon)
             if elevation is None:
+                # Outside the downloaded tiles: degrade to the global online
+                # baseline instead of pretending the terrain is flat.
+                fallback = self._fallback_elevation(lat, lon, offline_only)
+                if fallback is not None:
+                    return fallback
                 return self._create_flat_result(lat, lon)
             geoid_undulation = None
             if self._geoid:
@@ -248,6 +308,47 @@ class TerrainService:
             from_cache=from_cache
         )
 
+    def _fallback_elevation(self, lat: float, lon: float,
+                            offline_only: bool) -> Optional[ElevationResult]:
+        """Point elevation from the Terrarium fallback, or None.
+
+        Mirrors the tiled_web branch of :meth:`get_elevation` but against the
+        fallback provider/cache. Honors offline mode (cached tiles only).
+        """
+        provider, cache = self._get_fallback()
+        if cache is None:
+            return None
+        self._log_fallback_once(f"({lat:.5f}, {lon:.5f})")
+
+        tile_x, tile_y = provider.lat_lon_to_tile(lat, lon, self.zoom)
+        pixel_x, pixel_y = provider.lat_lon_to_pixel_in_tile(lat, lon, self.zoom)
+        if offline_only:
+            tile = cache.get_tile_if_cached(self.zoom, tile_x, tile_y)
+            from_cache = True
+        else:
+            tile = cache.get_tile(self.zoom, tile_x, tile_y)
+            from_cache = cache.is_tile_cached(self.zoom, tile_x, tile_y)
+        if tile is None:
+            return None
+        try:
+            elevation = provider.decode_elevation_bilinear(tile, pixel_x, pixel_y)
+        except Exception as e:
+            self.logger.error(f"Fallback elevation decode failed: {e}")
+            return None
+
+        geoid_undulation = None
+        if self._geoid:
+            geoid_undulation = self._geoid.get_undulation(lat, lon, offline_only=offline_only)
+        return ElevationResult(
+            elevation_m=elevation,
+            source='terrain',
+            geoid_undulation_m=geoid_undulation,
+            provider=f"{provider.get_provider_name()} (fallback)",
+            zoom_level=self.zoom,
+            resolution_m=self.ZOOM_RESOLUTION.get(self.zoom, 38),
+            from_cache=from_cache,
+        )
+
     def get_elevation_batch(self, locations: list, offline_only: bool = False) -> list:
         """
         Get elevation for multiple locations efficiently.
@@ -288,9 +389,16 @@ class TerrainService:
 
         kind = self.provider.get_provider_kind()
         if kind == 'local_geotiff':
-            # The provider's windowed-reproject path is authoritative; if no tile
-            # covers the grid the per-point slow path would also find nothing.
-            return self.provider.sample_grid_spec(spec)
+            # The provider's windowed-reproject path is authoritative; if no
+            # tile covers the grid, degrade to the global online baseline
+            # (offline mode still serves cached tiles) rather than skipping.
+            sample = self.provider.sample_grid_spec(spec)
+            if sample is not None:
+                return sample
+            fallback = self._sample_grid_fallback(spec, offline_only)
+            if fallback is not None:
+                return fallback
+            return None
 
         if kind == 'tiled_web':
             from .TerrariumGridSampler import sample_grid_tiled
@@ -301,6 +409,26 @@ class TerrainService:
 
         # Last resort: ABC per-point slow path (works for any sample_elevation provider).
         return self.provider.sample_grid_spec(spec)
+
+    def _sample_grid_fallback(self, spec, offline_only: bool):
+        """Grid sample from the Terrarium fallback, tagged with its source."""
+        provider, cache = self._get_fallback()
+        if cache is None:
+            return None
+        self._log_fallback_once(
+            f"grid {spec.width}x{spec.height} @ {spec.cell_size:.1f}m")
+        try:
+            from .TerrariumGridSampler import sample_grid_tiled
+            sample = sample_grid_tiled(
+                provider, cache, spec, self.zoom,
+                offline_only=offline_only or self.offline_only)
+        except Exception as e:
+            self.logger.warning(f"TerrainService: fallback grid sample failed: {e}")
+            return None
+        if sample is not None:
+            # Let consumers (e.g. the POD pass) count fallback-served frames.
+            sample.source = 'terrarium_fallback'
+        return sample
 
     def get_effective_altitude_agl(
         self,

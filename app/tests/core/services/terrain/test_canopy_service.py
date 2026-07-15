@@ -224,3 +224,24 @@ def test_cover_derived_fills_evc_nodata_holes(tmp_path):
     # Any derivation flips the flag.
     assert sample.cover_derived is True
     svc.close()
+
+
+def test_covers_classifies_aoi_against_manifest(tmp_path):
+    """covers() mirrors the 3DEP provider: full inside the tile bbox, partial
+    when extending past it, none when disjoint."""
+    _write_tile(tmp_path / "chm.tif", 30.0, "float32")
+    manifest = _manifest(tmp_path, [{'filename': 'chm.tif', 'product': 'meta_chm'}])
+    svc = CanopyService(manifest, str(tmp_path), kind=KIND_META)
+
+    lo, la, hi, ha = _wgs84_bbox()
+    span_lon = hi - lo
+    span_lat = ha - la
+    inside = (lo + 0.1 * span_lon, la + 0.1 * span_lat,
+              hi - 0.1 * span_lon, ha - 0.1 * span_lat)
+    overflowing = (lo, la, hi + 5 * span_lon, ha)
+    disjoint = (hi + 1.0, ha + 1.0, hi + 1.1, ha + 1.1)
+
+    assert svc.covers(inside) == 'full'
+    assert svc.covers(overflowing) == 'partial'
+    assert svc.covers(disjoint) == 'none'
+    svc.close()

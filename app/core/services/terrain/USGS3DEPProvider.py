@@ -157,6 +157,16 @@ class USGS3DEPProvider(ElevationProvider):
                 tiles.append(self._tiles[idx])
         return tiles
 
+    def covers(self, bounds_wgs84) -> str:
+        """Coverage of a WGS84 bbox by the indexed tiles: 'full'|'partial'|'none'."""
+        from .grid import bbox_coverage
+        tiles = self.lookup_tiles_bbox(*bounds_wgs84)
+        if not tiles:
+            return 'none'
+        return bbox_coverage(
+            [(t['minX'], t['minY'], t['maxX'], t['maxY']) for t in tiles],
+            bounds_wgs84)
+
     def sample_grid_spec(self, spec):
         """Windowed-reproject fast path: mosaic intersecting tiles onto ``spec``.
 

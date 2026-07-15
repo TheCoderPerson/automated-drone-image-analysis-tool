@@ -354,3 +354,141 @@ class TestTerrainServiceWithGeoid:
             N = service.get_geoid_undulation(40.7128, -74.0060)
             assert N is not None
             assert isinstance(N, float)
+
+
+# ---------------------------------------------------------------------------
+# Local-provider fallback to AWS Terrain Tiles (Terrarium)
+# ---------------------------------------------------------------------------
+
+def _local_provider_service(tmp_path):
+    """TerrainService whose primary provider mocks a local-GeoTIFF backend."""
+    svc = TerrainService(cache_dir=str(tmp_path), enable_geoid=False)
+    local = MagicMock()
+    local.get_provider_kind.return_value = 'local_geotiff'
+    local.get_provider_name.return_value = 'USGS 3DEP 1m (Local GeoTIFF)'
+    local.get_datum_info.return_value = {'resolution_m': 1}
+    svc.provider = local
+    svc.cache = None
+    return svc, local
+
+
+def _inject_fallback(svc, elevation=42.0, tile=None):
+    """Pre-seed the lazy fallback pair with mocks (skips real construction)."""
+    provider = MagicMock()
+    provider.get_provider_name.return_value = 'AWS Terrain Tiles'
+    provider.lat_lon_to_tile.return_value = (1, 2)
+    provider.lat_lon_to_pixel_in_tile.return_value = (0.5, 0.5)
+    provider.decode_elevation_bilinear.return_value = elevation
+    cache = MagicMock()
+    cache.get_tile.return_value = tile if tile is not None else Image.new('RGB', (256, 256))
+    cache.get_tile_if_cached.return_value = tile
+    cache.is_tile_cached.return_value = False
+    svc._fallback_provider = provider
+    svc._fallback_cache = cache
+    return provider, cache
+
+
+def test_grid_fallback_when_local_has_no_coverage(tmp_path):
+    """Local DEM misses the grid -> the Terrarium fallback serves it, tagged."""
+    svc, local = _local_provider_service(tmp_path)
+    local.sample_grid_spec.return_value = None
+    _inject_fallback(svc)
+    sentinel = MagicMock()
+    sentinel.source = None
+    spec = MagicMock(width=4, height=4, cell_size=3.0)
+
+    with patch('core.services.terrain.TerrariumGridSampler.sample_grid_tiled',
+               return_value=sentinel) as mock_tiled:
+        sample = svc.sample_grid_spec(spec)
+
+    assert sample is sentinel
+    assert sample.source == 'terrarium_fallback'
+    mock_tiled.assert_called_once()
+
+
+def test_grid_no_fallback_when_local_covers(tmp_path):
+    """Local coverage is authoritative; the fallback must not run."""
+    svc, local = _local_provider_service(tmp_path)
+    covered = MagicMock()
+    local.sample_grid_spec.return_value = covered
+
+    with patch('core.services.terrain.TerrariumGridSampler.sample_grid_tiled') as mock_tiled:
+        sample = svc.sample_grid_spec(MagicMock())
+
+    assert sample is covered
+    mock_tiled.assert_not_called()
+
+
+def test_grid_returns_none_when_fallback_also_empty(tmp_path):
+    svc, local = _local_provider_service(tmp_path)
+    local.sample_grid_spec.return_value = None
+    _inject_fallback(svc)
+    spec = MagicMock(width=4, height=4, cell_size=3.0)
+    with patch('core.services.terrain.TerrariumGridSampler.sample_grid_tiled',
+               return_value=None):
+        assert svc.sample_grid_spec(spec) is None
+
+
+def test_point_fallback_when_local_returns_none(tmp_path):
+    """Point lookups outside the local tiles degrade to the online baseline."""
+    svc, local = _local_provider_service(tmp_path)
+    local.sample_elevation.return_value = None
+    _inject_fallback(svc, elevation=123.0)
+
+    result = svc.get_elevation(38.7, -120.5)
+
+    assert result.source == 'terrain'
+    assert result.elevation_m == 123.0
+    assert 'fallback' in result.provider
+
+
+def test_point_fallback_offline_uses_cache_only(tmp_path):
+    """Offline mode must not download fallback tiles - cached only."""
+    svc, local = _local_provider_service(tmp_path)
+    local.sample_elevation.return_value = None
+    provider, cache = _inject_fallback(svc)
+    cache.get_tile_if_cached.return_value = None   # nothing cached
+
+    result = svc.get_elevation(38.7, -120.5, offline_only=True)
+
+    cache.get_tile.assert_not_called()
+    assert result.source == 'flat'   # no data at all -> flat, but never a download
+
+
+def test_point_no_fallback_when_local_covers(tmp_path):
+    svc, local = _local_provider_service(tmp_path)
+    local.sample_elevation.return_value = 99.0
+
+    result = svc.get_elevation(38.7, -120.5)
+
+    assert result.elevation_m == 99.0
+    assert result.provider == 'USGS 3DEP 1m (Local GeoTIFF)'
+
+
+def test_no_fallback_pair_for_tiled_web_provider(tmp_path):
+    """Terrarium primaries never build a fallback (they ARE the baseline)."""
+    with tempfile.TemporaryDirectory() as tmpdir:
+        svc = TerrainService(cache_dir=tmpdir, enable_geoid=False)
+        assert svc._get_fallback() == (None, None)
+
+
+def test_set_provider_resets_fallback(tmp_path):
+    svc, local = _local_provider_service(tmp_path)
+    _inject_fallback(svc)
+    assert svc._fallback_provider is not None
+    svc.set_provider(PROVIDER_TERRARIUM)
+    assert svc._fallback_provider is None
+    assert svc._fallback_cache is None
+
+
+def test_offline_only_initialized_from_settings(tmp_path):
+    """The app-wide OfflineOnly preference is honored without callers having
+    to remember to set service.offline_only themselves."""
+    settings = MagicMock()
+    settings.get_setting.return_value = PROVIDER_TERRARIUM
+    settings.get_bool_setting.return_value = True
+
+    svc = _TerrainService(cache_dir=str(tmp_path), enable_geoid=False,
+                          provider_id=PROVIDER_TERRARIUM, settings_service=settings)
+
+    assert svc.offline_only is True

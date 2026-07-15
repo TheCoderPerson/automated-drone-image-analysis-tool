@@ -665,6 +665,37 @@ class UnifiedMapExportController(TranslationMixin):
         if cache is not None:
             cache.set_result(result)
 
+    def _pod_completion_summary(self, result):
+        """(message, color) telling the truth about a finished POD pass.
+
+        A run where frames were skipped (beyond user-hidden ones) must not
+        read identically to a clean run: it reports the skip count, singling
+        out missing elevation data since that is user-fixable (download tiles).
+        Fallback-served frames are surfaced as information, not a warning.
+        """
+        if result is None:
+            return self.tr("POD coverage complete"), "#00C853"
+        from core.services.coverage.contracts import (
+            SKIP_HIDDEN, SKIP_NO_DEM, SKIP_NO_DEM_AT_NADIR)
+
+        skipped = [s for s in (result.skipped or []) if s[1] != SKIP_HIDDEN]
+        fallback = getattr(result, 'dem_fallback_frames', 0)
+        if not skipped:
+            if fallback:
+                return (self.tr(
+                    "POD coverage complete — {count} frame(s) used online "
+                    "elevation (outside local DEM)").format(count=fallback),
+                    "#00C853")
+            return self.tr("POD coverage complete"), "#00C853"
+
+        attempted = result.image_count + len(skipped)
+        no_dem = sum(1 for _, r in skipped if r in (SKIP_NO_DEM, SKIP_NO_DEM_AT_NADIR))
+        msg = self.tr("POD complete — {skipped} of {total} frames skipped").format(
+            skipped=len(skipped), total=attempted)
+        if no_dem:
+            msg += " " + self.tr("({count} without elevation data)").format(count=no_dem)
+        return msg, "#FFA726"
+
     def _on_pod_finished(self):
         if self.pod_progress_dialog:
             self.pod_progress_dialog.accept()
@@ -673,8 +704,8 @@ class UnifiedMapExportController(TranslationMixin):
         if self._pending_pod_result is not None and self._kml_pod_target:
             self._embed_pod_overlay_in_kml(self._pending_pod_result)
         if hasattr(self.parent, 'status_controller'):
-            self.parent.status_controller.show_toast(
-                self.tr("POD coverage complete"), 3000, color="#00C853")
+            message, color = self._pod_completion_summary(self._pending_pod_result)
+            self.parent.status_controller.show_toast(message, 5000, color=color)
         # Show on the viewer map if requested and the overlay is available.
         if self._pending_pod_result is not None and getattr(self, '_show_pod_on_map_requested', False):
             controller = getattr(self.parent, 'gps_map_controller', None)

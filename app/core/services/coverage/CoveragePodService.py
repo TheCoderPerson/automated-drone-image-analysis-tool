@@ -60,6 +60,7 @@ class CoveragePodService:
         meters_per_unit = 1.0
         cell_size_3857 = self.params.grid_res_m
         processed = 0
+        dem_fallback = 0
         timings = {'geom': 0.0, 'dem': 0.0, 'canopy': 0.0, 'kernel': 0.0}
 
         for idx, image in enumerate(images):
@@ -98,6 +99,8 @@ class CoveragePodService:
                 if dem_sample is None:
                     skipped.append((name, SKIP_NO_DEM))
                     continue
+                if getattr(dem_sample, 'source', None) == 'terrarium_fallback':
+                    dem_fallback += 1
                 dem = dem_sample.data
 
                 t0 = time.perf_counter()
@@ -178,12 +181,18 @@ class CoveragePodService:
             canopy_source=self._canopy_source_name(),
             terrain_info=self._terrain_info(),
             generated_at=self._now_iso())
+        stats['dem_fallback_frames'] = dem_fallback
+        if dem_fallback:
+            self.logger.info(
+                f"POD: {dem_fallback} frame(s) outside the local DEM used the "
+                "online elevation fallback.")
 
         return CoverageResult(
             pod=pod, look_count=look_count, transform=transform,
             image_count=processed, skipped=skipped, stats=stats,
             gap_polygons=gaps, cancelled=False, limiting_factor=limiting,
-            frame_index=frame_index, params=self.params)
+            frame_index=frame_index, params=self.params,
+            dem_fallback_frames=dem_fallback)
 
     # ---- helpers ----
 
