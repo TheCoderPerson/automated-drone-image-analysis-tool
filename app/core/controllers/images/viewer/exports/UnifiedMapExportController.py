@@ -620,9 +620,29 @@ class UnifiedMapExportController(TranslationMixin):
         export required) — used by the GPS Map View's Calculate POD button."""
         self._run_pod_export(output_dir, show_on_map)
 
+    def _pod_image_set(self):
+        """The image set POD coverage is computed over: the FULL flight capture
+        set (every image the drone took), not just the AOI-flagged subset the
+        result XML carries. Coverage/POD answers "how well was this area
+        searched", which depends on every frame, whether or not it flagged an
+        AOI.
+
+        AOI images keep their richer dicts (bearing, mask, hidden, wingtra AGL)
+        so POD reuses any computed geometry hints; source-only captures become
+        minimal {path, name} entries (pose/GSD come from their EXIF/XMP). Falls
+        back to the AOI subset when the full set is unavailable (e.g. the source
+        folder is offline)."""
+        source = getattr(self.parent, 'source_images', None)
+        images = getattr(self.parent, 'images', None) or []
+        if not source:
+            return images
+        by_path = {img.get('path'): img for img in images if img.get('path')}
+        return [by_path.get(e.get('path')) or {'path': e.get('path'), 'name': e.get('name')}
+                for e in source]
+
     def _run_pod_export(self, output_dir, show_on_map):
-        """Run the POD pass on the full (non-hidden) image set, write outputs,
-        cache the result, and optionally show it on the viewer map."""
+        """Run the POD pass on the full flight capture set (see _pod_image_set),
+        write outputs, cache the result, and optionally show it on the map."""
         try:
             pod_service = self._build_pod_service()
         except Exception as e:
@@ -636,11 +656,12 @@ class UnifiedMapExportController(TranslationMixin):
         self._show_pod_on_map_requested = show_on_map
         self._pod_last_output_dir = output_dir
 
+        pod_images = self._pod_image_set()
         self.pod_progress_dialog = ExportProgressDialog(
-            self.parent, title="Coverage / POD", total_items=len(self.parent.images) + 2)
+            self.parent, title="Coverage / POD", total_items=len(pod_images) + 2)
         self.pod_progress_dialog.set_title("Calculating probability of detection...")
 
-        self.pod_thread = CoveragePodExportThread(pod_service, self.parent.images, output_dir)
+        self.pod_thread = CoveragePodExportThread(pod_service, pod_images, output_dir)
         self.pod_thread.podCompleted.connect(self._on_pod_completed)
         self.pod_thread.finished.connect(self._on_pod_finished)
         self.pod_thread.errorOccurred.connect(self._on_pod_error)

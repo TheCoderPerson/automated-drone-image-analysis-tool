@@ -771,3 +771,54 @@ def test_on_pod_finished_toasts_summary(controller):
     args, kwargs = controller.parent.status_controller.show_toast.call_args
     assert "skipped" in args[0]
     assert kwargs.get("color") == "#FFA726"
+
+
+# ---------------------------------------------------------------------------
+# POD runs over the full flight set, not just AOI images (coverage semantics)
+# ---------------------------------------------------------------------------
+
+def test_pod_image_set_uses_full_flight_when_available(controller):
+    """POD coverage must consider every captured image, not just the AOI
+    subset in the result XML."""
+    controller.parent.images = [
+        {'path': '/f/a.jpg', 'name': 'a', 'bearing': 90, 'areas_of_interest': [{}]},
+    ]
+    controller.parent.source_images = [
+        {'path': '/f/a.jpg', 'name': 'a', 'has_aoi': True},
+        {'path': '/f/b.jpg', 'name': 'b', 'has_aoi': False},
+        {'path': '/f/c.jpg', 'name': 'c', 'has_aoi': False},
+    ]
+    pod_images = controller._pod_image_set()
+    assert [im.get('path') for im in pod_images] == ['/f/a.jpg', '/f/b.jpg', '/f/c.jpg']
+    # The AOI image keeps its rich dict (bearing preserved); source-only images
+    # are minimal {path, name}.
+    assert pod_images[0].get('bearing') == 90
+    assert pod_images[1] == {'path': '/f/b.jpg', 'name': 'b'}
+
+
+def test_pod_image_set_falls_back_to_aoi_subset_without_source(controller):
+    controller.parent.images = [{'path': '/f/a.jpg', 'name': 'a'}]
+    controller.parent.source_images = None
+    assert controller._pod_image_set() == [{'path': '/f/a.jpg', 'name': 'a'}]
+
+
+def test_run_pod_export_passes_full_flight_set(controller):
+    """_run_pod_export hands the full flight set (not parent.images) to the
+    POD thread and sizes the progress bar to it."""
+    from unittest.mock import patch
+
+    controller.parent.images = [{'path': '/f/a.jpg', 'name': 'a'}]
+    controller.parent.source_images = [
+        {'path': '/f/a.jpg', 'name': 'a', 'has_aoi': True},
+        {'path': '/f/b.jpg', 'name': 'b', 'has_aoi': False},
+    ]
+    _mod = "core.controllers.images.viewer.exports.UnifiedMapExportController"
+    with patch.object(controller, '_build_pod_service', return_value=MagicMock()), \
+         patch(f"{_mod}.CoveragePodExportThread") as MockThread, \
+         patch(f"{_mod}.ExportProgressDialog") as MockProg, \
+         patch(f"{_mod}.QApplication"):
+        MockProg.return_value.exec.return_value = QDialog.Accepted
+        controller._run_pod_export("/out", show_on_map=False)
+
+    passed_images = MockThread.call_args.args[1]
+    assert [im.get('path') for im in passed_images] == ['/f/a.jpg', '/f/b.jpg']

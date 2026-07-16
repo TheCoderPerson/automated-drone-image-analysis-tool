@@ -365,3 +365,23 @@ def test_dem_fallback_zero_for_primary_served_frames():
     result = svc.calculate(images)
     assert result.dem_fallback_frames == 0
     assert result.stats['dem_fallback_frames'] == 0
+
+
+def test_frame_sources_recorded_for_all_inputs():
+    """The result records every input frame's identity (path/name) indexed by
+    frame id, so consumers can resolve a FrameIndex id back to an image
+    without assuming any particular ordering of the caller's list."""
+    images = [
+        {'name': 'a', 'path': '/f/a.jpg', '_fg': make_fg(pitch=-90.0)},
+        {'name': 'b', 'path': '/f/b.jpg', 'hidden': True},
+        {'name': 'c', 'path': '/f/c.jpg', '_fg': make_fg(pitch=-90.0)},
+    ]
+    svc = _service(_FlatTerrain())
+    result = svc.calculate(images)
+    assert result.frame_sources is not None
+    assert [s['name'] for s in result.frame_sources] == ['a', 'b', 'c']
+    assert [s['path'] for s in result.frame_sources] == ['/f/a.jpg', '/f/b.jpg', '/f/c.jpg']
+    # frame_sources aligns with frame ids: the processed frames (0 and 2) index
+    # back to the right images.
+    assert result.frame_sources[0]['name'] == 'a'
+    assert result.frame_sources[2]['name'] == 'c'

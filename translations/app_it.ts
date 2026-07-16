@@ -5601,32 +5601,39 @@ Questo scarica l&apos;altezza chioma Meta/WRI (1 m) e la imposta come origine da
         <translation>Nessun dato sulla chioma copre quest&apos;area</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="842"/>
+        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="851"/>
         <source>POD: {pod}% (beta)   Looks: {looks}</source>
         <translation>POD: {pod}% (beta)   Osservazioni: {looks}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="845"/>
+        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="854"/>
         <source>Limiting factor: {factor}</source>
         <translation>Fattore limitante: {factor}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="853"/>
+        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="889"/>
+        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="902"/>
         <source>Image {n}</source>
         <translation>Immagine {n}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="854"/>
+        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="890"/>
+        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="905"/>
         <source>View {name}</source>
         <translation>Vista {name}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="857"/>
+        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="862"/>
         <source>Find location in images</source>
         <translation>Trova posizione nelle immagini</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="993"/>
+        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="909"/>
+        <source>{name} (no flagged AOIs)</source>
+        <translation>{name} (nessun AOI contrassegnato)</translation>
+    </message>
+    <message>
+        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="1044"/>
         <source>GPS coordinate not in any images</source>
         <translation>Coordinata GPS non presente in nessuna immagine</translation>
     </message>
@@ -5660,7 +5667,7 @@ Questo scarica l&apos;altezza chioma Meta/WRI (1 m) e la imposta come origine da
     </message>
     <message>
         <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="128"/>
-        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="313"/>
+        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="338"/>
         <source>Satellite View</source>
         <translation>Vista Satellitare</translation>
     </message>
@@ -5715,32 +5722,32 @@ Questo scarica l&apos;altezza chioma Meta/WRI (1 m) e la imposta come origine da
         <translation>Clicca su un punto per selezionare • Trascina per scorrere • Scorri per lo zoom</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="238"/>
+        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="263"/>
         <source>Downloading tiles is disabled in Offline Only mode</source>
         <translation>Il download delle tile è disabilitato nella modalità solo offline</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="240"/>
+        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="265"/>
         <source>Download elevation and canopy-height tiles for this mission&apos;s area</source>
         <translation>Scarica le tile di elevazione e altezza della chioma per l&apos;area di questa missione</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="310"/>
+        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="335"/>
         <source>Map View</source>
         <translation>Vista Mappa</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="347"/>
+        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="372"/>
         <source>⚠ {error}</source>
         <translation>⚠ {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="357"/>
+        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="382"/>
         <source>Map Tile Loading Issue</source>
         <translation>Problema di Caricamento Tasselli Mappa</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="359"/>
+        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="384"/>
         <source>{error}
 
 The map will continue to work with cached tiles where available.</source>
@@ -14466,9 +14473,9 @@ Registrare invece le tile chioma Meta/WRI scaricate? (I file LANDFIRE restano su
     <message>
         <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="476"/>
         <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="583"/>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="824"/>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="858"/>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="903"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="845"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="879"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="924"/>
         <source>Export Error</source>
         <translation>Errore di Esportazione</translation>
     </message>
@@ -14497,61 +14504,61 @@ Registrare invece le tile chioma Meta/WRI scaricate? (I file LANDFIRE restano su
 {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="631"/>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="791"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="651"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="812"/>
         <source>POD Error</source>
         <translation>Errore POD</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="632"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="652"/>
         <source>Could not start the POD calculation:
 {error}</source>
         <translation>Impossibile avviare il calcolo POD:
 {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="681"/>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="693"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="702"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="714"/>
         <source>POD coverage complete</source>
         <translation>Copertura POD completata</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="690"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="711"/>
         <source>POD coverage complete — {count} frame(s) used online elevation (outside local DEM)</source>
         <translation>Copertura POD completata: {count} fotogramma/i hanno usato l&apos;elevazione online (fuori dal DEM locale)</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="697"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="718"/>
         <source>POD complete — {skipped} of {total} frames skipped</source>
         <translation>POD completato: {skipped} di {total} fotogrammi saltati</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="700"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="721"/>
         <source>({count} without elevation data)</source>
         <translation>({count} senza dati di elevazione)</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="754"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="775"/>
         <source>Terrain and canopy aware probability-of-detection heatmap.</source>
         <translation>Mappa di calore della probabilità di rilevamento consapevole di terreno e chioma.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="758"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="779"/>
         <source>Mean POD over covered area: {pod}%</source>
         <translation>POD media sull&apos;area coperta: {pod}%</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="761"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="782"/>
         <source>POD Coverage</source>
         <translation>Copertura POD</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="769"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="790"/>
         <source>POD Overlay</source>
         <translation>Sovrapposizione POD</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="770"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="791"/>
         <source>The POD coverage was computed, but embedding it into the exported file failed:
 {error}
 
@@ -14562,37 +14569,37 @@ The POD GeoTIFF products were still written next to the export.</source>
 I prodotti GeoTIFF POD sono stati comunque scritti accanto all&apos;esportazione.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="783"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="804"/>
         <source>POD calculation cancelled</source>
         <translation>Calcolo POD annullato</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="792"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="813"/>
         <source>POD calculation failed:
 {error}</source>
         <translation>Calcolo POD non riuscito:
 {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="825"/>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="859"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="846"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="880"/>
         <source>Failed to export to CalTopo:
 {error}</source>
         <translation>Impossibile esportare su CalTopo:
 {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="875"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="896"/>
         <source>Map export completed successfully!</source>
         <translation>Esportazione mappa completata con successo!</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="890"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="911"/>
         <source>Map export cancelled</source>
         <translation>Esportazione mappa annullata</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="904"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="925"/>
         <source>Map export failed:
 {error}</source>
         <translation>Esportazione mappa non riuscita:

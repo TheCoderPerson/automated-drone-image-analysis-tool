@@ -62,6 +62,13 @@ class CoveragePodService:
         processed = 0
         dem_fallback = 0
         timings = {'geom': 0.0, 'dem': 0.0, 'canopy': 0.0, 'kernel': 0.0}
+        # Frame-id -> image identity, so the result can resolve FrameIndex ids
+        # back to images regardless of the caller's list ordering. Indexed by
+        # the same enumerate() position used as the frame id below.
+        frame_sources = [
+            {'path': im.get('path', ''), 'name': im.get('name', str(i))}
+            for i, im in enumerate(images)
+        ]
 
         for idx, image in enumerate(images):
             if cancel_check and cancel_check():
@@ -192,7 +199,7 @@ class CoveragePodService:
             image_count=processed, skipped=skipped, stats=stats,
             gap_polygons=gaps, cancelled=False, limiting_factor=limiting,
             frame_index=frame_index, params=self.params,
-            dem_fallback_frames=dem_fallback)
+            dem_fallback_frames=dem_fallback, frame_sources=frame_sources)
 
     # ---- helpers ----
 

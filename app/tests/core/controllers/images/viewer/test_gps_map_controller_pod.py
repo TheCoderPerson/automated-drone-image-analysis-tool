@@ -349,6 +349,67 @@ def test_show_pod_inspect_menu_skips_out_of_range_frames(app):
     assert view_texts == ['View A', 'View B']
 
 
+def _cache_with_frame_sources(ctrl, frame_sources):
+    result = MagicMock()
+    result.frame_sources = frame_sources
+    cache = MagicMock()
+    cache.has_result.return_value = True
+    cache.get_result.return_value = result
+    ctrl.parent.pod_result_cache = cache
+
+
+def test_inspect_menu_resolves_frames_via_frame_sources(app):
+    """With a full-flight result, frame ids resolve through frame_sources
+    (not viewer indices): AOI frames open, source-only frames are shown but
+    disabled."""
+    ctrl = _controller(app)
+    # Viewer has only the AOI image 'b.jpg' (at viewer index 0).
+    ctrl.parent.images = [{'name': 'B', 'path': '/f/b.jpg', 'areas_of_interest': [{}]}]
+    # POD ran over the full flight: a (source-only), b (AOI), c (source-only).
+    _cache_with_frame_sources(ctrl, [
+        {'name': 'A', 'path': '/f/a.jpg'},
+        {'name': 'B', 'path': '/f/b.jpg'},
+        {'name': 'C', 'path': '/f/c.jpg'},
+    ])
+    sample = {'pod': 0.7, 'looks': 3, 'limiting_factor': LIMIT_CANOPY, 'frames': [0, 1, 2]}
+
+    menu = _capture_inspect_menu(ctrl, sample)
+    texts = _menu_texts(menu)
+
+    # Only the AOI frame is openable; source-only frames are shown for context.
+    assert 'View B' in texts
+    assert 'A (no flagged AOIs)' in texts
+    assert 'C (no flagged AOIs)' in texts
+    # The disabled entries are genuinely non-clickable.
+    disabled = [a for a in menu.actions()
+                if a.text().endswith('(no flagged AOIs)')]
+    assert disabled and all(not a.isEnabled() for a in disabled)
+
+
+def test_inspect_menu_aoi_frame_navigates_to_viewer_index(app):
+    """Clicking an AOI frame navigates to its viewer slot resolved by path,
+    not by the (full-flight) frame id."""
+    ctrl = _controller(app)
+    ctrl.parent.images = [
+        {'name': 'X', 'path': '/f/x.jpg'},
+        {'name': 'B', 'path': '/f/b.jpg'},
+    ]
+    ctrl.on_map_image_selected = MagicMock()
+    # Frame id 2 == 'b.jpg', which is viewer index 1 (NOT 2).
+    _cache_with_frame_sources(ctrl, [
+        {'name': 'A', 'path': '/f/a.jpg'},
+        {'name': 'C', 'path': '/f/c.jpg'},
+        {'name': 'B', 'path': '/f/b.jpg'},
+    ])
+    sample = {'pod': 0.7, 'looks': 1, 'limiting_factor': LIMIT_CANOPY, 'frames': [2]}
+
+    menu = _capture_inspect_menu(ctrl, sample)
+    view_actions = [a for a in menu.actions() if a.text() == 'View B']
+    assert len(view_actions) == 1
+    view_actions[0].trigger()
+    ctrl.on_map_image_selected.assert_called_once_with(1)
+
+
 # ---------------------------------------------------------------------------
 # Overlay-availability refresh
 # ---------------------------------------------------------------------------

@@ -857,15 +857,57 @@ class GPSMapController(QObject):
         frames = sample.get('frames', [])
         if frames:
             menu.addSeparator()
-            for idx in frames[:8]:
-                if 0 <= idx < len(self.parent.images):
-                    name = self.parent.images[idx].get('name', self.tr("Image {n}").format(n=idx + 1))
-                    act = menu.addAction(self.tr("View {name}").format(name=name))
-                    act.triggered.connect(lambda checked=False, i=idx: self.on_map_image_selected(i))
+            self._add_frame_actions(menu, frames)
         menu.addSeparator()
         locate = menu.addAction(self.tr("Find location in images"))
         locate.triggered.connect(lambda checked=False: self._reverse_locate(lat, lon))
         menu.exec(QCursor.pos())
+
+    def _add_frame_actions(self, menu, frames):
+        """Add a menu entry per contributing frame (capped at 8).
+
+        POD may have run over the full flight, so a frame id is NOT a viewer
+        index. When the result carries frame_sources, resolve id -> image
+        identity and map to a viewer slot by path: frames that produced an AOI
+        open in the viewer; source-only captures (imaged the cell but flagged
+        nothing) are shown for context but can't be opened (not in the
+        gallery). Results without frame_sources are legacy — the frame id is a
+        viewer index, preserved as-is.
+        """
+        result = None
+        cache = self._pod_cache()
+        if cache is not None and cache.has_result():
+            result = cache.get_result()
+        frame_sources = getattr(result, 'frame_sources', None)
+        if not isinstance(frame_sources, list):
+            frame_sources = None   # legacy / malformed result -> id is a viewer index
+
+        if frame_sources is None:
+            for fid in frames[:8]:
+                if 0 <= fid < len(self.parent.images):
+                    name = self.parent.images[fid].get(
+                        'name', self.tr("Image {n}").format(n=fid + 1))
+                    act = menu.addAction(self.tr("View {name}").format(name=name))
+                    act.triggered.connect(
+                        lambda checked=False, i=fid: self.on_map_image_selected(i))
+            return
+
+        viewer_index_by_path = {img.get('path'): i
+                                for i, img in enumerate(self.parent.images)
+                                if img.get('path')}
+        for fid in frames[:8]:
+            if not (0 <= fid < len(frame_sources)):
+                continue
+            src = frame_sources[fid]
+            name = src.get('name') or self.tr("Image {n}").format(n=fid + 1)
+            viewer_idx = viewer_index_by_path.get(src.get('path'))
+            if viewer_idx is not None:
+                act = menu.addAction(self.tr("View {name}").format(name=name))
+                act.triggered.connect(
+                    lambda checked=False, i=viewer_idx: self.on_map_image_selected(i))
+            else:
+                act = menu.addAction(self.tr("{name} (no flagged AOIs)").format(name=name))
+                act.setEnabled(False)
 
     def update_current_image(self, image_index):
         """

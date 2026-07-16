@@ -96,6 +96,11 @@ class CoverageResult:
     # Frames whose DEM came from the online Terrarium fallback because the
     # configured local tiles had no coverage there (0 when N/A).
     dem_fallback_frames: int = 0
+    # Identity of each input frame, indexed by frame id (== the position of the
+    # image in the list passed to calculate()). Lets consumers resolve a
+    # FrameIndex id back to an image without assuming any particular ordering
+    # of the caller's own image list. Each entry: {'path', 'name'}.
+    frame_sources: Optional[List[dict]] = None
     _transformer: object = field(default=None, repr=False, compare=False)
 
     def sample(self, lat: float, lon: float) -> Optional[dict]:
