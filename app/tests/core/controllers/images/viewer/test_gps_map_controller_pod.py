@@ -858,3 +858,62 @@ def test_pod_coverage_check_skips_dangling_registration(app, tmp_path):
     with patch("core.services.terrain.USGS3DEPProvider.USGS3DEPProvider") as MockP:
         assert ctrl._confirm_local_dem_coverage() is True
     MockP.assert_not_called()
+
+
+# ---------------------------------------------------------------------------
+# enable_pod_overlay drives the dialog controls (regression: inert controls)
+# ---------------------------------------------------------------------------
+
+def test_enable_pod_overlay_activates_dialog_controls(app):
+    """After a Calculate POD run, enable_pod_overlay must drive the dialog's
+    activate_pod_overlay so the button/dropdown reflect the active overlay —
+    not paint the map directly while the controls stay inert."""
+    ctrl = _controller(app)
+    cache = MagicMock()
+    cache.has_result.return_value = True
+    ctrl.parent.pod_result_cache = cache
+    ctrl.map_dialog = MagicMock()
+
+    ctrl.enable_pod_overlay('pod')
+
+    ctrl.map_dialog.activate_pod_overlay.assert_called_once_with('pod')
+
+
+def test_enable_pod_overlay_noop_without_cached_result(app):
+    ctrl = _controller(app)
+    cache = MagicMock()
+    cache.has_result.return_value = False
+    ctrl.parent.pod_result_cache = cache
+    ctrl.map_dialog = MagicMock()
+
+    ctrl.enable_pod_overlay('pod')
+
+    ctrl.map_dialog.activate_pod_overlay.assert_not_called()
+
+
+def test_enable_pod_overlay_end_to_end_checks_button(app, qtbot):
+    """Integration: a real dialog ends up with the POD button checked and the
+    dropdown enabled after enable_pod_overlay (the reported bug, end to end)."""
+    from core.views.images.viewer.dialogs.GPSMapDialog import GPSMapDialog
+
+    ctrl = _controller(app)
+    cache = MagicMock()
+    cache.has_result.return_value = True
+    cache.get_result.return_value = _real_result()
+    ctrl.parent.pod_result_cache = cache
+
+    dlg = GPSMapDialog(None, [], None, offline_only=True)
+    qtbot.addWidget(dlg)
+    dlg.map_view = MagicMock()
+    dlg.map_view._pod_opacity = 0.7
+    dlg.pod_display_changed.connect(ctrl.on_pod_display_changed)
+    ctrl.map_dialog = dlg
+
+    ctrl.enable_pod_overlay('pod')
+
+    assert dlg.pod_toggle_btn.isChecked() is True
+    assert dlg.pod_mode_combo.isEnabled() is True
+    assert dlg.pod_mode_combo.currentData() == "pod"
+    dlg.map_view.set_pod_overlay.assert_called_once()
+    dlg.close()
+    dlg.deleteLater()

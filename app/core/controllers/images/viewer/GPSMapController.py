@@ -800,14 +800,23 @@ class GPSMapController(QObject):
         view.set_pod_overlay_opacity(opacity / 100.0)
 
     def enable_pod_overlay(self, mode='pod'):
-        """Turn the overlay on from the cached result (called after an export run)."""
+        """Turn the overlay on from the cached result (called after an export run).
+
+        Drive the dialog's controls (via activate_pod_overlay) rather than
+        painting directly, so the POD Overlay button, mode dropdown, and
+        opacity slider reflect the active overlay. The widget's
+        pod_display_changed emission is what paints it (see on_pod_display_changed).
+        """
         cache = self._pod_cache()
         if cache is None or not cache.has_result() or self.map_dialog is None:
             return
-        if hasattr(self.map_dialog, 'set_pod_available'):
-            self.map_dialog.set_pod_available(True)
-        self.on_pod_display_changed(True, mode, int(self.map_dialog.map_view._pod_opacity * 100)
-                                    if hasattr(self.map_dialog, 'map_view') else 70)
+        if hasattr(self.map_dialog, 'activate_pod_overlay'):
+            self.map_dialog.activate_pod_overlay(mode)
+        else:
+            # Fallback for a dialog without the widget-driven path.
+            if hasattr(self.map_dialog, 'set_pod_available'):
+                self.map_dialog.set_pod_available(True)
+            self.on_pod_display_changed(True, mode, 70)
 
     def on_pod_display_changed(self, enabled, mode, opacity):
         """React to the dialog's overlay toggle / mode / opacity controls."""

@@ -217,6 +217,31 @@ class GPSMapDialog(TranslationMixin, QDialog):
         if not any_available and self.pod_toggle_btn.isChecked():
             self.pod_toggle_btn.setChecked(False)
 
+    def activate_pod_overlay(self, mode='pod'):
+        """Programmatically turn the overlay on after a Calculate POD run.
+
+        Marks POD available, selects ``mode`` (if that mode is enabled), and
+        checks the toggle so the button, dropdown, and slider all reflect the
+        active overlay — not just the map. The overlay is painted by the
+        resulting ``pod_display_changed`` emission, keeping the widgets the
+        single source of truth (the bug this fixes: the map showed the overlay
+        while the controls stayed inert).
+        """
+        self.set_pod_available(True)
+        model = self.pod_mode_combo.model()
+        idx = self.pod_mode_combo.findData(mode)
+        if idx >= 0 and model.item(idx) is not None and model.item(idx).isEnabled():
+            # Switch mode without a mid-way emit; the toggle below emits once.
+            self.pod_mode_combo.blockSignals(True)
+            self.pod_mode_combo.setCurrentIndex(idx)
+            self.pod_mode_combo.blockSignals(False)
+        if self.pod_toggle_btn.isChecked():
+            # Already on (re-activation) — no toggled signal will fire, so emit
+            # explicitly to repaint with the (possibly new) mode.
+            self._emit_pod_display_changed()
+        else:
+            self.pod_toggle_btn.setChecked(True)  # -> toggled -> _emit_pod_display_changed
+
     def _emit_pod_display_changed(self):
         enabled = self.pod_toggle_btn.isChecked()
         self.pod_mode_combo.setEnabled(enabled and self.pod_toggle_btn.isEnabled())

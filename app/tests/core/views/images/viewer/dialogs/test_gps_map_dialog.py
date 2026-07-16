@@ -69,6 +69,57 @@ def test_set_pod_available_keeps_canopy_state(dialog):
 
 
 # ---------------------------------------------------------------------------
+# activate_pod_overlay: post-Calculate-POD control state (regression)
+# ---------------------------------------------------------------------------
+
+
+def test_activate_pod_overlay_checks_button_and_enables_dropdown(dialog, qtbot):
+    """After Calculate POD, activating the overlay must leave the button
+    checked and the dropdown/slider enabled — not just paint the map.
+
+    Regression: the overlay appeared while the POD Overlay button stayed
+    unchecked and the mode dropdown stayed disabled (grayed)."""
+    with qtbot.waitSignal(dialog.pod_display_changed, timeout=1000) as blocker:
+        dialog.activate_pod_overlay('pod')
+
+    assert dialog.pod_toggle_btn.isChecked() is True
+    assert dialog.pod_toggle_btn.isEnabled() is True
+    assert dialog.pod_mode_combo.isEnabled() is True
+    assert dialog.pod_opacity_slider.isEnabled() is True
+    assert dialog.pod_mode_combo.currentData() == "pod"
+    # The single emission carries the active mode so the controller paints it.
+    enabled, mode_key, _opacity = blocker.args
+    assert enabled is True and mode_key == "pod"
+
+
+def test_activate_pod_overlay_selects_requested_mode(dialog, qtbot):
+    with qtbot.waitSignal(dialog.pod_display_changed, timeout=1000) as blocker:
+        dialog.activate_pod_overlay('looks')
+    assert dialog.pod_mode_combo.currentData() == "looks"
+    assert blocker.args[1] == "looks"
+
+
+def test_activate_pod_overlay_emits_once(dialog, qtbot):
+    """Selecting the mode then checking the toggle must paint exactly once
+    (no mid-way emit from the combo change)."""
+    emissions = []
+    dialog.pod_display_changed.connect(lambda *a: emissions.append(a))
+    dialog.activate_pod_overlay('looks')
+    assert len(emissions) == 1
+
+
+def test_activate_pod_overlay_when_already_on_repaints(dialog, qtbot):
+    """Re-activating an already-on overlay (e.g. a second Calculate POD) still
+    emits so the map repaints, even though the toggle doesn't change state."""
+    dialog.activate_pod_overlay('pod')
+    emissions = []
+    dialog.pod_display_changed.connect(lambda *a: emissions.append(a))
+    dialog.activate_pod_overlay('looks')
+    assert emissions and emissions[-1][1] == "looks"
+    assert dialog.pod_toggle_btn.isChecked() is True
+
+
+# ---------------------------------------------------------------------------
 # pod_display_changed(enabled, mode_key, opacity) signal emission (P2)
 # ---------------------------------------------------------------------------
 
