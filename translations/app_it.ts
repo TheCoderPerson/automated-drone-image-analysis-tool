@@ -14145,37 +14145,37 @@ Aggressivo</translation>
         <translation>Seleziona almeno un set di dati.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="280"/>
+        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="286"/>
         <source>No GPS Found</source>
         <translation>Nessun GPS trovato</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="281"/>
+        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="287"/>
         <source>No GPS positions were found in the {source} images.</source>
         <translation>Nessuna posizione GPS trovata nelle immagini di {source}.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="296"/>
+        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="302"/>
         <source>Select image folder</source>
         <translation>Seleziona la cartella delle immagini</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="305"/>
+        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="311"/>
         <source>No Images</source>
         <translation>Nessuna immagine</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="306"/>
+        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="312"/>
         <source>No images were found in the selected folder.</source>
         <translation>Nessuna immagine trovata nella cartella selezionata.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="352"/>
+        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="358"/>
         <source>Replace Canopy Source?</source>
         <translation>Sostituire l&apos;origine dati chioma?</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="353"/>
+        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="359"/>
         <source>A LANDFIRE canopy source is currently configured.
 
 Register the downloaded Meta/WRI canopy tiles instead? (Your LANDFIRE files stay on disk; only the selected source changes.)</source>
@@ -14184,78 +14184,78 @@ Register the downloaded Meta/WRI canopy tiles instead? (Your LANDFIRE files stay
 Registrare invece le tile chioma Meta/WRI scaricate? (I file LANDFIRE restano su disco; cambia solo l&apos;origine selezionata.)</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="362"/>
+        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="368"/>
         <source>Elevation (DEM)</source>
         <translation>Elevazione (DEM)</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="362"/>
+        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="368"/>
         <source>Canopy height</source>
         <translation>Altezza della chioma</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="379"/>
+        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="385"/>
         <source>{product}: cancelled before completion.</source>
         <translation>{product}: annullato prima del completamento.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="381"/>
+        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="387"/>
         <source>{product}: {failed} tile(s) failed to download.</source>
         <translation>{product}: {failed} tile non scaricate.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="384"/>
+        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="390"/>
         <source>{product}: no data covers this area.</source>
         <translation>{product}: nessun dato copre quest&apos;area.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="386"/>
+        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="392"/>
         <source>{product}: nothing was downloaded.</source>
         <translation>{product}: non è stato scaricato nulla.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="393"/>
+        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="399"/>
         <source>{product}: registered as the active source.</source>
         <translation>{product}: registrato come origine attiva.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="396"/>
+        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="402"/>
         <source>{product}: NOT registered (no usable tiles).</source>
         <translation>{product}: NON registrato (nessuna tile utilizzabile).</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="405"/>
+        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="411"/>
         <source>Download Finished with Problems</source>
         <translation>Download completato con problemi</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="411"/>
+        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="417"/>
         <source>Download Complete</source>
         <translation>Download completato</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="400"/>
-        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="407"/>
+        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="406"/>
+        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="413"/>
         <source>Downloaded {count} tiles.</source>
         <translation>Scaricate {count} tile.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="422"/>
+        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="428"/>
         <source>Download Cancelled</source>
         <translation>Download annullato</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="423"/>
+        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="429"/>
         <source>The download was cancelled. No tiles were registered.</source>
         <translation>Il download è stato annullato. Nessuna tile è stata registrata.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="430"/>
+        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="436"/>
         <source>Download Error</source>
         <translation>Errore di download</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="431"/>
+        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="437"/>
         <source>Tile download failed:
 {error}</source>
         <translation>Download delle tile non riuscito:
@@ -14473,9 +14473,9 @@ Registrare invece le tile chioma Meta/WRI scaricate? (I file LANDFIRE restano su
     <message>
         <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="476"/>
         <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="583"/>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="845"/>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="879"/>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="924"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="855"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="889"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="934"/>
         <source>Export Error</source>
         <translation>Errore di Esportazione</translation>
     </message>
@@ -14505,7 +14505,7 @@ Registrare invece le tile chioma Meta/WRI scaricate? (I file LANDFIRE restano su
     </message>
     <message>
         <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="651"/>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="812"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="822"/>
         <source>POD Error</source>
         <translation>Errore POD</translation>
     </message>
@@ -14528,37 +14528,42 @@ Registrare invece le tile chioma Meta/WRI scaricate? (I file LANDFIRE restano su
         <translation>Copertura POD completata: {count} fotogramma/i hanno usato l&apos;elevazione online (fuori dal DEM locale)</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="718"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="719"/>
         <source>POD complete — {skipped} of {total} frames skipped</source>
         <translation>POD completato: {skipped} di {total} fotogrammi saltati</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="721"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="722"/>
         <source>({count} without elevation data)</source>
         <translation>({count} senza dati di elevazione)</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="775"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="730"/>
+        <source>(canopy data covered {pct}% of the searched area)</source>
+        <translation>(i dati sulla chioma coprivano il {pct}% dell&apos;area cercata)</translation>
+    </message>
+    <message>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="785"/>
         <source>Terrain and canopy aware probability-of-detection heatmap.</source>
         <translation>Mappa di calore della probabilità di rilevamento consapevole di terreno e chioma.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="779"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="789"/>
         <source>Mean POD over covered area: {pod}%</source>
         <translation>POD media sull&apos;area coperta: {pod}%</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="782"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="792"/>
         <source>POD Coverage</source>
         <translation>Copertura POD</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="790"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="800"/>
         <source>POD Overlay</source>
         <translation>Sovrapposizione POD</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="791"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="801"/>
         <source>The POD coverage was computed, but embedding it into the exported file failed:
 {error}
 
@@ -14569,37 +14574,37 @@ The POD GeoTIFF products were still written next to the export.</source>
 I prodotti GeoTIFF POD sono stati comunque scritti accanto all&apos;esportazione.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="804"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="814"/>
         <source>POD calculation cancelled</source>
         <translation>Calcolo POD annullato</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="813"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="823"/>
         <source>POD calculation failed:
 {error}</source>
         <translation>Calcolo POD non riuscito:
 {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="846"/>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="880"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="856"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="890"/>
         <source>Failed to export to CalTopo:
 {error}</source>
         <translation>Impossibile esportare su CalTopo:
 {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="896"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="906"/>
         <source>Map export completed successfully!</source>
         <translation>Esportazione mappa completata con successo!</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="911"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="921"/>
         <source>Map export cancelled</source>
         <translation>Esportazione mappa annullata</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="925"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="935"/>
         <source>Map export failed:
 {error}</source>
         <translation>Esportazione mappa non riuscita:

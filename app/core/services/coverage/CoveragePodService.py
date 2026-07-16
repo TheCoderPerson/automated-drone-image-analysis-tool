@@ -61,6 +61,12 @@ class CoveragePodService:
         cell_size_3857 = self.params.grid_res_m
         processed = 0
         dem_fallback = 0
+        # Canopy coverage of the searched footprints (only meaningful when a
+        # canopy source is configured). Cells are counted per frame, so the
+        # ratio is look-weighted (areas searched by more frames count more).
+        canopy_searched = 0
+        canopy_covered_cells = 0
+        canopy_frames_missing = 0
         timings = {'geom': 0.0, 'dem': 0.0, 'canopy': 0.0, 'kernel': 0.0}
         # Frame-id -> image identity, so the result can resolve FrameIndex ids
         # back to images regardless of the caller's list ordering. Indexed by
@@ -110,10 +116,6 @@ class CoveragePodService:
                     dem_fallback += 1
                 dem = dem_sample.data
 
-                t0 = time.perf_counter()
-                chm, cover = self._sample_canopy(spec)
-                t_canopy = time.perf_counter() - t0
-
                 cam_x, cam_y = lonlat_to_mercator(fg.lon, fg.lat)
                 nadir_elev = dem_sample.sample_bilinear(cam_x, cam_y)
                 if nadir_elev is None or math.isnan(nadir_elev):
@@ -133,10 +135,29 @@ class CoveragePodService:
                     skipped.append((name, SKIP_EMPTY_FOOTPRINT))
                     continue
 
+                # Sample canopy only for frames that actually search cells, and
+                # measure how much of THIS frame's searched footprint the canopy
+                # tiles covered — cells with no canopy data get no attenuation
+                # (transmittance 1), silently overstating POD there.
+                t0c = time.perf_counter()
+                chm, cover, canopy_covered = self._sample_canopy(spec)
+                t_canopy = time.perf_counter() - t0c
+                if self.canopy is not None:
+                    searched = int(mask.sum())
+                    canopy_searched += searched
+                    if canopy_covered is not None:
+                        with_canopy = int(np.count_nonzero(mask & canopy_covered))
+                    else:
+                        with_canopy = 0
+                    canopy_covered_cells += with_canopy
+                    if with_canopy == 0:
+                        canopy_frames_missing += 1
+
                 pod, factor = frame_pod_kernel(
                     dem, chm, cover, spec.transform, cam_xyz, mask, gsd,
                     self.params, meters_per_unit=meters_per_unit, return_factors=True)
-                t_kernel = time.perf_counter() - t0
+                # t0 was set before the mask; exclude the separately-timed canopy.
+                t_kernel = time.perf_counter() - t0 - t_canopy
 
                 placed = accumulator.add_frame(
                     idx, pod, spec, fg.yaw_deg, fg.pitch_deg, fg.bearing_confidence,
@@ -194,12 +215,29 @@ class CoveragePodService:
                 f"POD: {dem_fallback} frame(s) outside the local DEM used the "
                 "online elevation fallback.")
 
+        # Canopy coverage of the searched area (only when a source is configured).
+        canopy_fraction = None
+        if self.canopy is not None and canopy_searched > 0:
+            canopy_fraction = canopy_covered_cells / canopy_searched
+            stats['canopy_coverage'] = {
+                'fraction': canopy_fraction,
+                'frames_missing': canopy_frames_missing,
+                'frames_total': processed,
+            }
+            if canopy_fraction < 0.999:
+                self.logger.info(
+                    f"POD: canopy data covered {canopy_fraction * 100:.0f}% of the "
+                    f"searched area ({canopy_frames_missing} frame(s) had none); "
+                    "uncovered ground was treated as bare (no attenuation).")
+
         return CoverageResult(
             pod=pod, look_count=look_count, transform=transform,
             image_count=processed, skipped=skipped, stats=stats,
             gap_polygons=gaps, cancelled=False, limiting_factor=limiting,
             frame_index=frame_index, params=self.params,
-            dem_fallback_frames=dem_fallback, frame_sources=frame_sources)
+            dem_fallback_frames=dem_fallback, frame_sources=frame_sources,
+            canopy_coverage_fraction=canopy_fraction,
+            canopy_frames_missing=canopy_frames_missing)
 
     # ---- helpers ----
 
@@ -236,16 +274,20 @@ class CoveragePodService:
             agl_override_ft=image.get('wingtra_agl_ft'))
 
     def _sample_canopy(self, spec):
+        """(chm, cover, covered) for the frame grid. ``covered`` is a bool grid
+        marking cells the canopy tiles actually provided data for (None when no
+        canopy is configured or nothing covered the footprint)."""
         if self.canopy is None:
-            return None, None
+            return None, None, None
         try:
             sample = self.canopy.sample_grid_spec(spec)
         except Exception as e:
             self.logger.warning(f"Canopy sample failed: {e}")
-            return None, None
+            return None, None, None
         if sample is None:
-            return None, None
-        return getattr(sample, 'chm', None), getattr(sample, 'cover', None)
+            return None, None, None
+        return (getattr(sample, 'chm', None), getattr(sample, 'cover', None),
+                getattr(sample, 'covered', None))
 
     def _flight_hull(self, cam_points):
         if len(cam_points) < 3:

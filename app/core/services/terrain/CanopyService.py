@@ -46,6 +46,11 @@ class CanopySample:
     crs: str
     cover_derived: bool    # True when cover was synthesized from CHM (stopgap)
     source_name: str
+    # (rows, cols) bool: cells the tiles actually provided data for. Captured
+    # BEFORE uncovered cells are filled with 0 height, so callers can tell
+    # "no canopy tile here" (overstates POD -> no attenuation) from a genuine
+    # bare-ground 0. None on legacy samples.
+    covered: object = None
 
 
 def evh_code_to_meters(codes: np.ndarray) -> np.ndarray:
@@ -261,6 +266,7 @@ class CanopyService:
 
         chm = np.full((spec.height, spec.width), np.nan, dtype=np.float32)
         cover = np.full((spec.height, spec.width), np.nan, dtype=np.float32)
+        covered = np.zeros((spec.height, spec.width), dtype=bool)
         got_height = got_cover = False
 
         for tile in tiles:
@@ -293,6 +299,7 @@ class CanopyService:
                 self.logger.warning(f"CanopyService: reproject failed for {tile['filename']}: {e}")
                 continue
             merged = np.where(np.isnan(target) & ~np.isnan(tmp), tmp, target)
+            covered |= np.isfinite(tmp)
             if product in _HEIGHT_PRODUCTS:
                 chm = merged
                 got_height = True
@@ -322,7 +329,7 @@ class CanopyService:
 
         return CanopySample(chm=chm, cover=cover, transform=spec.transform,
                             crs=spec.crs, cover_derived=cover_derived,
-                            source_name=self.source_name)
+                            source_name=self.source_name, covered=covered)
 
     def reset(self):
         self.close()

@@ -96,6 +96,13 @@ class CoverageResult:
     # Frames whose DEM came from the online Terrarium fallback because the
     # configured local tiles had no coverage there (0 when N/A).
     dem_fallback_frames: int = 0
+    # Fraction (0-1) of the searched footprint cells the configured canopy
+    # source actually covered; None when no canopy source was configured.
+    # Ground the canopy tiles didn't reach is treated as bare (no attenuation),
+    # so a value < 1 means POD is optimistic over that fraction.
+    canopy_coverage_fraction: Optional[float] = None
+    # Processed frames whose footprint the canopy tiles did not cover at all.
+    canopy_frames_missing: int = 0
     # Identity of each input frame, indexed by frame id (== the position of the
     # image in the list passed to calculate()). Lets consumers resolve a
     # FrameIndex id back to an image without assuming any particular ordering

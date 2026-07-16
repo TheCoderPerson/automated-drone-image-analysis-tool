@@ -245,3 +245,41 @@ def test_covers_classifies_aoi_against_manifest(tmp_path):
     assert svc.covers(overflowing) == 'partial'
     assert svc.covers(disjoint) == 'none'
     svc.close()
+
+
+def test_sample_grid_spec_reports_covered_mask(tmp_path):
+    """The sample exposes which cells the tiles actually provided data for,
+    captured before uncovered cells are filled with 0 height (so POD can tell
+    'no canopy tile here' from genuine bare ground)."""
+    _write_tile(tmp_path / "chm.tif", 30.0, "float32", nodata=-9999.0)
+    manifest = _manifest(tmp_path, [{'filename': 'chm.tif', 'product': 'meta_chm'}])
+    svc = CanopyService(manifest, str(tmp_path), kind=KIND_META)
+    sample = svc.sample_grid_spec(_spec())
+    assert sample is not None
+    assert sample.covered is not None
+    assert sample.covered.shape == (sample.chm.shape[0], sample.chm.shape[1])
+    assert sample.covered.dtype == bool
+    # The tile spans the whole spec, so coverage is near-total (bilinear
+    # reprojection leaves only the outermost edge cells unfilled).
+    assert sample.covered.mean() > 0.9
+    ch, cw = sample.covered.shape[0] // 2, sample.covered.shape[1] // 2
+    assert sample.covered[ch, cw]
+    svc.close()
+
+
+def test_sample_grid_spec_covered_false_outside_tiles(tmp_path):
+    """A spec only partially overlapping the tile has covered=False where no
+    data exists (the signal POD uses to avoid overstating there)."""
+    _write_tile(tmp_path / "chm.tif", 30.0, "float32")
+    manifest = _manifest(tmp_path, [{'filename': 'chm.tif', 'product': 'meta_chm'}])
+    svc = CanopyService(manifest, str(tmp_path), kind=KIND_META)
+    # Shift the query east so only its western part overlaps the tile.
+    lo, la, hi, ha = _wgs84_bbox()
+    span = hi - lo
+    shifted = spec_for_bounds_wgs84((lo + span * 0.5, la, hi + span * 0.5, ha), 10.0)
+    sample = svc.sample_grid_spec(shifted)
+    assert sample is not None
+    # Some cells covered (west), some not (east beyond the tile).
+    assert sample.covered.any()
+    assert not sample.covered.all()
+    svc.close()

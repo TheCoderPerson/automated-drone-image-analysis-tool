@@ -707,19 +707,29 @@ class UnifiedMapExportController(TranslationMixin):
         fallback = getattr(result, 'dem_fallback_frames', 0)
         if not skipped:
             if fallback:
-                return (self.tr(
+                msg = self.tr(
                     "POD coverage complete — {count} frame(s) used online "
-                    "elevation (outside local DEM)").format(count=fallback),
-                    "#00C853")
-            return self.tr("POD coverage complete"), "#00C853"
+                    "elevation (outside local DEM)").format(count=fallback)
+            else:
+                msg = self.tr("POD coverage complete")
+            color = "#00C853"
+        else:
+            attempted = result.image_count + len(skipped)
+            no_dem = sum(1 for _, r in skipped if r in (SKIP_NO_DEM, SKIP_NO_DEM_AT_NADIR))
+            msg = self.tr("POD complete — {skipped} of {total} frames skipped").format(
+                skipped=len(skipped), total=attempted)
+            if no_dem:
+                msg += " " + self.tr("({count} without elevation data)").format(count=no_dem)
+            color = "#FFA726"
 
-        attempted = result.image_count + len(skipped)
-        no_dem = sum(1 for _, r in skipped if r in (SKIP_NO_DEM, SKIP_NO_DEM_AT_NADIR))
-        msg = self.tr("POD complete — {skipped} of {total} frames skipped").format(
-            skipped=len(skipped), total=attempted)
-        if no_dem:
-            msg += " " + self.tr("({count} without elevation data)").format(count=no_dem)
-        return msg, "#FFA726"
+        # Canopy that didn't cover the whole searched area silently overstates
+        # POD there (no attenuation on bare-treated ground), so surface it.
+        frac = getattr(result, 'canopy_coverage_fraction', None)
+        if frac is not None and frac < 0.99:
+            msg += " " + self.tr(
+                "(canopy data covered {pct}% of the searched area)").format(
+                    pct=int(round(frac * 100)))
+        return msg, color
 
     def _on_pod_finished(self):
         if self.pod_progress_dialog:

@@ -39,8 +39,8 @@ class _NoTerrain:
         return None
 
 
-def _service(terrain, params=None):
-    svc = CoveragePodService(terrain=terrain, canopy=None,
+def _service(terrain, params=None, canopy=None):
+    svc = CoveragePodService(terrain=terrain, canopy=canopy,
                              params=params or PodParams(grid_res_m=3.0))
 
     def fake_fg(image):
@@ -50,6 +50,35 @@ def _service(terrain, params=None):
 
     svc._frame_geometry = fake_fg
     return svc
+
+
+class _CoverageCanopy:
+    """Canopy stub reporting coverage over a fraction of each frame grid's
+    columns, so the POD pass can measure canopy-coverage of searched cells.
+
+    mode: 'full' (all cells), 'none' (no cells), 'left_half' (left columns),
+    or 'null' (sample_grid_spec returns None, i.e. no tile intersected)."""
+    source_name = "coverage_canopy"
+
+    def __init__(self, mode='full'):
+        self.mode = mode
+
+    def sample_grid_spec(self, spec):
+        from core.services.terrain.CanopyService import CanopySample
+        h, w = spec.height, spec.width
+        if self.mode == 'null':
+            return None
+        covered = np.zeros((h, w), dtype=bool)
+        if self.mode == 'full':
+            covered[:] = True
+        elif self.mode == 'left_half':
+            covered[:, :max(1, w // 2)] = True
+        # 'none' leaves covered all-False
+        return CanopySample(
+            chm=np.zeros((h, w), dtype=np.float32),
+            cover=np.zeros((h, w), dtype=np.float32),
+            transform=spec.transform, crs=spec.crs, cover_derived=False,
+            source_name=self.source_name, covered=covered)
 
 
 def test_skip_taxonomy_and_processing():
@@ -385,3 +414,56 @@ def test_frame_sources_recorded_for_all_inputs():
     # back to the right images.
     assert result.frame_sources[0]['name'] == 'a'
     assert result.frame_sources[2]['name'] == 'c'
+
+
+# ---------------------------------------------------------------------------
+# Canopy coverage of the searched area (are we accounting for vegetation?)
+# ---------------------------------------------------------------------------
+
+def test_canopy_coverage_full():
+    """Canopy tiles cover every searched cell -> fraction 1.0, none missing."""
+    images = [{'name': f'g{i}', '_fg': make_fg(pitch=-90.0)} for i in range(3)]
+    svc = _service(_FlatTerrain(), canopy=_CoverageCanopy('full'))
+    result = svc.calculate(images)
+    assert result.canopy_coverage_fraction == pytest.approx(1.0)
+    assert result.canopy_frames_missing == 0
+    assert result.stats['canopy_coverage']['fraction'] == pytest.approx(1.0)
+
+
+def test_canopy_coverage_none_when_tiles_miss_the_flight():
+    """Canopy configured but no tile covers any frame -> fraction 0, every
+    processed frame flagged missing (POD there computed as bare ground)."""
+    images = [{'name': f'g{i}', '_fg': make_fg(pitch=-90.0)} for i in range(3)]
+    svc = _service(_FlatTerrain(), canopy=_CoverageCanopy('none'))
+    result = svc.calculate(images)
+    assert result.canopy_coverage_fraction == pytest.approx(0.0)
+    assert result.canopy_frames_missing == 3
+
+
+def test_canopy_coverage_none_when_sample_returns_none():
+    """A frame whose footprint intersects no canopy tile (sample None) counts
+    as uncovered, not an error."""
+    images = [{'name': 'g', '_fg': make_fg(pitch=-90.0)}]
+    svc = _service(_FlatTerrain(), canopy=_CoverageCanopy('null'))
+    result = svc.calculate(images)
+    assert result.canopy_coverage_fraction == pytest.approx(0.0)
+    assert result.canopy_frames_missing == 1
+
+
+def test_canopy_coverage_partial():
+    """Tiles cover part of each frame -> fraction strictly between 0 and 1."""
+    images = [{'name': 'g', '_fg': make_fg(pitch=-90.0)}]
+    svc = _service(_FlatTerrain(), canopy=_CoverageCanopy('left_half'))
+    result = svc.calculate(images)
+    assert 0.0 < result.canopy_coverage_fraction < 1.0
+    assert 'canopy_coverage' in result.stats
+
+
+def test_canopy_coverage_none_metric_when_no_canopy_configured():
+    """No canopy source -> no coverage metric (None), stats key absent."""
+    images = [{'name': 'g', '_fg': make_fg(pitch=-90.0)}]
+    svc = _service(_FlatTerrain())   # canopy=None
+    result = svc.calculate(images)
+    assert result.canopy_coverage_fraction is None
+    assert result.canopy_frames_missing == 0
+    assert 'canopy_coverage' not in result.stats

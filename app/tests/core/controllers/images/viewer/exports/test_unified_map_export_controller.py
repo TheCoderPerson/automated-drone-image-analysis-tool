@@ -297,13 +297,14 @@ def test_pod_dir_for_kml():
 
 
 def _make_result(cancelled=False, skipped=None, image_count=1,
-                 dem_fallback_frames=0, stats=None):
+                 dem_fallback_frames=0, stats=None, canopy_coverage_fraction=None):
     r = MagicMock()
     r.cancelled = cancelled
     # Real values: _pod_completion_summary iterates skipped and does arithmetic.
     r.skipped = skipped if skipped is not None else []
     r.image_count = image_count
     r.dem_fallback_frames = dem_fallback_frames
+    r.canopy_coverage_fraction = canopy_coverage_fraction
     r.stats = stats if stats is not None else {}
     return r
 
@@ -822,3 +823,38 @@ def test_run_pod_export_passes_full_flight_set(controller):
 
     passed_images = MockThread.call_args.args[1]
     assert [im.get('path') for im in passed_images] == ['/f/a.jpg', '/f/b.jpg']
+
+
+# ---------------------------------------------------------------------------
+# POD completion: canopy-coverage note
+# ---------------------------------------------------------------------------
+
+def test_pod_summary_notes_partial_canopy_coverage(controller):
+    """A canopy source that didn't cover the whole searched area is surfaced
+    (missing canopy silently overstates POD there)."""
+    result = _make_result(canopy_coverage_fraction=0.78)
+    msg, _color = controller._pod_completion_summary(result)
+    assert "canopy data covered 78% of the searched area" in msg
+
+
+def test_pod_summary_no_canopy_note_when_fully_covered(controller):
+    result = _make_result(canopy_coverage_fraction=1.0)
+    msg, color = controller._pod_completion_summary(result)
+    assert "canopy" not in msg
+    assert color == "#00C853"
+
+
+def test_pod_summary_no_canopy_note_when_unconfigured(controller):
+    result = _make_result(canopy_coverage_fraction=None)
+    msg, _color = controller._pod_completion_summary(result)
+    assert "canopy" not in msg
+
+
+def test_pod_summary_canopy_note_combines_with_skips(controller):
+    """The canopy note appends to an amber skip summary too."""
+    result = _make_result(skipped=[("a.jpg", "no_dem")], image_count=1,
+                          canopy_coverage_fraction=0.5)
+    msg, color = controller._pod_completion_summary(result)
+    assert color == "#FFA726"
+    assert "skipped" in msg
+    assert "canopy data covered 50% of the searched area" in msg

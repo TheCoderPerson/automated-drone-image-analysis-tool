@@ -14145,37 +14145,37 @@ agressief</translation>
         <translation>Selecteer minstens één dataset.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="280"/>
+        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="286"/>
         <source>No GPS Found</source>
         <translation>Geen GPS gevonden</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="281"/>
+        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="287"/>
         <source>No GPS positions were found in the {source} images.</source>
         <translation>Er zijn geen GPS-posities gevonden in de {source}-afbeeldingen.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="296"/>
+        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="302"/>
         <source>Select image folder</source>
         <translation>Afbeeldingenmap selecteren</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="305"/>
+        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="311"/>
         <source>No Images</source>
         <translation>Geen afbeeldingen</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="306"/>
+        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="312"/>
         <source>No images were found in the selected folder.</source>
         <translation>Er zijn geen afbeeldingen gevonden in de geselecteerde map.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="352"/>
+        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="358"/>
         <source>Replace Canopy Source?</source>
         <translation>Kroonbron vervangen?</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="353"/>
+        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="359"/>
         <source>A LANDFIRE canopy source is currently configured.
 
 Register the downloaded Meta/WRI canopy tiles instead? (Your LANDFIRE files stay on disk; only the selected source changes.)</source>
@@ -14184,78 +14184,78 @@ Register the downloaded Meta/WRI canopy tiles instead? (Your LANDFIRE files stay
 In plaats daarvan de gedownloade Meta/WRI-kroontegels registreren? (Uw LANDFIRE-bestanden blijven op schijf; alleen de geselecteerde bron verandert.)</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="362"/>
+        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="368"/>
         <source>Elevation (DEM)</source>
         <translation>Hoogte (DEM)</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="362"/>
+        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="368"/>
         <source>Canopy height</source>
         <translation>Kroonhoogte</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="379"/>
+        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="385"/>
         <source>{product}: cancelled before completion.</source>
         <translation>{product}: geannuleerd vóór voltooiing.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="381"/>
+        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="387"/>
         <source>{product}: {failed} tile(s) failed to download.</source>
         <translation>{product}: {failed} tegel(s) konden niet worden gedownload.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="384"/>
+        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="390"/>
         <source>{product}: no data covers this area.</source>
         <translation>{product}: geen gegevens dekken dit gebied.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="386"/>
+        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="392"/>
         <source>{product}: nothing was downloaded.</source>
         <translation>{product}: er is niets gedownload.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="393"/>
+        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="399"/>
         <source>{product}: registered as the active source.</source>
         <translation>{product}: geregistreerd als actieve bron.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="396"/>
+        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="402"/>
         <source>{product}: NOT registered (no usable tiles).</source>
         <translation>{product}: NIET geregistreerd (geen bruikbare tegels).</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="405"/>
+        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="411"/>
         <source>Download Finished with Problems</source>
         <translation>Download voltooid met problemen</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="411"/>
+        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="417"/>
         <source>Download Complete</source>
         <translation>Download voltooid</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="400"/>
-        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="407"/>
+        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="406"/>
+        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="413"/>
         <source>Downloaded {count} tiles.</source>
         <translation>{count} tegels gedownload.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="422"/>
+        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="428"/>
         <source>Download Cancelled</source>
         <translation>Download geannuleerd</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="423"/>
+        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="429"/>
         <source>The download was cancelled. No tiles were registered.</source>
         <translation>De download is geannuleerd. Er zijn geen tegels geregistreerd.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="430"/>
+        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="436"/>
         <source>Download Error</source>
         <translation>Downloadfout</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="431"/>
+        <location filename="../app/core/controllers/images/viewer/exports/TileFetchController.py" line="437"/>
         <source>Tile download failed:
 {error}</source>
         <translation>Downloaden van tegels mislukt:
@@ -14473,9 +14473,9 @@ In plaats daarvan de gedownloade Meta/WRI-kroontegels registreren? (Uw LANDFIRE-
     <message>
         <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="476"/>
         <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="583"/>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="845"/>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="879"/>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="924"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="855"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="889"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="934"/>
         <source>Export Error</source>
         <translation>Exportfout</translation>
     </message>
@@ -14505,7 +14505,7 @@ In plaats daarvan de gedownloade Meta/WRI-kroontegels registreren? (Uw LANDFIRE-
     </message>
     <message>
         <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="651"/>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="812"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="822"/>
         <source>POD Error</source>
         <translation>POD-fout</translation>
     </message>
@@ -14528,37 +14528,42 @@ In plaats daarvan de gedownloade Meta/WRI-kroontegels registreren? (Uw LANDFIRE-
         <translation>POD-dekking voltooid — {count} frame(s) gebruikten online hoogte (buiten lokale DEM)</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="718"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="719"/>
         <source>POD complete — {skipped} of {total} frames skipped</source>
         <translation>POD voltooid — {skipped} van {total} frames overgeslagen</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="721"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="722"/>
         <source>({count} without elevation data)</source>
         <translation>({count} zonder hoogtegegevens)</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="775"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="730"/>
+        <source>(canopy data covered {pct}% of the searched area)</source>
+        <translation>(bladerdakgegevens dekten {pct}% van het doorzochte gebied)</translation>
+    </message>
+    <message>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="785"/>
         <source>Terrain and canopy aware probability-of-detection heatmap.</source>
         <translation>Terrein- en bladerdakbewuste detectiekans-heatmap.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="779"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="789"/>
         <source>Mean POD over covered area: {pod}%</source>
         <translation>Gemiddelde POD over gedekt gebied: {pod}%</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="782"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="792"/>
         <source>POD Coverage</source>
         <translation>POD-dekking</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="790"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="800"/>
         <source>POD Overlay</source>
         <translation>POD-overlay</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="791"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="801"/>
         <source>The POD coverage was computed, but embedding it into the exported file failed:
 {error}
 
@@ -14569,37 +14574,37 @@ The POD GeoTIFF products were still written next to the export.</source>
 De POD GeoTIFF-producten zijn wel naast de export geschreven.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="804"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="814"/>
         <source>POD calculation cancelled</source>
         <translation>POD-berekening geannuleerd</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="813"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="823"/>
         <source>POD calculation failed:
 {error}</source>
         <translation>POD-berekening mislukt:
 {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="846"/>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="880"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="856"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="890"/>
         <source>Failed to export to CalTopo:
 {error}</source>
         <translation>Exporteren naar CalTopo mislukt:
 {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="896"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="906"/>
         <source>Map export completed successfully!</source>
         <translation>Kaartexport succesvol voltooid!</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="911"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="921"/>
         <source>Map export cancelled</source>
         <translation>Kaartexport geannuleerd</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="925"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="935"/>
         <source>Map export failed:
 {error}</source>
         <translation>Kaartexport mislukt:
