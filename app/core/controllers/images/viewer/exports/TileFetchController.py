@@ -240,9 +240,13 @@ class TileFetchController(TranslationMixin):
 
     def _refresh_dialog_coverage(self, dialog, apply_defaults=False):
         """Update the dialog's per-dataset coverage captions for its current
-        AOI, and (on fill events only) re-default the DEM checkbox: off when
-        the area is already fully covered, on when registered tiles exist but
-        leave a gap. The canopy checkbox default is never touched."""
+        AOI, and (on fill events only) re-default each dataset checkbox from
+        coverage: OFF when the area is already fully covered (you have it —
+        re-downloading is a deliberate refresh, not the default), ON when
+        registered tiles leave a gap. An unregistered/unknown status leaves the
+        constructor default in place. When both boxes end up off (everything
+        covered), the run_fetch 'select at least one dataset' guard makes
+        Download a deliberate opt-in rather than a redundant re-fetch."""
         from core.views.images.viewer.dialogs.TileFetchDialog import TileFetchDialog as D
         bounds = dialog.get_bounds()
         if bounds is None:
@@ -253,10 +257,12 @@ class TileFetchController(TranslationMixin):
         canopy_status = self._coverage_status(probes.get('canopy'), bounds)
         dialog.set_dataset_status(dem_status, canopy_status)
         if apply_defaults:
-            if dem_status == D.STATUS_COVERED:
-                dialog.dem_checkbox.setChecked(False)
-            elif dem_status in (D.STATUS_PARTIAL, D.STATUS_NONE):
-                dialog.dem_checkbox.setChecked(True)
+            for checkbox, status in ((dialog.dem_checkbox, dem_status),
+                                     (dialog.canopy_checkbox, canopy_status)):
+                if status == D.STATUS_COVERED:
+                    checkbox.setChecked(False)
+                elif status in (D.STATUS_PARTIAL, D.STATUS_NONE):
+                    checkbox.setChecked(True)
 
     def _on_fill_source(self, dialog, key):
         """Dispatch an AOI fill-source choice from the dialog's dropdown."""

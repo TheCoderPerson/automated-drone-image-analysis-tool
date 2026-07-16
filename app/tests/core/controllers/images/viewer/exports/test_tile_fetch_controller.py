@@ -932,9 +932,43 @@ def test_refresh_coverage_no_defaults_on_manual_edit(app):
     assert "already covered" in dialog.dem_status_label.text()
 
 
-def test_refresh_coverage_never_touches_canopy_checkbox(app):
+def test_refresh_coverage_canopy_defaults_off_when_covered(app):
+    """Canopy is coverage-aware too: a fully-covered AOI defaults it OFF so the
+    dialog doesn't nudge a redundant re-download (re-downloading is a
+    deliberate refresh via re-checking the box)."""
     ctrl = TileFetchController(MagicMock(), MagicMock())
-    ctrl._coverage_probes = {'dem': None, 'canopy': _probe('full')}
+    ctrl._coverage_probes = {'dem': _probe('full'), 'canopy': _probe('full')}
+    dialog = TileFetchDialog()
+    dialog.set_aoi(_BOUNDS)
+    dialog.dem_checkbox.setChecked(True)
+    dialog.canopy_checkbox.setChecked(True)
+
+    ctrl._refresh_dialog_coverage(dialog, apply_defaults=True)
+
+    # Everything covered -> both off. run_fetch's 'select at least one dataset'
+    # guard then makes Download a no-op unless the user re-checks something.
+    assert dialog.dem_checkbox.isChecked() is False
+    assert dialog.canopy_checkbox.isChecked() is False
+
+
+def test_refresh_coverage_canopy_on_when_gap(app):
+    """Canopy has no online fallback, so a gap (partial/none) keeps it ON."""
+    ctrl = TileFetchController(MagicMock(), MagicMock())
+    ctrl._coverage_probes = {'dem': None, 'canopy': _probe('partial')}
+    dialog = TileFetchDialog()
+    dialog.set_aoi(_BOUNDS)
+    dialog.canopy_checkbox.setChecked(False)
+
+    ctrl._refresh_dialog_coverage(dialog, apply_defaults=True)
+
+    assert dialog.canopy_checkbox.isChecked() is True
+
+
+def test_refresh_coverage_canopy_untouched_when_unregistered(app):
+    """No canopy source configured (unregistered) -> leave the constructor
+    default (on) so a first-time user is still encouraged to download it."""
+    ctrl = TileFetchController(MagicMock(), MagicMock())
+    ctrl._coverage_probes = {'dem': _probe('full'), 'canopy': None}
     dialog = TileFetchDialog()
     dialog.set_aoi(_BOUNDS)
     assert dialog.canopy_checkbox.isChecked() is True
