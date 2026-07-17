@@ -3,7 +3,7 @@ import glob
 import os
 # -*- mode: python -*-
 
-from PyInstaller.utils.hooks import collect_data_files, collect_submodules, collect_dynamic_libs
+from PyInstaller.utils.hooks import collect_data_files, collect_submodules
 
 block_cipher = None
 
@@ -33,17 +33,13 @@ tz_datas = collect_data_files('timezonefinder') + collect_data_files('tzdata')
 # injects tzdata on Windows.
 tz_hiddenimports = ['tzdata'] + collect_submodules('tzdata')
 
-# rasterio and pyproj drive the Coverage/POD + terrain/canopy stack. rasterio
-# loads many submodules lazily (rasterio._io pulls in rasterio.sample,
-# rasterio.vrt, rasterio._features, ...) and both ship GDAL/PROJ data (gdal_data,
-# proj.db) as package data + vendored native libs. PyInstaller's static analysis
-# misses the lazy submodules and the data, so a frozen build raises
-# "No module named 'rasterio.sample'" the moment any rasterio feature runs (POD
-# gap polygons, DEM/canopy sampling, the windowed canopy clip that otherwise
-# falls back to a whole-tile ~730 MB download). Collect them explicitly.
+# rasterio/pyproj load submodules lazily and ship GDAL/PROJ data; without this
+# the frozen build fails with "No module named 'rasterio.sample'" (POD/terrain).
 geo_hiddenimports = collect_submodules('rasterio') + collect_submodules('pyproj')
 geo_datas = collect_data_files('rasterio') + collect_data_files('pyproj')
-geo_binaries = collect_dynamic_libs('rasterio') + collect_dynamic_libs('pyproj')
+
+# Dev tooling / installed-but-unused deps that bloat the frozen app (~300 MB).
+unused_excludes = ['qt6_applications', 'qt6_tools', 'pyarrow', 'sklearn', 'sympy']
 
 # Runtime hook: default packaged builds to WARNING-level logging so shipped apps
 # don't accumulate verbose debug/info logs on users' machines. It runs inside the
@@ -60,7 +56,7 @@ if platform.system() == 'Windows':
                     ('app/external/exiftool.exe','external'),
                     ('app/external/dji_thermal_sdk_v1.7_20241205','external/dji_thermal_sdk_v1.7_20241205'),
                     ('app/external/autel', 'external/autel')
-                ] + geo_binaries,
+                ],
                 datas=[
                     ('resources/icons/ADIAT.ico','.'),
                     ('app/algorithms.conf','.'),
@@ -129,14 +125,14 @@ if platform.system() == 'Windows':
                 ] + tz_hiddenimports + geo_hiddenimports,
                 hookspath=None,
                 runtime_hooks=adiat_runtime_hooks,
-                excludes=['PyQt5', 'PyQt6'],
+                excludes=['PyQt5', 'PyQt6'] + unused_excludes,
                 cipher=block_cipher)
 elif platform.system() == 'Darwin':
     a = Analysis(['app/__main__.py'],
                     pathex=['app'],
                     binaries=[
                         ('LICENSE','.')
-                    ] + geo_binaries,
+                    ],
                     datas=[
                         ('resources/icons/ADIAT.ico','.'),
                         ('app/algorithms.conf','.'),
@@ -205,7 +201,7 @@ elif platform.system() == 'Darwin':
                     ] + tz_hiddenimports + geo_hiddenimports,
                     hookspath=None,
                     runtime_hooks=adiat_runtime_hooks,
-                    excludes=['PyQt5', 'PyQt6'],
+                    excludes=['PyQt5', 'PyQt6'] + unused_excludes,
                     cipher=block_cipher)
 
 pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
