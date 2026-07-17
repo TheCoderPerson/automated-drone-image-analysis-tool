@@ -34,6 +34,7 @@ from core.controllers.streaming.StreamingGuide import StreamingGuide
 from core.controllers.UpdateController import UpdateController
 from core.services.SettingsService import SettingsService
 from helpers import FeatureFlags
+from helpers.ThemeHelper import apply_theme
 from core.services.ConfigService import ConfigService
 from core.views.streaming.StreamViewerWindow_ui import Ui_StreamViewerWindow
 from core.services.LoggerService import LoggerService
@@ -2334,10 +2335,9 @@ class StreamViewerWindow(TranslationMixin, QMainWindow):
         normalized = (theme or "dark").lower()
         self.theme = normalized
         try:
-            if normalized == "light":
-                qdarktheme.setup_theme("light")
-            else:
-                qdarktheme.setup_theme("dark")
+            # apply_theme installs the stylesheet AND the full palette so text
+            # colours track the app theme rather than the OS light/dark setting.
+            apply_theme(normalized)
         except Exception as e:
             self.logger.error(f"Error applying theme: {e}")
 

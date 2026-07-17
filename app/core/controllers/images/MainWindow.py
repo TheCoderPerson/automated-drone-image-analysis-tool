@@ -38,6 +38,7 @@ from core.controllers.images.ImageAnalysisGuide import ImageAnalysisGuide
 from helpers.IconHelper import IconHelper
 from helpers.FormatHelper import FormatHelper
 from helpers.TranslationMixin import TranslationMixin
+from helpers.ThemeHelper import apply_theme
 import os
 import xml.etree.ElementTree as ET
 os.environ['NUMPY_EXPERIMENTAL_DTYPE_API'] = '0'
@@ -1661,11 +1662,13 @@ class MainWindow(TranslationMixin, QMainWindow, Ui_MainWindow):
         Args:
             theme (str): 'Light' or 'Dark'
         """
+        # apply_theme installs the stylesheet AND the full palette so text
+        # colours track the app theme rather than the OS light/dark setting.
         if theme == 'Light':
-            self.theme.setup_theme("light")
+            apply_theme("Light")
             self._apply_icons("Light")
         else:
-            self.theme.setup_theme()
+            apply_theme("Dark")
             self._apply_icons("Dark")
 
     def _show_area_validation_error(self, message):

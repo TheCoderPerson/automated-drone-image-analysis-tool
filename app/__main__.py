@@ -5,6 +5,7 @@ from PySide6.QtWidgets import QApplication, QDialog, QMessageBox
 from multiprocessing import freeze_support
 from helpers.PickleHelper import PickleHelper
 from helpers.TranslationHelper import install_translator
+from helpers.ThemeHelper import apply_theme
 from core.services.LoggerService import LoggerService
 from core.services.SettingsService import SettingsService
 from core.controllers.streaming.StreamingGuide import StreamingGuide
@@ -196,7 +197,10 @@ def main():
     settings_service = SettingsService()
     install_translator(app, settings_service.get_setting('Language', None))
 
-    qdarktheme.setup_theme()
+    # Apply the stylesheet AND the full palette (see helpers.ThemeHelper): the
+    # palette must be pinned to the theme so custom-painted widgets don't pick
+    # up the OS light/dark text colour.
+    apply_theme('Dark')
     app.setWindowIcon(QIcon(path.abspath(path.join(path.dirname(__file__), 'ADIAT.ico'))))
 
     # Initialize default settings early (before any windows are created)
