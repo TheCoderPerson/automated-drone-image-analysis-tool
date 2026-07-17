@@ -35,6 +35,7 @@ class StreamCoordinator(QObject):
     recordingStatsUpdated = Signal(dict)  # Recording performance/queue stats
     streamInfoUpdated = Signal(dict)  # Stream info (fps, resolution, etc.)
     errorOccurred = Signal(str)  # Error message
+    seekCompleted = Signal(int, int, bool)  # (request_id, frame_position, success)
 
     def __init__(self, logger: Optional[LoggerService] = None):
         super().__init__()
@@ -106,6 +107,8 @@ class StreamCoordinator(QObject):
                 self.stream_manager.statsUpdated.connect(self._on_stream_stats_updated)
             if hasattr(self.stream_manager, "videoPositionChanged"):
                 self.stream_manager.videoPositionChanged.connect(self._on_video_position_changed)
+            if hasattr(self.stream_manager, "seekCompleted"):
+                self.stream_manager.seekCompleted.connect(self.seekCompleted)
 
             # Connect to stream (pass hdmi_backend for HDMI capture, fps_limit for rate control)
             if self.stream_manager.connect_to_stream(url, stream_type, hdmi_backend=hdmi_backend, fps_limit=fps_limit):
@@ -145,6 +148,11 @@ class StreamCoordinator(QObject):
                 if hasattr(self.stream_manager, "videoPositionChanged"):
                     try:
                         self.stream_manager.videoPositionChanged.disconnect(self._on_video_position_changed)
+                    except TypeError:
+                        pass
+                if hasattr(self.stream_manager, "seekCompleted"):
+                    try:
+                        self.stream_manager.seekCompleted.disconnect(self.seekCompleted)
                     except TypeError:
                         pass
             except Exception:
@@ -278,6 +286,14 @@ class StreamCoordinator(QObject):
 
     def _on_frame_ready(self, frame: np.ndarray, timestamp: float, video_frame_pos: int = 0):
         """Handle frame received from stream."""
+        # Signals queued before a disconnect or emitted by a replaced manager
+        # must not escape into the viewer. Direct calls have no QObject sender;
+        # they are retained for diagnostic/unit-test use.
+        sender = self.sender()
+        if sender is not None:
+            if sender is not self.stream_manager or not self.is_connected:
+                return
+
         # Store video frame position for access by StreamViewerWindow
         self._current_video_frame_pos = video_frame_pos
 

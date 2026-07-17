@@ -3,9 +3,11 @@ shared_widgets.py - Shared widgets for streaming viewers
 
 Contains reusable widgets and components used across multiple streaming viewers:
 - DetectionTracker: Tracks detections across frames
-- DetectionThumbnailWidget: Displays detection thumbnails
-- VideoDisplayWidget: Optimized video display widget
+- DetectionThumbnailWidget: Displays clickable detection thumbnails
 - StreamControlWidget: Stream connection and recording controls
+
+The zoomable live video widget lives in
+core.views.streaming.components.StreamingVideoDisplay.
 """
 
 import numpy as np
@@ -20,6 +22,7 @@ from PySide6.QtGui import QImage, QPixmap
 from PySide6.QtCore import Qt, Signal, QObject, QThread
 from PySide6.QtWidgets import QApplication
 from core.services.streaming.RTMPStreamService import StreamType
+from core.services.streaming.contracts import FocusTarget
 from core.services.LoggerService import LoggerService
 from helpers.TranslationMixin import TranslationMixin
 
@@ -550,8 +553,27 @@ class DetectionTracker(QObject):
                 removed += 1
 
 
+class ClickableThumbnailLabel(QLabel):
+    """Thumbnail slot label that reports left-clicks by slot index."""
+
+    clicked = Signal(int)  # slot index
+
+    def __init__(self, slot_index: int, parent=None):
+        super().__init__(parent)
+        self.slot_index = slot_index
+        self.setCursor(Qt.PointingHandCursor)
+
+    def mousePressEvent(self, event):
+        if event.button() == Qt.LeftButton:
+            self.clicked.emit(self.slot_index)
+        super().mousePressEvent(event)
+
+
 class DetectionThumbnailWidget(QWidget):
     """Widget to display thumbnails of top detections with dynamic sizing."""
+
+    # Emits a FocusTarget (source-frame coords) when a populated slot is clicked.
+    thumbnail_focus_requested = Signal(object)
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -566,6 +588,12 @@ class DetectionThumbnailWidget(QWidget):
         self.thumbnail_size = 120  # Fixed size for each thumbnail
         self.thumbnail_spacing = 10  # Spacing between thumbnails
         self.thumbnail_labels = []
+
+        # Latest focus payload per populated slot (slot_index -> FocusTarget).
+        # A resize alone preserves hidden slots for paused hide/reshow. The next
+        # frame update invalidates hidden slots because their pixmaps are no
+        # longer current.
+        self._focus_targets = {}
 
         # Detection tracker - will be updated with dynamic max_slots
         # ghost_frames=60 means remember lost detections for ~2 seconds at 30fps
@@ -603,16 +631,20 @@ class DetectionThumbnailWidget(QWidget):
         if max_thumbnails > current_count:
             # Add more thumbnail labels (insert before the stretch item at the end)
             for i in range(current_count, max_thumbnails):
-                label = QLabel()
+                label = ClickableThumbnailLabel(i)
                 label.setFixedSize(self.thumbnail_size, self.thumbnail_size)
                 label.setStyleSheet("QLabel { background-color: black; border: 2px solid #555; }")
                 label.setAlignment(Qt.AlignCenter)
                 label.setScaledContents(False)
+                label.clicked.connect(self._on_thumbnail_clicked)
                 # Insert before the last item (which is the stretch)
                 self.layout.insertWidget(self.layout.count() - 1, label)
                 self.thumbnail_labels.append(label)
         elif max_thumbnails < current_count:
-            # Hide excess thumbnail labels
+            # Hide excess thumbnail labels. The focus payload is kept: the label
+            # keeps its last pixmap while hidden, so widening the window later
+            # re-shows the same pixmap and it must stay clickable (while paused
+            # no frame would repopulate the payload).
             for i in range(max_thumbnails, current_count):
                 self.thumbnail_labels[i].setVisible(False)
             # Show the ones that should be visible
@@ -665,11 +697,14 @@ class DetectionThumbnailWidget(QWidget):
         """Update thumbnails with tracked detections in stable slots.
 
         Args:
-            frame: The frame to extract thumbnails from (should be at original resolution)
-            detections: List of detections (coordinates are already at original resolution - service scales them back)
+            frame: The frame to extract thumbnails from (at source/original resolution)
+            detections: List of detections (coordinates already in source-frame
+                space - services scale them back from processing resolution)
             zoom: Zoom level (higher = tighter crop around detection)
-            processing_resolution: (width, height) of processing resolution (unused, kept for compatibility)
-            original_resolution: (width, height) of frame (unused, kept for compatibility)
+            processing_resolution: accepted for signature compatibility; NOT
+                used to rescale coordinates (they are already source-space)
+            original_resolution: accepted for signature compatibility; NOT used
+                to rescale coordinates
             frame_index: Current frame index for track storage
             timestamp: Current timestamp in seconds for track storage
         """
@@ -688,14 +723,21 @@ class DetectionThumbnailWidget(QWidget):
                 seen_track_ids.add(track_id)
                 self.tracker.update_track(track_id, detection, frame, frame_index, timestamp)
 
-        # Calculate scale factor if we need to convert coordinates
-        scale_x = 1.0
-        scale_y = 1.0
-        if processing_resolution and original_resolution:
-            scale_x = original_resolution[0] / processing_resolution[0]
-            scale_y = original_resolution[1] / processing_resolution[1]
+        # Detection coordinates are already in source-frame space (services
+        # scale them back from processing resolution), so no processing->source
+        # rescale is applied here. See FocusTarget / StreamDetection.
+        frame_h, frame_w = frame.shape[:2]
 
-        # Update each thumbnail label based on slot assignment (stable positions)
+        # A resize alone intentionally preserves hidden slots so paused users
+        # can hide and re-show the same clickable thumbnail. Once a newer frame
+        # arrives, however, hidden labels are not rendered from that frame and
+        # must be invalidated so stale pixmaps/targets cannot reappear later.
+        for slot_idx, label in enumerate(self.thumbnail_labels):
+            if not label.isVisible():
+                label.clear()
+                self._focus_targets.pop(slot_idx, None)
+
+        # Update each visible thumbnail label based on slot assignment (stable positions)
         for slot_idx, label in enumerate(self.thumbnail_labels):
             if not label.isVisible():
                 continue
@@ -703,21 +745,16 @@ class DetectionThumbnailWidget(QWidget):
             if slot_idx in slot_assignments:
                 detection = slot_assignments[slot_idx]
 
-                # Extract zoomed region around detection centroid
-                # Scale coordinates if detection is in processing resolution but frame is original
+                # Coordinates are source-frame pixels; use them directly.
                 cx_raw, cy_raw = detection.centroid
                 x_raw, y_raw, w_raw, h_raw = detection.bbox
-
-                # Apply scale factor to convert from processing res to frame res
-                cx = int(cx_raw * scale_x)
-                cy = int(cy_raw * scale_y)
-                w = int(w_raw * scale_x)
-                h = int(h_raw * scale_y)
+                cx = int(cx_raw)
+                cy = int(cy_raw)
 
                 x1, y1, x2, y2 = self._compute_live_thumbnail_crop(
                     frame.shape,
                     (cx, cy),
-                    (x_raw, y_raw, w, h),
+                    (x_raw, y_raw, w_raw, h_raw),
                     zoom=zoom,
                 )
 
@@ -733,56 +770,41 @@ class DetectionThumbnailWidget(QWidget):
                     pixmap = QPixmap.fromImage(q_image)
                     scaled_pixmap = pixmap.scaled(label.size(), Qt.KeepAspectRatio, Qt.FastTransformation)
                     label.setPixmap(scaled_pixmap)
+                    # Capture the click-to-focus payload for this slot in
+                    # source-frame coordinates.
+                    self._focus_targets[slot_idx] = FocusTarget(
+                        center_xy=(cx, cy),
+                        reference_size=(frame_w, frame_h),
+                    )
                 else:
                     label.clear()
+                    self._focus_targets.pop(slot_idx, None)
             else:
                 # No detection assigned to this slot
                 label.clear()
+                self._focus_targets.pop(slot_idx, None)
+
+    def _on_thumbnail_clicked(self, slot_index: int):
+        """Emit a focus request for a populated slot; ignore empty slots."""
+        target = self._focus_targets.get(slot_index)
+        if target is not None:
+            self.thumbnail_focus_requested.emit(target)
+
+    def clear_focus_targets(self):
+        """Drop all stored click-to-focus payloads."""
+        self._focus_targets.clear()
 
     def clear_thumbnails(self):
-        """Clear all thumbnails and reset tracking."""
+        """Clear all thumbnails (including hidden ones), focus payloads, and tracking.
+
+        Hidden labels are cleared too, otherwise a hidden thumbnail from a
+        previous source could reappear (with a stale pixmap) when the window is
+        widened after a new source connects.
+        """
         for label in self.thumbnail_labels:
-            if label.isVisible():
-                label.clear()
+            label.clear()
+        self._focus_targets.clear()
         self.tracker.clear()
-
-
-class VideoDisplayWidget(TranslationMixin, QLabel):
-    """Optimized video display widget for real-time streaming."""
-
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        self.logger = LoggerService()
-        self.setMinimumSize(640, 480)
-        # Remove any maximum size constraints to allow full expansion
-        self.setMaximumSize(16777215, 16777215)  # Qt's maximum widget size
-        self.setStyleSheet("QLabel { background-color: black; border: 1px solid gray; }")
-        self.setAlignment(Qt.AlignCenter)
-        self.setText(self.tr("No Stream Connected"))
-        self.setScaledContents(False)
-        # Set size policy to expanding so it grows to fill available space
-        self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-
-    def update_frame(self, frame: np.ndarray):
-        """Update display with new frame."""
-        try:
-            height, width, channel = frame.shape
-            bytes_per_line = 3 * width
-
-            # Convert BGR to RGB
-            rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-
-            # Create QImage and QPixmap
-            q_image = QImage(rgb_frame.data, width, height, bytes_per_line, QImage.Format_RGB888)
-            pixmap = QPixmap.fromImage(q_image)
-
-            # Scale to fit widget while maintaining aspect ratio
-            # Use SmoothTransformation for crisper detection rendering (slight performance cost but better quality)
-            scaled_pixmap = pixmap.scaled(self.size(), Qt.KeepAspectRatio, Qt.SmoothTransformation)
-            self.setPixmap(scaled_pixmap)
-
-        except Exception as e:
-            self.logger.error(f"Error updating frame: {e}")
 
 
 class StreamControlWidget(TranslationMixin, QWidget):

@@ -11932,37 +11932,37 @@ Raccomandazione secondaria: {secondary}</translation>
 <context>
     <name>StreamControlWidget</name>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="815"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="827"/>
         <source>Stream Connection</source>
         <translation>Connessione Stream</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="817"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="829"/>
         <source>Configure and connect to video source (file, HDMI capture, or RTMP stream)</source>
         <translation>Configura e connettiti alla sorgente video (file, acquisizione HDMI o stream RTMP)</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="822"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="834"/>
         <source>Stream Type:</source>
         <translation>Tipo Stream:</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="824"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="836"/>
         <source>File</source>
         <translation>File</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="825"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="837"/>
         <source>HDMI Capture</source>
         <translation>Acquisizione HDMI</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="826"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="838"/>
         <source>RTMP Stream</source>
         <translation>Stream RTMP</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="829"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="841"/>
         <source>Select the type of video source:
 • File: Pre-recorded video file with timeline controls
 • HDMI Capture: Live capture from HDMI capture device
@@ -11973,18 +11973,18 @@ Raccomandazione secondaria: {secondary}</translation>
 • Stream RTMP: Streaming in tempo reale da sorgente RTMP/HTTP</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="838"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="850"/>
         <source>Stream URL/Path:</source>
         <translation>URL/Percorso Stream:</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="845"/>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1044"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="857"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1056"/>
         <source>Click to browse for video file...</source>
         <translation>Clicca per sfogliare il file video...</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="849"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="861"/>
         <source>Enter or browse for the video source:
 • File: Click to browse for video file (MP4, AVI, MOV, etc.)
 • RTMP Stream: Enter RTMP URL (rtmp://server:port/app/stream)</source>
@@ -11993,344 +11993,344 @@ Raccomandazione secondaria: {secondary}</translation>
 • Stream RTMP: Inserisci l&apos;URL RTMP (rtmp://server:port/app/stream)</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="858"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="870"/>
         <source>Select HDMI capture device</source>
         <translation>Seleziona dispositivo di acquisizione HDMI</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="860"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="872"/>
         <source>Scanning for devices...</source>
         <translation>Scansione dispositivi...</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="864"/>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="996"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="876"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1008"/>
         <source>Browse...</source>
         <translation>Sfoglia...</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="868"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="880"/>
         <source>Open file browser to select a video file for analysis.
 Supported formats: MP4, AVI, MOV, MKV, FLV, WMV, M4V, 3GP, WebM</source>
         <translation>Apri il browser dei file per selezionare un file video per l&apos;analisi.
 Formati supportati: MP4, AVI, MOV, MKV, FLV, WMV, M4V, 3GP, WebM</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="875"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="887"/>
         <source>Scan...</source>
         <translation>Scansiona...</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="877"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="889"/>
         <source>Scan for available HDMI capture devices</source>
         <translation>Scansiona i dispositivi di acquisizione HDMI disponibili</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="884"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="896"/>
         <source>Connect</source>
         <translation>Connetti</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="887"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="899"/>
         <source>Connect to the specified video source and begin processing.</source>
         <translation>Connettiti alla sorgente video specificata e inizia l&apos;elaborazione.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="889"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="901"/>
         <source>Disconnect</source>
         <translation>Disconnetti</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="893"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="905"/>
         <source>Disconnect from the current video source and stop processing.</source>
         <translation>Disconnettiti dalla sorgente video corrente e interrompi l&apos;elaborazione.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="900"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="912"/>
         <source>Status: Disconnected</source>
         <translation>Stato: Disconnesso</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="902"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="914"/>
         <source>Current connection status</source>
         <translation>Stato della connessione corrente</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="905"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="917"/>
         <source>Performance</source>
         <translation>Prestazioni</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="906"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="918"/>
         <source>Real-time performance metrics</source>
         <translation>Metriche di prestazioni in tempo reale</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="910"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="922"/>
         <source>Video: --</source>
         <translation>Video: --</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="911"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="923"/>
         <source>Original video resolution</source>
         <translation>Risoluzione video originale</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="912"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="924"/>
         <source>Processing: --</source>
         <translation>Elaborazione: --</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="914"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="926"/>
         <source>Resolution used for detection processing</source>
         <translation>Risoluzione usata per l&apos;elaborazione del rilevamento</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="918"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="930"/>
         <source>Source FPS: --</source>
         <translation>FPS Sorgente: --</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="919"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="931"/>
         <source>Source frame rate and the applied processing cadence</source>
         <translation>Frame rate della sorgente e cadenza di elaborazione applicata</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="920"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="932"/>
         <source>Proc FPS: --</source>
         <translation>FPS Elaborazione: --</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="922"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="934"/>
         <source>Actual frames per second being processed</source>
         <translation>Fotogrammi al secondo effettivamente elaborati</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="926"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="938"/>
         <source>Time: -- ms</source>
         <translation>Tempo: -- ms</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="928"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="940"/>
         <source>Time in milliseconds to process each frame</source>
         <translation>Tempo in millisecondi per elaborare ogni fotogramma</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="930"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="942"/>
         <source>Latency: -- ms</source>
         <translation>Latenza: -- ms</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="932"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="944"/>
         <source>End-to-end latency from frame capture to display</source>
         <translation>Latenza end-to-end dalla cattura del fotogramma alla visualizzazione</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="936"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="948"/>
         <source>Frames: --</source>
         <translation>Fotogrammi: --</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="937"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="949"/>
         <source>Total number of frames processed</source>
         <translation>Numero totale di fotogrammi elaborati</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="938"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="950"/>
         <source>Detections: --</source>
         <translation>Rilevamenti: --</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="939"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="951"/>
         <source>Number of detections in current frame</source>
         <translation>Numero di rilevamenti nel fotogramma corrente</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="953"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="965"/>
         <source>Recording</source>
         <translation>Registrazione</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="958"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="970"/>
         <source>Start Recording</source>
         <translation>Avvia Registrazione</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="961"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="973"/>
         <source>Start recording the video stream with detection overlays.</source>
         <translation>Avvia la registrazione dello stream video con sovrapposizioni di rilevamento.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="963"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="975"/>
         <source>Stop Recording</source>
         <translation>Interrompi Registrazione</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="966"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="978"/>
         <source>Stop the current recording and save to file.</source>
         <translation>Interrompi la registrazione corrente e salva su file.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="973"/>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1161"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="985"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1173"/>
         <source>Status: Not Recording</source>
         <translation>Stato: Non in Registrazione</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="976"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="988"/>
         <source>Current recording status and output file path</source>
         <translation>Stato di registrazione corrente e percorso del file di output</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="980"/>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1168"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="992"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1180"/>
         <source>Duration: --</source>
         <translation>Durata: --</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="982"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="994"/>
         <source>Recording statistics: Duration, FPS, Frames</source>
         <translation>Statistiche registrazione: Durata, FPS, Fotogrammi</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="991"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1003"/>
         <source>Save to:</source>
         <translation>Salva in:</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="994"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1006"/>
         <source>Directory where video recordings will be saved.</source>
         <translation>Cartella in cui verranno salvate le registrazioni video.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="998"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1010"/>
         <source>Choose a folder to store recordings.</source>
         <translation>Scegli una cartella per salvare le registrazioni.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1052"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1064"/>
         <source>rtmp://server:port/app/stream</source>
         <translation>rtmp://server:port/app/stream</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1069"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1081"/>
         <source>Invalid Device</source>
         <translation>Dispositivo Non Valido</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1070"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1082"/>
         <source>Please select a valid HDMI capture device.</source>
         <translation>Seleziona un dispositivo di acquisizione HDMI valido.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1082"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1094"/>
         <source>Invalid URL</source>
         <translation>URL Non Valido</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1083"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1095"/>
         <source>Please enter a valid stream URL.</source>
         <translation>Inserisci un URL stream valido.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1100"/>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1113"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1112"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1125"/>
         <source>Status: {message}</source>
         <translation>Stato: {message}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1149"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1161"/>
         <source>Status: Recording</source>
         <translation>Stato: Registrazione</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1153"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1165"/>
         <source>Output: {value}</source>
         <translation>Output: {value}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1165"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1177"/>
         <source>Duration: {value}</source>
         <translation>Durata: {value}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1194"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1206"/>
         <source>Select Recording Directory</source>
         <translation>Seleziona Cartella Registrazioni</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1205"/>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1208"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1217"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1220"/>
         <source>Scanning...</source>
         <translation>Scansione in corso...</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1232"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1244"/>
         <source>Scan</source>
         <translation>Scansiona</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1245"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1257"/>
         <source>Device {index} ({backend})</source>
         <translation>Dispositivo {index} ({backend})</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1298"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1310"/>
         <source>Source FPS: {source:.1f} (Applied {applied:.1f})</source>
         <translation>FPS Sorgente: {source:.1f} (Applicati {applied:.1f})</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1305"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1317"/>
         <source>Source FPS: {fps:.1f}</source>
         <translation>FPS Sorgente: {fps:.1f}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1238"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1250"/>
         <source>No capture devices found</source>
         <translation>Nessun dispositivo di acquisizione trovato</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1275"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1287"/>
         <source>Video: {width}x{height}</source>
         <translation>Video: {width}x{height}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1282"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1294"/>
         <source>Processing: {width}x{height}</source>
         <translation>Elaborazione: {width}x{height}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1308"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1320"/>
         <source>Proc FPS: {fps:.1f}</source>
         <translation>FPS Elaborazione: {fps:.1f}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1316"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1328"/>
         <source>Time: {time:.1f} ms</source>
         <translation>Tempo: {time:.1f} ms</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1319"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1331"/>
         <source>Latency: {latency:.1f} ms</source>
         <translation>Latenza: {latency:.1f} ms</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1327"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1339"/>
         <source>Frames: {count}</source>
         <translation>Fotogrammi: {count}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1330"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1342"/>
         <source>Detections: {count}</source>
         <translation>Rilevamenti: {count}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1337"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1349"/>
         <source>Select Video File</source>
         <translation>Seleziona File Video</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1340"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1352"/>
         <source>Video Files (*.mp4 *.avi *.mov *.mkv *.flv *.wmv *.m4v *.3gp *.webm *.mpg *.mpeg *.ts *.mts *.m2ts);;All Files (*)</source>
         <translation>File Video (*.mp4 *.avi *.mov *.mkv *.flv *.wmv *.m4v *.3gp *.webm *.mpg *.mpeg *.ts *.mts *.m2ts);;Tutti i File (*)</translation>
     </message>
@@ -12454,149 +12454,149 @@ Formati supportati: MP4, AVI, MOV, MKV, FLV, WMV, M4V, 3GP, WebM</translation>
 <context>
     <name>StreamViewerWindow</name>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="98"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="102"/>
         <source>Automated Drone Image Analysis Tool v{version} - Sponsored by TEXSAR</source>
         <translation>Strumento Automatico di Analisi Immagini Drone v{version} - Sponsorizzato da TEXSAR</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="189"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="214"/>
         <source>Live View</source>
         <translation>Vista Live</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="194"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="219"/>
         <source>Gallery</source>
         <translation>Galleria</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="235"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="260"/>
         <source>Menu</source>
         <translation>Menu</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="236"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="261"/>
         <source>Streaming Analysis Wizard</source>
         <translation>Procedura guidata Analisi Streaming</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="237"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="262"/>
         <source>Image Analysis</source>
         <translation>Analisi Immagini</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="238"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="263"/>
         <source>Flight Viewer</source>
         <translation>Visore voli</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="239"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="264"/>
         <source>Preferences</source>
         <translation>Preferenze</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="249"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="274"/>
         <source>Help</source>
         <translation>Aiuto</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="250"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="275"/>
         <source>Check for Updates</source>
         <translation>Verifica Aggiornamenti</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="251"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="276"/>
         <source>Manual</source>
         <translation>Manuale</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="252"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="277"/>
         <source>Community Forum</source>
         <translation>Forum della Comunità</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="253"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="278"/>
         <source>YouTube Channel</source>
         <translation>Canale YouTube</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="280"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="305"/>
         <source>Start Recording</source>
         <translation>Avvia Registrazione</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="283"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="308"/>
         <source>Start recording the video stream with detection overlays.</source>
         <translation>Avvia la registrazione dello stream video con sovrapposizioni di rilevamento.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="285"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="310"/>
         <source>Stop Recording</source>
         <translation>Interrompi Registrazione</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="288"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="313"/>
         <source>Stop the current recording and save to file.</source>
         <translation>Interrompi la registrazione corrente e salva su file.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="295"/>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1814"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="320"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1881"/>
         <source>Status: Not Recording</source>
         <translation>Stato: Non in Registrazione</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="298"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="323"/>
         <source>Current recording status and output file path</source>
         <translation>Stato di registrazione corrente e percorso del file di output</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="302"/>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1816"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="327"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1883"/>
         <source>Duration: --</source>
         <translation>Durata: --</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="304"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="329"/>
         <source>Recording statistics: Duration, FPS, Frames</source>
         <translation>Statistiche registrazione: Durata, FPS, Fotogrammi</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="309"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="334"/>
         <source>Save to:</source>
         <translation>Salva in:</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="313"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="338"/>
         <source>Directory where video recordings will be saved.</source>
         <translation>Cartella in cui verranno salvate le registrazioni video.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="315"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="340"/>
         <source>Browse...</source>
         <translation>Sfoglia...</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="317"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="342"/>
         <source>Choose a folder to store recordings.</source>
         <translation>Scegli una cartella per salvare le registrazioni.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="368"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="393"/>
         <source>Select Recording Directory</source>
         <translation>Seleziona Cartella Registrazioni</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="388"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="413"/>
         <source>Algorithm:</source>
         <translation>Algoritmo:</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="390"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="415"/>
         <source>Select which streaming detection algorithm to use</source>
         <translation>Seleziona quale algoritmo di rilevamento in streaming utilizzare</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="396"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="421"/>
         <source>Choose which streaming detection algorithm to run.
 • Color Anomaly &amp; Motion Detection: fused anomaly detectors
 • Color Detection: color-based highlighting</source>
@@ -12605,22 +12605,22 @@ Formati supportati: MP4, AVI, MOV, MKV, FLV, WMV, M4V, 3GP, WebM</translation>
 • Rilevamento Colore: evidenziazione basata sul colore</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="431"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="456"/>
         <source>Gallery Threshold:</source>
         <translation>Soglia Galleria:</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="434"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="459"/>
         <source>Number of frames a detection must be seen before appearing in the Gallery tab</source>
         <translation>Numero di fotogrammi in cui un rilevamento deve essere visto prima di apparire nella scheda Galleria</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="441"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="466"/>
         <source> frames</source>
         <translation> fotogrammi</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="444"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="469"/>
         <source>Detections must be seen for this many consecutive frames
 before appearing in the Gallery. Higher values reduce
 false positives but delay detection appearance.</source>
@@ -12629,178 +12629,179 @@ prima di apparire nella Galleria. Valori più alti riducono
 i falsi positivi ma ritardano la comparsa del rilevamento.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="504"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="530"/>
         <source>Device {index}</source>
         <translation>Dispositivo {index}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="698"/>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="717"/>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="731"/>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="754"/>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="768"/>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="782"/>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="796"/>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1850"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="724"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="743"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="757"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="780"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="794"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="808"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="822"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1917"/>
         <source>Error</source>
         <translation>Errore</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="699"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="725"/>
         <source>Failed to open Streaming Analysis Guide:
 {error}</source>
         <translation>Impossibile aprire la Guida Analisi Streaming:
 {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="718"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="744"/>
         <source>Failed to open Image Analysis:
 {error}</source>
         <translation>Impossibile aprire Analisi Immagini:
 {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="732"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="758"/>
         <source>Failed to open Preferences:
 {error}</source>
         <translation>Impossibile aprire Preferenze:
 {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="755"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="781"/>
         <source>Failed to open Flight Viewer:
 {error}</source>
         <translation>Impossibile aprire il Visore voli:
 {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="769"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="795"/>
         <source>Failed to open Help documentation:
 {error}</source>
         <translation>Impossibile aprire la documentazione di aiuto:
 {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="783"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="809"/>
         <source>Failed to open Community Forum:
 {error}</source>
         <translation>Impossibile aprire il Forum della Comunità:
 {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="797"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="823"/>
         <source>Failed to open YouTube Channel:
 {error}</source>
         <translation>Impossibile aprire il Canale YouTube:
 {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="908"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="934"/>
         <source>Loaded: {algorithm}</source>
         <translation>Caricato: {algorithm}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="924"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="950"/>
         <source>Error loading algorithm: {error}</source>
         <translation>Errore nel caricamento dell&apos;algoritmo: {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="928"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="954"/>
         <source>Algorithm Load Error</source>
         <translation>Errore Caricamento Algoritmo</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1419"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1462"/>
         <source>Algorithm switched to {label}</source>
         <translation>Algoritmo cambiato in {label}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1469"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1512"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1589"/>
         <source>No Stream Connected</source>
         <translation>Nessuno Stream Connesso</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1479"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1529"/>
         <source>{state} - {message}</source>
         <translation>{state} - {message}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1480"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1530"/>
         <source>Connected</source>
         <translation>Connesso</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1480"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1530"/>
         <source>Disconnected</source>
         <translation>Disconnesso</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1492"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1542"/>
         <source>✓ Connected: {message}</source>
         <translation>✓ Connesso: {message}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1521"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1571"/>
         <source>✗ Disconnected: {message}</source>
         <translation>✗ Disconnesso: {message}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1713"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1780"/>
         <source>No detections found.</source>
         <translation>Nessun rilevamento trovato.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1717"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1784"/>
         <source>Detection Results ({count} found):</source>
         <translation>Risultati Rilevamento ({count} trovati):</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1729"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1796"/>
         <source>#{index}: Type({cls}) Pos({x},{y}) Size({w}x{h})</source>
         <translation>#{index}: Tipo({cls}) Pos({x},{y}) Dim({w}x{h})</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1739"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1806"/>
         <source>#{index}: Type({cls})</source>
         <translation>#{index}: Tipo({cls})</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1744"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1811"/>
         <source> Conf({confidence:.2f})</source>
         <translation> Conf({confidence:.2f})</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1789"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1856"/>
         <source>Recording started: {path}</source>
         <translation>Registrazione avviata: {path}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1796"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1863"/>
         <source>Recording stopped</source>
         <translation>Registrazione interrotta</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1810"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1877"/>
         <source>Status: Recording to {path}</source>
         <translation>Stato: Registrazione su {path}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1830"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1897"/>
         <source>Duration: {duration:.1f}s | FPS: {fps:.1f} | Frames: {frames} | Queue: {queue}</source>
         <translation>Durata: {duration:.1f}s | FPS: {fps:.1f} | Frame: {frames} | Coda: {queue}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1848"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1915"/>
         <source>✗ Error: {error}</source>
         <translation>✗ Errore: {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1906"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1982"/>
         <source>Live Stream</source>
         <translation>Stream Live</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1908"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1984"/>
         <source>Cannot seek in live stream.
 
 Detection was first seen at frame {frame}.</source>
@@ -13045,6 +13046,14 @@ li.checked::marker { content: &quot;\2612&quot;; }
         <location filename="../app/core/controllers/streaming/StreamingGuide.py" line="136"/>
         <source>Open Stream Viewer</source>
         <translation>Apri Visualizzatore Stream</translation>
+    </message>
+</context>
+<context>
+    <name>StreamingVideoDisplay</name>
+    <message>
+        <location filename="../app/core/views/streaming/components/StreamingVideoDisplay.py" line="66"/>
+        <source>No Stream Connected</source>
+        <translation>Nessuno Stream Connesso</translation>
     </message>
 </context>
 <context>
@@ -14912,14 +14921,6 @@ Si torna all&apos;interpolazione Lanczos.</translation>
         <location filename="../app/core/views/images/viewer/dialogs/UpscaleDialog.py" line="759"/>
         <source>Downloading {model_name} model...</source>
         <translation>Download del modello {model_name}...</translation>
-    </message>
-</context>
-<context>
-    <name>VideoDisplayWidget</name>
-    <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="761"/>
-        <source>No Stream Connected</source>
-        <translation>Nessuno Stream Connesso</translation>
     </message>
 </context>
 <context>

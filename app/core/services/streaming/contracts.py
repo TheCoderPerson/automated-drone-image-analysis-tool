@@ -12,6 +12,29 @@ BBox = Tuple[int, int, int, int]
 
 
 @dataclass(frozen=True)
+class FocusTarget:
+    """Immutable request to focus the streaming video display on a point.
+
+    Both fields are expressed in SOURCE-frame pixel coordinates (top-left
+    origin):
+
+    * ``center_xy``: the ``(x, y)`` point to center the zoom on.
+    * ``reference_size``: the ``(width, height)`` of the source frame that
+      ``center_xy`` was measured against. The display maps the point into its
+      current full-resolution scene independently on each axis, so a focus
+      target stays correct even if the displayed resolution differs from the
+      resolution the point was captured at.
+
+    A focus target is intentionally resolution-agnostic and never carries a
+    processing resolution: streaming coordinates are already in source space
+    (see :class:`StreamDetection`).
+    """
+
+    center_xy: Tuple[int, int]
+    reference_size: Tuple[int, int]
+
+
+@dataclass(frozen=True)
 class StreamAlgorithmCapabilities:
     """Declare which shared streaming controls an algorithm supports."""
 
@@ -26,7 +49,17 @@ class StreamAlgorithmCapabilities:
 
 @dataclass
 class StreamDetection:
-    """Normalized detection payload used by all streaming algorithms."""
+    """Normalized detection payload used by all streaming algorithms.
+
+    Coordinate contract: ``bbox`` and ``centroid`` are expressed in
+    SOURCE-frame pixel coordinates (the resolution of the frame handed to the
+    algorithm), with a top-left origin. Services that run detection at a
+    reduced processing resolution MUST scale coordinates back to source space
+    before returning them, so consumers never need ``processing_resolution`` to
+    interpret a detection. Anything that focuses the display on a detection
+    should therefore use ``centroid``/``bbox`` directly (see
+    :class:`FocusTarget`).
+    """
 
     bbox: BBox
     confidence: float

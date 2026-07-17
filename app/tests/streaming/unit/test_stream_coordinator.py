@@ -3,7 +3,7 @@
 import pytest
 import numpy as np
 from unittest.mock import Mock, MagicMock, patch
-from PySide6.QtCore import QObject
+from PySide6.QtCore import QObject, Signal
 
 from core.controllers.streaming.components.StreamCoordinator import StreamCoordinator
 from core.services.streaming.RTMPStreamService import StreamType
@@ -147,6 +147,40 @@ class TestStreamCoordinator:
         coordinator._on_frame_ready(sample_frame, 1.25, 12)
 
         coordinator.record_frame.assert_not_called()
+
+    def test_frame_signal_after_disconnect_is_not_forwarded(self, mock_logger, sample_frame):
+        """A retained manager cannot forward frames while marked disconnected."""
+        class FrameEmitter(QObject):
+            frameReady = Signal(np.ndarray, float, int)
+
+        coordinator = StreamCoordinator(mock_logger)
+        emitter = FrameEmitter()
+        coordinator.stream_manager = emitter
+        coordinator.is_connected = False
+        received = Mock()
+        coordinator.frameReceived.connect(received)
+        emitter.frameReady.connect(coordinator._on_frame_ready)
+
+        emitter.frameReady.emit(sample_frame, 1.25, 12)
+
+        received.assert_not_called()
+
+    def test_replaced_manager_frame_is_not_forwarded(self, mock_logger, sample_frame):
+        """A stale manager cannot forward a queued frame into a new session."""
+        class FrameEmitter(QObject):
+            frameReady = Signal(np.ndarray, float, int)
+
+        coordinator = StreamCoordinator(mock_logger)
+        stale_emitter = FrameEmitter()
+        coordinator.stream_manager = FrameEmitter()
+        coordinator.is_connected = True
+        received = Mock()
+        coordinator.frameReceived.connect(received)
+        stale_emitter.frameReady.connect(coordinator._on_frame_ready)
+
+        stale_emitter.frameReady.emit(sample_frame, 1.25, 12)
+
+        received.assert_not_called()
 
     def test_update_fps_limit_returns_false_without_stream_manager(self, mock_logger):
         """FPS update should fail safely when no stream is active."""

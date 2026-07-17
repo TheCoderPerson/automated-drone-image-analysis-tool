@@ -9,6 +9,7 @@ from PySide6.QtTest import QTest
 
 from core.controllers.streaming.StreamViewerWindow import StreamViewerWindow
 from core.services.streaming.RTMPStreamService import StreamType
+from core.services.streaming.contracts import FocusTarget
 
 
 class TestStreamViewerWindow:
@@ -326,21 +327,637 @@ class TestStreamViewerWindow:
             window.close()
             QApplication.processEvents()
 
-    def test_seek_to_track_frame_uses_public_stream_manager_api(self, qapp):
-        """Gallery seek should map frame index to time via public playback methods."""
+    def test_seek_to_track_frame_recovers_thumbnail_frame_off_by_one(self, qapp):
+        """Gallery seek targets first_frame_index-1 so the thumbnail's own frame is re-decoded.
+
+        first_frame_index is the position the service reports AFTER decoding the
+        thumbnail frame (one past it), so seeking there would land one frame late.
+        """
         window = StreamViewerWindow(algorithm_name='', theme='dark')
         try:
             stream_mgr = Mock()
-            stream_mgr.get_playback_info = Mock(return_value={'fps': 25.0})
-            stream_mgr.seek_to_time = Mock(return_value=True)
+            stream_mgr.seek_to_frame = Mock(return_value=49)
+            stream_mgr.last_seek_id = 7
             window.stream_coordinator.stream_manager = stream_mgr
 
             track = Mock()
-            track.first_frame_index = 50
+            track.first_frame_index = 50  # reported post-decode position of frame 49
+            track.centroid = (100, 80)
+            track.frame_resolution = (640, 480)
 
-            window._seek_to_track_frame(track)
+            generation = window._begin_focus_generation()
+            window._seek_to_track_frame(track, generation)
 
-            stream_mgr.seek_to_time.assert_called_once_with(2.0)
+            # Seek to first_frame_index - 1 (no FPS recomputation); focus armed
+            # against the seek request id (not an ambiguous position).
+            stream_mgr.seek_to_frame.assert_called_once_with(49)
+            assert window._pending_focus_seek_id == 7
+            assert window._pending_focus_positions == {49, 50}
+            assert window._pending_focus_target.center_xy == (100, 80)
+            assert window._pending_focus_target.reference_size == (640, 480)
+        finally:
+            window.close()
+            QApplication.processEvents()
+
+    def test_seek_to_frame_zero_is_a_successful_seek(self, qapp):
+        """A resolved frame of 0 must arm focus (0 is not treated as failure)."""
+        window = StreamViewerWindow(algorithm_name='', theme='dark')
+        try:
+            stream_mgr = Mock()
+            stream_mgr.seek_to_frame = Mock(return_value=0)
+            stream_mgr.last_seek_id = 3
+            window.stream_coordinator.stream_manager = stream_mgr
+
+            track = Mock()
+            track.first_frame_index = 0
+            track.centroid = (5, 5)
+            track.frame_resolution = (100, 100)
+
+            generation = window._begin_focus_generation()
+            window._seek_to_track_frame(track, generation)
+
+            assert window._pending_focus_seek_id == 3
+            assert window._pending_focus_positions == {0, 1}
+            assert window._pending_focus_target is not None
+        finally:
+            window.close()
+            QApplication.processEvents()
+
+    def test_failed_seek_clears_pending_focus(self, qapp):
+        """A failed seek (None) must clear any pending focus rather than strand it."""
+        window = StreamViewerWindow(algorithm_name='', theme='dark')
+        try:
+            stream_mgr = Mock()
+            stream_mgr.seek_to_frame = Mock(return_value=None)
+            window.stream_coordinator.stream_manager = stream_mgr
+
+            track = Mock()
+            track.first_frame_index = 10
+            track.centroid = (1, 1)
+            track.frame_resolution = (2, 2)
+
+            generation = window._begin_focus_generation()
+            window._pending_focus_target = FocusTarget((9, 9), (9, 9))
+            window._seek_to_track_frame(track, generation)
+
+            assert window._pending_focus_target is None
+        finally:
+            window.close()
+            QApplication.processEvents()
+
+    def test_failed_seek_clears_highlight(self, qapp):
+        """A failed seek must also clear the highlight (no circle for a frame never reached)."""
+        window = StreamViewerWindow(algorithm_name='', theme='dark')
+        try:
+            stream_mgr = Mock()
+            stream_mgr.seek_to_frame = Mock(return_value=None)
+            window.stream_coordinator.stream_manager = stream_mgr
+
+            track = Mock()
+            track.first_frame_index = 10
+            track.centroid = (1, 1)
+            track.frame_resolution = (2, 2)
+            window._highlight_track = track
+
+            generation = window._begin_focus_generation()
+            window._seek_to_track_frame(track, generation)
+
+            assert window._highlight_track is None
+            assert window._pending_focus_target is None
+        finally:
+            window.close()
+            QApplication.processEvents()
+
+    def test_focus_timeout_clears_highlight(self, qapp):
+        """A focus timeout clears both the pending focus and the highlight."""
+        window = StreamViewerWindow(algorithm_name='', theme='dark')
+        try:
+            window.logger = Mock()
+            window._highlight_track = Mock()
+            window._pending_focus_target = FocusTarget((1, 1), (2, 2))
+            window._pending_focus_seek_id = 5
+            window._pending_focus_generation = window._focus_generation
+
+            window._on_focus_timeout(window._focus_generation)
+
+            assert window._pending_focus_target is None
+            assert window._highlight_track is None
+        finally:
+            window.close()
+            QApplication.processEvents()
+
+    def test_pause_preserves_thumbnail_focus_targets(self, qapp):
+        """Pausing must NOT clear thumbnail click payloads (thumbnails stay clickable)."""
+        window = StreamViewerWindow(algorithm_name='', theme='dark')
+        try:
+            mgr = Mock()
+            mgr.is_playing = Mock(return_value=True)
+            mgr.play_pause = Mock()
+            window.stream_coordinator.stream_manager = mgr
+            window.stream_coordinator.current_stream_type = StreamType.FILE
+
+            # A visible thumbnail has a stored click payload.
+            window.thumbnail_widget._focus_targets = {0: FocusTarget((320, 240), (640, 480))}
+
+            window.on_play_pause_toggled()  # user pauses
+
+            targets = window.thumbnail_widget._focus_targets
+            assert 0 in targets and targets[0].center_xy == (320, 240)
+        finally:
+            window.close()
+            QApplication.processEvents()
+
+    def test_thumbnail_click_after_pause_still_focuses(self, qapp):
+        """A thumbnail click after pausing still reaches focus_on (payload survived pause)."""
+        window = StreamViewerWindow(algorithm_name='', theme='dark')
+        try:
+            window.video_display.focus_on = Mock()
+
+            mgr = Mock()
+            mgr.is_playing = Mock(return_value=True)
+            mgr.play_pause = Mock()
+            window.stream_coordinator.stream_manager = mgr
+            window.stream_coordinator.current_stream_type = StreamType.FILE
+
+            tw = window.thumbnail_widget
+            tw.resize(600, 150)
+            tw._adjust_thumbnail_count()
+            target = FocusTarget((320, 240), (640, 480))
+            tw._focus_targets = {0: target}
+
+            window.on_play_pause_toggled()  # pause
+
+            # Drive the slot's click signal (as ClickableThumbnailLabel would).
+            tw.thumbnail_labels[0].clicked.emit(0)
+
+            window.video_display.focus_on.assert_called_once_with(target)
+        finally:
+            window.close()
+            QApplication.processEvents()
+
+    def test_connection_loss_clears_display(self, qapp):
+        """An unexpected disconnect clears the video display (no retained frame/zoom)."""
+        window = StreamViewerWindow(algorithm_name='', theme='dark')
+        try:
+            window.video_display.clear_display = Mock()
+
+            window.on_connection_changed(False, "connection lost")
+
+            window.video_display.clear_display.assert_called_once()
+        finally:
+            window.close()
+            QApplication.processEvents()
+
+    def test_same_resolution_replacement_rebuilds_after_disconnect(self, qapp):
+        """After a disconnect clears the image, a same-size replacement rebuilds (no stale zoom)."""
+        window = StreamViewerWindow(algorithm_name='', theme='dark')
+        try:
+            vd = window.video_display
+            frame = np.random.randint(0, 255, (480, 640, 3), dtype=np.uint8)
+            vd.update_frame(frame)
+            vd.focus_on(FocusTarget((320, 240), (640, 480)))
+            assert vd.zoomStack  # zoomed on the first source
+
+            # Connection loss clears the display (image + zoom + source size).
+            window.on_connection_changed(False, "lost")
+            assert vd._image is None and vd._source_size is None and not vd.zoomStack
+
+            # A same-resolution replacement frame is now a fresh first frame,
+            # not the direct-pixmap fast path, so it does not inherit old zoom.
+            vd.update_frame(np.random.randint(0, 255, (480, 640, 3), dtype=np.uint8))
+            assert vd._image is not None
+            assert not vd.zoomStack
+        finally:
+            window.close()
+            QApplication.processEvents()
+
+    def test_rapid_gallery_selection_rejects_stale_seek(self, qapp):
+        """A superseded (older-generation) delayed seek must not run or arm focus."""
+        window = StreamViewerWindow(algorithm_name='', theme='dark')
+        try:
+            stream_mgr = Mock()
+            stream_mgr.seek_to_frame = Mock(return_value=10)
+            window.stream_coordinator.stream_manager = stream_mgr
+
+            track = Mock()
+            track.first_frame_index = 10
+            track.centroid = (1, 1)
+            track.frame_resolution = (2, 2)
+
+            gen1 = window._begin_focus_generation()
+            window._begin_focus_generation()  # a newer selection supersedes gen1
+
+            window._seek_to_track_frame(track, gen1)  # stale callback
+
+            stream_mgr.seek_to_frame.assert_not_called()
+            assert window._pending_focus_target is None
+        finally:
+            window.close()
+            QApplication.processEvents()
+
+    def test_seek_completed_applies_focus_once_by_request_id(self, qapp):
+        """seekCompleted(success) for the pending request applies focus exactly once."""
+        window = StreamViewerWindow(algorithm_name='', theme='dark')
+        try:
+            window.video_display.focus_on = Mock()
+            target = FocusTarget((10, 10), (640, 480))
+            window._pending_focus_target = target
+            window._pending_focus_seek_id = 7
+            window._pending_focus_positions = {50, 51}
+            window._pending_focus_generation = window._focus_generation
+
+            window._on_seek_completed(7, 51, True)
+
+            window.video_display.focus_on.assert_called_once_with(target)
+            assert window._pending_focus_target is None  # consumed
+
+            window.video_display.focus_on.reset_mock()
+            window._on_seek_completed(7, 51, True)
+            window.video_display.focus_on.assert_not_called()
+        finally:
+            window.close()
+            QApplication.processEvents()
+
+    def test_seek_completed_rejects_unexpected_frame_position(self, qapp):
+        """A matching request id must not focus an unrelated decoded frame."""
+        window = StreamViewerWindow(algorithm_name='', theme='dark')
+        try:
+            window.logger = Mock()
+            window.video_display.focus_on = Mock()
+            window._pending_focus_target = FocusTarget((10, 10), (640, 480))
+            window._pending_focus_seek_id = 7
+            window._pending_focus_positions = {50, 51}
+            window._highlight_track = Mock()
+
+            window._on_seek_completed(7, 90, True)
+
+            window.video_display.focus_on.assert_not_called()
+            assert window._pending_focus_target is None
+            assert window._highlight_track is None
+            window.logger.warning.assert_called_once()
+        finally:
+            window.close()
+            QApplication.processEvents()
+
+    def test_seek_completed_ignores_other_request_ids(self, qapp):
+        """A completion for a different (older) request must not consume a newer focus.
+
+        This is the adjacent-frame race: correlation is by request id, so an
+        older seek's frame cannot satisfy a newer selection's pending focus.
+        """
+        window = StreamViewerWindow(algorithm_name='', theme='dark')
+        try:
+            window.video_display.focus_on = Mock()
+            window._pending_focus_target = FocusTarget((10, 10), (640, 480))
+            window._pending_focus_seek_id = 8  # newer selection
+
+            window._on_seek_completed(7, 51, True)  # older seek's completion
+
+            window.video_display.focus_on.assert_not_called()
+            assert window._pending_focus_target is not None  # still armed for id 8
+        finally:
+            window.close()
+            QApplication.processEvents()
+
+    def test_seek_completed_failure_abandons_focus_and_highlight(self, qapp):
+        """A failed seek completion clears the pending focus AND the highlight (no timeout wait)."""
+        window = StreamViewerWindow(algorithm_name='', theme='dark')
+        try:
+            window.logger = Mock()
+            window.video_display.focus_on = Mock()
+            window._pending_focus_target = FocusTarget((10, 10), (640, 480))
+            window._pending_focus_seek_id = 4
+            window._highlight_track = Mock()
+
+            window._on_seek_completed(4, -1, False)
+
+            window.video_display.focus_on.assert_not_called()
+            assert window._pending_focus_target is None
+            assert window._highlight_track is None
+        finally:
+            window.close()
+            QApplication.processEvents()
+
+    def test_late_worker_frame_while_paused_is_not_presented(self, qapp, sample_frame):
+        """While paused, a late worker frame is not displayed; the raw sought frame is."""
+        window = StreamViewerWindow(algorithm_name='', theme='dark')
+        try:
+            window.stream_coordinator.current_stream_type = StreamType.FILE
+            mgr = Mock()
+            mgr.is_playing = Mock(return_value=False)  # paused
+            window.stream_coordinator.stream_manager = mgr
+            window.video_display.update_frame = Mock()
+
+            # Late worker result (pre-seek frame) while paused: not presented.
+            assert window._present_frame(sample_frame, 50, 'worker') is False
+            window.video_display.update_frame.assert_not_called()
+
+            # The sought frame travels the raw path and IS presented.
+            assert window._present_frame(sample_frame, 51, 'raw') is True
+            window.video_display.update_frame.assert_called_once()
+        finally:
+            window.close()
+            QApplication.processEvents()
+
+    def test_thumbnail_focus_cancels_pending_gallery_and_does_not_seek(self, qapp):
+        """A thumbnail click focuses immediately, cancels a pending gallery focus, and never seeks."""
+        window = StreamViewerWindow(algorithm_name='', theme='dark')
+        try:
+            window.video_display.focus_on = Mock()
+            stream_mgr = Mock()
+            window.stream_coordinator.stream_manager = stream_mgr
+
+            window._pending_focus_target = FocusTarget((1, 1), (2, 2))
+            window._pending_focus_seek_id = 5
+
+            target = FocusTarget((100, 50), (640, 480))
+            window._on_thumbnail_focus_requested(target)
+
+            assert window._pending_focus_target is None  # gallery pending cancelled
+            window.video_display.focus_on.assert_called_once_with(target)
+            stream_mgr.seek_to_frame.assert_not_called()
+            stream_mgr.seek_to_time.assert_not_called()
+        finally:
+            window.close()
+            QApplication.processEvents()
+
+    def test_live_gallery_click_does_not_seek_or_zoom(self, qapp):
+        """RTMP/HDMI gallery history is non-seekable: no seek, no zoom, no armed focus."""
+        window = StreamViewerWindow(algorithm_name='', theme='dark')
+        try:
+            window.stream_coordinator.current_stream_type = StreamType.RTMP
+            stream_mgr = Mock()
+            window.stream_coordinator.stream_manager = stream_mgr
+            window.video_display.focus_on = Mock()
+
+            track = Mock()
+            track.first_frame_index = 5
+
+            with patch('core.controllers.streaming.StreamViewerWindow.QMessageBox'):
+                window._on_gallery_track_clicked(track)
+
+            stream_mgr.seek_to_frame.assert_not_called()
+            window.video_display.focus_on.assert_not_called()
+            assert window._pending_focus_target is None
+        finally:
+            window.close()
+            QApplication.processEvents()
+
+    def test_disconnect_resets_focus_and_clears_display(self, qapp):
+        """Disconnect clears the display and drops all pending/highlight focus state."""
+        window = StreamViewerWindow(algorithm_name='', theme='dark')
+        try:
+            window.video_display.clear_display = Mock()
+            window._pending_focus_target = FocusTarget((1, 1), (2, 2))
+            window._highlight_track = Mock()
+
+            window.on_disconnect_requested()
+
+            window.video_display.clear_display.assert_called_once()
+            assert window._pending_focus_target is None
+            assert window._highlight_track is None
+        finally:
+            window.close()
+            QApplication.processEvents()
+
+    def test_focus_timeout_logs_and_clears(self, qapp):
+        """A focus timeout (no seekCompleted arrived) logs and clears the pending focus."""
+        window = StreamViewerWindow(algorithm_name='', theme='dark')
+        try:
+            window.logger = Mock()
+            window._pending_focus_target = FocusTarget((1, 1), (2, 2))
+            window._pending_focus_seek_id = 9
+            window._pending_focus_generation = window._focus_generation
+
+            window._on_focus_timeout(window._focus_generation)
+
+            assert window._pending_focus_target is None
+            window.logger.warning.assert_called_once()
+        finally:
+            window.close()
+            QApplication.processEvents()
+
+    def test_focus_timeout_stale_generation_is_noop(self, qapp):
+        """A timeout from a superseded generation must not clear a newer pending focus."""
+        window = StreamViewerWindow(algorithm_name='', theme='dark')
+        try:
+            window._pending_focus_target = FocusTarget((1, 1), (2, 2))
+            window._pending_focus_generation = 5
+
+            window._on_focus_timeout(4)  # stale
+
+            assert window._pending_focus_target is not None
+        finally:
+            window.close()
+            QApplication.processEvents()
+
+    def test_late_worker_frame_while_paused_skips_thumbnails_and_recording(self, qapp, sample_frame):
+        """A frame rejected while paused must not update thumbnails or recording."""
+        window = StreamViewerWindow(algorithm_name='', theme='dark')
+        try:
+            window.algorithm_renders_frame = False
+            window.stream_coordinator.current_stream_type = StreamType.FILE
+            mgr = Mock()
+            mgr.is_playing = Mock(return_value=False)  # paused
+            window.stream_coordinator.stream_manager = mgr
+            window.stream_coordinator.is_recording = True
+            window.stream_coordinator.record_frame = Mock()
+            window.video_display.update_frame = Mock()
+            window.thumbnail_widget.update_thumbnails = Mock()
+
+            window._on_worker_frame_processed(sample_frame.copy(), [], 1.0, 2.0, False, 7)
+
+            # Rejected by _present_frame while paused -> no coupled side effects.
+            window.video_display.update_frame.assert_not_called()
+            window.thumbnail_widget.update_thumbnails.assert_not_called()
+            window.stream_coordinator.record_frame.assert_not_called()
+        finally:
+            window.close()
+            QApplication.processEvents()
+
+    def test_stale_session_worker_result_is_rejected(self, qapp, sample_frame):
+        """A worker result from a superseded session must not repaint/record/thumbnail."""
+        window = StreamViewerWindow(algorithm_name='', theme='dark')
+        try:
+            window.algorithm_renders_frame = False
+            window.stream_coordinator.current_stream_type = StreamType.RTMP  # not paused
+            window.stream_coordinator.is_recording = True
+            window.stream_coordinator.record_frame = Mock()
+            window.video_display.update_frame = Mock()
+            window.thumbnail_widget.update_thumbnails = Mock()
+
+            # A disconnect/reconnect has bumped the current session; the result
+            # carries its (older) dispatch session, echoed through the signal.
+            window._frame_session = 2
+            stale_session = 1
+
+            window._on_worker_frame_processed(sample_frame.copy(), [], 1.0, 2.0, False, 7, stale_session)
+
+            window.video_display.update_frame.assert_not_called()
+            window.thumbnail_widget.update_thumbnails.assert_not_called()
+            window.stream_coordinator.record_frame.assert_not_called()
+        finally:
+            window.close()
+            QApplication.processEvents()
+
+    def test_fast_reconnect_preserves_single_worker_job_in_flight(self, qapp, sample_frame):
+        """An old-session job must keep the worker slot until its callback arrives."""
+        window = StreamViewerWindow(algorithm_name='', theme='dark')
+        try:
+            mock_worker = Mock()
+            mock_worker.processFrameRequested = Mock()
+            mock_worker.processFrameRequested.emit = Mock()
+            mock_thread = Mock()
+            mock_thread.isRunning = Mock(return_value=True)
+            window._processing_worker = mock_worker
+            window._processing_thread = mock_thread
+
+            old_session = window._frame_session
+            window._worker_frame_in_flight = True
+            window.on_connection_changed(False, "lost")
+            window.on_connection_changed(True, "reconnected")
+
+            assert window._worker_frame_in_flight is True
+
+            # The first new-session frame waits behind the old job.
+            assert window._queue_worker_frame(sample_frame.copy(), 2.0, 20) is True
+            assert window._pending_worker_frame is not None
+            mock_worker.processFrameRequested.emit.assert_not_called()
+
+            # The stale callback releases exactly one slot and dispatches the
+            # latest new-session frame with the current session token.
+            window._on_worker_frame_processed(
+                sample_frame.copy(), [], 1.0, 2.0, False, 10, old_session
+            )
+            mock_worker.processFrameRequested.emit.assert_called_once()
+            assert mock_worker.processFrameRequested.emit.call_args.args[-1] == window._frame_session
+            assert window._worker_frame_in_flight is True
+
+            # A subsequent frame remains pending; it cannot overlap that job.
+            assert window._queue_worker_frame(sample_frame.copy(), 3.0, 30) is True
+            assert window._pending_worker_frame[1] == 3.0
+            mock_worker.processFrameRequested.emit.assert_called_once()
+        finally:
+            window._processing_worker = None
+            window._processing_thread = None
+            window.close()
+            QApplication.processEvents()
+
+    def test_raw_frame_after_connection_loss_does_not_repaint(self, qapp, sample_frame):
+        """A queued raw frame cannot overwrite the disconnect placeholder."""
+        window = StreamViewerWindow(algorithm_name='', theme='dark')
+        try:
+            window.stream_coordinator.stream_manager = Mock()
+            window.stream_coordinator.is_connected = False
+            window.video_display.update_frame = Mock()
+
+            window.on_frame_received(sample_frame, 1.0, 10)
+
+            window.video_display.update_frame.assert_not_called()
+            assert window._current_frame_timestamp == 0.0
+        finally:
+            window.close()
+            QApplication.processEvents()
+
+    def test_custom_frame_after_connection_loss_does_not_repaint(self, qapp, sample_frame):
+        """A queued custom-render frame cannot overwrite the disconnect placeholder."""
+        window = StreamViewerWindow(algorithm_name='', theme='dark')
+        try:
+            window.algorithm_renders_frame = True
+            window.stream_coordinator.stream_manager = Mock()
+            window.stream_coordinator.is_connected = False
+            window.video_display.update_frame = Mock()
+
+            window.on_algorithm_frame_processed(sample_frame)
+
+            window.video_display.update_frame.assert_not_called()
+        finally:
+            window.close()
+            QApplication.processEvents()
+
+    def test_connection_change_bumps_frame_session(self, qapp):
+        """Every connection change starts a new frame session."""
+        window = StreamViewerWindow(algorithm_name='', theme='dark')
+        try:
+            before = window._frame_session
+            window.on_connection_changed(False, "lost")
+            after_disconnect = window._frame_session
+            window.on_connection_changed(True, "connected")
+            after_connect = window._frame_session
+
+            assert after_disconnect > before
+            assert after_connect > after_disconnect
+        finally:
+            window.close()
+            QApplication.processEvents()
+
+    def test_resolution_changing_sought_frame_keeps_focus(self, qapp):
+        """A sought frame that changes resolution must retain its pending focus.
+
+        The display resets its own zoom on a resolution change, but that must
+        not clear the window's pending focus; it is applied afterward via
+        seekCompleted on the (rebuilt) scene.
+        """
+        window = StreamViewerWindow(algorithm_name='', theme='dark')
+        try:
+            vd = window.video_display
+            vd.update_frame(np.random.randint(0, 255, (480, 640, 3), dtype=np.uint8))
+
+            # Gallery seek in flight, armed against request id 11.
+            window._pending_focus_target = FocusTarget((160, 120), (320, 240))
+            window._pending_focus_seek_id = 11
+            window._pending_focus_positions = {11, 12}
+
+            # The sought frame arrives at a NEW resolution via the raw path.
+            window._present_frame(np.random.randint(0, 255, (240, 320, 3), dtype=np.uint8), 12, 'raw')
+
+            # Focus survived the resolution reset...
+            assert window._pending_focus_target is not None
+
+            # ...and seekCompleted applies it on the rebuilt scene.
+            vd.focus_on = Mock()
+            window._on_seek_completed(11, 12, True)
+            vd.focus_on.assert_called_once()
+        finally:
+            window.close()
+            QApplication.processEvents()
+
+    def test_disconnect_renders_translated_placeholder(self, qapp):
+        """Disconnect shows the translated 'No Stream Connected' placeholder on the real display."""
+        window = StreamViewerWindow(algorithm_name='', theme='dark')
+        try:
+            window.video_display.update_frame(np.random.randint(0, 255, (480, 640, 3), dtype=np.uint8))
+            assert not window.video_display.has_placeholder()
+
+            window.on_disconnect_requested()
+
+            # The window passes self.tr("No Stream Connected") to clear_display;
+            # with no translator installed in tests, tr() returns the source, so
+            # the placeholder must equal that string. (Avoid calling .tr() here
+            # so lupdate does not extract a spurious context from the test.)
+            assert window.video_display.has_placeholder()
+            assert window.video_display.placeholder_message == "No Stream Connected"
+        finally:
+            window.close()
+            QApplication.processEvents()
+
+    def test_worker_frame_presents_and_records_when_playing(self, qapp, sample_frame):
+        """_present_frame refactor preserves recording + thumbnail side effects while playing."""
+        window = StreamViewerWindow(algorithm_name='', theme='dark')
+        try:
+            window.algorithm_renders_frame = False
+            window.stream_coordinator.current_stream_type = StreamType.RTMP  # live => not paused
+            window.stream_coordinator.is_recording = True
+            window.stream_coordinator.record_frame = Mock()
+            window.video_display.update_frame = Mock()
+            window.thumbnail_widget.update_thumbnails = Mock()
+            window._original_frames_queue[1.0] = sample_frame.copy()
+
+            window._on_worker_frame_processed(sample_frame.copy(), [], 1.0, 2.0, False, 7)
+
+            window.video_display.update_frame.assert_called_once()
+            window.stream_coordinator.record_frame.assert_called_once()
+            window.thumbnail_widget.update_thumbnails.assert_called_once()
         finally:
             window.close()
             QApplication.processEvents()

@@ -11,6 +11,7 @@ from .CleanupTab import CleanupTab
 from .ColorWheelWidget import ColorWheelWidget
 from .FrameTab import FrameTab
 from .TrackGalleryWidget import TrackGalleryWidget
+from .StreamingVideoDisplay import StreamingVideoDisplay
 
 __all__ = [
     'PlaybackControlBar',
@@ -20,4 +21,5 @@ __all__ = [
     'ColorWheelWidget',
     'FrameTab',
     'TrackGalleryWidget',
+    'StreamingVideoDisplay',
 ]

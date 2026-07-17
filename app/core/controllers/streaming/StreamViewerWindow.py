@@ -39,13 +39,14 @@ from core.views.streaming.StreamViewerWindow_ui import Ui_StreamViewerWindow
 from core.services.LoggerService import LoggerService
 from core.controllers.streaming.components import StreamCoordinator, DetectionRenderer, StreamStatistics
 from core.controllers.streaming.components.FrameProcessingWorker import FrameProcessingWorker
-from core.controllers.streaming.shared_widgets import VideoDisplayWidget, DetectionThumbnailWidget, StreamControlWidget
-from core.views.streaming.components import PlaybackControlBar
+from core.controllers.streaming.shared_widgets import DetectionThumbnailWidget, StreamControlWidget
+from core.views.streaming.components import PlaybackControlBar, StreamingVideoDisplay
 from core.views.streaming.components.TrackGalleryWidget import TrackGalleryWidget
 from core.controllers.streaming.base import StreamAlgorithmController
 from core.services.streaming.StreamAlgorithmService import StreamAlgorithmService
 from core.services.streaming.StreamAnalyzeService import StreamAnalyzeService
 from core.services.streaming.RTMPStreamService import StreamType
+from core.services.streaming.contracts import FocusTarget
 from helpers.TranslationMixin import TranslationMixin
 
 
@@ -64,6 +65,9 @@ class StreamViewerWindow(TranslationMixin, QMainWindow):
     """
     _lingering_processing_threads: List[QThread] = []
     _MAX_ORIGINAL_FRAME_CACHE = 12
+    # Safety net so a backend that never reports the sought frame position
+    # cannot strand an armed gallery focus indefinitely.
+    _FOCUS_TIMEOUT_MS = 1500
 
     def __init__(self, algorithm_name: Optional[str] = None, theme: str = 'dark'):
         """
@@ -134,6 +138,16 @@ class StreamViewerWindow(TranslationMixin, QMainWindow):
         # Store track to highlight when seeking from gallery (cleared on play/next action)
         self._highlight_track = None
 
+        # One-shot gallery zoom focus, applied only once the service reports the
+        # sought frame via seekCompleted, correlated by both seek REQUEST ID and
+        # the service's authoritative resolved frame window. Generation-tagged
+        # so superseded selections and stale delayed callbacks are ignored.
+        self._pending_focus_target: Optional[FocusTarget] = None
+        self._pending_focus_seek_id: int = 0
+        self._pending_focus_positions = set()
+        self._focus_generation: int = 0
+        self._pending_focus_generation: Optional[int] = None
+
         # Store algorithm configs for session persistence (forgotten on close)
         self._algorithm_configs: Dict[str, Dict[str, Any]] = {}
 
@@ -143,6 +157,12 @@ class StreamViewerWindow(TranslationMixin, QMainWindow):
         self._is_stopping_worker = False  # Flag to prevent new frames from being queued during cleanup
         self._worker_frame_in_flight = False
         self._pending_worker_frame: Optional[Tuple[np.ndarray, float, int]] = None
+
+        # Stream-session generation: bumped on every connection change so a late
+        # async worker result from a superseded session (disconnect/replacement
+        # source) can be rejected instead of repainting a stale frame. The
+        # session travels with each worker job (echoed in frameProcessed).
+        self._frame_session: int = 0
 
         # Setup custom widgets
         self.setup_custom_widgets()
@@ -173,8 +193,13 @@ class StreamViewerWindow(TranslationMixin, QMainWindow):
         live_layout.setContentsMargins(0, 0, 0, 0)
         live_layout.setSpacing(0)
 
-        # Video display
-        self.video_display = VideoDisplayWidget()
+        # Video display (zoomable graphics view; owning window enables key/nav forwarding)
+        self.video_display = StreamingVideoDisplay(self)
+        self.video_display.playPauseRequested.connect(self.on_play_pause_toggled)
+        # NB: the display resets its own zoom on a source-resolution change; the
+        # window must NOT clear a pending gallery focus there, or a sought frame
+        # that also changes resolution would lose its zoom. Focus is applied via
+        # seekCompleted after the (reset) frame is shown.
         live_layout.addWidget(self.video_display)
 
         # Playback controls
@@ -183,6 +208,7 @@ class StreamViewerWindow(TranslationMixin, QMainWindow):
 
         # Thumbnail widget
         self.thumbnail_widget = DetectionThumbnailWidget()
+        self.thumbnail_widget.thumbnail_focus_requested.connect(self._on_thumbnail_focus_requested)
         live_layout.addWidget(self.thumbnail_widget)
 
         # Add Live View tab
@@ -464,6 +490,7 @@ class StreamViewerWindow(TranslationMixin, QMainWindow):
         self.stream_coordinator.recordingStatsUpdated.connect(self.on_recording_stats_updated)
         self.stream_coordinator.errorOccurred.connect(self.on_error)
         self.stream_coordinator.streamInfoUpdated.connect(self.on_stream_info_updated)
+        self.stream_coordinator.seekCompleted.connect(self._on_seek_completed)
 
         # Stream controls signals
         self.stream_controls.connectRequested.connect(self.on_connect_requested)
@@ -1155,7 +1182,7 @@ class StreamViewerWindow(TranslationMixin, QMainWindow):
             return True
 
         try:
-            self._processing_worker.processFrameRequested.emit(frame, timestamp, video_frame_pos)
+            self._processing_worker.processFrameRequested.emit(frame, timestamp, video_frame_pos, self._frame_session)
             self._worker_frame_in_flight = True
             return True
         except RuntimeError:
@@ -1178,7 +1205,7 @@ class StreamViewerWindow(TranslationMixin, QMainWindow):
         frame, timestamp, video_frame_pos = self._pending_worker_frame
         self._pending_worker_frame = None
         try:
-            self._processing_worker.processFrameRequested.emit(frame, timestamp, video_frame_pos)
+            self._processing_worker.processFrameRequested.emit(frame, timestamp, video_frame_pos, self._frame_session)
             self._worker_frame_in_flight = True
         except RuntimeError:
             self._discard_original_frame(timestamp)
@@ -1249,7 +1276,7 @@ class StreamViewerWindow(TranslationMixin, QMainWindow):
             timestamp=timestamp
         )
 
-    @Slot(np.ndarray, list, float, float, bool, int)
+    @Slot(np.ndarray, list, float, float, bool, int, int)
     def _on_worker_frame_processed(
             self,
             frame: np.ndarray,
@@ -1257,11 +1284,21 @@ class StreamViewerWindow(TranslationMixin, QMainWindow):
             timestamp: float,
             processing_time_ms: float,
             was_skipped: bool = False,
-            video_frame_pos: int = 0):
+            video_frame_pos: int = 0,
+            session: int = 0):
         """Handle frame processed by worker thread."""
         # This runs on main thread (via QueuedConnection)
         self._worker_frame_in_flight = False
         try:
+            # Reject results from a superseded stream session (disconnect /
+            # replacement source) so a late queued callback cannot repaint a
+            # stale frame over the placeholder or into a new source. The session
+            # travels WITH the job (echoed by the worker), so per-job identity
+            # is preserved even when newer jobs are dispatched meanwhile.
+            if session != self._frame_session:
+                self._discard_original_frame(timestamp)
+                return
+
             self.stream_statistics.on_frame_processed(processing_time_ms, len(detections), was_skipped=was_skipped)
             self._latest_detections_for_rendering = detections
 
@@ -1275,14 +1312,21 @@ class StreamViewerWindow(TranslationMixin, QMainWindow):
             if self._highlight_track is not None:
                 rendered_frame = self._draw_gallery_highlight(rendered_frame)
 
-            # Update display with rendered frame
-            self.video_display.update_frame(rendered_frame)
+            # Update display with rendered frame (applies any pending focus).
+            presented = self._present_frame(rendered_frame, video_frame_pos, 'worker')
 
-            self._update_thumbnails(frame, detections, timestamp, video_frame_pos)
+            if presented:
+                # Gate presentation-coupled side effects: a frame rejected while
+                # paused must not update thumbnails/recording (which would leave
+                # thumbnails - and thumbnail zoom targets - representing a frame
+                # the user is not viewing).
+                self._update_thumbnails(frame, detections, timestamp, video_frame_pos)
 
-            # Record exactly what is displayed.
-            if self.stream_coordinator.is_recording:
-                self.stream_coordinator.record_frame(rendered_frame, detections)
+                # Record exactly what is displayed.
+                if self.stream_coordinator.is_recording:
+                    self.stream_coordinator.record_frame(rendered_frame, detections)
+            else:
+                self._discard_original_frame(timestamp)
 
             # Emit detections via controller (for compatibility with existing signal connections)
             if self.algorithm_widget:
@@ -1464,9 +1508,10 @@ class StreamViewerWindow(TranslationMixin, QMainWindow):
         if self.algorithm_widget:
             self.algorithm_widget.cleanup()
 
-        # Reset video display to show "No Stream Connected"
-        self.video_display.clear()
-        self.video_display.setText(self.tr("No Stream Connected"))
+        # Reset video display to show "No Stream Connected" (clears cached
+        # image + zoom) and drop any pending/highlight focus state.
+        self.video_display.clear_display(self.tr("No Stream Connected"))
+        self._reset_focus_state()
 
         # Clear thumbnails
         if hasattr(self, 'thumbnail_widget'):
@@ -1475,6 +1520,12 @@ class StreamViewerWindow(TranslationMixin, QMainWindow):
     @Slot(bool, str)
     def on_connection_changed(self, connected: bool, message: str):
         """Handle connection status change."""
+        # A new/replacement source or a connection loss invalidates any
+        # gallery/thumbnail focus armed against the previous source, and starts
+        # a new frame session so late async results from the old one are dropped.
+        self._frame_session += 1
+        self._reset_focus_state()
+
         # Update bottom status bar with connection state
         status_text = self.tr("{state} - {message}").format(
             state=self.tr("Connected") if connected else self.tr("Disconnected"),
@@ -1531,14 +1582,26 @@ class StreamViewerWindow(TranslationMixin, QMainWindow):
             # Reset statistics
             self.stream_statistics.reset()
 
+            # Reset the video display so an unexpected disconnect (or the
+            # disconnect that precedes a replacement source) does not leave the
+            # last frame + zoom behind. Clearing the cached image also forces a
+            # same-resolution replacement source to rebuild via the full
+            # setImage/reset path instead of inheriting old pan/zoom.
+            self.video_display.clear_display(self.tr("No Stream Connected"))
+
             # Clear gallery and tracks on disconnect
             if hasattr(self, 'gallery_widget'):
                 self.gallery_widget.clear()
             if hasattr(self, 'thumbnail_widget'):
+                self.thumbnail_widget.clear_thumbnails()
                 self.thumbnail_widget.tracker.tracks.clear()
             self._original_frames_queue.clear()
             self._pending_worker_frame = None
-            self._worker_frame_in_flight = False
+            # Do not clear the in-flight flag here. A job from the disconnected
+            # session may still be running; its session-tagged callback will
+            # release this slot and dispatch the latest pending frame from a
+            # subsequently connected source. Clearing it early permits two
+            # worker jobs to overlap after a fast reconnect.
 
             # Clear pending resolution (will be reapplied on next connection if wizard runs again)
             self._pending_processing_resolution = None
@@ -1574,6 +1637,13 @@ class StreamViewerWindow(TranslationMixin, QMainWindow):
     @Slot(np.ndarray, float, int)
     def on_frame_received(self, frame: np.ndarray, timestamp: float, video_frame_pos: int = 0):
         """Handle frame received from stream."""
+        # A queued raw frame can arrive after an unexpected connection loss.
+        # Keep direct no-manager test/preview use intact, but never let a
+        # disconnected managed source repaint the placeholder.
+        if (self.stream_coordinator.stream_manager is not None and
+                not self.stream_coordinator.is_connected):
+            return
+
         # Store timestamp and video frame position for track storage
         self._current_frame_timestamp = timestamp
         self._current_video_frame_pos = video_frame_pos
@@ -1667,8 +1737,8 @@ class StreamViewerWindow(TranslationMixin, QMainWindow):
                         if self._highlight_track is not None:
                             rendered_frame = self._draw_gallery_highlight(rendered_frame)
 
-                        # Update display with rendered frame
-                        self.video_display.update_frame(rendered_frame)
+                        # Update display with rendered frame (applies any pending focus)
+                        self._present_frame(rendered_frame, video_frame_pos, 'main')
                     # else: Algorithm provides custom rendering via on_algorithm_frame_processed
 
                     self._update_thumbnails(frame, detections, timestamp, video_frame_pos)
@@ -1684,10 +1754,12 @@ class StreamViewerWindow(TranslationMixin, QMainWindow):
                     self._discard_original_frame(timestamp)
         else:
             # No algorithm loaded (or stream paused), display raw frame.
+            # This is the path the sought gallery frame travels while paused,
+            # so it is authoritative for applying a pending focus.
             display_frame = frame
             if self._highlight_track is not None:
                 display_frame = self._draw_gallery_highlight(display_frame)
-            self.video_display.update_frame(display_frame)
+            self._present_frame(display_frame, video_frame_pos, 'raw')
             self._discard_original_frame(timestamp)
             if self.stream_coordinator.is_recording:
                 self.stream_coordinator.record_frame(display_frame, [])
@@ -1698,11 +1770,19 @@ class StreamViewerWindow(TranslationMixin, QMainWindow):
         if not self.algorithm_renders_frame:
             return
 
-        self.video_display.update_frame(annotated_frame)
+        # Drop a late custom-render result after either an unexpected
+        # connection loss (manager retained) or an explicit disconnect
+        # (manager removed), so it cannot repaint over the placeholder.
+        if (self.stream_coordinator.stream_manager is None or
+                not self.stream_coordinator.is_connected):
+            return
 
-        if self.stream_coordinator.is_recording:
-            detections = getattr(self, "_latest_detections_for_rendering", [])
-            self.stream_coordinator.record_frame(annotated_frame, detections)
+        # Only record what was actually presented (a frame rejected while paused
+        # must not be recorded as if it were displayed).
+        if self._present_frame(annotated_frame, self._current_video_frame_pos, 'custom'):
+            if self.stream_coordinator.is_recording:
+                detections = getattr(self, "_latest_detections_for_rendering", [])
+                self.stream_coordinator.record_frame(annotated_frame, detections)
 
     @Slot(list)
     def on_detections_ready(self, detections: list):
@@ -1857,8 +1937,9 @@ class StreamViewerWindow(TranslationMixin, QMainWindow):
     @Slot()
     def on_play_pause_toggled(self):
         """Handle play/pause toggle (for file playback)."""
-        # Clear gallery highlight when playing (user action)
-        self._clear_gallery_highlight()
+        # A manual play/pause (button or Space) cancels any pending gallery
+        # focus and clears the highlight so a resume can't snap in a stale zoom.
+        self._reset_focus_state()
 
         # Toggle play/pause on stream manager
         if self.stream_coordinator.stream_manager and hasattr(self.stream_coordinator.stream_manager, 'play_pause'):
@@ -1867,8 +1948,9 @@ class StreamViewerWindow(TranslationMixin, QMainWindow):
     @Slot(float)
     def on_seek_requested(self, time_seconds: float):
         """Handle seek request (for file playback)."""
-        # Clear gallery highlight on manual seek (gallery clicks will re-set it after)
-        self._clear_gallery_highlight()
+        # A manual seek cancels any pending gallery focus/highlight (a gallery
+        # click re-arms it afterwards via its own path).
+        self._reset_focus_state()
 
         # Request seek from stream manager
         if self.stream_coordinator.stream_manager and hasattr(self.stream_coordinator.stream_manager, 'seek_to_time'):
@@ -1886,7 +1968,13 @@ class StreamViewerWindow(TranslationMixin, QMainWindow):
             if not stream_mgr:
                 return
 
-            # Pause video so user can see the highlighted detection
+            # A newer selection supersedes any in-flight seek/focus. This bumps
+            # the focus generation so an older delayed seek/timeout no-ops.
+            generation = self._begin_focus_generation()
+
+            # Pause video so user can see the highlighted detection.
+            # (Direct play_pause, not on_play_pause_toggled, so it does not
+            # reset the focus we are about to arm.)
             is_playing = stream_mgr.is_playing() if hasattr(stream_mgr, "is_playing") else True
             if is_playing:
                 stream_mgr.play_pause()
@@ -1897,8 +1985,9 @@ class StreamViewerWindow(TranslationMixin, QMainWindow):
             # Switch to Live View tab
             self.tab_widget.setCurrentIndex(0)
 
-            # Seek to track timestamp after pause has taken effect.
-            QTimer.singleShot(50, lambda: self._seek_to_track_frame(track))
+            # The 50 ms delay stays BEFORE the seek (to let pause settle). The
+            # zoom is applied later, only once the sought frame is displayed.
+            QTimer.singleShot(50, lambda g=generation: self._seek_to_track_frame(track, g))
         else:
             # Live stream - cannot seek, show info dialog
             QMessageBox.information(
@@ -1910,26 +1999,58 @@ class StreamViewerWindow(TranslationMixin, QMainWindow):
                 ).format(frame=track.first_frame_index)
             )
 
-    def _seek_to_track_frame(self, track):
-        """Seek to the frame associated with a gallery track using public stream APIs."""
+    def _seek_to_track_frame(self, track, generation):
+        """Seek to a gallery track's frame and arm the one-shot zoom focus.
+
+        Uses the authoritative resolved frame from ``seek_to_frame`` (no FPS
+        recomputation). ``first_frame_index`` is the position the service
+        reports AFTER decoding the thumbnail's frame (OpenCV advances
+        CAP_PROP_POS_FRAMES past the frame it just read), so it is one greater
+        than that frame's own index. Seeking to ``first_frame_index - 1``
+        re-decodes the exact thumbnail frame; the service then reports
+        ``first_frame_index`` for it, so we correlate against
+        ``{resolved, resolved + 1}``.
+        """
+        # Reject stale delayed callbacks from a superseded selection.
+        if generation != self._focus_generation:
+            return
         try:
             stream_mgr = self.stream_coordinator.stream_manager
-            if not stream_mgr:
+            if not stream_mgr or not hasattr(stream_mgr, "seek_to_frame"):
+                self._abandon_gallery_focus()
                 return
 
-            playback_info = stream_mgr.get_playback_info() if hasattr(stream_mgr, "get_playback_info") else {}
-            fps = float(playback_info.get("fps", 0) or 0)
-            if fps <= 0:
-                fps = float(self.stream_coordinator.stream_info.get("fps", 0) or 0)
-            if fps <= 0:
-                self.logger.warning("Cannot seek to track frame: playback FPS is unavailable")
+            target_frame = max(0, int(track.first_frame_index) - 1)
+            resolved = stream_mgr.seek_to_frame(target_frame)
+            if resolved is None:
+                self.logger.warning("Gallery seek failed; clearing pending focus")
+                self._abandon_gallery_focus()
                 return
 
-            target_time = max(0.0, track.first_frame_index / fps)
-            if hasattr(stream_mgr, "seek_to_time"):
-                stream_mgr.seek_to_time(target_time)
+            # Arm the one-shot focus, correlated to THIS seek's request id. The
+            # service reports seekCompleted(request_id, ...) once the sought
+            # frame is painted (success) or the seek fails.
+            self._pending_focus_target = self._focus_target_from_track(track)
+            self._pending_focus_seek_id = stream_mgr.last_seek_id if hasattr(stream_mgr, "last_seek_id") else 0
+            self._pending_focus_positions = {int(resolved), int(resolved) + 1}
+            self._pending_focus_generation = generation
+            QTimer.singleShot(
+                self._FOCUS_TIMEOUT_MS,
+                lambda g=generation: self._on_focus_timeout(g),
+            )
         except Exception as e:
             self.logger.error(f"Error seeking to highlighted frame: {e}")
+            self._abandon_gallery_focus()
+
+    def _abandon_gallery_focus(self):
+        """Drop a failed/timed-out gallery focus, including its highlight.
+
+        A highlight only makes sense on the sought frame; if the seek never
+        lands (failure, exception, or timeout) the highlight must be cleared so
+        later frames are not circled for a detection that was never reached.
+        """
+        self._clear_pending_focus_state()
+        self._clear_gallery_highlight()
 
     def _draw_gallery_highlight(self, frame: np.ndarray) -> np.ndarray:
         """Draw a highlight circle around the selected gallery track's detection.
@@ -1983,6 +2104,136 @@ class StreamViewerWindow(TranslationMixin, QMainWindow):
     def _clear_gallery_highlight(self):
         """Clear the gallery highlight (called on play, new seek, etc.)."""
         self._highlight_track = None
+
+    # ------------------------------------------------------------------ #
+    #  Zoom focus lifecycle (gallery + thumbnail)
+    # ------------------------------------------------------------------ #
+    def _begin_focus_generation(self):
+        """Start a new focus generation, invalidating any in-flight focus.
+
+        Rapid gallery clicks or a competing thumbnail click bump the generation
+        so stale delayed seeks, focus-timeout callbacks and an armed pending
+        focus from an earlier selection are ignored.
+        """
+        self._focus_generation += 1
+        self._clear_pending_focus_state()
+        return self._focus_generation
+
+    def _clear_pending_focus_state(self):
+        """Drop the armed one-shot gallery focus (leaves the highlight alone)."""
+        self._pending_focus_target = None
+        self._pending_focus_seek_id = 0
+        self._pending_focus_positions.clear()
+        self._pending_focus_generation = None
+
+    def _reset_focus_state(self):
+        """Idempotent reset of gallery pending focus + highlight state.
+
+        Used on disconnect, connection loss, new/replacement source, seek
+        failure, manual seek, resume, a newer gallery selection, and a competing
+        thumbnail click. Does NOT reset the display's manual zoom (that survives
+        normal frame replacement and pause/resume).
+
+        It deliberately does NOT clear the thumbnail strip's click payloads:
+        those stay valid as long as their visible pixmaps do, so pausing or
+        seeking never makes a still-visible thumbnail unclickable. Thumbnail
+        payloads are dropped by the strip when a slot empties or a newer frame
+        arrives while it is hidden, and wholesale by ``clear_thumbnails`` on
+        disconnect/new source.
+        """
+        self._focus_generation += 1
+        self._clear_pending_focus_state()
+        self._highlight_track = None
+
+    def _focus_target_from_track(self, track) -> FocusTarget:
+        """Build a source-space focus payload from a gallery track."""
+        width, height = track.frame_resolution
+        return FocusTarget(center_xy=tuple(track.centroid), reference_size=(width, height))
+
+    def _is_file_playback_paused(self) -> bool:
+        """True when a seekable file stream is currently paused."""
+        if self.stream_coordinator.current_stream_type != StreamType.FILE:
+            return False
+        mgr = self.stream_coordinator.stream_manager
+        if mgr is not None and hasattr(mgr, 'is_playing'):
+            try:
+                return not mgr.is_playing()
+            except Exception:
+                return False
+        return False
+
+    def _present_frame(self, frame: np.ndarray, frame_position: int, origin: str) -> bool:
+        """Central display sink: update the view.
+
+        While file playback is paused, only the raw path is authoritative (it
+        carries the sought gallery frame); late worker/custom results are
+        ignored so a pre-seek frame cannot overwrite the sought frame.
+
+        The gallery zoom is NOT applied here: it is applied in
+        :meth:`_on_seek_completed`, correlated by seek request id and emitted by
+        the service AFTER this frame is painted.
+
+        Returns True if the frame was actually presented. Callers MUST gate
+        presentation-coupled side effects (thumbnail refresh, recording) on this
+        so a rejected frame does not leave thumbnails/recordings representing a
+        frame the user is not viewing.
+        """
+        if origin != 'raw' and self._is_file_playback_paused():
+            return False
+        self.video_display.update_frame(frame)
+        return True
+
+    @Slot(int, int, bool)
+    def _on_seek_completed(self, request_id: int, frame_position: int, success: bool):
+        """Apply (or abandon) the one-shot gallery focus for a completed seek.
+
+        Correlated by seek REQUEST ID and the authoritative resolved position
+        window, so neither an older seek nor an unrelated post-seek frame can
+        consume the pending focus. The service emits this AFTER the sought frame
+        is painted, so the scene rect is current when we focus.
+        """
+        if self._pending_focus_target is None:
+            return
+        if request_id != self._pending_focus_seek_id:
+            return  # a superseded or unrelated seek
+        if not success:
+            self.logger.warning(f"Gallery seek {request_id} failed; clearing pending focus")
+            self._abandon_gallery_focus()
+            return
+        if frame_position not in self._pending_focus_positions:
+            self.logger.warning(
+                f"Gallery seek {request_id} completed at unexpected frame "
+                f"{frame_position}; expected one of "
+                f"{sorted(self._pending_focus_positions)}. Clearing pending focus."
+            )
+            self._abandon_gallery_focus()
+            return
+        target = self._pending_focus_target
+        self._clear_pending_focus_state()
+        self.video_display.focus_on(target)
+
+    def _on_focus_timeout(self, generation: int):
+        """Backstop: cancel an armed focus if no seekCompleted ever arrives."""
+        if generation != self._pending_focus_generation:
+            return
+        if self._pending_focus_target is None:
+            return
+        self.logger.warning(
+            f"Gallery focus timed out (seek id {self._pending_focus_seek_id} never "
+            "reported completion). Clearing pending focus and highlight."
+        )
+        self._abandon_gallery_focus()
+
+    def _on_thumbnail_focus_requested(self, target: FocusTarget):
+        """Immediate live focus from a thumbnail click (no pause, no seek).
+
+        Cancels any armed gallery focus and clears the gallery highlight so the
+        two focus sources cannot fight, then centers at 6x. Works while playing
+        or paused.
+        """
+        self._begin_focus_generation()   # supersede any pending gallery focus
+        self._clear_gallery_highlight()
+        self.video_display.focus_on(target)
 
     @Slot(dict)
     def on_stream_info_updated(self, stream_info: dict):
