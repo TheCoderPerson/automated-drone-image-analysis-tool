@@ -61,7 +61,7 @@ class CalTopoMethodDialog(TranslationMixin, QDialog):
             "Choose how you want to authenticate with CalTopo:"
         ))
         description_label.setWordWrap(True)
-        description_label.setStyleSheet("color: #666; padding: 5px;")
+        description_label.setStyleSheet("color: palette(placeholder-text); padding: 5px;")
         layout.addWidget(description_label)
 
         # Method selection

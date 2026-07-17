@@ -106,7 +106,7 @@ class AlgorithmSelectionPage(BasePage):
             QPushButton {
                 background-color: transparent;
                 border: 1px solid #888888;
-                color: #CCCCCC;
+                color: palette(text);
                 border-radius: 4px;
             }
             QPushButton:hover {

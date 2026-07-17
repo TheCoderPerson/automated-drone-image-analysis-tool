@@ -473,7 +473,7 @@ class AOISimilarityResultsDialog(TranslationMixin, QDialog):
         ).format(shown=shown, total=self.total_candidates, reference=reference_label)
         self.info_label = QLabel(info_text)
         self.info_label.setWordWrap(True)
-        self.info_label.setStyleSheet("QLabel { color: #aaa; padding: 5px; }")
+        self.info_label.setStyleSheet("QLabel { color: palette(placeholder-text); padding: 5px; }")
         main_layout.addWidget(self.info_label)
 
         # Gallery view
@@ -497,7 +497,7 @@ class AOISimilarityResultsDialog(TranslationMixin, QDialog):
         selection_layout.addWidget(self.select_none_button)
 
         self.selection_label = QLabel(self.tr("{count} selected").format(count=0))
-        self.selection_label.setStyleSheet("QLabel { color: #aaa; padding: 0 8px; }")
+        self.selection_label.setStyleSheet("QLabel { color: palette(placeholder-text); padding: 0 8px; }")
         selection_layout.addWidget(self.selection_label)
 
         selection_layout.addStretch()

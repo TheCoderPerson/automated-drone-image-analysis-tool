@@ -86,7 +86,7 @@ class CalTopoCredentialDialog(TranslationMixin, QDialog):
             "These can be found in the Team Admin page under Service Accounts."
         ))
         instructions.setWordWrap(True)
-        instructions.setStyleSheet("color: #666; padding: 5px;")
+        instructions.setStyleSheet("color: palette(placeholder-text); padding: 5px;")
         layout.addWidget(instructions)
 
         # Link to documentation

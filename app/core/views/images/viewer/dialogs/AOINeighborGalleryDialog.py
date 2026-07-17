@@ -371,7 +371,7 @@ class AOINeighborGalleryDialog(TranslationMixin, QDialog):
         )
         self.info_label = QLabel(info_text)
         self.info_label.setWordWrap(True)
-        self.info_label.setStyleSheet("QLabel { color: #aaa; padding: 5px; }")
+        self.info_label.setStyleSheet("QLabel { color: palette(placeholder-text); padding: 5px; }")
         main_layout.addWidget(self.info_label)
 
         # Gallery view

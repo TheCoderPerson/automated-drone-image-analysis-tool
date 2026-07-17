@@ -43,7 +43,7 @@ class ReviewerNameDialog(TranslationMixin, QDialog):
 
         # Title label
         title_label = QLabel(self.tr("Review Tracking"))
-        title_label.setStyleSheet("font-size: 14px; font-weight: bold; color: #333;")
+        title_label.setStyleSheet("font-size: 14px; font-weight: bold; color: palette(text);")
         layout.addWidget(title_label)
 
         # Description
@@ -52,7 +52,7 @@ class ReviewerNameDialog(TranslationMixin, QDialog):
             "This helps coordinate reviews across multiple reviewers."
         ))
         desc_label.setWordWrap(True)
-        desc_label.setStyleSheet("color: #666; margin-bottom: 10px;")
+        desc_label.setStyleSheet("color: palette(placeholder-text); margin-bottom: 10px;")
         layout.addWidget(desc_label)
 
         # Name input

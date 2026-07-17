@@ -641,7 +641,7 @@ class AOIUIComponent(TranslationMixin):
         layout.setContentsMargins(10, 10, 10, 10)
 
         label = QLabel(self.tr("Loading AOIs..."))
-        label.setStyleSheet("color: white; font-size: 11pt;")
+        label.setStyleSheet("color: palette(text); font-size: 11pt;")
 
         progress_bar = QProgressBar()
         progress_bar.setRange(0, 100)

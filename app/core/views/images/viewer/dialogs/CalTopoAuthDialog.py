@@ -171,7 +171,7 @@ class CalTopoAuthDialog(TranslationMixin, QDialog):
         map_info_layout.setContentsMargins(0, 0, 0, 0)
 
         self.current_map_label = QLabel(self.tr("Current map: Not selected"))
-        self.current_map_label.setStyleSheet("padding: 5px; font-size: 11px; color: #666;")
+        self.current_map_label.setStyleSheet("padding: 5px; font-size: 11px; color: palette(placeholder-text);")
         map_info_layout.addWidget(self.current_map_label)
 
         info_label = QLabel(self.tr("(Login → Navigate to your map → Click 'I'm Logged In')"))

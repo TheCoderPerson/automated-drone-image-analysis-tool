@@ -242,7 +242,7 @@ class HSVColorRowWizardWidget(TranslationMixin, QWidget):
         _ranges_font.setPointSize(11)
         self.hsvRangesLabel.setFont(_ranges_font)
         self.hsvRangesLabel.setAlignment(Qt.AlignVCenter | Qt.AlignLeft)
-        self.hsvRangesLabel.setStyleSheet("color: #bbb;")
+        self.hsvRangesLabel.setStyleSheet("color: palette(placeholder-text);")
         self.hsvRangesLabel.setWordWrap(False)
         self.hsvRangesLabel.setMinimumWidth(250)  # Ensure text isn't cut off
         rowLayout.addWidget(self.hsvRangesLabel)

@@ -824,7 +824,7 @@ class HSVColorRangeAssistant(TranslationMixin, QDialog):
         help_text = QLabel(self.tr(
             "CTRL+Click: Select similar colors | CTRL+SHIFT+Click: Remove | [ ] : Radius"
         ))
-        help_text.setStyleSheet("color: #666;")
+        help_text.setStyleSheet("color: palette(placeholder-text);")
         layout.addWidget(help_text)
 
         # Help button (right side)
