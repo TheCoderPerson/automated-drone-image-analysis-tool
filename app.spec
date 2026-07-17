@@ -3,7 +3,7 @@ import glob
 import os
 # -*- mode: python -*-
 
-from PyInstaller.utils.hooks import collect_data_files, collect_submodules
+from PyInstaller.utils.hooks import collect_data_files, collect_submodules, collect_dynamic_libs
 
 block_cipher = None
 
@@ -33,6 +33,18 @@ tz_datas = collect_data_files('timezonefinder') + collect_data_files('tzdata')
 # injects tzdata on Windows.
 tz_hiddenimports = ['tzdata'] + collect_submodules('tzdata')
 
+# rasterio and pyproj drive the Coverage/POD + terrain/canopy stack. rasterio
+# loads many submodules lazily (rasterio._io pulls in rasterio.sample,
+# rasterio.vrt, rasterio._features, ...) and both ship GDAL/PROJ data (gdal_data,
+# proj.db) as package data + vendored native libs. PyInstaller's static analysis
+# misses the lazy submodules and the data, so a frozen build raises
+# "No module named 'rasterio.sample'" the moment any rasterio feature runs (POD
+# gap polygons, DEM/canopy sampling, the windowed canopy clip that otherwise
+# falls back to a whole-tile ~730 MB download). Collect them explicitly.
+geo_hiddenimports = collect_submodules('rasterio') + collect_submodules('pyproj')
+geo_datas = collect_data_files('rasterio') + collect_data_files('pyproj')
+geo_binaries = collect_dynamic_libs('rasterio') + collect_dynamic_libs('pyproj')
+
 # Runtime hook: default packaged builds to WARNING-level logging so shipped apps
 # don't accumulate verbose debug/info logs on users' machines. It runs inside the
 # frozen app at startup (a spec-level env assignment would only affect the build
@@ -48,7 +60,7 @@ if platform.system() == 'Windows':
                     ('app/external/exiftool.exe','external'),
                     ('app/external/dji_thermal_sdk_v1.7_20241205','external/dji_thermal_sdk_v1.7_20241205'),
                     ('app/external/autel', 'external/autel')
-                ],
+                ] + geo_binaries,
                 datas=[
                     ('resources/icons/ADIAT.ico','.'),
                     ('app/algorithms.conf','.'),
@@ -59,7 +71,7 @@ if platform.system() == 'Windows':
                     # AI Person Detector models
                     ('app/algorithms/models/AIPersonDetector/ai_person_model_V3_640.onnx', 'algorithms/models/AIPersonDetector'),
                     ('app/algorithms/models/AIPersonDetector/ai_person_model_V3_1024.onnx', 'algorithms/models/AIPersonDetector')
-                    ] + translation_datas + tz_datas,
+                    ] + translation_datas + tz_datas + geo_datas,
 
                 hiddenimports=[
                     'shapely',
@@ -114,7 +126,7 @@ if platform.system() == 'Windows':
                     'algorithms.streaming.ColorAnomalyAndMotionDetection.services.utils',
                     'algorithms.streaming.ColorAnomalyAndMotionDetection.views',
                     'algorithms.streaming.ColorAnomalyAndMotionDetection.views.ColorAnomalyAndMotionDetectionControlWidget',
-                ] + tz_hiddenimports,
+                ] + tz_hiddenimports + geo_hiddenimports,
                 hookspath=None,
                 runtime_hooks=adiat_runtime_hooks,
                 excludes=['PyQt5', 'PyQt6'],
@@ -124,7 +136,7 @@ elif platform.system() == 'Darwin':
                     pathex=['app'],
                     binaries=[
                         ('LICENSE','.')
-                    ],
+                    ] + geo_binaries,
                     datas=[
                         ('resources/icons/ADIAT.ico','.'),
                         ('app/algorithms.conf','.'),
@@ -136,7 +148,7 @@ elif platform.system() == 'Darwin':
                         # AI Person Detector models
                         ('app/algorithms/models/AIPersonDetector/ai_person_model_V3_640.onnx', 'algorithms/models/AIPersonDetector'),
                         ('app/algorithms/models/AIPersonDetector/ai_person_model_V3_1024.onnx', 'algorithms/models/AIPersonDetector')
-                        ] + translation_datas + tz_datas,
+                        ] + translation_datas + tz_datas + geo_datas,
                     hiddenimports=[
                         'shapely',
                         'shapely.geometry',
@@ -190,7 +202,7 @@ elif platform.system() == 'Darwin':
                         'algorithms.streaming.ColorAnomalyAndMotionDetection.services.utils',
                         'algorithms.streaming.ColorAnomalyAndMotionDetection.views',
                         'algorithms.streaming.ColorAnomalyAndMotionDetection.views.ColorAnomalyAndMotionDetectionControlWidget',
-                    ] + tz_hiddenimports,
+                    ] + tz_hiddenimports + geo_hiddenimports,
                     hookspath=None,
                     runtime_hooks=adiat_runtime_hooks,
                     excludes=['PyQt5', 'PyQt6'],
