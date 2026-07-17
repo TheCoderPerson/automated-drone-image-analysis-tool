@@ -70,11 +70,11 @@ class AIPersonDetectorService(AlgorithmService):
         if self.cpu_only:
             self.slice_size = 1280
             self.model_img_size = 640
-            self.model_path = self._resolve_model_path('ai_person_model_V4_640.onnx')
+            self.model_path = self._resolve_model_path('ai_person_model_V3_640.onnx')
         else:
             self.slice_size = 2048
             self.model_img_size = 1024
-            self.model_path = self._resolve_model_path('ai_person_model_V4_1024.onnx')
+            self.model_path = self._resolve_model_path('ai_person_model_V3_1024.onnx')
 
     def _resolve_model_path(self, model_name: str) -> str:
         """Resolve ONNX model path for source and frozen builds."""
