@@ -808,7 +808,7 @@ class CoordinatorWindow(TranslationMixin, QMainWindow):
         root = self.project_service.xml.getroot()
         consolidated_elem = root.find('consolidated_aois')
 
-        if not consolidated_elem:
+        if consolidated_elem is None:
             return
 
         aois = consolidated_elem.findall('aoi')
@@ -836,7 +836,7 @@ class CoordinatorWindow(TranslationMixin, QMainWindow):
             reviewers = []
             comments = []
 
-            if reviews_elem:
+            if reviews_elem is not None:
                 for review in reviews_elem.findall('review'):
                     reviewer_name = review.get('reviewer_name', 'Unknown')
                     reviewers.append(reviewer_name)
