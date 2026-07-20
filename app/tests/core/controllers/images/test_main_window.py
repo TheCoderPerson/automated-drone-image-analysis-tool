@@ -434,11 +434,29 @@ def testVideoParser(testData, qtbot):
             assert len(os.listdir(testData['Video_Output'])) > 0
 
 
-def test_flight_viewer_menu_hidden_when_feature_disabled(main_window):
-    """Flight Viewer is deferred to a later release: the File-menu action
-    must be invisible while FeatureFlags.FLIGHT_VIEWER_ENABLED is False."""
+def test_flight_viewer_menu_hidden_when_feature_disabled(qtbot):
+    """Flight Viewer visibility is gated: the File-menu action must be
+    invisible while FeatureFlags.FLIGHT_VIEWER_ENABLED is False. A fresh
+    window is built under an explicit False patch so the gated-off path
+    stays covered regardless of the shipping default."""
+    try:
+        import qdarktheme
+        from core.controllers.images.MainWindow import MainWindow
+    except ImportError:
+        pytest.skip("MainWindow dependencies not available")
+    with patch("helpers.FeatureFlags.FLIGHT_VIEWER_ENABLED", False):
+        mw = MainWindow(qdarktheme)
+    qtbot.addWidget(mw)
+    mw.show()
+    assert hasattr(mw, 'actionFlightViewer')
+    assert not mw.actionFlightViewer.isVisible()
+
+
+def test_flight_viewer_menu_shown_when_feature_enabled(main_window):
+    """Flight Viewer ships enabled (2.2): the File-menu action is visible
+    on a window built with the shipping default flag."""
     assert hasattr(main_window, 'actionFlightViewer')
-    assert not main_window.actionFlightViewer.isVisible()
+    assert main_window.actionFlightViewer.isVisible()
 
 
 # --- Search Coordinator: results button + reload routing --------------------

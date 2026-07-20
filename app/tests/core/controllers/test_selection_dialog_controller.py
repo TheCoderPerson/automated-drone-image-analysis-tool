@@ -33,15 +33,17 @@ def test_selection_dialog_runs_startup_update_check(qtbot):
 
 
 def test_flight_viewer_button_hidden_when_feature_disabled(qtbot):
-    """Flight Viewer is deferred to a later release: while
+    """Flight Viewer visibility is gated: when
     FeatureFlags.FLIGHT_VIEWER_ENABLED is False the Selection dialog must
-    hide its button so the feature is unreachable."""
-    with patch.object(selection_module, "UpdateController"), \
+    hide its button so the feature is unreachable. The flag is patched
+    explicitly so the gated-off path stays covered regardless of the
+    shipping default."""
+    with patch.object(selection_module.FeatureFlags, "FLIGHT_VIEWER_ENABLED", False), \
+            patch.object(selection_module, "UpdateController"), \
             patch.object(selection_module, "SettingsService"):
         dialog = SelectionDialog("Dark")
         qtbot.addWidget(dialog)
 
-    assert selection_module.FeatureFlags.FLIGHT_VIEWER_ENABLED is False
     # The whole third column is hidden (not just the button), so it stops
     # consuming layout width. isHidden() reflects the explicit hide flag even
     # before the dialog is shown (isVisible() would be False either way).
@@ -56,7 +58,7 @@ def test_flight_viewer_button_hidden_when_feature_disabled(qtbot):
 
 
 def test_flight_viewer_button_shown_when_feature_enabled(qtbot):
-    """Flipping the flag restores the button (the later-release path)."""
+    """With the flag enabled the button is restored (the shipping path)."""
     with patch.object(selection_module.FeatureFlags, "FLIGHT_VIEWER_ENABLED", True), \
             patch.object(selection_module, "UpdateController"), \
             patch.object(selection_module, "SettingsService"):
@@ -66,3 +68,10 @@ def test_flight_viewer_button_shown_when_feature_enabled(qtbot):
     assert not dialog.flightWidget.isHidden()
     # Three-button layout keeps its designed size.
     assert dialog.width() == 600
+
+
+def test_flight_viewer_enabled_by_default():
+    """Flight Viewer ships enabled as of the 2.2 release. This guards the
+    shipping default so an accidental revert to the deferred (False) state
+    is caught."""
+    assert selection_module.FeatureFlags.FLIGHT_VIEWER_ENABLED is True
