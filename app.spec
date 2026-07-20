@@ -42,6 +42,9 @@ adiat_runtime_hooks = [os.path.join(spec_dir, 'runtime_hooks', 'set_log_level.py
 common_hiddenimports = [
     'shapely',
     'shapely.geometry',
+    # pandas pulls pytz for tz-aware timestamps; PyInstaller can miss it in the
+    # frozen build, so pin it explicitly (carried over from the 2.0.3 HDMI hotfix).
+    'pytz',
     # timezonefinder + h3 back the GPS -> timezone shadow fallback.
     'timezonefinder',
     'h3',
