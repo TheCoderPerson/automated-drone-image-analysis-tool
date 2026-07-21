@@ -111,6 +111,9 @@ if platform.system() == 'Windows':
                     ('app/xmp.csv', '.'),
                     ('app/colors.pkl', '.'),
                     ('colors.csv', '.'),
+                    # Bundled EGM96 geoid grid (global) for offline ellipsoidal<->orthometric
+                    # height conversion; PROJ streams it online otherwise.
+                    ('app/resources/geoid/us_nga_egm96_15.tif', 'resources/geoid'),
                     # AI Person Detector models
                     ('app/algorithms/models/AIPersonDetector/ai_person_model_V3_640.onnx', 'algorithms/models/AIPersonDetector'),
                     ('app/algorithms/models/AIPersonDetector/ai_person_model_V3_1024.onnx', 'algorithms/models/AIPersonDetector')
@@ -134,6 +137,9 @@ elif platform.system() == 'Darwin':
                         # Color lists used by ColorListService (expects under app/)
                         ('app/colors.pkl', 'app'),
                         ('colors.csv', 'app'),
+                        # Bundled EGM96 geoid grid (global) for offline ellipsoidal<->orthometric
+                        # height conversion; PROJ streams it online otherwise.
+                        ('app/resources/geoid/us_nga_egm96_15.tif', 'resources/geoid'),
                         # AI Person Detector models
                         ('app/algorithms/models/AIPersonDetector/ai_person_model_V3_640.onnx', 'algorithms/models/AIPersonDetector'),
                         ('app/algorithms/models/AIPersonDetector/ai_person_model_V3_1024.onnx', 'algorithms/models/AIPersonDetector')

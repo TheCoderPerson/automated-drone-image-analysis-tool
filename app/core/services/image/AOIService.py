@@ -198,27 +198,36 @@ class AOIService:
                 # Get geoid undulation to convert ellipsoidal to orthometric height
                 geoid_undulation = terrain_service.get_geoid_undulation(lat0, lon0)
 
-                # Convert GPS altitude (ellipsoidal) to orthometric
-                if geoid_undulation is not None:
-                    drone_orthometric = absolute_alt - geoid_undulation
+                if geoid_undulation is None:
+                    # Without a geoid we cannot safely convert the (ellipsoidal) GPS
+                    # altitude to orthometric to compare against the DEM. Treating
+                    # ellipsoidal as orthometric would inject a ~geoid-magnitude
+                    # (tens of metres) error, so skip the absolute-altitude AGL
+                    # rescue and keep the reported RelativeAltitude.
+                    if self.logger:
+                        self.logger.info(
+                            "AOIService: geoid unavailable; skipping absolute-altitude "
+                            "AGL rescue for low RelativeAltitude"
+                        )
                 else:
-                    drone_orthometric = absolute_alt
+                    # Convert GPS altitude (ellipsoidal) to orthometric
+                    drone_orthometric = absolute_alt - geoid_undulation
 
-                # Get terrain elevation at drone position
-                drone_terrain = terrain_service.get_elevation(lat0, lon0)
+                    # Get terrain elevation at drone position
+                    drone_terrain = terrain_service.get_elevation(lat0, lon0)
 
-                if drone_terrain.source == 'terrain' and drone_terrain.elevation_m is not None:
-                    # Calculate AGL from terrain
-                    terrain_based_agl = drone_orthometric - drone_terrain.elevation_m
+                    if drone_terrain.source == 'terrain' and drone_terrain.elevation_m is not None:
+                        # Calculate AGL from terrain
+                        terrain_based_agl = drone_orthometric - drone_terrain.elevation_m
 
-                    # Use terrain-based AGL if it's reasonable
-                    if terrain_based_agl > 5:
-                        reported_agl = terrain_based_agl
-                        if self.logger:
-                            self.logger.info(
-                                f"AOIService: Using terrain-based AGL ({terrain_based_agl:.1f}m) "
-                                f"instead of low RelativeAltitude"
-                            )
+                        # Use terrain-based AGL if it's reasonable
+                        if terrain_based_agl > 5:
+                            reported_agl = terrain_based_agl
+                            if self.logger:
+                                self.logger.info(
+                                    f"AOIService: Using terrain-based AGL ({terrain_based_agl:.1f}m) "
+                                    f"instead of low RelativeAltitude"
+                                )
 
             if reported_agl <= 0:
                 if self.logger:
@@ -578,6 +587,49 @@ class AOIService:
 
         return (lat, lon)
 
+    def _select_effective_agl(self, agl_abs, agl_rel, reported_agl,
+                              geoid_undulation, drone_terrain, terrain_elevation):
+        """Cross-check the two effective-AGL estimates and pick the trustworthy one.
+
+        Prefers the more-precise absolute-elevation estimate (``agl_abs``) only when
+        it agrees with the datum-robust terrain-relief estimate (``agl_rel``) within
+        tolerance. A large divergence means the absolute chain is corrupted by a bad
+        geoid or an ASL whose datum does not match the DEM -- exactly the failure that
+        otherwise throws every AOI systematically short/long -- so we fall back to the
+        relief estimate and log the divergence.
+
+        Args:
+            agl_abs: Absolute-elevation AGL estimate (m) or None.
+            agl_rel: Terrain-relief AGL estimate (m) or None.
+            reported_agl: Reported RelativeAltitude (m), last-resort fallback.
+            geoid_undulation, drone_terrain, terrain_elevation: diagnostics for logging.
+
+        Returns:
+            The selected effective AGL in meters (never None).
+        """
+        if agl_abs is None and agl_rel is None:
+            return reported_agl if reported_agl and reported_agl > 0 else 1.0
+        if agl_abs is None:
+            return agl_rel
+        if agl_rel is None:
+            return agl_abs
+
+        tol = max(0.15 * agl_rel, 8.0)
+        if abs(agl_abs - agl_rel) <= tol:
+            # Agreement: trust the precise absolute estimate.
+            return agl_abs
+
+        # Divergence: absolute chain is suspect (geoid/ASL datum). Use relief.
+        if self.logger:
+            drone_elev = drone_terrain.elevation_m if drone_terrain else None
+            self.logger.warning(
+                "AOIService: effective-AGL estimates disagree "
+                f"(absolute={agl_abs:.1f}m, relief={agl_rel:.1f}m, geoid={geoid_undulation}, "
+                f"drone_ground={drone_elev}, aoi_ground={terrain_elevation:.1f}m); "
+                "using terrain-relief estimate (datum-robust)."
+            )
+        return agl_rel
+
     def _calculate_with_terrain(
         self,
         image: dict, aoi: dict,
@@ -650,22 +702,31 @@ class AOIService:
             terrain_elevation = terrain_result.elevation_m
             terrain_resolution = terrain_result.resolution_m
 
-            # Calculate effective AGL
+            # Calculate effective AGL via two independent estimates and cross-check.
+            #  - agl_abs: absolute-elevation chain (drone_absolute - aoi_terrain).
+            #    Precise when the absolute-altitude datum is trustworthy (e.g. RTK),
+            #    but any error in ASL or the geoid propagates straight into it.
+            #  - agl_rel: reported AGL adjusted for terrain relief
+            #    (drone_ground - aoi_ground). Any absolute datum/geoid offset cancels
+            #    in the DEM difference, so it is robust to a bad geoid or a
+            #    non-ellipsoidal ASL.
+            agl_abs = None
             if drone_absolute_elev is not None:
-                # Best case: we have absolute elevation
-                # Effective AGL at AOI = drone_absolute - aoi_terrain
-                effective_agl = drone_absolute_elev - terrain_elevation
+                agl_abs = drone_absolute_elev - terrain_elevation
 
-                # Clamp to minimum positive value
-                effective_agl = max(1.0, effective_agl)
-            else:
-                # Fallback: use reported AGL adjusted for terrain difference
-                if drone_terrain.source == 'terrain' and drone_terrain.elevation_m is not None:
-                    terrain_diff = drone_terrain.elevation_m - terrain_elevation
-                    effective_agl = reported_agl + terrain_diff
-                    effective_agl = max(1.0, effective_agl)
-                else:
-                    effective_agl = reported_agl
+            agl_rel = None
+            if drone_terrain.source == 'terrain' and drone_terrain.elevation_m is not None:
+                agl_rel = reported_agl + (drone_terrain.elevation_m - terrain_elevation)
+            elif reported_agl and reported_agl > 0:
+                agl_rel = reported_agl
+
+            effective_agl = self._select_effective_agl(
+                agl_abs, agl_rel, reported_agl,
+                geoid_undulation, drone_terrain, terrain_elevation
+            )
+
+            # Clamp to minimum positive value
+            effective_agl = max(1.0, effective_agl)
 
             # Recalculate position with corrected AGL
             new_result = self._calculate_ground_position(
