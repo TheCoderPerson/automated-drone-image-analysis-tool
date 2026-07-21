@@ -10,6 +10,8 @@ The tests drive the *real* generated UI so the assertions track the actual
 header the user sees.
 """
 
+from types import SimpleNamespace
+
 from PySide6.QtWidgets import QMainWindow, QSizePolicy
 
 from core.controllers.images.viewer.Viewer import Viewer
@@ -180,3 +182,80 @@ def test_narrow_header_truncates_only_the_file_name(qtbot):
     assert ui.fileNameLabel.width() < name_natural
     # ...while the index label keeps its full text.
     assert ui.indexLabel.width() >= index_natural
+
+
+class _FakeSplitter:
+    """Minimal stand-in for the image/AOI QSplitter used by the header sync."""
+
+    def __init__(self, sizes):
+        self._sizes = sizes
+
+    def sizes(self):
+        return list(self._sizes)
+
+    def handleWidth(self):
+        return 4
+
+
+def _sync_target(ui, sizes):
+    """A lightweight object exposing what ``_sync_aoi_header_width`` touches."""
+    return SimpleNamespace(
+        image_gallery_splitter=_FakeSplitter(sizes),
+        aoiHeaderWidget=ui.aoiHeaderWidget,
+        mainHeaderWidget=ui.mainHeaderWidget,
+    )
+
+
+def test_header_sync_caps_toolbar_to_image_pane_width(qtbot):
+    """The toolbar is capped to the image-pane width so it can't overrun the row.
+
+    Regression: after toggling gallery mode the toolbar (``mainHeaderWidget``)
+    could linger at its previous, wider single-image width. Because it sits
+    beside the AOI header in the shared header row, that stale width shoved the
+    AOI header -- filter icon, count, and the pane's scrollbar -- off the right
+    edge of a maximized window. The sync must cap the toolbar to the current
+    image-pane width (``sizes[0]``) and pin the AOI header to the AOI-pane
+    width (``sizes[1]``).
+    """
+    win, ui = _build_header(qtbot)
+
+    Viewer._sync_aoi_header_width(_sync_target(ui, [1269, 635]))
+
+    # AOI header pinned to the AOI-pane width (alignment with the gallery).
+    assert ui.aoiHeaderWidget.maximumWidth() == 635
+    assert ui.aoiHeaderWidget.minimumWidth() == 635
+    # Toolbar capped to the image-pane width (cannot push the header off-screen).
+    assert ui.mainHeaderWidget.maximumWidth() == 1269
+
+
+def test_header_sync_tracks_toolbar_when_pane_shrinks(qtbot):
+    """Toggling from a narrow AOI pane to a wide one re-caps the toolbar.
+
+    Emulates the single-image -> gallery transition: the toolbar cap must drop
+    from the wide single-image image-pane width to the narrower gallery one.
+    """
+    win, ui = _build_header(qtbot)
+
+    # Single-image: wide image pane, narrow AOI pane.
+    Viewer._sync_aoi_header_width(_sync_target(ui, [1658, 250]))
+    assert ui.mainHeaderWidget.maximumWidth() == 1658
+
+    # Gallery: image pane shrinks, AOI pane grows -> toolbar cap must follow.
+    Viewer._sync_aoi_header_width(_sync_target(ui, [1269, 635]))
+    assert ui.mainHeaderWidget.maximumWidth() == 1269
+    assert ui.aoiHeaderWidget.maximumWidth() == 635
+
+
+def test_header_sync_never_caps_toolbar_below_its_minimum(qtbot):
+    """A very wide AOI pane must not cap the toolbar below its own minimum.
+
+    Capping ``maximumWidth`` below ``minimumSizeHint`` would be a max < min
+    contradiction; the sync must floor the cap at the toolbar minimum.
+    """
+    win, ui = _build_header(qtbot)
+    toolbar_min = ui.mainHeaderWidget.minimumSizeHint().width()
+
+    Viewer._sync_aoi_header_width(_sync_target(ui, [100, 1800]))
+
+    assert ui.mainHeaderWidget.maximumWidth() == toolbar_min
+    assert ui.mainHeaderWidget.maximumWidth() >= toolbar_min
