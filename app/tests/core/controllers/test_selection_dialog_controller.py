@@ -70,8 +70,8 @@ def test_flight_viewer_button_shown_when_feature_enabled(qtbot):
     assert dialog.width() == 600
 
 
-def test_flight_viewer_enabled_by_default():
-    """Flight Viewer ships enabled as of the 2.2 release. This guards the
-    shipping default so an accidental revert to the deferred (False) state
-    is caught."""
-    assert selection_module.FeatureFlags.FLIGHT_VIEWER_ENABLED is True
+def test_flight_viewer_disabled_by_default():
+    """Flight Viewer is deferred again and held back from the current
+    production release. This guards the shipping default so an accidental
+    re-enable is caught before it ships."""
+    assert selection_module.FeatureFlags.FLIGHT_VIEWER_ENABLED is False

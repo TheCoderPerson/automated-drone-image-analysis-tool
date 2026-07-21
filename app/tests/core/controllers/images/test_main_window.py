@@ -452,11 +452,21 @@ def test_flight_viewer_menu_hidden_when_feature_disabled(qtbot):
     assert not mw.actionFlightViewer.isVisible()
 
 
-def test_flight_viewer_menu_shown_when_feature_enabled(main_window):
-    """Flight Viewer ships enabled (2.2): the File-menu action is visible
-    on a window built with the shipping default flag."""
-    assert hasattr(main_window, 'actionFlightViewer')
-    assert main_window.actionFlightViewer.isVisible()
+def test_flight_viewer_menu_shown_when_feature_enabled(qtbot):
+    """When the flag is enabled the File-menu action is visible. A fresh
+    window is built under an explicit True patch so the enabled path stays
+    covered regardless of the (currently deferred) shipping default."""
+    try:
+        import qdarktheme
+        from core.controllers.images.MainWindow import MainWindow
+    except ImportError:
+        pytest.skip("MainWindow dependencies not available")
+    with patch("helpers.FeatureFlags.FLIGHT_VIEWER_ENABLED", True):
+        mw = MainWindow(qdarktheme)
+    qtbot.addWidget(mw)
+    mw.show()
+    assert hasattr(mw, 'actionFlightViewer')
+    assert mw.actionFlightViewer.isVisible()
 
 
 # --- Search Coordinator: results button + reload routing --------------------

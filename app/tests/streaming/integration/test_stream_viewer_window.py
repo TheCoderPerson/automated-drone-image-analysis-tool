@@ -1070,8 +1070,10 @@ def test_flight_viewer_menu_entry_hidden_when_feature_disabled(qapp):
 
 
 def test_flight_viewer_menu_entry_shown_when_feature_enabled(qapp):
-    """Flight Viewer ships enabled (2.2): its action appears in the primary
-    menu alongside its siblings."""
+    """When the flag is enabled the action appears in the primary menu
+    alongside its siblings. The flag is patched True explicitly so this
+    enabled path stays covered regardless of the (currently deferred)
+    shipping default."""
     with patch("helpers.FeatureFlags.FLIGHT_VIEWER_ENABLED", True):
         window = StreamViewerWindow(algorithm_name='', theme='dark')
     try:
