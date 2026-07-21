@@ -115,6 +115,39 @@ class ImageService:
 
         return round(altitude * METERS_TO_FEET, 2) if distance_unit == 'ft' else altitude
 
+    def _dji_gimbal_unrecorded(self):
+        """Whether a DJI image carries the "gimbal telemetry not recorded" signature.
+
+        DJI Mini-series airframes (e.g. FC3682 / Mini 3) omit gimbal
+        orientation and leave GimbalPitch/Roll/Yaw all at +0.00 even for
+        straight-down captures, while flight telemetry (FlightYaw etc.) is
+        populated normally. Trusting those zeros makes a nadir frame look
+        horizontal (pitch 0) and north-facing (yaw 0), which suppresses GSD
+        and rotates AOI ground positions. This detects that case so callers
+        can fall back to nadir pitch and the flight-yaw heading.
+
+        A genuinely recorded gimbal reads nonzero on at least one axis, so
+        requiring the whole triad to be zero (or absent) keeps real
+        oblique/panned captures out of the heuristic. DJI-only.
+
+        Returns:
+            bool: True when the gimbal triad is the unrecorded all-zero signature.
+        """
+        if self.drone_make != 'DJI' or self.xmp_data is None:
+            return False
+
+        def _angle(attr):
+            raw = MetaDataHelper.get_drone_xmp_attribute(attr, self.drone_make, self.xmp_data)
+            try:
+                return float(raw) if raw is not None else None
+            except (TypeError, ValueError):
+                return None
+
+        pitch = _angle('Gimbal Pitch')
+        roll = _angle('Gimbal Roll')
+        yaw = _angle('Gimbal Yaw')
+        return pitch in (None, 0.0) and roll in (None, 0.0) and yaw in (None, 0.0)
+
     def get_camera_pitch(self):
         """
         Get camera pitch angle (standard photogrammetry convention).
@@ -145,6 +178,14 @@ class ImageService:
         # For DJI drones, gimbal pitch is already in the correct convention
         # (-90 = nadir, 0 = horizontal, +90 = up)
         # For Autel, may need different handling (add if needed)
+
+        # DJI Mini-series images leave the gimbal angles unrecorded (all
+        # +0.00). A literal 0 pitch reads as a horizontal view, suppressing
+        # GSD and degrading AOI GPS/coverage, so report the pitch as unknown;
+        # downstream callers treat a missing pitch as nadir, which is the
+        # correct assumption for these straight-down SAR mapping captures.
+        if self._dji_gimbal_unrecorded():
+            return None
 
         return pitch
 
@@ -198,8 +239,16 @@ class ImageService:
         yaw = None
         source = None
 
-        # Prefer gimbal yaw if available (actual camera direction)
-        if self.xmp_data is not None and self.drone_make is not None:
+        # Prefer gimbal yaw if available (actual camera direction).
+        #
+        # DJI Mini-series images leave gimbal yaw at 0.00 when it was never
+        # recorded (see _dji_gimbal_unrecorded). Trusting that 0 reports the
+        # camera as facing north regardless of the aircraft's true heading,
+        # which mis-orients the compass and rotates AOI ground positions. Skip
+        # the gimbal rung in that case so the flight-yaw fallback supplies the
+        # heading — a nadir body-fixed camera shares the aircraft heading.
+        if (self.xmp_data is not None and self.drone_make is not None
+                and not self._dji_gimbal_unrecorded()):
             gimbal_yaw = MetaDataHelper.get_drone_xmp_attribute('Gimbal Yaw', self.drone_make, self.xmp_data)
             if gimbal_yaw is not None:
                 try:

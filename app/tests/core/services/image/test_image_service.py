@@ -9,6 +9,8 @@ import numpy as np
 import cv2
 import tempfile
 import os
+import piexif
+import pandas as pd
 from unittest.mock import patch, MagicMock
 from core.services.image.ImageService import ImageService
 
@@ -174,6 +176,156 @@ def test_get_average_gsd(image_service):
     # Test with custom altitude
     gsd_custom = image_service.get_average_gsd(custom_altitude_ft=100.0)
     assert gsd_custom is None or (isinstance(gsd_custom, (int, float)) and gsd_custom > 0)
+
+
+# ---------------------------------------------------------------------------
+# DJI Mini-series zeroed-gimbal handling (e.g. FC3682 / Mini 3)
+#
+# These airframes often leave GimbalPitch/Roll/Yaw at +0.00 even for nadir
+# captures. A literal 0 pitch means "horizontal", which suppresses GSD and
+# degrades AOI GPS/coverage. get_camera_pitch() must report the all-zero
+# gimbal triad as unknown (None) so downstream nadir fallbacks apply, while
+# leaving genuine oblique/horizon shots (any nonzero roll or yaw) untouched.
+# ---------------------------------------------------------------------------
+
+def _service_with_gimbal(make, pitch, roll, yaw, flight_yaw=None):
+    """Build an ImageService over a blank temp image with injected gimbal XMP.
+
+    Returns (service, tmp_path); caller is responsible for unlinking tmp_path.
+    Values are strings as they appear in DJI XMP (e.g. '+0.00'); pass None to
+    omit a key entirely. ``flight_yaw`` sets FlightYawDegree (the drone body
+    heading) used by the flight-yaw fallback.
+    """
+    with tempfile.NamedTemporaryFile(suffix='.jpg', delete=False) as tmp_file:
+        cv2.imwrite(tmp_file.name, np.zeros((100, 100, 3), dtype=np.uint8))
+        tmp_path = tmp_file.name
+
+    service = ImageService(tmp_path)
+    service.drone_make = make
+    xmp = {}
+    if pitch is not None:
+        xmp['GimbalPitchDegree'] = pitch
+    if roll is not None:
+        xmp['GimbalRollDegree'] = roll
+    if yaw is not None:
+        xmp['GimbalYawDegree'] = yaw
+    if flight_yaw is not None:
+        xmp['FlightYawDegree'] = flight_yaw
+    service.xmp_data = xmp
+    return service, tmp_path
+
+
+def test_get_camera_pitch_dji_zeroed_gimbal_returns_none():
+    """DJI all-zero gimbal triad is the 'not recorded' signature -> None (nadir)."""
+    service, tmp_path = _service_with_gimbal('DJI', '+0.00', '+0.00', '+0.00')
+    try:
+        assert service.get_camera_pitch() is None
+    finally:
+        os.unlink(tmp_path)
+
+
+def test_get_camera_pitch_dji_zero_pitch_with_real_yaw_is_kept():
+    """A recorded (nonzero) yaw means the gimbal WAS reporting -> keep pitch 0."""
+    service, tmp_path = _service_with_gimbal('DJI', '+0.00', '+0.00', '+45.00')
+    try:
+        assert service.get_camera_pitch() == 0.0
+    finally:
+        os.unlink(tmp_path)
+
+
+def test_get_camera_pitch_dji_zero_pitch_with_real_roll_is_kept():
+    """A recorded (nonzero) roll means the gimbal WAS reporting -> keep pitch 0."""
+    service, tmp_path = _service_with_gimbal('DJI', '+0.00', '-22.50', '+0.00')
+    try:
+        assert service.get_camera_pitch() == 0.0
+    finally:
+        os.unlink(tmp_path)
+
+
+def test_get_camera_pitch_dji_normal_nadir_unchanged():
+    """A genuine -90 nadir reading is returned verbatim."""
+    service, tmp_path = _service_with_gimbal('DJI', '-90.00', '+0.00', '+0.00')
+    try:
+        assert service.get_camera_pitch() == -90.0
+    finally:
+        os.unlink(tmp_path)
+
+
+def test_get_camera_pitch_non_dji_zero_triad_unchanged():
+    """The heuristic is DJI-only; other makes keep a literal 0 pitch."""
+    service, tmp_path = _service_with_gimbal('Autel Robotics', '+0.00', '+0.00', '+0.00')
+    try:
+        assert service.get_camera_pitch() == 0.0
+    finally:
+        os.unlink(tmp_path)
+
+
+def test_get_gsd_service_recovers_for_zeroed_gimbal_dji_mini():
+    """End-to-end: a Mini-3-style zeroed-gimbal image now yields a GSD.
+
+    Before the fix, get_camera_pitch() returned 0.0 -> tilt 90 -> the >60
+    'too oblique' guard suppressed GSD. With the nadir fallback the service
+    builds and computes a sane per-pixel resolution.
+    """
+    service, tmp_path = _service_with_gimbal('DJI', '+0.00', '+0.00', '+0.00')
+    try:
+        service.exif_data = {
+            "0th": {piexif.ImageIFD.Model: b"FC3682"},
+            "Exif": {
+                piexif.ExifIFD.FocalLength: (672, 100),      # 6.72 mm
+                piexif.ExifIFD.PixelXDimension: 4000,
+                piexif.ExifIFD.PixelYDimension: 3000,
+            },
+        }
+        cam_df = pd.DataFrame([{'sensor_w': 9.65, 'sensor_h': 7.24}])  # DJI Mini 3
+        with patch.object(service, '_get_camera_info', return_value=cam_df), \
+             patch.object(service, 'get_relative_altitude', return_value=72.3):
+            gsd_service = service.get_gsd_service()
+            assert gsd_service is not None
+            gsd = gsd_service.compute_average_gsd()
+            assert gsd is not None and gsd > 0
+    finally:
+        os.unlink(tmp_path)
+
+
+def test_get_camera_yaw_zeroed_gimbal_falls_back_to_flight_yaw():
+    """Zeroed gimbal yaw (0.00) must not be trusted; use the real flight heading.
+
+    This is the DJI_0264 case: gimbal all-zero, flight yaw -179.30 (~south).
+    The bogus gimbal 0 would report the camera as facing north.
+    """
+    service, tmp_path = _service_with_gimbal(
+        'DJI', '+0.00', '+0.00', '+0.00', flight_yaw='-179.30')
+    try:
+        yaw, source = service.get_camera_yaw_with_source()
+        assert source == 'flight'
+        assert yaw == pytest.approx(180.70, abs=0.01)   # -179.30 normalized
+    finally:
+        os.unlink(tmp_path)
+
+
+def test_get_camera_yaw_recorded_gimbal_is_preferred():
+    """A recorded gimbal (nonzero pitch) keeps the gimbal-yaw priority intact."""
+    service, tmp_path = _service_with_gimbal(
+        'DJI', '-90.00', '+0.00', '+45.00', flight_yaw='-179.30')
+    try:
+        yaw, source = service.get_camera_yaw_with_source()
+        assert source == 'gimbal'
+        assert yaw == pytest.approx(45.0, abs=0.01)
+    finally:
+        os.unlink(tmp_path)
+
+
+def test_get_camera_yaw_non_dji_keeps_gimbal_priority():
+    """The zeroed-gimbal redirect is DJI-only; other makes keep gimbal yaw."""
+    service, tmp_path = _service_with_gimbal(
+        'Autel Robotics', '+0.00', '+0.00', '+0.00', flight_yaw='-179.30')
+    try:
+        yaw, source = service.get_camera_yaw_with_source()
+        assert source == 'gimbal'
+        assert yaw == pytest.approx(0.0, abs=0.01)
+    finally:
+        os.unlink(tmp_path)
 
 
 def test_get_position(image_service):
