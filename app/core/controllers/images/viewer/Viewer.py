@@ -588,36 +588,35 @@ class Viewer(TranslationMixin, QMainWindow, Ui_Viewer):
         self._sync_aoi_header_width()
 
     def _sync_aoi_header_width(self):
-        """Mirror the image/AOI splitter split in the shared header row.
+        """Sync aoiHeaderWidget width with the AOI splitter panel.
 
-        The header row places the toolbar (``mainHeaderWidget``) beside the AOI
-        header (``aoiHeaderWidget``). The AOI header is pinned to the AOI-pane
-        width so it lines up with the gallery below it. The toolbar is
-        ``Expanding`` and is meant to fill the image-pane side -- but when the
-        splitter moves (e.g. toggling gallery mode) the toolbar does not always
-        re-shrink to the new image-pane width before the layout settles. It can
-        stay at its previous (wider) width, which shoves the AOI header -- and
-        with it the filter icon / count and the pane's scrollbar -- off the
-        right edge of the screen. Capping the toolbar's maximum width to the
-        image-pane width forces it to track the splitter, keeping the header
-        aligned and on-screen without pinning the window's minimum width.
+        Also keep the image pane at least as wide as the toolbar's minimum. The
+        toolbar (``mainHeaderWidget``) and the AOI header (``aoiHeaderWidget``,
+        pinned to the AOI-pane width) share one header row above the splitter.
+        If the image pane were allowed narrower than the toolbar, that header
+        row would be wider than the splitter, so pinning the AOI header pushes
+        the window's minimum width past its current width -- and because the
+        minimum is re-read on every resize, the window grows without bound (a
+        runaway that eventually forces the window far off-screen). Flooring the
+        image pane at the toolbar minimum keeps the header row and the splitter
+        the same width, which stops the loop.
         """
         try:
-            if hasattr(self, 'image_gallery_splitter') and self.image_gallery_splitter:
-                sizes = self.image_gallery_splitter.sizes()
-                if len(sizes) == 2:
-                    self.aoiHeaderWidget.setFixedWidth(sizes[1])
-                    if hasattr(self, 'mainHeaderWidget'):
-                        # Never cap below the toolbar's own minimum (avoids a
-                        # max < min contradiction on a very wide AOI pane).
-                        toolbar_min = self.mainHeaderWidget.minimumSizeHint().width()
-                        self.mainHeaderWidget.setMaximumWidth(max(sizes[0], toolbar_min))
-                    if hasattr(self, '_header_layout'):
-                        self._header_layout.setSpacing(
-                            self.image_gallery_splitter.handleWidth())
-                        # Force the header row to recompute now so the toolbar
-                        # cannot linger at its previous (wider) size.
-                        self._header_layout.invalidate()
+            splitter = getattr(self, 'image_gallery_splitter', None)
+            if not splitter:
+                return
+            # Floor the image pane at the toolbar's minimum width (idempotent:
+            # only assigned when it actually changes, so it never re-triggers a
+            # layout pass on its own).
+            if hasattr(self, 'mainHeaderWidget') and hasattr(self, 'imageWidget'):
+                toolbar_min = self.mainHeaderWidget.minimumSizeHint().width()
+                if toolbar_min and self.imageWidget.minimumWidth() != toolbar_min:
+                    self.imageWidget.setMinimumWidth(toolbar_min)
+            sizes = splitter.sizes()
+            if len(sizes) == 2:
+                self.aoiHeaderWidget.setFixedWidth(sizes[1])
+                if hasattr(self, '_header_layout'):
+                    self._header_layout.setSpacing(splitter.handleWidth())
         except Exception:
             pass
 
@@ -659,11 +658,6 @@ class Viewer(TranslationMixin, QMainWindow, Ui_Viewer):
             self.gallery_controller.toggle_gallery_mode()
         # Update button styling after state change
         self._update_gallery_mode_button_style()
-
-        # Re-sync the header once the toggle's layout has fully settled, so the
-        # toolbar is capped to the (new) image-pane width even if it had not
-        # re-shrunk during the toggle itself (see _sync_aoi_header_width).
-        QTimer.singleShot(0, self._sync_aoi_header_width)
 
     def _generate_cache(self):
         """Generate thumbnail and color caches for this dataset."""

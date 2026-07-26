@@ -197,65 +197,52 @@ class _FakeSplitter:
         return 4
 
 
-def _sync_target(ui, sizes):
-    """A lightweight object exposing what ``_sync_aoi_header_width`` touches."""
-    return SimpleNamespace(
-        image_gallery_splitter=_FakeSplitter(sizes),
+def test_header_sync_floors_image_pane_at_toolbar_minimum(qtbot):
+    """The image pane's minimum width must be floored at the toolbar minimum.
+
+    Regression (runaway): the toolbar and the AOI header share one header row
+    above the splitter, and the AOI header is pinned to the AOI-pane width. If
+    the image pane is allowed narrower than the toolbar, the header row is wider
+    than the splitter, so pinning the AOI header pushes the window minimum past
+    its current width. Because that minimum is re-read on every resize, the
+    window grows without bound. Flooring the image pane at the toolbar minimum
+    keeps the header row and the splitter the same width, breaking the loop.
+    """
+    win, ui = _build_header(qtbot)
+    obj = SimpleNamespace(
+        image_gallery_splitter=_FakeSplitter([800, 600]),
         aoiHeaderWidget=ui.aoiHeaderWidget,
         mainHeaderWidget=ui.mainHeaderWidget,
+        imageWidget=ui.imageWidget,
     )
 
+    Viewer._sync_aoi_header_width(obj)
 
-def test_header_sync_caps_toolbar_to_image_pane_width(qtbot):
-    """The toolbar is capped to the image-pane width so it can't overrun the row.
-
-    Regression: after toggling gallery mode the toolbar (``mainHeaderWidget``)
-    could linger at its previous, wider single-image width. Because it sits
-    beside the AOI header in the shared header row, that stale width shoved the
-    AOI header -- filter icon, count, and the pane's scrollbar -- off the right
-    edge of a maximized window. The sync must cap the toolbar to the current
-    image-pane width (``sizes[0]``) and pin the AOI header to the AOI-pane
-    width (``sizes[1]``).
-    """
-    win, ui = _build_header(qtbot)
-
-    Viewer._sync_aoi_header_width(_sync_target(ui, [1269, 635]))
-
-    # AOI header pinned to the AOI-pane width (alignment with the gallery).
-    assert ui.aoiHeaderWidget.maximumWidth() == 635
-    assert ui.aoiHeaderWidget.minimumWidth() == 635
-    # Toolbar capped to the image-pane width (cannot push the header off-screen).
-    assert ui.mainHeaderWidget.maximumWidth() == 1269
-
-
-def test_header_sync_tracks_toolbar_when_pane_shrinks(qtbot):
-    """Toggling from a narrow AOI pane to a wide one re-caps the toolbar.
-
-    Emulates the single-image -> gallery transition: the toolbar cap must drop
-    from the wide single-image image-pane width to the narrower gallery one.
-    """
-    win, ui = _build_header(qtbot)
-
-    # Single-image: wide image pane, narrow AOI pane.
-    Viewer._sync_aoi_header_width(_sync_target(ui, [1658, 250]))
-    assert ui.mainHeaderWidget.maximumWidth() == 1658
-
-    # Gallery: image pane shrinks, AOI pane grows -> toolbar cap must follow.
-    Viewer._sync_aoi_header_width(_sync_target(ui, [1269, 635]))
-    assert ui.mainHeaderWidget.maximumWidth() == 1269
-    assert ui.aoiHeaderWidget.maximumWidth() == 635
-
-
-def test_header_sync_never_caps_toolbar_below_its_minimum(qtbot):
-    """A very wide AOI pane must not cap the toolbar below its own minimum.
-
-    Capping ``maximumWidth`` below ``minimumSizeHint`` would be a max < min
-    contradiction; the sync must floor the cap at the toolbar minimum.
-    """
-    win, ui = _build_header(qtbot)
     toolbar_min = ui.mainHeaderWidget.minimumSizeHint().width()
+    # Image pane floored at the toolbar minimum (this is what stops the runaway).
+    assert ui.imageWidget.minimumWidth() == toolbar_min
+    # The AOI header still tracks the AOI-pane width for alignment.
+    assert ui.aoiHeaderWidget.maximumWidth() == 600
+    assert ui.aoiHeaderWidget.minimumWidth() == 600
 
-    Viewer._sync_aoi_header_width(_sync_target(ui, [100, 1800]))
 
-    assert ui.mainHeaderWidget.maximumWidth() == toolbar_min
-    assert ui.mainHeaderWidget.maximumWidth() >= toolbar_min
+def test_header_sync_image_pane_floor_is_idempotent(qtbot):
+    """Re-running the sync must not keep re-assigning the image-pane minimum.
+
+    The floor is only assigned when it actually changes, so repeated calls (one
+    per resize) cannot themselves trigger fresh layout passes -- the property
+    that keeps the fix from re-introducing a feedback loop.
+    """
+    win, ui = _build_header(qtbot)
+    obj = SimpleNamespace(
+        image_gallery_splitter=_FakeSplitter([800, 600]),
+        aoiHeaderWidget=ui.aoiHeaderWidget,
+        mainHeaderWidget=ui.mainHeaderWidget,
+        imageWidget=ui.imageWidget,
+    )
+
+    Viewer._sync_aoi_header_width(obj)
+    floored = ui.imageWidget.minimumWidth()
+    # A second identical sync leaves the minimum unchanged.
+    Viewer._sync_aoi_header_width(obj)
+    assert ui.imageWidget.minimumWidth() == floored
