@@ -48,7 +48,6 @@ check_*.py
 clean_*.py
 find_*.py
 get_*.py
-requirements-*.txt
 nul
 
 # Temporary and debug files

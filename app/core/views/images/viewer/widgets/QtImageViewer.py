@@ -637,18 +637,30 @@ class QtImageViewer(TranslationMixin, QGraphicsView):
         if self.thumbnail or self.wheelZoomFactor in (None, 1) or not self.hasImage() or self._is_destroyed:
             return super().wheelEvent(ev)
 
-        # Ctrl (or Cmd on macOS, which Qt maps to ControlModifier) forces zoom.
-        zoom_mod = bool(ev.modifiers() & (Qt.ControlModifier | Qt.MetaModifier))
+        # Scrolling ZOOMS on every pointing device, and panning has its own
+        # explicit gestures: Shift+scroll, Space+left-drag, or right-drag.
+        #
+        # Telling "mouse wheel" apart from "trackpad" is not achievable in
+        # practice on macOS, and guessing wrong costs the user their primary
+        # interaction:
+        #   * A Magic Mouse has no wheel at all -- its whole shell is a touch
+        #     surface, so Qt reports it as a TouchPad.
+        #   * An ordinary wheel arrives through the generic "core pointer"
+        #     (DeviceType.Mouse) with pixelDelta populated, because macOS fills
+        #     in precise deltas for any precision-scrolling device.
+        # So neither the device type nor the presence of pixelDelta identifies
+        # the hardware, and both heuristics routed real zoom gestures to the pan
+        # path -- where they did nothing at all at full fit. Zoom is this
+        # viewer's primary interaction, so it is what scrolling always does.
+        #
+        # _pan_by_pixels reports whether it could actually act; when there is
+        # nothing to pan we fall through to zoom rather than swallow the event.
+        if ev.modifiers() & Qt.ShiftModifier:
+            if self._pan_by_pixels(self._scroll_pixels(ev)):
+                ev.accept()
+                return
 
-        # A trackpad two-finger scroll PANS (matching macOS Preview/Maps). Zoom
-        # on a trackpad is Ctrl/Cmd+scroll or pinch, so a laptop user with no
-        # mouse never depends on a wheel that isn't there.
-        if self._is_touchpad_scroll(ev) and not zoom_mod:
-            self._pan_by_pixels(ev.pixelDelta())
-            ev.accept()
-            return
-
-        # Mouse wheel, or Ctrl/Cmd + trackpad scroll -> zoom toward the cursor.
+        # Zoom toward the cursor.
         delta = ev.angleDelta().y() or ev.pixelDelta().y()
         if delta == 0:
             ev.accept()
@@ -659,35 +671,49 @@ class QtImageViewer(TranslationMixin, QGraphicsView):
         self._zoom_toward(ev.position().toPoint(), factor)
         ev.accept()
 
-    def _is_touchpad_scroll(self, ev):
-        """True when a wheel event came from a trackpad, not a mouse wheel."""
-        try:
-            dev = ev.device()
-            if dev is not None and dev.type() == QInputDevice.DeviceType.TouchPad:
-                return True
-        except Exception:
-            pass
-        # High-resolution pixel deltas are produced by touchpads; a classic
-        # notched wheel reports only angleDelta (in 120-unit steps).
-        return not ev.pixelDelta().isNull()
+    def _scroll_pixels(self, ev):
+        """Pixel-space scroll delta for *ev*, synthesized when Qt omits it.
+
+        Trackpads and Magic Mice report high-resolution pixelDelta; a classic
+        notched wheel reports only angleDelta. Converting the latter lets
+        Shift+scroll pan with any device rather than only the precise ones.
+        """
+        pixels = ev.pixelDelta()
+        if not pixels.isNull():
+            return pixels
+        angle = ev.angleDelta()
+        # 120 angle units is one wheel notch; ~50 px a notch matches the feel
+        # of Qt's default wheelScrollLines for a text view.
+        return QPoint(int(angle.x() / 120.0 * 50), int(angle.y() / 120.0 * 50))
 
     def _pan_by_pixels(self, pixel_delta):
-        """Pan by a trackpad scroll delta (translate the current zoom rect)."""
+        """Pan by a trackpad scroll delta (translate the current zoom rect).
+
+        Returns:
+            bool: True if the view actually panned. False when panning is not
+            possible -- destroyed, panning disabled, a zero delta, or already
+            at full fit with nothing to scroll -- so the caller can fall back
+            to zooming rather than swallowing the event as a no-op.
+        """
         if self._is_destroyed or not self.canPan or self.thumbnail:
-            return
+            return False
         if not self.zoomStack:
-            return  # nothing to pan at full-fit
+            return False  # nothing to pan at full-fit
+        if pixel_delta.isNull():
+            return False  # e.g. a trackpad ScrollEnd carries no delta
         scale = self.transform().m11() or 1.0
         zr = QRectF(self.zoomStack[-1])
         # pixelDelta already reflects the OS scroll direction; move the visible
         # window with the scroll, the way a scroll area does.
         zr.translate(-pixel_delta.x() / scale, -pixel_delta.y() / scale)
         scene_rect = self._safe_scene_rect()
-        if scene_rect:
-            self.zoomStack[-1] = self._clamp_rect_to_scene(zr, scene_rect)
-            self.updateViewer()
-            if not self._is_destroyed:
-                self._safe_emit_view_changed()
+        if not scene_rect:
+            return False
+        self.zoomStack[-1] = self._clamp_rect_to_scene(zr, scene_rect)
+        self.updateViewer()
+        if not self._is_destroyed:
+            self._safe_emit_view_changed()
+        return True
 
     def _zoom_toward(self, viewport_pos, factor):
         """Zoom by *factor* (>1 in, <1 out) keeping *viewport_pos* fixed."""

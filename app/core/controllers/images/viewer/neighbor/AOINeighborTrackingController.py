@@ -84,6 +84,14 @@ class AOINeighborTrackingController(TranslationMixin, QObject):
         # Thread management
         self._worker = None
         self._thread = None
+        self._cancelled = False
+        # Threads still winding down, kept alive until Qt reports them
+        # stopped. See _cleanup_thread for why this must not be skipped.
+        self._retiring = {}
+        # Reentrancy state: a modal QProgressDialog can pump the event loop, so
+        # terminal handlers can arrive while _on_progress is mid-body.
+        self._in_progress_update = False
+        self._deferred = None
 
         # Dialog for displaying results
         self._gallery_dialog = None
@@ -99,6 +107,16 @@ class AOINeighborTrackingController(TranslationMixin, QObject):
         other than the one currently displayed in the main viewer.
         """
         try:
+            # One search at a time. Without this, a second Z press while a
+            # search is running reassigns self._thread and drops the last
+            # Python reference to a *running* QThread. ~QThread() answers that
+            # with qFatal(), which abort()s the process immediately -- the
+            # whole application dies with no Python traceback. A reentrant
+            # press is easy to produce: key auto-repeat, or an event loop
+            # re-entered from inside a slot.
+            if self._thread is not None:
+                return
+
             if image_idx is not None and aoi_idx is not None:
                 # Gallery-mode selection: resolve AOI from explicit indices
                 if image_idx < 0 or image_idx >= len(self.parent.images):
@@ -172,6 +190,9 @@ class AOINeighborTrackingController(TranslationMixin, QObject):
             self.progress_dialog.setWindowTitle(self.tr("Tracking AOI"))
             self.progress_dialog.setWindowModality(Qt.WindowModal)
             self.progress_dialog.setMinimumDuration(0)
+            # Own the dialog's lifetime explicitly; see AOISimilarityController.
+            self.progress_dialog.setAutoClose(False)
+            self.progress_dialog.setAutoReset(False)
             self.progress_dialog.setValue(0)
 
             # Calculate thumbnail radius based on AOI size
@@ -179,6 +200,7 @@ class AOINeighborTrackingController(TranslationMixin, QObject):
             thumbnail_radius = max(100, aoi_radius * 2)
 
             # Create worker and thread
+            self._cancelled = False
             self._thread = QThread()
             self._worker = NeighborSearchWorker(
                 neighbor_service=self.neighbor_service,
@@ -212,21 +234,68 @@ class AOINeighborTrackingController(TranslationMixin, QObject):
             )
 
     def _on_progress(self, message):
-        """Handle progress updates from the worker."""
-        if hasattr(self, 'progress_dialog') and self.progress_dialog:
-            self.progress_dialog.setLabelText(message)
-            QApplication.processEvents()
+        """Handle progress updates from the worker.
+
+        Deliberately does NOT call QApplication.processEvents(). This slot is
+        already queued onto the GUI thread from the worker, so the label
+        repaints on its own as soon as the slot returns and the event loop
+        continues -- pumping events here bought nothing and re-entered the
+        event loop from inside a slot, which delivered pending key events mid
+        search. A reentrant Z press then reassigned self._thread and abort()ed
+        the process (see track_selected_aoi), and a nested queued `finished`
+        could open the results dialog from inside this handler.
+        """
+        dialog = getattr(self, 'progress_dialog', None)
+        if dialog is None:
+            return
+        self._in_progress_update = True
+        try:
+            dialog.setLabelText(message)
+        except RuntimeError:
+            return  # dialog's C++ object was destroyed during a nested loop
+        finally:
+            self._in_progress_update = False
+            self._flush_deferred()
+
+    def _flush_deferred(self):
+        """Run a completion/error handler that arrived during a progress pump."""
+        deferred = self._deferred
+        self._deferred = None
+        if deferred is None:
+            return
+        handler, payload = deferred
+        handler(payload)
+
+    def _defer_while_pumping(self, handler, payload):
+        """True if *handler* was deferred because a progress update is active.
+
+        Terminal handlers must never run nested inside _on_progress: they close
+        the progress dialog that _on_progress is still using, and they open
+        another dialog inside its modal session, which macOS reports as
+        "modalSession has been exited prematurely".
+        """
+        if not self._in_progress_update:
+            return False
+        # Last one wins: only one terminal event can be meaningful per search.
+        self._deferred = (handler, payload)
+        return True
 
     def _on_search_complete(self, results):
         """Handle search completion."""
+        if self._defer_while_pumping(self._on_search_complete, results):
+            return
         try:
             # Clean up thread
             self._cleanup_thread()
 
-            # Close progress dialog
-            if hasattr(self, 'progress_dialog') and self.progress_dialog:
-                self.progress_dialog.close()
-                self.progress_dialog = None
+            self._close_progress_dialog()
+
+            # The worker emits `finished` even when cancelled, and that signal
+            # is queued, so it lands after _on_cancelled has already run.
+            # Without this the gallery still opened for a search the user
+            # explicitly cancelled.
+            if self._cancelled:
+                return
 
             if not results:
                 QMessageBox.information(
@@ -246,14 +315,16 @@ class AOINeighborTrackingController(TranslationMixin, QObject):
 
     def _on_search_error(self, error_msg):
         """Handle search error."""
+        if self._defer_while_pumping(self._on_search_error, error_msg):
+            return
         try:
             # Clean up thread
             self._cleanup_thread()
 
-            # Close progress dialog
-            if hasattr(self, 'progress_dialog') and self.progress_dialog:
-                self.progress_dialog.close()
-                self.progress_dialog = None
+            self._close_progress_dialog()
+
+            if self._cancelled:
+                return
 
             QMessageBox.critical(
                 self.parent,
@@ -270,17 +341,72 @@ class AOINeighborTrackingController(TranslationMixin, QObject):
 
     def _on_cancelled(self):
         """Handle cancellation."""
-        if self._worker:
-            self._worker.cancel()
+        self._cancelled = True
         self._cleanup_thread()
 
+    def _close_progress_dialog(self):
+        """Close the progress dialog without triggering a spurious cancellation.
+
+        QProgressDialog emits canceled() from its closeEvent, so the canceled
+        handler must be disconnected before closing or a *completed* search
+        would be treated as user-cancelled and its results silently dropped.
+        """
+        if getattr(self, 'progress_dialog', None):
+            try:
+                self.progress_dialog.canceled.disconnect(self._on_cancelled)
+            except (RuntimeError, TypeError):
+                pass
+            self.progress_dialog.close()
+            self.progress_dialog = None
+
     def _cleanup_thread(self):
-        """Clean up the worker thread."""
-        if self._thread:
-            self._thread.quit()
-            self._thread.wait()
-            self._thread = None
+        """Release the worker thread without ever destroying a running one.
+
+        Two hazards make the obvious teardown wrong:
+
+        * ``~QThread()`` calls ``qFatal()`` -- an immediate ``abort()`` that
+          takes the whole application down with no Python traceback -- if the
+          thread is still running. Dropping the last Python reference to a live
+          QThread is therefore a hard crash, not an exception.
+        * Destroying the worker while its ``run()`` is still executing on that
+          thread is a use-after-free on the C++ object.
+
+        Blocking on ``wait()`` here is not the answer either: this runs on the
+        GUI thread, and when the user cancels mid-search the worker is inside a
+        long computation, so ``wait()`` froze the UI for the rest of the search.
+
+        Instead both objects are moved to ``self._retiring``, which holds them
+        alive while the thread unwinds, and are released from the thread's own
+        ``finished`` signal. ``self._thread`` is cleared immediately so a new
+        search can start right away.
+        """
+        thread, worker = self._thread, self._worker
+        self._thread = None
         self._worker = None
+        if thread is None:
+            return
+
+        if worker is not None:
+            worker.cancel()
+
+        # Hold both alive until Qt reports the thread stopped.
+        self._retiring[thread] = worker
+        thread.finished.connect(lambda t=thread: self._release_thread(t))
+        thread.requestInterruption()
+        thread.quit()
+        if not thread.isRunning():
+            # Already stopped, so `finished` will not fire again.
+            self._release_thread(thread)
+
+    def _release_thread(self, thread):
+        """Drop the retained references once *thread* has actually stopped."""
+        try:
+            # Returns promptly: `finished` is emitted from the thread's own
+            # unwind, so this only covers the last instructions of that unwind.
+            thread.wait(5000)
+        except RuntimeError:
+            pass  # C++ object already gone
+        self._retiring.pop(thread, None)
 
     def _show_gallery_dialog(self, results):
         """

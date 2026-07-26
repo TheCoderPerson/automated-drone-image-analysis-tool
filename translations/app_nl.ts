@@ -642,22 +642,22 @@ toegeeflijk</translation>
 <context>
     <name>AOINeighborTrackingController</name>
     <message>
-        <location filename="../app/core/controllers/images/viewer/neighbor/AOINeighborTrackingController.py" line="120"/>
+        <location filename="../app/core/controllers/images/viewer/neighbor/AOINeighborTrackingController.py" line="138"/>
         <source>No AOI Selected</source>
         <translation>Geen AOI geselecteerd</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/neighbor/AOINeighborTrackingController.py" line="121"/>
+        <location filename="../app/core/controllers/images/viewer/neighbor/AOINeighborTrackingController.py" line="139"/>
         <source>Please select an AOI first by clicking on it in the thumbnail panel.</source>
         <translation>Selecteer eerst een AOI door erop te klikken in het miniaturenpaneel.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/neighbor/AOINeighborTrackingController.py" line="155"/>
+        <location filename="../app/core/controllers/images/viewer/neighbor/AOINeighborTrackingController.py" line="173"/>
         <source>Cannot Calculate GPS</source>
         <translation>Kan GPS niet berekenen</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/neighbor/AOINeighborTrackingController.py" line="157"/>
+        <location filename="../app/core/controllers/images/viewer/neighbor/AOINeighborTrackingController.py" line="174"/>
         <source>Unable to calculate GPS coordinates for this AOI.
 
 This may be due to missing image metadata (GPS, altitude, or camera info).</source>
@@ -666,61 +666,61 @@ This may be due to missing image metadata (GPS, altitude, or camera info).</sour
 Dit kan komen door ontbrekende afbeeldingsmetagegevens (GPS, hoogte of camera-informatie).</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/neighbor/AOINeighborTrackingController.py" line="167"/>
+        <location filename="../app/core/controllers/images/viewer/neighbor/AOINeighborTrackingController.py" line="185"/>
         <source>Searching for AOI in neighboring images...</source>
         <translation>AOI zoeken in naburige afbeeldingen...</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/neighbor/AOINeighborTrackingController.py" line="168"/>
+        <location filename="../app/core/controllers/images/viewer/neighbor/AOINeighborTrackingController.py" line="186"/>
         <source>Cancel</source>
         <translation>Annuleren</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/neighbor/AOINeighborTrackingController.py" line="172"/>
+        <location filename="../app/core/controllers/images/viewer/neighbor/AOINeighborTrackingController.py" line="190"/>
         <source>Tracking AOI</source>
         <translation>AOI volgen</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/neighbor/AOINeighborTrackingController.py" line="208"/>
+        <location filename="../app/core/controllers/images/viewer/neighbor/AOINeighborTrackingController.py" line="230"/>
         <source>Tracking Error</source>
         <translation>Volgfout</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/neighbor/AOINeighborTrackingController.py" line="209"/>
+        <location filename="../app/core/controllers/images/viewer/neighbor/AOINeighborTrackingController.py" line="231"/>
         <source>An error occurred while tracking the AOI:
 {error}</source>
         <translation>Er is een fout opgetreden bij het volgen van de AOI:
 {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/neighbor/AOINeighborTrackingController.py" line="234"/>
+        <location filename="../app/core/controllers/images/viewer/neighbor/AOINeighborTrackingController.py" line="303"/>
         <source>No Neighbors Found</source>
         <translation>Geen buren gevonden</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/neighbor/AOINeighborTrackingController.py" line="235"/>
+        <location filename="../app/core/controllers/images/viewer/neighbor/AOINeighborTrackingController.py" line="304"/>
         <source>The AOI was not found in any neighboring images.</source>
         <translation>De AOI is niet gevonden in naburige afbeeldingen.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/neighbor/AOINeighborTrackingController.py" line="260"/>
+        <location filename="../app/core/controllers/images/viewer/neighbor/AOINeighborTrackingController.py" line="331"/>
         <source>Search Error</source>
         <translation>Zoekfout</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/neighbor/AOINeighborTrackingController.py" line="261"/>
+        <location filename="../app/core/controllers/images/viewer/neighbor/AOINeighborTrackingController.py" line="332"/>
         <source>An error occurred during the search:
 {error}</source>
         <translation>Er is een fout opgetreden tijdens het zoeken:
 {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/neighbor/AOINeighborTrackingController.py" line="312"/>
+        <location filename="../app/core/controllers/images/viewer/neighbor/AOINeighborTrackingController.py" line="438"/>
         <source>Display Error</source>
         <translation>Weergavefout</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/neighbor/AOINeighborTrackingController.py" line="313"/>
+        <location filename="../app/core/controllers/images/viewer/neighbor/AOINeighborTrackingController.py" line="439"/>
         <source>An error occurred while displaying results:
 {error}</source>
         <translation>Er is een fout opgetreden bij het weergeven van de resultaten:
@@ -730,94 +730,94 @@ Dit kan komen door ontbrekende afbeeldingsmetagegevens (GPS, hoogte of camera-in
 <context>
     <name>AOISimilarityController</name>
     <message>
-        <location filename="../app/core/controllers/images/viewer/similarity/AOISimilarityController.py" line="134"/>
+        <location filename="../app/core/controllers/images/viewer/similarity/AOISimilarityController.py" line="141"/>
         <source>No AOI Selected</source>
         <translation>Geen AOI geselecteerd</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/similarity/AOISimilarityController.py" line="135"/>
+        <location filename="../app/core/controllers/images/viewer/similarity/AOISimilarityController.py" line="142"/>
         <source>Please select an AOI first by clicking on it in the thumbnail panel.</source>
         <translation>Selecteer eerst een AOI door erop te klikken in het miniaturenpaneel.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/similarity/AOISimilarityController.py" line="152"/>
-        <location filename="../app/core/controllers/images/viewer/similarity/AOISimilarityController.py" line="246"/>
+        <location filename="../app/core/controllers/images/viewer/similarity/AOISimilarityController.py" line="159"/>
+        <location filename="../app/core/controllers/images/viewer/similarity/AOISimilarityController.py" line="311"/>
         <source>Similarity Search Error</source>
         <translation>Fout bij zoeken naar vergelijkbare AOI&apos;s</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/similarity/AOISimilarityController.py" line="153"/>
+        <location filename="../app/core/controllers/images/viewer/similarity/AOISimilarityController.py" line="160"/>
         <source>An error occurred while starting the similarity search:
 {error}</source>
         <translation>Er is een fout opgetreden bij het starten van de zoekactie naar vergelijkbare AOI&apos;s:
 {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/similarity/AOISimilarityController.py" line="164"/>
+        <location filename="../app/core/controllers/images/viewer/similarity/AOISimilarityController.py" line="171"/>
         <source>Analyzing AOIs for visual similarity...</source>
         <translation>AOI&apos;s analyseren op visuele overeenkomst...</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/similarity/AOISimilarityController.py" line="165"/>
+        <location filename="../app/core/controllers/images/viewer/similarity/AOISimilarityController.py" line="172"/>
         <source>Cancel</source>
         <translation>Annuleren</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/similarity/AOISimilarityController.py" line="169"/>
+        <location filename="../app/core/controllers/images/viewer/similarity/AOISimilarityController.py" line="176"/>
         <source>Find Similar AOIs</source>
         <translation>Vergelijkbare AOI&apos;s zoeken</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/similarity/AOISimilarityController.py" line="200"/>
+        <location filename="../app/core/controllers/images/viewer/similarity/AOISimilarityController.py" line="233"/>
         <source>Analyzing AOI {done} of {total}...</source>
         <translation>AOI {done} van {total} analyseren...</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/similarity/AOISimilarityController.py" line="215"/>
+        <location filename="../app/core/controllers/images/viewer/similarity/AOISimilarityController.py" line="278"/>
         <source>No Similar AOIs</source>
         <translation>Geen vergelijkbare AOI&apos;s</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/similarity/AOISimilarityController.py" line="216"/>
+        <location filename="../app/core/controllers/images/viewer/similarity/AOISimilarityController.py" line="279"/>
         <source>No other AOIs could be analyzed for similarity.</source>
         <translation>Er konden geen andere AOI&apos;s op overeenkomst worden geanalyseerd.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/similarity/AOISimilarityController.py" line="247"/>
+        <location filename="../app/core/controllers/images/viewer/similarity/AOISimilarityController.py" line="312"/>
         <source>The similarity search could not be completed:
 {error}</source>
         <translation>De zoekactie naar vergelijkbare AOI&apos;s kon niet worden voltooid:
 {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/similarity/AOISimilarityController.py" line="314"/>
+        <location filename="../app/core/controllers/images/viewer/similarity/AOISimilarityController.py" line="418"/>
         <source>Display Error</source>
         <translation>Weergavefout</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/similarity/AOISimilarityController.py" line="315"/>
+        <location filename="../app/core/controllers/images/viewer/similarity/AOISimilarityController.py" line="419"/>
         <source>An error occurred while displaying results:
 {error}</source>
         <translation>Er is een fout opgetreden bij het weergeven van de resultaten:
 {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/similarity/AOISimilarityController.py" line="367"/>
+        <location filename="../app/core/controllers/images/viewer/similarity/AOISimilarityController.py" line="471"/>
         <source>Flagged {count} AOI(s)</source>
         <translation>{count} AOI&apos;s gemarkeerd</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/similarity/AOISimilarityController.py" line="370"/>
+        <location filename="../app/core/controllers/images/viewer/similarity/AOISimilarityController.py" line="474"/>
         <source>Removed flag from {count} AOI(s)</source>
         <translation>Markering verwijderd van {count} AOI&apos;s</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/similarity/AOISimilarityController.py" line="402"/>
+        <location filename="../app/core/controllers/images/viewer/similarity/AOISimilarityController.py" line="506"/>
         <source>Comment saved on {count} AOI(s)</source>
         <translation>Opmerking opgeslagen bij {count} AOI&apos;s</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/similarity/AOISimilarityController.py" line="405"/>
+        <location filename="../app/core/controllers/images/viewer/similarity/AOISimilarityController.py" line="509"/>
         <source>Comment cleared on {count} AOI(s)</source>
         <translation>Opmerking gewist bij {count} AOI&apos;s</translation>
     </message>
@@ -917,7 +917,7 @@ Right-click to copy data to clipboard</source>
 Rechtsklik om gegevens naar klembord te kopiëren</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/aoi/AOIUIComponent.py" line="256"/>
+        <location filename="../app/core/controllers/images/viewer/aoi/AOIUIComponent.py" line="255"/>
         <source>
 
 Score Type: {type}
@@ -954,7 +954,7 @@ Click to edit comment</source>
 Klik om opmerking te bewerken</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/aoi/AOIUIComponent.py" line="411"/>
+        <location filename="../app/core/controllers/images/viewer/aoi/AOIUIComponent.py" line="410"/>
         <source>No comment yet.
 Click to add a comment for this AOI.
 
@@ -1030,7 +1030,7 @@ of benodigde acties voor deze detectie vast te leggen.</translation>
         <translation>ADIAT - Kleurdetectiewaarschuwing</translation>
     </message>
     <message>
-        <location filename="../app/core/services/AlertService.py" line="610"/>
+        <location filename="../app/core/services/AlertService.py" line="609"/>
         <source>Detected {count} object(s)
 Average confidence: {avg_confidence:.2f}
 Total area: {area:.0f} pixels
@@ -1050,7 +1050,7 @@ Details:
 </translation>
     </message>
     <message>
-        <location filename="../app/core/services/AlertService.py" line="624"/>
+        <location filename="../app/core/services/AlertService.py" line="623"/>
         <source>  #{index}: ({x},{y}) {w}x{h} conf:{confidence:.2f}
 </source>
         <translation>  #{index}: ({x},{y}) {w}x{h} betr:{confidence:.2f}
@@ -1806,7 +1806,7 @@ Probeer:
         <translation>CalTopo Team API-inloggegevens</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/CalTopoCredentialDialog.py" line="85"/>
+        <location filename="../app/core/views/images/viewer/dialogs/CalTopoCredentialDialog.py" line="84"/>
         <source>Enter your CalTopo Team API credentials.
 These can be found in the Team Admin page under Service Accounts.</source>
         <translation>Voer uw CalTopo Team API-inloggegevens in.
@@ -1932,7 +1932,7 @@ Deze zijn te vinden op de Team Admin-pagina onder Service Accounts.</translation
         <translation>Inloggegevens ongeldig</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/CalTopoCredentialDialog.py" line="290"/>
+        <location filename="../app/core/views/images/viewer/dialogs/CalTopoCredentialDialog.py" line="289"/>
         <source>The credentials failed to authenticate with CalTopo API.
 
 Please check:
@@ -2347,7 +2347,7 @@ De items moeten nu zichtbaar zijn op uw kaart.</translation>
         <translation>CalTopo-exportmethode selecteren</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/CalTopoMethodDialog.py" line="61"/>
+        <location filename="../app/core/views/images/viewer/dialogs/CalTopoMethodDialog.py" line="60"/>
         <source>Choose how you want to authenticate with CalTopo:</source>
         <translation>Kies hoe u zich bij CalTopo wilt authenticeren:</translation>
     </message>
@@ -2362,7 +2362,7 @@ De items moeten nu zichtbaar zijn op uw kaart.</translation>
         <translation>API (aanbevolen voor CalTopo Team-account)</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/CalTopoMethodDialog.py" line="75"/>
+        <location filename="../app/core/views/images/viewer/dialogs/CalTopoMethodDialog.py" line="74"/>
         <source>Use CalTopo Team API with service account credentials.
 Best for Teams accounts with service accounts configured.</source>
         <translation>Gebruik de CalTopo Team API met serviceaccount-inloggegevens.
@@ -2374,14 +2374,14 @@ Ideaal voor Team-accounts met geconfigureerde serviceaccounts.</translation>
         <translation>Aanmelden via browser</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/CalTopoMethodDialog.py" line="81"/>
+        <location filename="../app/core/views/images/viewer/dialogs/CalTopoMethodDialog.py" line="80"/>
         <source>Use browser-based authentication.
 Log in through an embedded browser window.</source>
         <translation>Gebruik browsergebaseerde authenticatie.
 Meld u aan via een ingebed browservenster.</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/CalTopoMethodDialog.py" line="96"/>
+        <location filename="../app/core/views/images/viewer/dialogs/CalTopoMethodDialog.py" line="95"/>
         <source>API method requires Team ID and Credential Secret from your
 CalTopo Team Admin page. Browser method uses your regular login.</source>
         <translation>De API-methode vereist een Team-ID en inloggegeven-sleutel van uw
@@ -2411,7 +2411,7 @@ CalTopo Team Admin-pagina. De browsermethode gebruikt uw normale aanmelding.</tr
         <translation>Temporeel stemmen inschakelen (flikker verminderen)</translation>
     </message>
     <message>
-        <location filename="../app/core/views/streaming/components/CleanupTab.py" line="38"/>
+        <location filename="../app/core/views/streaming/components/CleanupTab.py" line="37"/>
         <source>Smooths detections across frames using temporal consistency.
 Detections must appear in N out of M consecutive frames to be confirmed.
 Significantly reduces flickering false positives.
@@ -2427,7 +2427,7 @@ Aanbevolen: AAN voor alle gebruikssituaties (standaard).</translation>
         <translation>Vensterframes (M):</translation>
     </message>
     <message>
-        <location filename="../app/core/views/streaming/components/CleanupTab.py" line="53"/>
+        <location filename="../app/core/views/streaming/components/CleanupTab.py" line="52"/>
         <source>Size of temporal voting window (2-30 frames).
 Detections must appear in N out of M consecutive frames.
 Larger values = longer memory, more stable, slower response to new objects.
@@ -2445,7 +2445,7 @@ Aanbevolen: 5 voor 30fps (~167ms venster), 7 voor 60fps.</translation>
         <translation>Drempel (N van M):</translation>
     </message>
     <message>
-        <location filename="../app/core/views/streaming/components/CleanupTab.py" line="66"/>
+        <location filename="../app/core/views/streaming/components/CleanupTab.py" line="65"/>
         <source>Number of frames within window where detection must appear (N of M).
 Higher values = more stringent, filters transient false positives.
 Lower values = more lenient, faster response to new objects.
@@ -2468,7 +2468,7 @@ Aanbevolen: 3 van 5 (detectie in 60% van de frames).</translation>
         <translation>Filtering van beeldverhouding inschakelen</translation>
     </message>
     <message>
-        <location filename="../app/core/views/streaming/components/CleanupTab.py" line="85"/>
+        <location filename="../app/core/views/streaming/components/CleanupTab.py" line="84"/>
         <source>Filter out very thin or stretched detections based on width/height.
 Useful for removing wires, long shadows, or other non-object shapes.
 Most users can leave this OFF unless you see many long skinny false detections.</source>
@@ -2482,7 +2482,7 @@ De meeste gebruikers kunnen dit UIT laten, tenzij u veel lange, smalle valse det
         <translation>Min. verhouding:</translation>
     </message>
     <message>
-        <location filename="../app/core/views/streaming/components/CleanupTab.py" line="100"/>
+        <location filename="../app/core/views/streaming/components/CleanupTab.py" line="99"/>
         <source>Minimum width/height ratio to keep (0.1-10.0).
 Lower values = allow taller, thinner detections.
 Higher values = require detections to be more square.
@@ -2498,7 +2498,7 @@ Voorbeeld: 0,2 = wijs af als hoogte meer dan 5x breedte is.</translation>
         <translation>Max. verhouding:</translation>
     </message>
     <message>
-        <location filename="../app/core/views/streaming/components/CleanupTab.py" line="113"/>
+        <location filename="../app/core/views/streaming/components/CleanupTab.py" line="112"/>
         <source>Maximum width/height ratio to keep (0.1-20.0).
 Lower values = reject very wide, thin detections.
 Higher values = allow wider objects such as vehicles or long equipment.</source>
@@ -2517,7 +2517,7 @@ Hogere waarden = sta bredere objecten toe zoals voertuigen of lange uitrusting.<
         <translation>Detectieclustering inschakelen</translation>
     </message>
     <message>
-        <location filename="../app/core/views/streaming/components/CleanupTab.py" line="128"/>
+        <location filename="../app/core/views/streaming/components/CleanupTab.py" line="127"/>
         <source>Optionally merge nearby detections into a single, larger detection.
 Useful when one object appears as many small adjacent detections.
 Most users can leave this OFF unless objects look fragmented.</source>
@@ -2531,7 +2531,7 @@ De meeste gebruikers kunnen dit UIT laten, tenzij objecten gefragmenteerd lijken
         <translation>Clusterafstand (px):</translation>
     </message>
     <message>
-        <location filename="../app/core/views/streaming/components/CleanupTab.py" line="142"/>
+        <location filename="../app/core/views/streaming/components/CleanupTab.py" line="141"/>
         <source>Maximum distance between detection centers to merge them (0-500 pixels).
 Lower values = only merge very close detections.
 Higher values = merge detections that are farther apart (may over-merge).</source>
@@ -2543,8 +2543,8 @@ Hogere waarden = voeg verder uit elkaar liggende detecties samen (kan oversamenv
 <context>
     <name>ClickableColorSwatch</name>
     <message>
-        <location filename="../app/algorithms/images/ColorRange/views/ColorRowWidget.py" line="55"/>
         <location filename="../app/algorithms/images/ColorRange/views/ColorRowWizardWidget.py" line="64"/>
+        <location filename="../app/algorithms/images/ColorRange/views/ColorRowWidget.py" line="55"/>
         <location filename="../app/algorithms/Shared/views/HSVColorRowWidget.py" line="83"/>
         <source>RGB: ({r}, {g}, {b})
 Click to change color</source>
@@ -4286,7 +4286,7 @@ Klik op afbeeldingen om ze naar de sectie Geselecteerd hierboven te verplaatsen.
         <translation>Nog geen beoordelaars</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="312"/>
+        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="311"/>
         <source>Batch review status and assignments. Load reviewer XMLs to update progress. Double-click a batch to open its results in the Viewer.</source>
         <translation>Status en toewijzingen voor batchcontrole. Laad XML-bestanden van reviewers om de voortgang bij te werken. Dubbelklik op een batch om de resultaten in de Viewer te openen.</translation>
     </message>
@@ -4371,7 +4371,7 @@ Klik op afbeeldingen om ze naar de sectie Geselecteerd hierboven te verplaatsen.
         <translation>Initiële batch-XML-bestanden selecteren</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="403"/>
+        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="402"/>
         <source>You can select multiple ADIAT_Data.xml files from different folders.
 
 Tips:
@@ -4498,7 +4498,7 @@ Tips:
         <translation>Meer batch-XML-bestanden toevoegen</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="540"/>
+        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="539"/>
         <source>Select additional ADIAT_Data.xml batch files to add to this search.
 
 Tips:
@@ -4520,7 +4520,7 @@ Tips:
         <translation>Toe te voegen Batch ADIAT_Data.xml-bestanden selecteren (houd Ctrl ingedrukt voor meerdere)</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="579"/>
+        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="578"/>
         <source>Successfully added {count} batch(es) to the project!
 Total batches: {total}</source>
         <translation>{count} batch(es) succesvol toegevoegd aan het project!
@@ -4532,7 +4532,7 @@ Totaal aantal batches: {total}</translation>
         <translation>Geen batches toegevoegd</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="591"/>
+        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="590"/>
         <source>No batches were added. Check that the XML files are valid ADIAT_Data.xml files.</source>
         <translation>Er zijn geen batches toegevoegd. Controleer of de XML-bestanden geldige ADIAT_Data.xml-bestanden zijn.</translation>
     </message>
@@ -5677,7 +5677,7 @@ Hiermee wordt Meta/WRI-kroonhoogte (1 m) gedownload en ingesteld als bron voor k
         <translation>POD-overlay</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="139"/>
+        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="138"/>
         <source>Run a map export with the POD option to generate this overlay</source>
         <translation>Voer een kaartexport uit met de POD-optie om deze overlay te genereren</translation>
     </message>
@@ -5712,7 +5712,7 @@ Hiermee wordt Meta/WRI-kroonhoogte (1 m) gedownload en ingesteld als bron voor k
         <translation>POD berekenen</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="171"/>
+        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="170"/>
         <source>Compute the terrain-aware probability-of-detection heatmap for this mission (may take several minutes)</source>
         <translation>Bereken de terreinbewuste detectiekans-heatmap voor deze missie (kan enkele minuten duren)</translation>
     </message>
@@ -5747,7 +5747,7 @@ Hiermee wordt Meta/WRI-kroonhoogte (1 m) gedownload en ingesteld als bron voor k
         <translation>Probleem met laden van kaarttegels</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="384"/>
+        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="383"/>
         <source>{error}
 
 The map will continue to work with cached tiles where available.</source>
@@ -5817,7 +5817,7 @@ De kaart blijft werken met gecachete tegels waar beschikbaar.</translation>
         <translation>Benchmark voltooid</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/guidePages/GeneralSettingsPage.py" line="161"/>
+        <location filename="../app/core/controllers/images/guidePages/GeneralSettingsPage.py" line="160"/>
         <source>Detected {count} CPU core(s).
 
 Recommended number of processes: {recommended}
@@ -8068,7 +8068,7 @@ Lagere waarden = gevoeliger detectie.</translation>
         <translation>Drempeluitbreiding</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/images/MRMap/controllers/MRMapController.py" line="50"/>
+        <location filename="../app/algorithms/images/MRMap/controllers/MRMapController.py" line="49"/>
         <source>When enabled, expand each AOI to also include pixels with histogram bin-counts
 below (threshold + {0}). Pixels inside the cluster rectangle are added unconditionally;
 pixels outside are added if they are connected through other qualifying pixels.</source>
@@ -8082,7 +8082,7 @@ pixels erbuiten worden toegevoegd als ze verbonden zijn via andere geschikte pix
         <translation>Tintuitbreiding</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/images/MRMap/controllers/MRMapController.py" line="59"/>
+        <location filename="../app/algorithms/images/MRMap/controllers/MRMapController.py" line="58"/>
         <source>When enabled, expand each AOI through neighbors whose hue is within +/- {0}
 (OpenCV units) of the mean hue of the original detected pixels.
 Pixels with saturation below {1}% or value below {2}% are excluded.</source>
@@ -8161,7 +8161,7 @@ agressief</translation>
         <translation>Drempeluitbreiding</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/images/MRMap/controllers/MRMapWizardController.py" line="69"/>
+        <location filename="../app/algorithms/images/MRMap/controllers/MRMapWizardController.py" line="68"/>
         <source>When enabled, expand each AOI to also include pixels with histogram bin-counts
 below (threshold + {0}). Pixels inside the cluster rectangle are added unconditionally;
 pixels outside are added if they are connected through other qualifying pixels.</source>
@@ -8175,7 +8175,7 @@ pixels erbuiten worden toegevoegd als ze verbonden zijn via andere geschikte pix
         <translation>Tintuitbreiding</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/images/MRMap/controllers/MRMapWizardController.py" line="78"/>
+        <location filename="../app/algorithms/images/MRMap/controllers/MRMapWizardController.py" line="77"/>
         <source>When enabled, expand each AOI through neighbors whose hue is within +/- {0}
 (OpenCV units) of the mean hue of the original detected pixels.
 Pixels with saturation below {1}% or value below {2}% are excluded.</source>
@@ -8939,7 +8939,7 @@ De resultatenviewer biedt:
 Gebruik om analyseresultaten te bekijken, verifiëren en exporteren.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="1594"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="1595"/>
         <location filename="../resources/views/images/MainWindow.ui" line="1018"/>
         <source> View Results</source>
         <translation> Resultaten bekijken</translation>
@@ -9194,12 +9194,12 @@ Stel vragen, meld problemen en stel nieuwe functies voor.</translation>
         <translation>YouTube-kanaal</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="80"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="81"/>
         <source>Automated Drone Image Analysis Tool v{version} - Sponsored by TEXSAR</source>
         <translation>Geautomatiseerd drone-beeldanalyse-instrument v{version} - Gesponsord door TEXSAR</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="265"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="266"/>
         <source>Select the detection algorithm for your image analysis task:
 
 HSV COLOR RANGE: Detects brightly colored objects (clothing, vehicles, tents)
@@ -9276,223 +9276,223 @@ AI-PERSOONSDETECTOR: deep-learning model voor nauwkeurige persoonsdetectie
   • Beperking: detecteert alleen personen, langzamere verwerking</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="344"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="345"/>
         <source>Select AOI Highlight Color</source>
         <translation>AOI-markeerkleur selecteren</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="358"/>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="376"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="359"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="377"/>
         <source>Select Directory</source>
         <translation>Map selecteren</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="393"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="394"/>
         <source>Select a Reference Image</source>
         <translation>Een referentie-afbeelding selecteren</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="395"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="396"/>
         <source>Images (*.png *.jpg)</source>
         <translation>Afbeeldingen (*.png *.jpg)</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="443"/>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="475"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="444"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="476"/>
         <source>Value Adjusted</source>
         <translation>Waarde aangepast</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="445"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="446"/>
         <source>Maximum area has been adjusted to {value} pixels to maintain valid range.
 (Minimum area must be less than maximum area)</source>
         <translation>Het maximale gebied is aangepast naar {value} pixels om een geldig bereik te behouden.
 (Minimumgebied moet kleiner zijn dan maximumgebied)</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="477"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="478"/>
         <source>Minimum area has been adjusted to {value} pixels to maintain valid range.
 (Maximum area must be greater than minimum area)</source>
         <translation>Het minimale gebied is aangepast naar {value} pixels om een geldig bereik te behouden.
 (Maximumgebied moet groter zijn dan minimumgebied)</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="591"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="592"/>
         <source>Please set the input and output directories.</source>
         <translation>Stel de invoer- en uitvoermappen in.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="598"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="599"/>
         <source>--- Starting image processing ---</source>
         <translation>--- Beeldverwerking starten ---</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="794"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="795"/>
         <source>Could not parse XML file. Check file paths in &quot;{file_name}&quot;</source>
         <translation>Kan XML-bestand niet parseren. Controleer bestandspaden in &quot;{file_name}&quot;</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="817"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="818"/>
         <source>Area of Interest Limit ({limit}) exceeded. Continue?</source>
         <translation>Limiet voor interessegebieden ({limit}) overschreden. Doorgaan?</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="820"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="821"/>
         <source>Area of Interest Limit Exceeded</source>
         <translation>Limiet voor interessegebieden overschreden</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="872"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="873"/>
         <source>--- Image Processing Completed ---</source>
         <translation>--- Beeldverwerking voltooid ---</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="873"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="874"/>
         <source>Image processing complete</source>
         <translation>Beeldverwerking voltooid</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="876"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="877"/>
         <source>{count} images with areas of interest identified</source>
         <translation>{count} afbeeldingen met interessegebieden geïdentificeerd</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="882"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="883"/>
         <source>No areas of interest identified</source>
         <translation>Geen interessegebieden geïdentificeerd</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="966"/>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="1411"/>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="1434"/>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="1464"/>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="1480"/>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="1496"/>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="1512"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="967"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="1412"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="1435"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="1465"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="1481"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="1497"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="1513"/>
         <source>Error</source>
         <translation>Fout</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="976"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="977"/>
         <source>Select File</source>
         <translation>Bestand selecteren</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="976"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="977"/>
         <source>XML Files (*.xml);;All Files (*)</source>
         <translation>XML-bestanden (*.xml);;Alle bestanden (*)</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="997"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="998"/>
         <source>Select Results Folder</source>
         <translation>Resultatenmap selecteren</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="1030"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="1031"/>
         <source>Failed to scan folder: {error}</source>
         <translation>Map scannen mislukt: {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="1052"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="1053"/>
         <source>No Results Found</source>
         <translation>Geen resultaten gevonden</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="1053"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="1054"/>
         <source>No ADIAT_DATA.XML files were found in the selected folder.</source>
         <translation>Er zijn geen ADIAT_DATA.XML-bestanden gevonden in de geselecteerde map.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="1070"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="1071"/>
         <source>Failed to display results: {error}</source>
         <translation>Kan resultaten niet weergeven: {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="1081"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="1082"/>
         <source>Scan failed: {error}</source>
         <translation>Scannen mislukt: {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="1124"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="1125"/>
         <source>Failed to open viewer: {error}</source>
         <translation>Kan viewer niet openen: {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="1153"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="1154"/>
         <source>The selected file is not a valid XML file: {path}</source>
         <translation>Het geselecteerde bestand is geen geldig XML-bestand: {path}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="1357"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="1358"/>
         <source>Error Loading Results</source>
         <translation>Fout bij laden van resultaten</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="1358"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="1359"/>
         <source>Failed to load results file:
 {error}</source>
         <translation>Kan resultatenbestand niet laden:
 {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="1412"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="1413"/>
         <source>Failed to open Streaming Detector:
 {error}</source>
         <translation>Kan streamingdetector niet openen:
 {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="1435"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="1436"/>
         <source>Failed to open Flight Viewer:
 {error}</source>
         <translation>Kan Vluchtviewer niet openen:
 {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="1465"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="1466"/>
         <source>Failed to open Search Coordinator:
 {error}</source>
         <translation>Kan zoekcoördinator niet openen:
 {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="1481"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="1482"/>
         <source>Failed to open Help documentation:
 {error}</source>
         <translation>Kan hulpdocumentatie niet openen:
 {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="1497"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="1498"/>
         <source>Failed to open Community Help:
 {error}</source>
         <translation>Kan communityhulp niet openen:
 {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="1513"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="1514"/>
         <source>Failed to open YouTube Channel:
 {error}</source>
         <translation>Kan YouTube-kanaal niet openen:
 {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="1588"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="1589"/>
         <source> Open Search Coordinator</source>
         <translation> Zoekcoördinator openen</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="1590"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="1591"/>
         <source>Open the Search Coordinator to review every batch in this run.</source>
         <translation>Open de Zoekcoördinator om elke batch in deze run te beoordelen.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="1596"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="1597"/>
         <source>Open the Results Viewer to review detection results.</source>
         <translation>Open de resultatenviewer om detectieresultaten te beoordelen.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="1681"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="1684"/>
         <source>Invalid Value</source>
         <translation>Ongeldige waarde</translation>
     </message>
@@ -9603,7 +9603,7 @@ AI-PERSOONSDETECTOR: deep-learning model voor nauwkeurige persoonsdetectie
         <translation>POD-dekkingsheatmap (terreinbewust)</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/MapExportDialog.py" line="107"/>
+        <location filename="../app/core/views/images/viewer/dialogs/MapExportDialog.py" line="106"/>
         <source>Compute a terrain and canopy aware probability-of-detection raster for the whole mission (all non-hidden images, independent of the selections above). KML exports embed the heatmap in the KML/KMZ as an image overlay; the GeoTIFF products (coverage_pod.tif, coverage_looks.tif, coverage_gaps.geojson, stats.json) are also written — the GeoTIFF can be imported into CalTopo Map Sheets. May take several minutes.</source>
         <translation>Berekent een terrein- en bladerdakbewust detectiekans-raster voor de hele missie (alle niet-verborgen afbeeldingen, onafhankelijk van de selecties hierboven). KML-exports sluiten de heatmap als afbeeldingsoverlay in het KML/KMZ-bestand in; de GeoTIFF-producten (coverage_pod.tif, coverage_looks.tif, coverage_gaps.geojson, stats.json) worden ook geschreven — de GeoTIFF kan in CalTopo Map Sheets worden geïmporteerd. Kan enkele minuten duren.</translation>
     </message>
@@ -9945,7 +9945,7 @@ klik daarna nogmaals om het tweede punt te plaatsen.</translation>
         <translation>Geen afbeeldingen om te exporteren</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/PDFExportController.py" line="153"/>
+        <location filename="../app/core/controllers/images/viewer/exports/PDFExportController.py" line="152"/>
         <source>There are no images available to include in the PDF report.
 
 All images may be hidden or there are no images in the dataset.</source>
@@ -9954,7 +9954,7 @@ All images may be hidden or there are no images in the dataset.</source>
 Mogelijk zijn alle afbeeldingen verborgen of bevat de dataset geen afbeeldingen.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/PDFExportController.py" line="162"/>
+        <location filename="../app/core/controllers/images/viewer/exports/PDFExportController.py" line="161"/>
         <source>There are no images with flagged AOIs to include in the PDF report.
 
 Please flag at least one AOI, or check &apos;Include images without flagged AOIs&apos; to include all images in the report.</source>
@@ -10051,7 +10051,7 @@ Markeer ten minste één AOI of vink &apos;Afbeeldingen zonder gemarkeerde AOI&a
         <translation>Afbeeldingen zonder gemarkeerde AOI&apos;s opnemen</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/PDFExportDialog.py" line="62"/>
+        <location filename="../app/core/views/images/viewer/dialogs/PDFExportDialog.py" line="61"/>
         <source>When checked, all images will be included in the PDF report, even if they don&apos;t have any flagged AOIs. When unchecked, only images with flagged AOIs will be included.</source>
         <translation>Indien aangevinkt, worden alle afbeeldingen opgenomen in het PDF-rapport, ook als ze geen gemarkeerde AOI&apos;s hebben. Indien uitgevinkt, worden alleen afbeeldingen met gemarkeerde AOI&apos;s opgenomen.</translation>
     </message>
@@ -10089,17 +10089,14 @@ Markeer ten minste één AOI of vink &apos;Afbeeldingen zonder gemarkeerde AOI&a
 <context>
     <name>PathValidationController</name>
     <message>
-        <location filename="../app/core/controllers/images/viewer/path/PathValidationController.py" line="87"/>
-        <location filename="../app/core/controllers/images/viewer/path/PathValidationController.py" line="137"/>
-        <location filename="../app/core/controllers/images/viewer/path/PathValidationController.py" line="170"/>
-        <location filename="../app/core/controllers/images/viewer/path/PathValidationController.py" line="220"/>
+        <location filename="../app/core/controllers/images/viewer/path/PathValidationController.py" line="358"/>
         <source>
   ... and {count} more</source>
         <translation>
   ... en nog {count}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/path/PathValidationController.py" line="92"/>
+        <location filename="../app/core/controllers/images/viewer/path/PathValidationController.py" line="103"/>
         <source>{count} source image(s) not found at expected locations:
 
 {files}
@@ -10112,33 +10109,22 @@ Please select the folder containing the source images.</source>
 Selecteer de map die de bronafbeeldingen bevat.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/path/PathValidationController.py" line="100"/>
+        <location filename="../app/core/controllers/images/viewer/path/PathValidationController.py" line="102"/>
         <source>Source Images Not Found</source>
         <translation>Bronafbeeldingen niet gevonden</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/path/PathValidationController.py" line="111"/>
+        <location filename="../app/core/controllers/images/viewer/path/PathValidationController.py" line="108"/>
         <source>Select Source Images Folder</source>
         <translation>Map met bronafbeeldingen selecteren</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/path/PathValidationController.py" line="143"/>
+        <location filename="../app/core/controllers/images/viewer/path/PathValidationController.py" line="109"/>
         <source>Some Images Still Missing</source>
         <translation>Sommige afbeeldingen ontbreken nog</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/path/PathValidationController.py" line="145"/>
-        <source>Found {found} of {total} images.
-
-Still missing:
-{missing}</source>
-        <translation>{found} van {total} afbeeldingen gevonden.
-
-Nog ontbrekend:
-{missing}</translation>
-    </message>
-    <message>
-        <location filename="../app/core/controllers/images/viewer/path/PathValidationController.py" line="175"/>
+        <location filename="../app/core/controllers/images/viewer/path/PathValidationController.py" line="137"/>
         <source>{count} detection mask(s) not found at expected locations:
 
 {files}
@@ -10151,22 +10137,44 @@ Please select the folder containing the mask files.</source>
 Selecteer de map die de maskerbestanden bevat.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/path/PathValidationController.py" line="183"/>
+        <location filename="../app/core/controllers/images/viewer/path/PathValidationController.py" line="136"/>
         <source>Detection Masks Not Found</source>
         <translation>Detectiemaskers niet gevonden</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/path/PathValidationController.py" line="194"/>
+        <location filename="../app/core/controllers/images/viewer/path/PathValidationController.py" line="110"/>
+        <source>Found {found} of {total} images.
+
+Still missing:
+{missing}</source>
+        <translation>{found} van {total} afbeeldingen gevonden.
+
+Nog ontbrekend:
+{missing}</translation>
+    </message>
+    <message>
+        <location filename="../app/core/controllers/images/viewer/path/PathValidationController.py" line="114"/>
+        <source>None of the {total} missing images were found in that folder (including its subfolders).
+
+Expected to find files named:
+{missing}</source>
+        <translation>Geen van de {total} ontbrekende afbeeldingen is gevonden in die map (ook niet in de submappen).
+
+Verwachte bestandsnamen:
+{missing}</translation>
+    </message>
+    <message>
+        <location filename="../app/core/controllers/images/viewer/path/PathValidationController.py" line="142"/>
         <source>Select Masks Folder</source>
         <translation>Maskermap selecteren</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/path/PathValidationController.py" line="226"/>
+        <location filename="../app/core/controllers/images/viewer/path/PathValidationController.py" line="143"/>
         <source>Some Masks Still Missing</source>
         <translation>Sommige maskers ontbreken nog</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/path/PathValidationController.py" line="228"/>
+        <location filename="../app/core/controllers/images/viewer/path/PathValidationController.py" line="144"/>
         <source>Found {found} of {total} masks.
 
 Still missing:
@@ -10175,6 +10183,27 @@ Still missing:
 
 Nog ontbrekend:
 {missing}</translation>
+    </message>
+    <message>
+        <location filename="../app/core/controllers/images/viewer/path/PathValidationController.py" line="148"/>
+        <source>None of the {total} missing masks were found in that folder (including its subfolders).
+
+Expected to find files named:
+{missing}</source>
+        <translation>Geen van de {total} ontbrekende maskers is gevonden in die map (ook niet in de submappen).
+
+Verwachte bestandsnamen:
+{missing}</translation>
+    </message>
+    <message>
+        <location filename="../app/core/controllers/images/viewer/path/PathValidationController.py" line="264"/>
+        <source>Choose Another Folder</source>
+        <translation>Andere map kiezen</translation>
+    </message>
+    <message>
+        <location filename="../app/core/controllers/images/viewer/path/PathValidationController.py" line="271"/>
+        <source>Continue Anyway</source>
+        <translation>Toch doorgaan</translation>
     </message>
 </context>
 <context>
@@ -10745,7 +10774,7 @@ Alle wijzigingen worden automatisch opgeslagen wanneer ze worden gewijzigd.</tra
     </message>
     <message>
         <location filename="../app/core/controllers/Preferences.py" line="142"/>
-        <location filename="../app/core/controllers/Preferences.py" line="378"/>
+        <location filename="../app/core/controllers/Preferences.py" line="377"/>
         <source>3DEP is inactive until both paths are set — the AWS Terrain Tiles baseline is used. Use Download tiles… or Browse.</source>
         <translation>3DEP is inactief totdat beide paden zijn ingesteld — de AWS Terrain Tiles-basis wordt gebruikt. Gebruik Tegels downloaden… of Bladeren.</translation>
     </message>
@@ -10771,7 +10800,7 @@ Alle wijzigingen worden automatisch opgeslagen wanneer ze worden gewijzigd.</tra
     </message>
     <message>
         <location filename="../app/core/controllers/Preferences.py" line="226"/>
-        <location filename="../app/core/controllers/Preferences.py" line="451"/>
+        <location filename="../app/core/controllers/Preferences.py" line="450"/>
         <source>Canopy is disabled until both paths are set — use Download tiles… or Browse.</source>
         <translation>Kroon is uitgeschakeld totdat beide paden zijn ingesteld — gebruik Tegels downloaden… of Bladeren.</translation>
     </message>
@@ -10781,7 +10810,7 @@ Alle wijzigingen worden automatisch opgeslagen wanneer ze worden gewijzigd.</tra
         <translation>Tegels downloaden...</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/Preferences.py" line="238"/>
+        <location filename="../app/core/controllers/Preferences.py" line="237"/>
         <source>Download DEM and/or canopy tiles for an area of interest and register them here. Note: the canopy download uses Meta/WRI data and registers it as the canopy source.</source>
         <translation>Download DEM- en/of kroontegels voor een interessegebied en registreer ze hier. Let op: de kroondownload gebruikt Meta/WRI-gegevens en registreert die als kroonbron.</translation>
     </message>
@@ -10792,7 +10821,7 @@ Alle wijzigingen worden automatisch opgeslagen wanneer ze worden gewijzigd.</tra
         <translation>{version}_{date}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/Preferences.py" line="384"/>
+        <location filename="../app/core/controllers/Preferences.py" line="383"/>
         <source>The registered 3DEP files no longer exist on disk — the AWS Terrain Tiles baseline is used. Re-download or fix the paths.</source>
         <translation>De geregistreerde 3DEP-bestanden bestaan niet meer op schijf — de AWS Terrain Tiles-basis wordt gebruikt. Download opnieuw of corrigeer de paden.</translation>
     </message>
@@ -10813,7 +10842,7 @@ Alle wijzigingen worden automatisch opgeslagen wanneer ze worden gewijzigd.</tra
         <translation>Map met 3DEP-tegels selecteren</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/Preferences.py" line="457"/>
+        <location filename="../app/core/controllers/Preferences.py" line="456"/>
         <source>The registered canopy files no longer exist on disk — canopy is disabled. Re-download or fix the paths.</source>
         <translation>De geregistreerde bladerdakbestanden bestaan niet meer op schijf — bladerdak is uitgeschakeld. Download opnieuw of corrigeer de paden.</translation>
     </message>
@@ -10872,7 +10901,7 @@ Alle wijzigingen worden automatisch opgeslagen wanneer ze worden gewijzigd.</tra
         <translation>Terreincache wissen</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/Preferences.py" line="604"/>
+        <location filename="../app/core/controllers/Preferences.py" line="603"/>
         <source>Are you sure you want to clear all cached terrain elevation data?
 
 This will require re-downloading tiles when terrain elevation is used.</source>
@@ -11587,7 +11616,7 @@ Hogere waarden = voeg verder uit elkaar liggende detecties samen (kan oversamenv
         <translation>Waarschuwing bestandsnaam</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/guidePages/ReviewOrNewPage.py" line="128"/>
+        <location filename="../app/core/controllers/images/guidePages/ReviewOrNewPage.py" line="127"/>
         <source>The selected file does not appear to be an ADIAT_Data.xml result or an ADIAT_Search project file.
 
 Do you want to continue with this file?</source>
@@ -11609,7 +11638,7 @@ Wilt u doorgaan met dit bestand?</translation>
         <translation>Beoordelingstracering</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/ReviewerNameDialog.py" line="51"/>
+        <location filename="../app/core/views/images/viewer/dialogs/ReviewerNameDialog.py" line="50"/>
         <source>Enter your name to track your review activity.
 This helps coordinate reviews across multiple reviewers.</source>
         <translation>Voer uw naam in om uw beoordelingsactiviteit te volgen.
@@ -11636,7 +11665,7 @@ Dit helpt bij de coördinatie van beoordelingen door meerdere beoordelaars.</tra
         <translation>Mijn naam onthouden</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/ReviewerNameDialog.py" line="74"/>
+        <location filename="../app/core/views/images/viewer/dialogs/ReviewerNameDialog.py" line="73"/>
         <source>Save your name for future review sessions.
 You can change it later in Preferences or by clicking the reviewer name in the viewer.</source>
         <translation>Sla uw naam op voor toekomstige beoordelingssessies.
@@ -11932,37 +11961,37 @@ Secundaire aanbeveling: {secondary}</translation>
 <context>
     <name>StreamControlWidget</name>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="827"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="837"/>
         <source>Stream Connection</source>
         <translation>Streamverbinding</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="829"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="839"/>
         <source>Configure and connect to video source (file, HDMI capture, or RTMP stream)</source>
         <translation>Videobron configureren en verbinden (bestand, HDMI-opname of RTMP-stream)</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="834"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="844"/>
         <source>Stream Type:</source>
         <translation>Streamtype:</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="836"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="846"/>
         <source>File</source>
         <translation>Bestand</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="837"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="847"/>
         <source>HDMI Capture</source>
         <translation>HDMI-opname</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="838"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="848"/>
         <source>RTMP Stream</source>
         <translation>RTMP-stream</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="841"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="851"/>
         <source>Select the type of video source:
 • File: Pre-recorded video file with timeline controls
 • HDMI Capture: Live capture from HDMI capture device
@@ -11973,18 +12002,18 @@ Secundaire aanbeveling: {secondary}</translation>
 • RTMP-stream: realtime streamen vanaf RTMP/HTTP-bron</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="850"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="860"/>
         <source>Stream URL/Path:</source>
         <translation>Stream-URL/-pad:</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="857"/>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1056"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="867"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1066"/>
         <source>Click to browse for video file...</source>
         <translation>Klik om naar videobestand te bladeren...</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="861"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="871"/>
         <source>Enter or browse for the video source:
 • File: Click to browse for video file (MP4, AVI, MOV, etc.)
 • RTMP Stream: Enter RTMP URL (rtmp://server:port/app/stream)</source>
@@ -11993,344 +12022,344 @@ Secundaire aanbeveling: {secondary}</translation>
 • RTMP-stream: voer RTMP-URL in (rtmp://server:port/app/stream)</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="870"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="880"/>
         <source>Select HDMI capture device</source>
         <translation>HDMI-opnameapparaat selecteren</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="872"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="882"/>
         <source>Scanning for devices...</source>
         <translation>Apparaten scannen...</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="876"/>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1008"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="886"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1018"/>
         <source>Browse...</source>
         <translation>Bladeren...</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="880"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="890"/>
         <source>Open file browser to select a video file for analysis.
 Supported formats: MP4, AVI, MOV, MKV, FLV, WMV, M4V, 3GP, WebM</source>
         <translation>Open de bestandsbrowser om een videobestand voor analyse te selecteren.
 Ondersteunde formaten: MP4, AVI, MOV, MKV, FLV, WMV, M4V, 3GP, WebM</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="887"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="897"/>
         <source>Scan...</source>
         <translation>Scannen...</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="889"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="899"/>
         <source>Scan for available HDMI capture devices</source>
         <translation>Scannen op beschikbare HDMI-opnameapparaten</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="896"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="906"/>
         <source>Connect</source>
         <translation>Verbinden</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="899"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="909"/>
         <source>Connect to the specified video source and begin processing.</source>
         <translation>Verbind met de opgegeven videobron en start de verwerking.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="901"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="911"/>
         <source>Disconnect</source>
         <translation>Verbinding verbreken</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="905"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="915"/>
         <source>Disconnect from the current video source and stop processing.</source>
         <translation>Verbreek de verbinding met de huidige videobron en stop de verwerking.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="912"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="922"/>
         <source>Status: Disconnected</source>
         <translation>Status: verbinding verbroken</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="914"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="924"/>
         <source>Current connection status</source>
         <translation>Huidige verbindingsstatus</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="917"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="927"/>
         <source>Performance</source>
         <translation>Prestaties</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="918"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="928"/>
         <source>Real-time performance metrics</source>
         <translation>Realtime prestatiemetingen</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="922"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="932"/>
         <source>Video: --</source>
         <translation>Video: --</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="923"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="933"/>
         <source>Original video resolution</source>
         <translation>Oorspronkelijke videoresolutie</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="924"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="934"/>
         <source>Processing: --</source>
         <translation>Verwerking: --</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="926"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="936"/>
         <source>Resolution used for detection processing</source>
         <translation>Resolutie gebruikt voor detectieverwerking</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="930"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="940"/>
         <source>Source FPS: --</source>
         <translation>Bron-FPS: --</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="931"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="941"/>
         <source>Source frame rate and the applied processing cadence</source>
         <translation>Bron-framerate en het toegepaste verwerkingsritme</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="932"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="942"/>
         <source>Proc FPS: --</source>
         <translation>Verw.-FPS: --</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="934"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="944"/>
         <source>Actual frames per second being processed</source>
         <translation>Werkelijk verwerkte frames per seconde</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="938"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="948"/>
         <source>Time: -- ms</source>
         <translation>Tijd: -- ms</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="940"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="950"/>
         <source>Time in milliseconds to process each frame</source>
         <translation>Tijd in milliseconden om elk frame te verwerken</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="942"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="952"/>
         <source>Latency: -- ms</source>
         <translation>Latentie: -- ms</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="944"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="954"/>
         <source>End-to-end latency from frame capture to display</source>
         <translation>End-to-end-latentie van frame-opname tot weergave</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="948"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="958"/>
         <source>Frames: --</source>
         <translation>Frames: --</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="949"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="959"/>
         <source>Total number of frames processed</source>
         <translation>Totaal aantal verwerkte frames</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="950"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="960"/>
         <source>Detections: --</source>
         <translation>Detecties: --</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="951"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="961"/>
         <source>Number of detections in current frame</source>
         <translation>Aantal detecties in het huidige frame</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="965"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="975"/>
         <source>Recording</source>
         <translation>Opnemen</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="970"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="980"/>
         <source>Start Recording</source>
         <translation>Opname starten</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="973"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="983"/>
         <source>Start recording the video stream with detection overlays.</source>
         <translation>Start opname van de videostream met detectie-overlays.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="975"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="985"/>
         <source>Stop Recording</source>
         <translation>Opname stoppen</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="978"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="988"/>
         <source>Stop the current recording and save to file.</source>
         <translation>Stop de huidige opname en sla op in een bestand.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="985"/>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1173"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="995"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1183"/>
         <source>Status: Not Recording</source>
         <translation>Status: niet aan het opnemen</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="988"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="998"/>
         <source>Current recording status and output file path</source>
         <translation>Huidige opnamestatus en pad naar uitvoerbestand</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="992"/>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1180"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1002"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1190"/>
         <source>Duration: --</source>
         <translation>Duur: --</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="994"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1004"/>
         <source>Recording statistics: Duration, FPS, Frames</source>
         <translation>Opnamestatistieken: duur, FPS, frames</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1003"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1013"/>
         <source>Save to:</source>
         <translation>Opslaan naar:</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1006"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1016"/>
         <source>Directory where video recordings will be saved.</source>
         <translation>Map waarin video-opnamen worden opgeslagen.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1010"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1020"/>
         <source>Choose a folder to store recordings.</source>
         <translation>Kies een map om opnamen op te slaan.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1064"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1074"/>
         <source>rtmp://server:port/app/stream</source>
         <translation>rtmp://server:port/app/stream</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1081"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1091"/>
         <source>Invalid Device</source>
         <translation>Ongeldig apparaat</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1082"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1092"/>
         <source>Please select a valid HDMI capture device.</source>
         <translation>Selecteer een geldig HDMI-opnameapparaat.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1094"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1104"/>
         <source>Invalid URL</source>
         <translation>Ongeldige URL</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1095"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1105"/>
         <source>Please enter a valid stream URL.</source>
         <translation>Voer een geldige stream-URL in.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1112"/>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1125"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1122"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1135"/>
         <source>Status: {message}</source>
         <translation>Status: {message}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1161"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1171"/>
         <source>Status: Recording</source>
         <translation>Status: opnemen</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1165"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1175"/>
         <source>Output: {value}</source>
         <translation>Uitvoer: {value}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1177"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1187"/>
         <source>Duration: {value}</source>
         <translation>Duur: {value}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1206"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1216"/>
         <source>Select Recording Directory</source>
         <translation>Opnamemap selecteren</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1217"/>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1220"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1227"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1230"/>
         <source>Scanning...</source>
         <translation>Scannen...</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1244"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1254"/>
         <source>Scan</source>
         <translation>Scannen</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1250"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1260"/>
         <source>No capture devices found</source>
         <translation>Geen opnameapparaten gevonden</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1257"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1267"/>
         <source>Device {index} ({backend})</source>
         <translation>Apparaat {index} ({backend})</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1287"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1297"/>
         <source>Video: {width}x{height}</source>
         <translation>Video: {width}x{height}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1294"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1304"/>
         <source>Processing: {width}x{height}</source>
         <translation>Verwerking: {width}x{height}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1310"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1320"/>
         <source>Source FPS: {source:.1f} (Applied {applied:.1f})</source>
         <translation>Bron-FPS: {source:.1f} (toegepast {applied:.1f})</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1317"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1327"/>
         <source>Source FPS: {fps:.1f}</source>
         <translation>Bron-FPS: {fps:.1f}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1320"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1330"/>
         <source>Proc FPS: {fps:.1f}</source>
         <translation>Verw.-FPS: {fps:.1f}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1328"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1338"/>
         <source>Time: {time:.1f} ms</source>
         <translation>Tijd: {time:.1f} ms</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1331"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1341"/>
         <source>Latency: {latency:.1f} ms</source>
         <translation>Latentie: {latency:.1f} ms</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1339"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1349"/>
         <source>Frames: {count}</source>
         <translation>Frames: {count}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1342"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1352"/>
         <source>Detections: {count}</source>
         <translation>Detecties: {count}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1349"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1359"/>
         <source>Select Video File</source>
         <translation>Videobestand selecteren</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1352"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1362"/>
         <source>Video Files (*.mp4 *.avi *.mov *.mkv *.flv *.wmv *.m4v *.3gp *.webm *.mpg *.mpeg *.ts *.mts *.m2ts);;All Files (*)</source>
         <translation>Videobestanden (*.mp4 *.avi *.mov *.mkv *.flv *.wmv *.m4v *.3gp *.webm *.mpg *.mpeg *.ts *.mts *.m2ts);;Alle bestanden (*)</translation>
     </message>
@@ -12454,149 +12483,149 @@ Ondersteunde formaten: MP4, AVI, MOV, MKV, FLV, WMV, M4V, 3GP, WebM</translation
 <context>
     <name>StreamViewerWindow</name>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="102"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="103"/>
         <source>Automated Drone Image Analysis Tool v{version} - Sponsored by TEXSAR</source>
         <translation>Geautomatiseerd drone-beeldanalyse-instrument v{version} - Gesponsord door TEXSAR</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="214"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="216"/>
         <source>Live View</source>
         <translation>Live-weergave</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="219"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="221"/>
         <source>Gallery</source>
         <translation>Galerij</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="260"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="262"/>
         <source>Menu</source>
         <translation>Menu</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="261"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="263"/>
         <source>Streaming Analysis Wizard</source>
         <translation>Streaminganalyse-wizard</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="262"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="264"/>
         <source>Image Analysis</source>
         <translation>Beeldanalyse</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="263"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="265"/>
         <source>Flight Viewer</source>
         <translation>Vluchtviewer</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="264"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="266"/>
         <source>Preferences</source>
         <translation>Voorkeuren</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="274"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="276"/>
         <source>Help</source>
         <translation>Hulp</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="275"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="277"/>
         <source>Check for Updates</source>
         <translation>Controleren op updates</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="276"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="278"/>
         <source>Manual</source>
         <translation>Handleiding</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="277"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="279"/>
         <source>Community Forum</source>
         <translation>Communityforum</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="278"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="280"/>
         <source>YouTube Channel</source>
         <translation>YouTube-kanaal</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="305"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="307"/>
         <source>Start Recording</source>
         <translation>Opname starten</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="308"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="310"/>
         <source>Start recording the video stream with detection overlays.</source>
         <translation>Start opname van de videostream met detectie-overlays.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="310"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="312"/>
         <source>Stop Recording</source>
         <translation>Opname stoppen</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="313"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="315"/>
         <source>Stop the current recording and save to file.</source>
         <translation>Stop de huidige opname en sla op in een bestand.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="320"/>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1881"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="322"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1895"/>
         <source>Status: Not Recording</source>
         <translation>Status: niet aan het opnemen</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="323"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="325"/>
         <source>Current recording status and output file path</source>
         <translation>Huidige opnamestatus en pad naar uitvoerbestand</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="327"/>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1883"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="329"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1897"/>
         <source>Duration: --</source>
         <translation>Duur: --</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="329"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="331"/>
         <source>Recording statistics: Duration, FPS, Frames</source>
         <translation>Opnamestatistieken: duur, FPS, frames</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="334"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="336"/>
         <source>Save to:</source>
         <translation>Opslaan naar:</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="338"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="340"/>
         <source>Directory where video recordings will be saved.</source>
         <translation>Map waarin video-opnamen worden opgeslagen.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="340"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="342"/>
         <source>Browse...</source>
         <translation>Bladeren...</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="342"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="344"/>
         <source>Choose a folder to store recordings.</source>
         <translation>Kies een map om opnamen op te slaan.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="393"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="395"/>
         <source>Select Recording Directory</source>
         <translation>Opnamemap selecteren</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="413"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="415"/>
         <source>Algorithm:</source>
         <translation>Algoritme:</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="415"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="417"/>
         <source>Select which streaming detection algorithm to use</source>
         <translation>Selecteer welk streamingdetectie-algoritme moet worden gebruikt</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="421"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="423"/>
         <source>Choose which streaming detection algorithm to run.
 • Color Anomaly &amp; Motion Detection: fused anomaly detectors
 • Color Detection: color-based highlighting</source>
@@ -12605,22 +12634,22 @@ Ondersteunde formaten: MP4, AVI, MOV, MKV, FLV, WMV, M4V, 3GP, WebM</translation
 • Kleurdetectie: kleurgebaseerde markering</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="456"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="458"/>
         <source>Gallery Threshold:</source>
         <translation>Galerijdrempel:</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="459"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="461"/>
         <source>Number of frames a detection must be seen before appearing in the Gallery tab</source>
         <translation>Aantal frames waarin een detectie moet worden gezien voordat deze in het tabblad Galerij verschijnt</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="466"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="468"/>
         <source> frames</source>
         <translation> frames</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="469"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="471"/>
         <source>Detections must be seen for this many consecutive frames
 before appearing in the Gallery. Higher values reduce
 false positives but delay detection appearance.</source>
@@ -12629,179 +12658,179 @@ voordat ze in de Galerij verschijnen. Hogere waarden verminderen
 valse positieven, maar vertragen het verschijnen van detecties.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="530"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="532"/>
         <source>Device {index}</source>
         <translation>Apparaat {index}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="724"/>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="743"/>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="757"/>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="780"/>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="794"/>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="808"/>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="822"/>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1917"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="726"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="745"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="759"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="782"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="796"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="810"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="824"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1931"/>
         <source>Error</source>
         <translation>Fout</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="725"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="727"/>
         <source>Failed to open Streaming Analysis Guide:
 {error}</source>
         <translation>Kan de streaminganalyse-gids niet openen:
 {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="744"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="746"/>
         <source>Failed to open Image Analysis:
 {error}</source>
         <translation>Kan beeldanalyse niet openen:
 {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="758"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="760"/>
         <source>Failed to open Preferences:
 {error}</source>
         <translation>Kan voorkeuren niet openen:
 {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="781"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="783"/>
         <source>Failed to open Flight Viewer:
 {error}</source>
         <translation>Kan Vluchtviewer niet openen:
 {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="795"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="797"/>
         <source>Failed to open Help documentation:
 {error}</source>
         <translation>Kan hulpdocumentatie niet openen:
 {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="809"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="811"/>
         <source>Failed to open Community Forum:
 {error}</source>
         <translation>Kan communityforum niet openen:
 {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="823"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="825"/>
         <source>Failed to open YouTube Channel:
 {error}</source>
         <translation>Kan YouTube-kanaal niet openen:
 {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="934"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="936"/>
         <source>Loaded: {algorithm}</source>
         <translation>Geladen: {algorithm}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="950"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="952"/>
         <source>Error loading algorithm: {error}</source>
         <translation>Fout bij laden van algoritme: {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="954"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="956"/>
         <source>Algorithm Load Error</source>
         <translation>Fout bij laden algoritme</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1462"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1464"/>
         <source>Algorithm switched to {label}</source>
         <translation>Algoritme overgeschakeld naar {label}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1512"/>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1589"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1514"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1591"/>
         <source>No Stream Connected</source>
         <translation>Geen stream verbonden</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1529"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1531"/>
         <source>{state} - {message}</source>
         <translation>{state} - {message}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1530"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1532"/>
         <source>Connected</source>
         <translation>Verbonden</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1530"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1532"/>
         <source>Disconnected</source>
         <translation>Verbinding verbroken</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1542"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1544"/>
         <source>✓ Connected: {message}</source>
         <translation>✓ Verbonden: {message}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1571"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1573"/>
         <source>✗ Disconnected: {message}</source>
         <translation>✗ Verbinding verbroken: {message}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1780"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1794"/>
         <source>No detections found.</source>
         <translation>Geen detecties gevonden.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1784"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1798"/>
         <source>Detection Results ({count} found):</source>
         <translation>Detectieresultaten ({count} gevonden):</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1796"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1810"/>
         <source>#{index}: Type({cls}) Pos({x},{y}) Size({w}x{h})</source>
         <translation>#{index}: type({cls}) pos({x},{y}) grootte({w}x{h})</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1806"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1820"/>
         <source>#{index}: Type({cls})</source>
         <translation>#{index}: type({cls})</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1811"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1825"/>
         <source> Conf({confidence:.2f})</source>
         <translation> betr({confidence:.2f})</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1856"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1870"/>
         <source>Recording started: {path}</source>
         <translation>Opname gestart: {path}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1863"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1877"/>
         <source>Recording stopped</source>
         <translation>Opname gestopt</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1877"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1891"/>
         <source>Status: Recording to {path}</source>
         <translation>Status: opnemen naar {path}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1897"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1911"/>
         <source>Duration: {duration:.1f}s | FPS: {fps:.1f} | Frames: {frames} | Queue: {queue}</source>
         <translation>Duur: {duration:.1f}s | FPS: {fps:.1f} | Frames: {frames} | Wachtrij: {queue}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1915"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1929"/>
         <source>✗ Error: {error}</source>
         <translation>✗ Fout: {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1982"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1996"/>
         <source>Live Stream</source>
         <translation>Live-stream</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1984"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1998"/>
         <source>Cannot seek in live stream.
 
 Detection was first seen at frame {frame}.</source>
@@ -13487,27 +13516,27 @@ Klik op markeringen of gebruik Rechthoek selecteren voor gebiedsselectie.</trans
 <context>
     <name>TextLabeledSlider</name>
     <message>
-        <location filename="../app/core/views/components/LabeledSlider.py" line="238"/>
+        <location filename="../app/core/views/components/LabeledSlider.py" line="259"/>
         <source>Very Conservative</source>
         <translation>Zeer conservatief</translation>
     </message>
     <message>
-        <location filename="../app/core/views/components/LabeledSlider.py" line="239"/>
+        <location filename="../app/core/views/components/LabeledSlider.py" line="260"/>
         <source>Conservative</source>
         <translation>Conservatief</translation>
     </message>
     <message>
-        <location filename="../app/core/views/components/LabeledSlider.py" line="240"/>
+        <location filename="../app/core/views/components/LabeledSlider.py" line="261"/>
         <source>Moderate</source>
         <translation>Gemiddeld</translation>
     </message>
     <message>
-        <location filename="../app/core/views/components/LabeledSlider.py" line="241"/>
+        <location filename="../app/core/views/components/LabeledSlider.py" line="262"/>
         <source>Aggressive</source>
         <translation>Agressief</translation>
     </message>
     <message>
-        <location filename="../app/core/views/components/LabeledSlider.py" line="242"/>
+        <location filename="../app/core/views/components/LabeledSlider.py" line="263"/>
         <source>Very Aggressive</source>
         <translation>Zeer agressief</translation>
     </message>
@@ -14532,7 +14561,7 @@ In plaats daarvan de gedownloade Meta/WRI-kroontegels registreren? (Uw LANDFIRE-
         <translation>POD-dekking voltooid</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="711"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="710"/>
         <source>POD coverage complete — {count} frame(s) used online elevation (outside local DEM)</source>
         <translation>POD-dekking voltooid — {count} frame(s) gebruikten online hoogte (buiten lokale DEM)</translation>
     </message>
@@ -14547,17 +14576,17 @@ In plaats daarvan de gedownloade Meta/WRI-kroontegels registreren? (Uw LANDFIRE-
         <translation>({count} zonder hoogtegegevens)</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="730"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="729"/>
         <source>(canopy data covered {pct}% of the searched area)</source>
         <translation>(bladerdakgegevens dekten {pct}% van het doorzochte gebied)</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="785"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="784"/>
         <source>Terrain and canopy aware probability-of-detection heatmap.</source>
         <translation>Terrein- en bladerdakbewuste detectiekans-heatmap.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="789"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="788"/>
         <source>Mean POD over covered area: {pod}%</source>
         <translation>Gemiddelde POD over gedekt gebied: {pod}%</translation>
     </message>
@@ -14807,7 +14836,7 @@ De POD GeoTIFF-producten zijn wel naast de export geschreven.</translation>
         <translation>Dit opschaalvenster sluiten</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/UpscaleDialog.py" line="302"/>
+        <location filename="../app/core/views/images/viewer/dialogs/UpscaleDialog.py" line="301"/>
         <source>Resolution: {width} × {height} pixels | Original: {orig_w} × {orig_h} pixels | Upscale: {level}x | Use mouse wheel to zoom, right-click to pan</source>
         <translation>Resolutie: {width} × {height} pixels | Origineel: {orig_w} × {orig_h} pixels | Opschaal: {level}x | Gebruik muiswiel om te zoomen, rechtsklik om te pannen</translation>
     </message>
@@ -14836,7 +14865,7 @@ De POD GeoTIFF-producten zijn wel naast de export geschreven.</translation>
         <translation>Maximale opschaling bereikt</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/UpscaleDialog.py" line="399"/>
+        <location filename="../app/core/views/images/viewer/dialogs/UpscaleDialog.py" line="398"/>
         <source>Maximum upscale level of {level}x has been reached.
 Further upscaling is not allowed to prevent memory issues.</source>
         <translation>Maximaal opschaalniveau van {level}x is bereikt.
@@ -14848,7 +14877,7 @@ Verdere opschaling is niet toegestaan om geheugenproblemen te voorkomen.</transl
         <translation>Afbeelding te groot</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/UpscaleDialog.py" line="415"/>
+        <location filename="../app/core/views/images/viewer/dialogs/UpscaleDialog.py" line="414"/>
         <source>Upscaling would result in an image of {width}×{height} pixels.
 Maximum allowed dimension is {max_dim} pixels.
 
@@ -14864,7 +14893,7 @@ Probeer in te zoomen op een kleiner gebied voordat u opschaalt.</translation>
         <translation>Afbeelding te klein</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/UpscaleDialog.py" line="428"/>
+        <location filename="../app/core/views/images/viewer/dialogs/UpscaleDialog.py" line="427"/>
         <source>Visible portion is too small ({width}×{height} pixels).
 Please zoom in to a larger area before upscaling.</source>
         <translation>Zichtbaar gedeelte is te klein ({width}×{height} pixels).
@@ -14879,7 +14908,7 @@ Zoom in op een groter gebied voordat u opschaalt.</translation>
 {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/UpscaleDialog.py" line="487"/>
+        <location filename="../app/core/views/images/viewer/dialogs/UpscaleDialog.py" line="486"/>
         <source>Upscaling image with AI enhancement...
 From {width}×{height} to {new_width}×{new_height} pixels
 This may take a few seconds.</source>
@@ -14911,7 +14940,7 @@ Dit kan enkele seconden duren.</translation>
         <translation>Methode niet beschikbaar</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/UpscaleDialog.py" line="605"/>
+        <location filename="../app/core/views/images/viewer/dialogs/UpscaleDialog.py" line="604"/>
         <source>Real-ESRGAN is not yet implemented.
 Falling back to Lanczos interpolation.</source>
         <translation>Real-ESRGAN is nog niet geïmplementeerd.
@@ -15224,7 +15253,7 @@ Gebruik om de originele afbeelding met detectieresultaten te vergelijken.</trans
         <translation>Overlay tonen</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1242"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1249"/>
         <location filename="../resources/views/images/viewer/Viewer.ui" line="225"/>
         <source>Toggle Gallery Mode (G)
 Shows all AOIs from all images in a grid view</source>
@@ -15242,7 +15271,7 @@ Toont alle AOI&apos;s van alle afbeeldingen in een rasterweergave</translation>
         <translation>AOI&apos;s tonen</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1262"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1270"/>
         <location filename="../resources/views/images/viewer/Viewer.ui" line="328"/>
         <source>Open Histogram</source>
         <translation>Histogram openen</translation>
@@ -15290,7 +15319,7 @@ Toont alle AOI&apos;s van alle afbeeldingen in een rasterweergave</translation>
         <translation>ruler.png</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1981"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1989"/>
         <location filename="../resources/views/images/viewer/Viewer.ui" line="427"/>
         <source>Person Size Reference (Ctrl+P)</source>
         <translation>Referentie voor persoonsgrootte (Ctrl+P)</translation>
@@ -15494,7 +15523,7 @@ Sorteren helpt bij het prioriteren van de beoordeling van grotere of nabije obje
         <translation>Openen</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="132"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="131"/>
         <source>Automated Drone Image Analysis Tool v{version} - Sponsored by TEXSAR</source>
         <translation>Geautomatiseerd drone-beeldanalyse-instrument v{version} - Gesponsord door TEXSAR</translation>
     </message>
@@ -15519,7 +15548,7 @@ Sorteren helpt bij het prioriteren van de beoordeling van grotere of nabije obje
         <translation>Laden van resultaten mislukt</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="180"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="179"/>
         <source>Cannot load results without valid image and mask locations.
 
 The viewer will now close.</source>
@@ -15539,7 +15568,7 @@ De viewer wordt nu gesloten.</translation>
     </message>
     <message>
         <location filename="../app/core/controllers/images/viewer/Viewer.py" line="214"/>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1455"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1463"/>
         <source>Skip Hidden ({count}) </source>
         <translation>Verborgen overslaan ({count}) </translation>
     </message>
@@ -15549,7 +15578,7 @@ De viewer wordt nu gesloten.</translation>
         <translation>Detectieresultaten van {n} afbeeldingen laden...</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="285"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="284"/>
         <source>Image metadata and information.
 Click on GPS Coordinates to copy, share, or open in mapping applications.</source>
         <translation>Afbeeldingsmetagegevens en -informatie.
@@ -15581,7 +15610,7 @@ Klik op GPS-coördinaten om te kopiëren, delen of te openen in kaarttoepassinge
         <translation>Cache genereren</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="658"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="657"/>
         <source>This will regenerate thumbnail and color caches for all AOIs in this dataset.
 
 This may take a few minutes depending on the dataset size.
@@ -15626,7 +15655,7 @@ Doorgaan?</translation>
         <translation>Cache gegenereerd</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="735"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="734"/>
         <source>Cache generation complete!
 
 Processed {images} images with {aois} AOIs.
@@ -15644,7 +15673,7 @@ De viewer laadt nu miniaturen en kleuren veel sneller.</translation>
         <translation>Fout bij cachegeneratie</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="768"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="767"/>
         <source>An error occurred during cache generation:
 
 {error}</source>
@@ -15653,12 +15682,12 @@ De viewer laadt nu miniaturen en kleuren veel sneller.</translation>
 {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="954"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="962"/>
         <source>AOI Not Visible</source>
         <translation>AOI niet zichtbaar</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="956"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="963"/>
         <source>The AOI at the cursor position cannot be selected because it is currently hidden due to active filters.
 
 To select this AOI, please clear or adjust your filters.</source>
@@ -15667,12 +15696,12 @@ To select this AOI, please clear or adjust your filters.</source>
 Wis of pas uw filters aan om deze AOI te selecteren.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1121"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1129"/>
         <source>Update Image Dimensions</source>
         <translation>Afbeeldingsafmetingen bijwerken</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1123"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1130"/>
         <source>This dataset is missing image dimensions needed for heatmap filtering ({count} images).
 
 Would you like to read dimensions from the image files and update the results file?</source>
@@ -15681,61 +15710,61 @@ Would you like to read dimensions from the image files and update the results fi
 Wilt u de afmetingen uit de afbeeldingsbestanden lezen en het resultatenbestand bijwerken?</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1162"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1170"/>
         <source>Reading image dimensions ({done}/{total})...</source>
         <translation>Afbeeldingsafmetingen lezen ({done}/{total})...</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1253"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1261"/>
         <source>Show Pixels of Interest (H or Ctrl+I)</source>
         <translation>Interessepixels tonen (H of Ctrl+I)</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1268"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1276"/>
         <source>Toggle AOI Circles</source>
         <translation>AOI-cirkels in-/uitschakelen</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1275"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1283"/>
         <source>Toggle AOI Ruler</source>
         <translation>AOI-liniaal in-/uitschakelen</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1641"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1649"/>
         <source>Missing Dependency</source>
         <translation>Ontbrekende afhankelijkheid</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1643"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1650"/>
         <source>The qimage2ndarray module is required for the upscale feature.
 Please install it using: pip install qimage2ndarray</source>
         <translation>De qimage2ndarray-module is vereist voor de opschaalfunctie.
 Installeer deze met: pip install qimage2ndarray</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1652"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1660"/>
         <source>Upscale Error</source>
         <translation>Opschaalfout</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1654"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1661"/>
         <source>An error occurred while opening the upscale dialog:
 {error}</source>
         <translation>Er is een fout opgetreden bij het openen van het opschaaldialoogvenster:
 {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1985"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1993"/>
         <source>Person Size Reference is unavailable: no GSD for this image</source>
         <translation>Referentie voor persoonsgrootte is niet beschikbaar: geen GSD voor deze afbeelding</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="2082"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="2090"/>
         <source>Unknown Reviewer</source>
         <translation>Onbekende beoordelaar</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="2145"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="2153"/>
         <source>Loading gallery...</source>
         <translation>Galerij laden...</translation>
     </message>
@@ -15897,7 +15926,7 @@ Installeer deze met: pip install qimage2ndarray</translation>
         <translation>Zip-exportopties</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/ZipExportDialog.py" line="26"/>
+        <location filename="../app/core/views/images/viewer/dialogs/ZipExportDialog.py" line="25"/>
         <source>Choose what to export:
 
 - Native: Original images, TIFF masks, and XML (paths made portable).
@@ -15923,7 +15952,7 @@ Installeer deze met: pip install qimage2ndarray</translation>
         <translation>Afbeeldingen zonder gemarkeerde AOI&apos;s opnemen</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/ZipExportDialog.py" line="53"/>
+        <location filename="../app/core/views/images/viewer/dialogs/ZipExportDialog.py" line="52"/>
         <source>When unchecked, only images with at least one flagged AOI will be exported.
 When checked, all images will be exported regardless of flagged AOI status.</source>
         <translation>Indien uitgevinkt, worden alleen afbeeldingen met ten minste één gemarkeerde AOI geëxporteerd.

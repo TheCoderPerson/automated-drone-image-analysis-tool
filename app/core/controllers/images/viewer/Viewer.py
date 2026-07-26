@@ -878,6 +878,14 @@ class Viewer(TranslationMixin, QMainWindow, Ui_Viewer):
         if hasattr(self, 'grid_review_controller') and self.grid_review_controller.handle_key(e):
             return
 
+        # Held keys must not launch repeated background searches. Auto-repeat
+        # fires this handler many times per second, and the AOI tracking (Z),
+        # similarity (Shift+Z) and align (A) shortcuts each start a worker
+        # thread and a modal progress dialog. Navigation and toggles below are
+        # cheap and idempotent, so only the expensive shortcuts are filtered.
+        if e.isAutoRepeat() and e.key() in (Qt.Key_Z, Qt.Key_A, Qt.Key_E, Qt.Key_W, Qt.Key_M):
+            return
+
         if e.key() == Qt.Key_Right:
             if self.gallery_mode and hasattr(self, 'gallery_controller'):
                 self.gallery_controller.navigate_gallery_aoi(1)
