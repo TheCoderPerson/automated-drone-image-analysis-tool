@@ -401,9 +401,43 @@ def test_relative_stored_path_still_resolves_against_xml_dir(tmp_path):
 
 
 def test_posix_absolute_stored_path_is_unchanged(tmp_path):
+    """Regression: "/Volumes/SD/a.jpg" was separator-rewritten on Windows.
+
+    get_images() normalized '/' to os.sep before deciding whether the path was
+    absolute, so a Mac-authored result file reviewed on a Windows ground
+    station reported "\\Volumes\\SD\\DJI_0042.JPG" -- the mirror image of the
+    Windows-path-on-POSIX bug above. Only relative paths are stored with
+    forward slashes (see add_image_to_xml), so only relative paths get the
+    rewrite.
+    """
     xml_path = _xml_with_image_path(tmp_path, "/Volumes/SD/DJI_0042.JPG")
     images = XmlService(str(xml_path)).get_images()
     assert images[0]["path"] == "/Volumes/SD/DJI_0042.JPG"
+
+
+def test_forward_slash_windows_absolute_path_is_unchanged(tmp_path):
+    """An absolute path keeps its stored separators whatever they are.
+
+    Companion to the POSIX case: the rewrite is skipped for anything absolute,
+    not just for paths that are foreign to the running platform.
+    """
+    xml_path = _xml_with_image_path(tmp_path, "C:/Flight1/DJI_0042.JPG")
+    images = XmlService(str(xml_path)).get_images()
+    assert images[0]["path"] == "C:/Flight1/DJI_0042.JPG"
+
+
+def test_relative_forward_slash_path_is_separator_normalized(tmp_path):
+    """The rewrite must still happen for relative paths, which is why it exists.
+
+    add_image_to_xml stores result-relative paths with '/' for portability, so
+    reading one back has to produce a native path.
+    """
+    xml_path = _xml_with_image_path(tmp_path, "sub/deeper/DJI_0042.JPG")
+    images = XmlService(str(xml_path)).get_images()
+    assert images[0]["path"] == os.path.join(
+        str(tmp_path), "sub", "deeper", "DJI_0042.JPG"
+    )
+    assert "/" not in images[0]["path"].replace(str(tmp_path), "")
 
 
 def test_xml_path_attribute_preserved_for_legacy_cache_lookups(tmp_path):

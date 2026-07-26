@@ -109,20 +109,30 @@ class XmlService:
                     xml_dir = os.path.dirname(self.xml_path)
                     mask_path = os.path.join(xml_dir, mask_path)
 
-                # Original image paths might be absolute or relative
-                if path:
-                    # Convert forward slashes back to platform-specific separator
+                # Original image paths might be absolute or relative.
+                #
+                # is_absolute_any_platform, not os.path.isabs: on POSIX a
+                # Windows-authored absolute path ("C:\Flight1\DJI_0042.JPG",
+                # or a UNC share) reads as *relative*, so it used to be
+                # joined onto the result folder. That produced a path like
+                # "/results/C:\Flight1\DJI_0042.JPG" - missing for a reason
+                # unrelated to where the file actually is, and one whose
+                # basename could no longer be recovered. Keeping it intact
+                # lets path recovery match on the real filename.
+                if path and not is_absolute_any_platform(path):
+                    # Convert forward slashes back to platform-specific
+                    # separator. Only relative paths need this, and only
+                    # relative paths ever have it applied on the way in:
+                    # add_image_to_xml rewrites separators to '/' exactly
+                    # when it stores a path relative to the result folder,
+                    # and writes absolute paths verbatim. Rewriting an
+                    # absolute path here turned a Mac-authored
+                    # "/Volumes/SD/DJI_0042.JPG" into
+                    # "\Volumes\SD\DJI_0042.JPG" on a Windows review station
+                    # - the mirror image of the bug above.
                     path = path.replace('/', os.sep)
 
-                    # is_absolute_any_platform, not os.path.isabs: on POSIX a
-                    # Windows-authored absolute path ("C:\Flight1\DJI_0042.JPG",
-                    # or a UNC share) reads as *relative*, so it used to be
-                    # joined onto the result folder. That produced a path like
-                    # "/results/C:\Flight1\DJI_0042.JPG" - missing for a reason
-                    # unrelated to where the file actually is, and one whose
-                    # basename could no longer be recovered. Keeping it intact
-                    # lets path recovery match on the real filename.
-                    if not is_absolute_any_platform(path) and self.xml_path:
+                    if self.xml_path:
                         # If relative, make it relative to XML location
                         dir = os.path.dirname(self.xml_path)
                         path = os.path.join(dir, path)
