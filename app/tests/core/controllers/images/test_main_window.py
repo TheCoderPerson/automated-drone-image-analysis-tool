@@ -453,9 +453,12 @@ def test_flight_viewer_menu_hidden_when_feature_disabled(qtbot):
 
 
 def test_flight_viewer_menu_shown_when_feature_enabled(qtbot):
-    """When the flag is enabled the File-menu action is visible. A fresh
-    window is built under an explicit True patch so the enabled path stays
-    covered regardless of the (currently deferred) shipping default."""
+    """The File-menu action must be visible while the flag is True.
+
+    Built under an explicit True patch (mirroring the disabled-path test above)
+    rather than relying on the shared main_window fixture, so both sides of the
+    gate stay covered regardless of the shipping default.
+    """
     try:
         import qdarktheme
         from core.controllers.images.MainWindow import MainWindow

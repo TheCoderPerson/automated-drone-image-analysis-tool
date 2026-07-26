@@ -71,7 +71,10 @@ def test_flight_viewer_button_shown_when_feature_enabled(qtbot):
 
 
 def test_flight_viewer_disabled_by_default():
-    """Flight Viewer is deferred again and held back from the current
-    production release. This guards the shipping default so an accidental
-    re-enable is caught before it ships."""
+    """Flight Viewer is held back from the current release build.
+
+    This guards the shipping default in the same way the previous assertion
+    guarded the enabled state: it catches an accidental flip, so re-enabling
+    has to be a deliberate edit here and in helpers/FeatureFlags.py.
+    """
     assert selection_module.FeatureFlags.FLIGHT_VIEWER_ENABLED is False

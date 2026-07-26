@@ -6,6 +6,7 @@ import uuid
 import xml.etree.ElementTree as ET
 from core.services.GridReviewService import GridReviewService
 from core.services.LoggerService import LoggerService
+from helpers.PathHelper import is_absolute_any_platform
 
 
 class XmlService:
@@ -113,7 +114,15 @@ class XmlService:
                     # Convert forward slashes back to platform-specific separator
                     path = path.replace('/', os.sep)
 
-                    if not os.path.isabs(path) and self.xml_path:
+                    # is_absolute_any_platform, not os.path.isabs: on POSIX a
+                    # Windows-authored absolute path ("C:\Flight1\DJI_0042.JPG",
+                    # or a UNC share) reads as *relative*, so it used to be
+                    # joined onto the result folder. That produced a path like
+                    # "/results/C:\Flight1\DJI_0042.JPG" - missing for a reason
+                    # unrelated to where the file actually is, and one whose
+                    # basename could no longer be recovered. Keeping it intact
+                    # lets path recovery match on the real filename.
+                    if not is_absolute_any_platform(path) and self.xml_path:
                         # If relative, make it relative to XML location
                         dir = os.path.dirname(self.xml_path)
                         path = os.path.join(dir, path)

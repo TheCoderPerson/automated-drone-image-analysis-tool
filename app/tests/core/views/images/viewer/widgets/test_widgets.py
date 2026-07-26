@@ -328,17 +328,52 @@ def test_drag_pan_translates_zoom_rect_without_scrollbars(app, qtbot):
 
 
 # --------------------------------------------------------------------------- #
-#  Trackpad / wheel routing: mouse wheel zooms; a trackpad two-finger scroll   #
-#  pans; Ctrl/Cmd + trackpad scroll zooms — so a laptop user with no mouse     #
-#  can always both pan and zoom (never depends on a wheel that isn't there).   #
+#  Scroll routing: scrolling ZOOMS on every device; Shift+scroll pans.         #
+#                                                                             #
+#  Device sniffing cannot work here. A Magic Mouse has no wheel — its shell is #
+#  a touch surface, so Qt reports it as a TouchPad — while an ordinary wheel   #
+#  arrives on the generic "core pointer" (DeviceType.Mouse) with pixelDelta    #
+#  populated, because macOS fills precise deltas for any precision-scrolling   #
+#  device. Neither the device type nor the presence of pixelDelta identifies   #
+#  the hardware, and both heuristics sent real zoom gestures to the pan path,  #
+#  where they did nothing at all at full fit.                                 #
 # --------------------------------------------------------------------------- #
 
-def _wheel_event(pos, pixel_delta, angle_delta, modifier=Qt.NoModifier):
+def _wheel_event(pos, pixel_delta, angle_delta, modifier=Qt.NoModifier,
+                 device=None, phase=Qt.NoScrollPhase):
     from PySide6.QtGui import QWheelEvent
     from PySide6.QtCore import QPoint
     p = QPointF(*pos)
+    if device is None:
+        return QWheelEvent(p, p, QPoint(*pixel_delta), QPoint(*angle_delta),
+                           Qt.NoButton, modifier, phase, False)
     return QWheelEvent(p, p, QPoint(*pixel_delta), QPoint(*angle_delta),
-                       Qt.NoButton, modifier, Qt.NoScrollPhase, False)
+                       Qt.NoButton, modifier, phase, False,
+                       Qt.MouseEventNotSynthesized, device)
+
+
+#: Strong reference to the synthetic trackpad device, cached for the module's
+#: lifetime. QWheelEvent stores only a raw `const QPointingDevice *`, so a
+#: device created per-call would be garbage-collected while the event still
+#: points at it and ev.device().type() would read freed memory (a hard
+#: segfault, not a catchable exception). Qt owns the real devices for the
+#: process lifetime, so this only bites synthetic test events.
+_TOUCHPAD_DEVICE = None
+
+
+def _touchpad_device():
+    """A device Qt reports as a real trackpad (what Windows/Linux deliver)."""
+    global _TOUCHPAD_DEVICE
+    if _TOUCHPAD_DEVICE is None:
+        from PySide6.QtGui import QPointingDevice, QInputDevice
+        _TOUCHPAD_DEVICE = QPointingDevice(
+            "test trackpad", 4242,
+            QInputDevice.DeviceType.TouchPad,
+            QPointingDevice.PointerType.Finger,
+            QInputDevice.Capability.Position | QInputDevice.Capability.Scroll,
+            5, 0,
+        )
+    return _TOUCHPAD_DEVICE
 
 
 def _zoomed_viewer(qtbot):
@@ -359,25 +394,101 @@ def test_mouse_wheel_zooms(app, qtbot):
     assert viewer.zoomStack[-1].width() < viewer.sceneRect().width()
 
 
-def test_trackpad_two_finger_scroll_pans(app, qtbot):
-    viewer = _zoomed_viewer(qtbot)
-    viewer.zoomToArea((2000, 1500), 4)
-    assert viewer.zoomStack
-    before = QRectF(viewer.zoomStack[-1])
-    # Trackpad scroll: pixelDelta present, no modifier -> pan (not zoom).
-    viewer.wheelEvent(_wheel_event((300, 200), (40, 0), (0, 0)))
-    after = viewer.zoomStack[-1]
-    assert after.left() < before.left(), "two-finger scroll should pan"
-    assert abs(after.width() - before.width()) < 1e-6, "pan must not change zoom"
+def test_magic_mouse_scroll_zooms_while_already_zoomed(app, qtbot):
+    """Regression: a Magic Mouse is reported as a TouchPad, and must still zoom.
 
-
-def test_ctrl_trackpad_scroll_zooms(app, qtbot):
+    It has no wheel — the whole shell is a touch surface — so a device-type
+    check classified it as a trackpad and panned instead of zooming. At full
+    fit that was a dead gesture; once zoomed it scrolled the image around.
+    """
     viewer = _zoomed_viewer(qtbot)
     viewer.zoomToArea((2000, 1500), 4)
     before_w = viewer.zoomStack[-1].width()
-    # Trackpad scroll WITH Ctrl -> zoom, even though pixelDelta is present.
-    viewer.wheelEvent(_wheel_event((300, 200), (0, 40), (0, 0), Qt.ControlModifier))
-    assert viewer.zoomStack[-1].width() < before_w, "Ctrl+two-finger scroll should zoom in"
+    viewer.wheelEvent(_wheel_event((300, 200), (0, 40), (0, 120),
+                                   device=_touchpad_device(),
+                                   phase=Qt.ScrollUpdate))
+    assert viewer.zoomStack[-1].width() < before_w, \
+        "scrolling up on a Magic Mouse / trackpad must zoom in, not pan"
+
+
+def test_ctrl_scroll_zooms(app, qtbot):
+    viewer = _zoomed_viewer(qtbot)
+    viewer.zoomToArea((2000, 1500), 4)
+    before_w = viewer.zoomStack[-1].width()
+    viewer.wheelEvent(_wheel_event((300, 200), (0, 40), (0, 120), Qt.ControlModifier,
+                                   device=_touchpad_device(),
+                                   phase=Qt.ScrollUpdate))
+    assert viewer.zoomStack[-1].width() < before_w, "Ctrl+scroll should zoom in"
+
+
+def test_macos_precision_wheel_zooms_not_pans(app, qtbot):
+    """Regression: macOS wheel events carry pixelDelta AND report as a Mouse.
+
+    Qt's Cocoa backend delivers scroll events through the generic "core
+    pointer" (DeviceType.Mouse) and populates pixelDelta for any precision-
+    scrolling device, so treating a non-null pixelDelta as "trackpad" routed
+    every macOS wheel notch to a pan that is a no-op at full fit.
+    """
+    viewer = _zoomed_viewer(qtbot)
+    assert not viewer.zoomStack
+    ev = _wheel_event((300, 200), (0, 40), (0, 120))
+    from PySide6.QtGui import QInputDevice
+    assert ev.device().type() != QInputDevice.DeviceType.TouchPad, \
+        "macOS wheel events are not reported as a TouchPad — half of the bug"
+    viewer.wheelEvent(ev)
+    assert viewer.zoomStack, "a macOS mouse wheel must zoom, not pan"
+    assert viewer.zoomStack[-1].width() < viewer.sceneRect().width()
+
+
+def test_shift_scroll_pans(app, qtbot):
+    """Panning is an explicit gesture now: Shift+scroll."""
+    viewer = _zoomed_viewer(qtbot)
+    viewer.zoomToArea((2000, 1500), 4)
+    before = QRectF(viewer.zoomStack[-1])
+    viewer.wheelEvent(_wheel_event((300, 200), (40, 0), (0, 0), Qt.ShiftModifier,
+                                   device=_touchpad_device(),
+                                   phase=Qt.ScrollUpdate))
+    after = viewer.zoomStack[-1]
+    assert after.left() < before.left(), "Shift+scroll should pan"
+    assert abs(after.width() - before.width()) < 1e-6, "pan must not change zoom"
+
+
+def test_shift_wheel_pans_with_angle_delta_only(app, qtbot):
+    """A notched wheel reports no pixelDelta; Shift+wheel must still pan."""
+    viewer = _zoomed_viewer(qtbot)
+    viewer.zoomToArea((2000, 1500), 4)
+    before = QRectF(viewer.zoomStack[-1])
+    viewer.wheelEvent(_wheel_event((300, 200), (0, 0), (0, 120), Qt.ShiftModifier))
+    after = viewer.zoomStack[-1]
+    assert after.top() < before.top(), "Shift+wheel up should pan up"
+    assert abs(after.height() - before.height()) < 1e-6, "pan must not change zoom"
+
+
+def test_shift_scroll_at_full_fit_falls_through_to_zoom(app, qtbot):
+    """A pan that cannot happen must not be swallowed as a no-op.
+
+    At full fit there is no zoom rect to translate, so panning is impossible.
+    """
+    viewer = _zoomed_viewer(qtbot)
+    assert not viewer.zoomStack, "viewer starts at full fit"
+    viewer.wheelEvent(_wheel_event((300, 200), (0, 40), (0, 120), Qt.ShiftModifier,
+                                   device=_touchpad_device(),
+                                   phase=Qt.ScrollUpdate))
+    assert viewer.zoomStack, "scroll at full fit should zoom rather than do nothing"
+
+
+def test_scroll_end_with_zero_delta_is_harmless(app, qtbot):
+    """A ScrollEnd carries no delta; it must neither pan nor zoom."""
+    viewer = _zoomed_viewer(qtbot)
+    viewer.zoomToArea((2000, 1500), 4)
+    before = QRectF(viewer.zoomStack[-1])
+    for modifier in (Qt.NoModifier, Qt.ShiftModifier):
+        viewer.wheelEvent(_wheel_event((300, 200), (0, 0), (0, 0), modifier,
+                                       device=_touchpad_device(),
+                                       phase=Qt.ScrollEnd))
+    after = viewer.zoomStack[-1]
+    assert abs(after.width() - before.width()) < 1e-6
+    assert abs(after.left() - before.left()) < 1e-6
 
 
 # --------------------------------------------------------------------------- #
