@@ -29,11 +29,63 @@ class StreamType(Enum):
     HLS = "hls"
     FILE = "file"
     HDMI_CAPTURE = "hdmi_capture"
+    # Live WebRTC feed published by ADIAT Flight (mobile). Not handled by
+    # RTMPStreamService/OpenCV; StreamCoordinator routes it to
+    # core.services.streaming.FlightStreamService.FlightStreamManager.
     WEBRTC = "webrtc"
 
 
 DEFAULT_SAFETY_FPS_LIMIT = 30
 MAX_REASONABLE_FPS_LIMIT = 60
+
+# Canonical, non-localized source labels. These are the values persisted in
+# settings (``StreamingSourceType``), carried in wizard data, and stored as
+# combo ``itemData`` — never the translated display text (CLAUDE.md §2.8).
+SOURCE_TYPE_FILE = "File"
+SOURCE_TYPE_HDMI = "HDMI Capture"
+SOURCE_TYPE_RTMP = "RTMP Stream"
+SOURCE_TYPE_ADIAT_FLIGHT = "ADIAT Flight"
+
+# Single source of truth for label -> StreamType. Keys are compared
+# case-insensitively; the short aliases keep older persisted values and
+# direct callers working.
+SOURCE_LABEL_TO_STREAM_TYPE = {
+    SOURCE_TYPE_FILE.lower(): StreamType.FILE,
+    SOURCE_TYPE_HDMI.lower(): StreamType.HDMI_CAPTURE,
+    SOURCE_TYPE_RTMP.lower(): StreamType.RTMP,
+    SOURCE_TYPE_ADIAT_FLIGHT.lower(): StreamType.WEBRTC,
+    "rtmp": StreamType.RTMP,
+    "hls": StreamType.HLS,
+    "webrtc": StreamType.WEBRTC,
+}
+
+
+def stream_type_from_source_label(
+    label,
+    default: StreamType = StreamType.FILE,
+) -> StreamType:
+    """Resolve a canonical source label (or StreamType) to a :class:`StreamType`.
+
+    Accepts a :class:`StreamType` unchanged so call sites can pass either
+    shape. Unknown labels fall back to ``default`` rather than raising —
+    the UI always offers a valid choice, and a stale persisted value
+    should degrade to File rather than break the window.
+    """
+    if isinstance(label, StreamType):
+        return label
+    if not isinstance(label, str):
+        return default
+    return SOURCE_LABEL_TO_STREAM_TYPE.get(label.strip().lower(), default)
+
+
+def is_live_source(stream_type: Optional[StreamType]) -> bool:
+    """True for sources that arrive in real time (no seeking / timeline)."""
+    return stream_type in (
+        StreamType.HDMI_CAPTURE,
+        StreamType.RTMP,
+        StreamType.HLS,
+        StreamType.WEBRTC,
+    )
 
 
 @dataclass

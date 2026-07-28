@@ -11,6 +11,13 @@ except ImportError:
     cv2 = None
 
 from .BasePage import BasePage
+from core.services.streaming.RTMPStreamService import (
+    SOURCE_TYPE_ADIAT_FLIGHT,
+    SOURCE_TYPE_FILE,
+    SOURCE_TYPE_HDMI,
+    SOURCE_TYPE_RTMP,
+)
+from core.services.streaming.signaling import pairing
 from core.views.components.LabeledSlider import TextLabeledSlider
 
 
@@ -143,10 +150,11 @@ class StreamConnectionPage(BasePage):
 
         # Load resolution preference. File sources are high-res recordings meant for deep
         # analysis -> default to max detail (4K, capped to native on first frame) so the
-        # tiling+letterbox pass isn't fed a pre-downscaled frame. Live sources (RTMP/HDMI)
-        # keep a framerate-friendly 1080p default. An explicit saved preference still wins.
-        stream_type = self.wizard_data.get("stream_type", "File")
-        fallback_resolution = 100 if stream_type == "File" else 75
+        # tiling+letterbox pass isn't fed a pre-downscaled frame. Live sources
+        # (RTMP/HDMI/ADIAT Flight) keep a framerate-friendly 1080p default. An explicit
+        # saved preference still wins.
+        stream_type = self.wizard_data.get("stream_type", SOURCE_TYPE_FILE)
+        fallback_resolution = 100 if stream_type == SOURCE_TYPE_FILE else 75
         default_resolution_str = self.settings_service.get_setting(
             "StreamingProcessingResolution", f"{fallback_resolution}%")
         # Convert "75%" to 75
@@ -183,21 +191,29 @@ class StreamConnectionPage(BasePage):
         self._apply_stream_type_settings()
 
         # Auto-scan for devices when HDMI is selected
-        stream_type = self.wizard_data.get("stream_type", "File")
-        if stream_type == "HDMI Capture":
+        stream_type = self.wizard_data.get("stream_type", SOURCE_TYPE_FILE)
+        if stream_type == SOURCE_TYPE_HDMI:
             # Only auto-scan if no devices found yet
             if hasattr(self.dialog, "deviceComboBox"):
                 if self.dialog.deviceComboBox.count() <= 1:  # Only placeholder
                     self._on_scan_devices_clicked()
 
     def validate(self) -> bool:
-        stream_type = self.wizard_data.get("stream_type", "File")
-        if stream_type == "HDMI Capture":
+        stream_type = self.wizard_data.get("stream_type", SOURCE_TYPE_FILE)
+        if stream_type == SOURCE_TYPE_HDMI:
             # For HDMI, validate that a device is selected
             if hasattr(self.dialog, "deviceComboBox"):
                 data = self.dialog.deviceComboBox.currentData()
                 return data is not None
             return False
+        if stream_type == SOURCE_TYPE_ADIAT_FLIGHT:
+            # Only a well-formed pairing code can advance; a typo here would
+            # otherwise fail much later, during signaling lookup.
+            try:
+                pairing.normalize_pairing_code(self.dialog.streamUrlLineEdit.text())
+            except ValueError:
+                return False
+            return True
         return bool(self.dialog.streamUrlLineEdit.text().strip())
 
     def save_data(self) -> None:
@@ -214,9 +230,19 @@ class StreamConnectionPage(BasePage):
                 index_to_resolution = {0: 25, 1: 50, 2: 75, 3: 100}
                 self.wizard_data["processing_resolution"] = index_to_resolution.get(index, 75)
 
+        # ADIAT Flight pairing codes are stored canonicalized (upper case, no
+        # separators) so the viewer can connect with the value verbatim.
+        if self.wizard_data.get("stream_type") == SOURCE_TYPE_ADIAT_FLIGHT:
+            try:
+                self.wizard_data["stream_url"] = pairing.normalize_pairing_code(
+                    self.dialog.streamUrlLineEdit.text()
+                )
+            except ValueError:
+                pass
+
         # For HDMI, also store the selected backend and device label
-        stream_type = self.wizard_data.get("stream_type", "File")
-        if stream_type == "HDMI Capture" and hasattr(self.dialog, "deviceComboBox"):
+        stream_type = self.wizard_data.get("stream_type", SOURCE_TYPE_FILE)
+        if stream_type == SOURCE_TYPE_HDMI and hasattr(self.dialog, "deviceComboBox"):
             idx = self.dialog.deviceComboBox.currentIndex()
             # Store the device label (friendly name)
             if idx >= 0:
@@ -226,12 +252,12 @@ class StreamConnectionPage(BasePage):
                 self.wizard_data["hdmi_backend"] = self._device_backends[idx]
 
     def _apply_stream_type_settings(self) -> None:
-        stream_type = self.wizard_data.get("stream_type", "File")
+        stream_type = self.wizard_data.get("stream_type", SOURCE_TYPE_FILE)
         settings = self._get_stream_type_settings(stream_type)
         self.dialog.labelConnectionInstructions.setText(settings["instructions"])
 
         # HDMI-specific UI - hide the manual URL input row entirely
-        is_hdmi = stream_type == "HDMI Capture"
+        is_hdmi = stream_type == SOURCE_TYPE_HDMI
 
         # Show/hide URL input row based on stream type
         self.dialog.labelStreamUrl.setVisible(not is_hdmi)
@@ -261,7 +287,7 @@ class StreamConnectionPage(BasePage):
 
     def _get_stream_type_settings(self, stream_type: str) -> dict:
         mapping = {
-            "File": {
+            SOURCE_TYPE_FILE: {
                 "instructions": self.tr(
                     "Choose the video file you want to analyze. Use Browse to pick a file from disk."
                 ),
@@ -270,7 +296,7 @@ class StreamConnectionPage(BasePage):
                 "show_browse": True,
                 "default_value": "",
             },
-            "HDMI Capture": {
+            SOURCE_TYPE_HDMI: {
                 "instructions": self.tr(
                     "Click Scan to detect available capture devices, then select one from the dropdown."
                 ),
@@ -279,7 +305,7 @@ class StreamConnectionPage(BasePage):
                 "show_browse": False,
                 "default_value": "",
             },
-            "RTMP Stream": {
+            SOURCE_TYPE_RTMP: {
                 "instructions": self.tr(
                     "Enter the RTMP URL provided by your streaming server (rtmp://server:port/app/key)."
                 ),
@@ -288,8 +314,19 @@ class StreamConnectionPage(BasePage):
                 "show_browse": False,
                 "default_value": "",
             },
+            SOURCE_TYPE_ADIAT_FLIGHT: {
+                "instructions": self.tr(
+                    "Start a flight in the ADIAT Flight app and tap Share Feed, then enter "
+                    "the 6-character pairing code it displays. Detections reported by ADIAT "
+                    "Flight are ignored — this desktop runs its own analysis on the video."
+                ),
+                "field_label": self.tr("Pairing Code:"),
+                "placeholder": self.tr("6-character code (e.g. K7QM3P)"),
+                "show_browse": False,
+                "default_value": "",
+            },
         }
-        return mapping.get(stream_type, mapping["File"])
+        return mapping.get(stream_type, mapping[SOURCE_TYPE_FILE])
 
     def _on_scan_devices_clicked(self) -> None:
         """Scan for available HDMI capture devices using OpenCV with multiple backends."""

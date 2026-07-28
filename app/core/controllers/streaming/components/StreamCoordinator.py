@@ -13,7 +13,12 @@ from typing import Optional, Callable
 import numpy as np
 
 from core.services.LoggerService import LoggerService
-from core.services.streaming.RTMPStreamService import StreamManager, StreamType
+from core.services.streaming.RTMPStreamService import (
+    StreamManager,
+    StreamType,
+    stream_type_from_source_label,
+)
+from core.services.streaming.FlightStreamService import FlightStreamManager
 from core.services.streaming.VideoRecordingService import RecordingManager, RecordingConfig
 
 
@@ -68,8 +73,9 @@ class StreamCoordinator(QObject):
         Connect to a stream.
 
         Args:
-            url: Stream URL or file path
-            stream_type: Type of stream (RTMP, HLS, File, HDMI) - can be StreamType enum or string
+            url: Stream URL, file path, or — for ADIAT Flight — the pairing code
+            stream_type: Type of stream (RTMP, HLS, File, HDMI, ADIAT Flight) -
+                can be a StreamType enum or a canonical source label
             hdmi_backend: Optional OpenCV backend ID for HDMI capture
             fps_limit: Optional target FPS limit (`None`/`0` = safe default cap,
                 `>0` = explicit cap)
@@ -82,22 +88,15 @@ class StreamCoordinator(QObject):
             if self.stream_manager:
                 self.disconnect_stream()
 
-            # Handle both enum and string types for stream_type
-            if isinstance(stream_type, str):
-                # Convert string to enum
-                stream_type_map = {
-                    "file": StreamType.FILE,
-                    "hdmi capture": StreamType.HDMI_CAPTURE,
-                    "rtmp stream": StreamType.RTMP,
-                    "rtmp": StreamType.RTMP,
-                    "hls": StreamType.HLS
-                }
-                stream_type = stream_type_map.get(stream_type.lower(), StreamType.FILE)
+            # Handle both enum and string (canonical source label) types
+            stream_type = stream_type_from_source_label(stream_type)
 
             # self.logger.info(f"Connecting to {stream_type.value} stream: {url}")
 
-            # Create new stream manager
-            self.stream_manager = StreamManager()
+            # Create the manager that backs this source type. ADIAT Flight
+            # feeds arrive over WebRTC, which OpenCV cannot open, so they use
+            # a dedicated manager exposing the same signals/methods.
+            self.stream_manager = self._create_stream_manager(stream_type)
 
             # Connect signals
             self.stream_manager.frameReceived.connect(self._on_frame_ready)
@@ -126,6 +125,19 @@ class StreamCoordinator(QObject):
             self.logger.error(error_msg)
             self.errorOccurred.emit(error_msg)
             return False
+
+    def _create_stream_manager(self, stream_type: StreamType):
+        """Build the manager appropriate to ``stream_type``.
+
+        Kept as a single, explicit two-way branch rather than a registry:
+        there are exactly two transports (OpenCV-backed and WebRTC-backed)
+        and the ADIAT Flight path needs no per-algorithm configuration.
+        Both managers expose the identical signal/method surface, so every
+        caller downstream of this method is transport-agnostic.
+        """
+        if stream_type == StreamType.WEBRTC:
+            return FlightStreamManager()
+        return StreamManager()
 
     def disconnect_stream(self):
         """Disconnect from current stream."""

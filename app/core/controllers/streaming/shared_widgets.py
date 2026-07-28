@@ -21,7 +21,15 @@ from PySide6.QtWidgets import (QWidget, QLabel, QHBoxLayout, QVBoxLayout, QGridL
 from PySide6.QtGui import QImage, QPixmap
 from PySide6.QtCore import Qt, Signal, QObject, QThread
 from PySide6.QtWidgets import QApplication
-from core.services.streaming.RTMPStreamService import StreamType
+from core.services.streaming.RTMPStreamService import (
+    SOURCE_TYPE_ADIAT_FLIGHT,
+    SOURCE_TYPE_FILE,
+    SOURCE_TYPE_HDMI,
+    SOURCE_TYPE_RTMP,
+    StreamType,
+    stream_type_from_source_label,
+)
+from core.services.streaming.signaling import pairing
 from core.services.streaming.contracts import FocusTarget
 from core.services.LoggerService import LoggerService
 from helpers.TranslationMixin import TranslationMixin
@@ -836,22 +844,27 @@ class StreamControlWidget(TranslationMixin, QWidget):
         # Connection group
         connection_group = QGroupBox(self.tr("Stream Connection"))
         connection_group.setToolTip(
-            self.tr("Configure and connect to video source (file, HDMI capture, or RTMP stream)")
+            self.tr(
+                "Configure and connect to video source (file, HDMI capture, "
+                "RTMP stream, or ADIAT Flight)"
+            )
         )
         connection_layout = QGridLayout(connection_group)
 
         # Stream type (moved to row 0)
         connection_layout.addWidget(QLabel(self.tr("Stream Type:")), 0, 0)
         self.type_combo = QComboBox()
-        self.type_combo.addItem(self.tr("File"), "File")
-        self.type_combo.addItem(self.tr("HDMI Capture"), "HDMI Capture")
-        self.type_combo.addItem(self.tr("RTMP Stream"), "RTMP Stream")
+        self.type_combo.addItem(self.tr("File"), SOURCE_TYPE_FILE)
+        self.type_combo.addItem(self.tr("HDMI Capture"), SOURCE_TYPE_HDMI)
+        self.type_combo.addItem(self.tr("RTMP Stream"), SOURCE_TYPE_RTMP)
+        self.type_combo.addItem(self.tr("ADIAT Flight"), SOURCE_TYPE_ADIAT_FLIGHT)
         self.type_combo.setToolTip(
             self.tr(
                 "Select the type of video source:\n"
                 "• File: Pre-recorded video file with timeline controls\n"
                 "• HDMI Capture: Live capture from HDMI capture device\n"
-                "• RTMP Stream: Real-time streaming from RTMP/HTTP source"
+                "• RTMP Stream: Real-time streaming from RTMP/HTTP source\n"
+                "• ADIAT Flight: Live feed paired with the ADIAT Flight app"
             )
         )
         connection_layout.addWidget(self.type_combo, 0, 1)
@@ -870,7 +883,8 @@ class StreamControlWidget(TranslationMixin, QWidget):
             self.tr(
                 "Enter or browse for the video source:\n"
                 "• File: Click to browse for video file (MP4, AVI, MOV, etc.)\n"
-                "• RTMP Stream: Enter RTMP URL (rtmp://server:port/app/stream)"
+                "• RTMP Stream: Enter RTMP URL (rtmp://server:port/app/stream)\n"
+                "• ADIAT Flight: Enter the 6-character pairing code shown in the app"
             )
         )
         url_layout.addWidget(self.url_input, 1)
@@ -1052,14 +1066,14 @@ class StreamControlWidget(TranslationMixin, QWidget):
     def on_stream_type_changed(self, stream_type: str):
         """Handle stream type selection changes."""
         stream_type_value = self.type_combo.currentData() or stream_type
-        if stream_type_value == "HDMI Capture":
+        if stream_type_value == SOURCE_TYPE_HDMI:
             # Show HDMI device combo, hide URL input
             self.url_input.setVisible(False)
             self.hdmi_device_combo.setVisible(True)
             self.browse_button.setVisible(False)
             self.scan_button.setVisible(True)
             # Don't auto-scan here - let user click Scan or wizard will set up devices
-        elif stream_type_value == "File":
+        elif stream_type_value == SOURCE_TYPE_FILE:
             # Show URL input, hide HDMI combo
             self.url_input.setVisible(True)
             self.hdmi_device_combo.setVisible(False)
@@ -1067,7 +1081,7 @@ class StreamControlWidget(TranslationMixin, QWidget):
             self.url_input.setText("")
             self.browse_button.setVisible(True)
             self.scan_button.setVisible(False)
-        elif stream_type_value == "RTMP Stream":
+        elif stream_type_value == SOURCE_TYPE_RTMP:
             # Show URL input, hide HDMI combo
             self.url_input.setVisible(True)
             self.hdmi_device_combo.setVisible(False)
@@ -1075,14 +1089,24 @@ class StreamControlWidget(TranslationMixin, QWidget):
             self.url_input.setText("")
             self.browse_button.setVisible(False)
             self.scan_button.setVisible(False)
+        elif stream_type_value == SOURCE_TYPE_ADIAT_FLIGHT:
+            # Pairing code goes in the same text input; no browse/scan.
+            self.url_input.setVisible(True)
+            self.hdmi_device_combo.setVisible(False)
+            self.url_input.setPlaceholderText(
+                self.tr("6-character pairing code (e.g. K7QM3P)")
+            )
+            self.url_input.setText("")
+            self.browse_button.setVisible(False)
+            self.scan_button.setVisible(False)
 
     def request_connect(self):
         """Request stream connection."""
-        combo_text = self.type_combo.currentData() or self.type_combo.currentText()
+        source_type = self.type_combo.currentData() or self.type_combo.currentText()
         hdmi_backend = None
 
         # Get URL from appropriate widget
-        if combo_text == "HDMI Capture":
+        if source_type == SOURCE_TYPE_HDMI:
             # Get device index from HDMI combo box
             device_index = self.hdmi_device_combo.currentData()
             if device_index is None:
@@ -1095,6 +1119,22 @@ class StreamControlWidget(TranslationMixin, QWidget):
             url = str(device_index)
             if hasattr(self, '_device_backends'):
                 hdmi_backend = self._device_backends.get(self.hdmi_device_combo.currentIndex())
+        elif source_type == SOURCE_TYPE_ADIAT_FLIGHT:
+            # Validate the pairing code up front so a typo produces an
+            # actionable message here rather than a signaling lookup failure
+            # 30 seconds later.
+            try:
+                url = pairing.normalize_pairing_code(self.url_input.text())
+            except ValueError as exc:
+                QMessageBox.warning(
+                    self,
+                    self.tr("Invalid Pairing Code"),
+                    self.tr(
+                        "Enter the 6-character pairing code shown in ADIAT "
+                        "Flight.\n\n{error}"
+                    ).format(error=str(exc))
+                )
+                return
         else:
             # Get URL from text input
             url = self.url_input.text().strip()
@@ -1106,13 +1146,7 @@ class StreamControlWidget(TranslationMixin, QWidget):
                 )
                 return
 
-        # Map combo box text to StreamType enum
-        stream_type_map = {
-            "File": StreamType.FILE,
-            "HDMI Capture": StreamType.HDMI_CAPTURE,
-            "RTMP Stream": StreamType.RTMP
-        }
-        stream_type = stream_type_map.get(combo_text, StreamType.FILE)
+        stream_type = stream_type_from_source_label(source_type)
         self.connectRequested.emit(url, stream_type, hdmi_backend)
 
     def update_connection_status(self, connected: bool, message: str):
@@ -1142,7 +1176,7 @@ class StreamControlWidget(TranslationMixin, QWidget):
             self.url_input.setEnabled(True)
             self.browse_button.setEnabled(True)
             # For HDMI, re-enable device combo and scan button
-            if self.type_combo.currentData() == "HDMI Capture":
+            if self.type_combo.currentData() == SOURCE_TYPE_HDMI:
                 self.hdmi_device_combo.setEnabled(True)
                 self.scan_button.setEnabled(True)
 
@@ -1368,7 +1402,7 @@ class StreamControlWidget(TranslationMixin, QWidget):
     def on_url_input_clicked(self, event):
         """Handle clicks on URL input field."""
         # If file type is selected, open file browser on click
-        if self.type_combo.currentData() == "File":
+        if self.type_combo.currentData() == SOURCE_TYPE_FILE:
             self.browse_for_file()
         else:
             # Call the original mousePressEvent for normal behavior

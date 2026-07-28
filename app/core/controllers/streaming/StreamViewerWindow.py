@@ -46,7 +46,12 @@ from core.views.streaming.components.TrackGalleryWidget import TrackGalleryWidge
 from core.controllers.streaming.base import StreamAlgorithmController
 from core.services.streaming.StreamAlgorithmService import StreamAlgorithmService
 from core.services.streaming.StreamAnalyzeService import StreamAnalyzeService
-from core.services.streaming.RTMPStreamService import StreamType
+from core.services.streaming.RTMPStreamService import (
+    SOURCE_TYPE_HDMI,
+    StreamType,
+    is_live_source,
+    stream_type_from_source_label,
+)
 from core.services.streaming.contracts import FocusTarget
 from helpers.TranslationMixin import TranslationMixin
 
@@ -512,14 +517,19 @@ class StreamViewerWindow(TranslationMixin, QMainWindow):
 
         stream_type = wizard_data.get("stream_type")
         if stream_type:
-            idx = self.stream_controls.type_combo.findText(stream_type)
+            # Match on the combo's stable itemData, not its display text —
+            # the visible labels are translated (CLAUDE.md §2.8). findText is
+            # kept as a fallback for any combo built without itemData.
+            idx = self.stream_controls.type_combo.findData(stream_type)
+            if idx < 0:
+                idx = self.stream_controls.type_combo.findText(stream_type)
             if idx >= 0:
                 self.stream_controls.type_combo.setCurrentIndex(idx)
 
         stream_url = wizard_data.get("stream_url")
         if stream_url:
             # For HDMI Capture, set the device combo instead of URL input
-            if stream_type == "HDMI Capture":
+            if stream_type == SOURCE_TYPE_HDMI:
                 # The stream_url is the device index as a string (e.g., "1")
                 try:
                     device_index = int(stream_url)
@@ -651,13 +661,13 @@ class StreamViewerWindow(TranslationMixin, QMainWindow):
         self._pending_record_dir = recording_dir
 
         if wizard_data.get("auto_connect") and stream_url:
-            combo_text = self.stream_controls.type_combo.currentText()
-            stream_type_map = {
-                "File": StreamType.FILE,
-                "HDMI Capture": StreamType.HDMI_CAPTURE,
-                "RTMP Stream": StreamType.RTMP,
-            }
-            selected_type = stream_type_map.get(combo_text, StreamType.FILE)
+            # Resolve from the combo's stable itemData so a translated UI
+            # still auto-connects to the source the operator picked.
+            source_label = (
+                self.stream_controls.type_combo.currentData()
+                or self.stream_controls.type_combo.currentText()
+            )
+            selected_type = stream_type_from_source_label(source_label)
             # Extract hdmi_backend if specified in wizard data
             hdmi_backend = wizard_data.get("hdmi_backend")
             self.on_connect_requested(stream_url, selected_type, hdmi_backend=hdmi_backend)
@@ -2319,7 +2329,7 @@ class StreamViewerWindow(TranslationMixin, QMainWindow):
         stream_type = self.stream_coordinator.current_stream_type if self.stream_coordinator else None
         if stream_type == StreamType.FILE:
             return float(source_fps or 0.0)
-        if stream_type in (StreamType.HDMI_CAPTURE, StreamType.RTMP):
+        if is_live_source(stream_type):
             if source_fps and source_fps > 0:
                 return min(float(source_fps), 60.0)
             return 60.0

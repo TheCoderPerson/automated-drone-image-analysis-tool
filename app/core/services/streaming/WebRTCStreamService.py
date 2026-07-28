@@ -592,6 +592,22 @@ class WebRTCStreamService(QThread):
         while not self._stop.is_set() and pc.iceConnectionState != "closed":
             await asyncio.sleep(0.25)
 
+    def _emit_frame_ready(
+        self,
+        frame: np.ndarray,
+        timestamp: float,
+        frame_number: int,
+    ) -> None:
+        """Emit a decoded frame through an overridable boundary.
+
+        Mirrors :meth:`RTMPStreamService._emit_frame_ready` so subclasses
+        can throttle or re-stamp frames without reimplementing
+        :meth:`_consume_video`. ``timestamp`` is the track's presentation
+        time — subclasses feeding ADIAT's latency stats re-stamp it with
+        ``time.perf_counter()``.
+        """
+        self.frameReady.emit(frame, timestamp, frame_number)
+
     async def _consume_video(self, track) -> None:
         """Pump frames from an aiortc track into Qt's frameReady signal."""
         self._frame_t0 = time.monotonic()
@@ -609,7 +625,7 @@ class WebRTCStreamService(QThread):
                 ndarray = frame.to_ndarray(format="bgr24")
                 self._frame_n += 1
                 ts = frame.time if hasattr(frame, "time") and frame.time else time.monotonic()
-                self.frameReady.emit(ndarray, float(ts), self._frame_n)
+                self._emit_frame_ready(ndarray, float(ts), self._frame_n)
 
                 self._stats.frames_received = self._frame_n
                 self._stats.height, self._stats.width = ndarray.shape[:2]

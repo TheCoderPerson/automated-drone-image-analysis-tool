@@ -225,6 +225,49 @@ QToolButton:checked { border-color: #4CAF50; background-color: #1b2d44; }</strin
              </widget>
             </item>
             <item>
+             <widget class="QToolButton" name="flightButton">
+              <property name="minimumSize">
+               <size>
+                <width>150</width>
+                <height>150</height>
+               </size>
+              </property>
+              <property name="maximumSize">
+               <size>
+                <width>180</width>
+                <height>180</height>
+               </size>
+              </property>
+              <property name="font">
+               <font>
+                <pointsize>12</pointsize>
+               </font>
+              </property>
+              <property name="toolTip">
+               <string>Live feed from the ADIAT Flight app (enter pairing code)</string>
+              </property>
+              <property name="styleSheet">
+               <string notr="true">QToolButton { border: 3px solid palette(mid); border-radius: 12px; padding: 10px; }
+QToolButton:checked { border-color: #4CAF50; background-color: #1b2d44; }</string>
+              </property>
+              <property name="text">
+               <string>ADIAT Flight</string>
+              </property>
+              <property name="iconSize">
+               <size>
+                <width>72</width>
+                <height>72</height>
+               </size>
+              </property>
+              <property name="checkable">
+               <bool>true</bool>
+              </property>
+              <property name="toolButtonStyle">
+               <enum>Qt::ToolButtonTextUnderIcon</enum>
+              </property>
+             </widget>
+            </item>
+            <item>
              <spacer name="streamButtonsRightSpacer">
               <property name="orientation">
                <enum>Qt::Horizontal</enum>
@@ -282,6 +325,21 @@ QToolButton:checked { border-color: #4CAF50; background-color: #1b2d44; }</strin
            </property>
            <property name="text">
             <string>RTMP: Connect to a live network stream (rtmp://server:port/app/key).</string>
+           </property>
+           <property name="wordWrap">
+            <bool>true</bool>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLabel" name="labelFlightDescription">
+           <property name="font">
+            <font>
+             <pointsize>11</pointsize>
+            </font>
+           </property>
+           <property name="text">
+            <string>ADIAT Flight: Pair with the ADIAT Flight app using the 6-character code it displays.</string>
            </property>
            <property name="wordWrap">
             <bool>true</bool>

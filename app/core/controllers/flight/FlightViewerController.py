@@ -19,10 +19,8 @@ from core.services.LoggerService import LoggerService
 from core.services.streaming.FingerprintStore import FingerprintStore, PeerRecord
 from core.services.streaming.FlightSessionStore import FlightSessionStore
 from core.services.streaming.signaling import (
-    DEFAULT_WORKER_URL,
-    HttpSignalingChannel,
-    InMemorySignalingChannel,
     SignalingChannel,
+    default_signaling_channel,
 )
 from core.controllers.flight.FlightTileController import FlightTileController
 from core.controllers.flight.MissionGalleryController import MissionGalleryController
@@ -817,33 +815,9 @@ class FlightViewerController(QObject):
     def _default_signaling_channel() -> SignalingChannel:
         """Pick the signaling backend based on operator configuration.
 
-        Production default is :class:`HttpSignalingChannel` pointed at the
-        canonical ``signal.adiat.app`` Cloudflare Worker. Operators can
-        override via ``config.toml``:
-
-        .. code-block:: toml
-
-            [signaling]
-            base_url = "https://my-self-hosted-worker.example/"
-
-        See plan §17 for the file location. If ``httpx`` is not installed
-        (development environment without WebRTC deps), falls back to the
-        :class:`InMemorySignalingChannel` so the UI still loads.
+        Thin delegate to :func:`core.services.streaming.signaling.\
+default_signaling_channel` — the ADIAT Flight streaming source resolves
+        its Worker the same way, so the config lookup (``config.toml``
+        ``[signaling] base_url``, see plan §17) lives in one place.
         """
-        url = DEFAULT_WORKER_URL
-        try:
-            from helpers.AppConfig import get_section
-
-            signaling_cfg = get_section("signaling")
-            override = signaling_cfg.get("base_url")
-            if isinstance(override, str) and override.strip():
-                url = override.strip()
-        except Exception:  # pragma: no cover - defensive
-            pass
-
-        try:
-            return HttpSignalingChannel(base_url=url)
-        except ImportError:
-            # httpx not installed yet — fall back to the in-process channel
-            # so the rest of the Flight Viewer still works in a dev environment.
-            return InMemorySignalingChannel()
+        return default_signaling_channel()

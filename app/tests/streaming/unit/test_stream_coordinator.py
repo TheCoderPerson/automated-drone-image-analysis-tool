@@ -6,7 +6,8 @@ from unittest.mock import Mock, MagicMock, patch
 from PySide6.QtCore import QObject, Signal
 
 from core.controllers.streaming.components.StreamCoordinator import StreamCoordinator
-from core.services.streaming.RTMPStreamService import StreamType
+from core.services.streaming.FlightStreamService import FlightStreamManager
+from core.services.streaming.RTMPStreamService import StreamManager, StreamType
 
 
 class TestStreamCoordinator:
@@ -218,3 +219,49 @@ class TestStreamCoordinator:
         coordinator._on_recording_manager_stats(payload)
 
         assert received == [payload]
+
+    def test_webrtc_source_uses_flight_stream_manager(self, mock_logger):
+        """ADIAT Flight feeds are WebRTC; OpenCV cannot open them.
+
+        The coordinator must pick the WebRTC-backed manager for that
+        source type and the OpenCV-backed one for everything else.
+        """
+        coordinator = StreamCoordinator(mock_logger)
+
+        assert isinstance(
+            coordinator._create_stream_manager(StreamType.WEBRTC),
+            FlightStreamManager,
+        )
+        for stream_type in (StreamType.FILE, StreamType.HDMI_CAPTURE, StreamType.RTMP):
+            manager = coordinator._create_stream_manager(stream_type)
+            assert isinstance(manager, StreamManager)
+            assert not isinstance(manager, FlightStreamManager)
+
+    def test_connect_stream_routes_adiat_flight_label_to_flight_manager(self, mock_logger):
+        """The canonical source label resolves without the caller mapping it."""
+        coordinator = StreamCoordinator(mock_logger)
+        flight_manager = Mock()
+        flight_manager.connect_to_stream = Mock(return_value=True)
+
+        with patch.object(
+            StreamCoordinator, "_create_stream_manager", return_value=flight_manager
+        ) as create:
+            assert coordinator.connect_stream("K7QM3P", "ADIAT Flight") is True
+
+        create.assert_called_once_with(StreamType.WEBRTC)
+        assert coordinator.current_stream_type == StreamType.WEBRTC
+        assert coordinator.current_stream_url == "K7QM3P"
+        flight_manager.connect_to_stream.assert_called_once_with(
+            "K7QM3P", StreamType.WEBRTC, hdmi_backend=None, fps_limit=None
+        )
+
+    def test_connect_stream_still_resolves_legacy_string_labels(self, mock_logger):
+        """Pre-existing lowercase/alias labels must keep working."""
+        coordinator = StreamCoordinator(mock_logger)
+        manager = Mock()
+        manager.connect_to_stream = Mock(return_value=True)
+
+        with patch.object(StreamCoordinator, "_create_stream_manager", return_value=manager):
+            coordinator.connect_stream("rtmp://host/app/key", "rtmp")
+
+        assert coordinator.current_stream_type == StreamType.RTMP

@@ -108,6 +108,19 @@ class Ui_StreamingGuide(object):
 
         self.horizontalLayout_streamButtons.addWidget(self.rtmpButton)
 
+        self.flightButton = QToolButton(self.streamTypeButtonWidget)
+        self.flightButton.setObjectName(u"flightButton")
+        self.flightButton.setMinimumSize(QSize(150, 150))
+        self.flightButton.setMaximumSize(QSize(180, 180))
+        self.flightButton.setFont(font1)
+        self.flightButton.setStyleSheet(u"QToolButton { border: 3px solid palette(mid); border-radius: 12px; padding: 10px; }\n"
+"QToolButton:checked { border-color: #4CAF50; background-color: #1b2d44; }")
+        self.flightButton.setIconSize(QSize(72, 72))
+        self.flightButton.setCheckable(True)
+        self.flightButton.setToolButtonStyle(Qt.ToolButtonTextUnderIcon)
+
+        self.horizontalLayout_streamButtons.addWidget(self.flightButton)
+
         self.streamButtonsRightSpacer = QSpacerItem(20, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
 
         self.horizontalLayout_streamButtons.addItem(self.streamButtonsRightSpacer)
@@ -137,6 +150,13 @@ class Ui_StreamingGuide(object):
         self.labelRtmpDescription.setWordWrap(True)
 
         self.verticalLayout_streamSelection.addWidget(self.labelRtmpDescription)
+
+        self.labelFlightDescription = QLabel(self.pageSource)
+        self.labelFlightDescription.setObjectName(u"labelFlightDescription")
+        self.labelFlightDescription.setFont(font2)
+        self.labelFlightDescription.setWordWrap(True)
+
+        self.verticalLayout_streamSelection.addWidget(self.labelFlightDescription)
 
         self.verticalSpacer_source = QSpacerItem(20, 40, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
 
@@ -626,9 +646,14 @@ class Ui_StreamingGuide(object):
         self.rtmpButton.setToolTip(QCoreApplication.translate("StreamingGuide", u"Network stream via RTMP URL", None))
 #endif // QT_CONFIG(tooltip)
         self.rtmpButton.setText(QCoreApplication.translate("StreamingGuide", u"RTMP", None))
+#if QT_CONFIG(tooltip)
+        self.flightButton.setToolTip(QCoreApplication.translate("StreamingGuide", u"Live feed from the ADIAT Flight app (enter pairing code)", None))
+#endif // QT_CONFIG(tooltip)
+        self.flightButton.setText(QCoreApplication.translate("StreamingGuide", u"ADIAT Flight", None))
         self.labelFileDescription.setText(QCoreApplication.translate("StreamingGuide", u"File: Use local video files (MP4, MOV, etc.) with timeline controls.", None))
         self.labelHdmiDescription.setText(QCoreApplication.translate("StreamingGuide", u"HDMI: Connect to a live HDMI capture device.", None))
         self.labelRtmpDescription.setText(QCoreApplication.translate("StreamingGuide", u"RTMP: Connect to a live network stream (rtmp://server:port/app/key).", None))
+        self.labelFlightDescription.setText(QCoreApplication.translate("StreamingGuide", u"ADIAT Flight: Pair with the ADIAT Flight app using the 6-character code it displays.", None))
         self.labelPageConnectionTitle.setText(QCoreApplication.translate("StreamingGuide", u"Connection Details", None))
         self.labelConnectionInstructions.setText(QCoreApplication.translate("StreamingGuide", u"Provide the path or URL for your selected stream type. You can optionally auto-connect when the guide is finished.", None))
         self.labelStreamUrl.setText(QCoreApplication.translate("StreamingGuide", u"Stream URL/Path:", None))

@@ -145,5 +145,5 @@
     "pyrcc": "pyside6-rcc",
     "pyrcc_options": "",
     "pyuic": "pyside6-uic",
-    "pyuic_options": "--from-import"
+    "pyuic_options": "--from-imports"
 }
