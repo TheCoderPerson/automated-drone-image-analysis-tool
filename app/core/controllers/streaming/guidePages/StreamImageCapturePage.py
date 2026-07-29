@@ -7,6 +7,8 @@ from .BasePage import BasePage
 from helpers.PickleHelper import PickleHelper
 from core.services.GSDService import GSDService
 from core.services.LoggerService import LoggerService
+from core.services.streaming.RTMPStreamService import SOURCE_TYPE_FILE
+from core.services.telemetry.VideoCaptureInfoService import detect_capture_info
 
 
 class StreamImageCapturePage(BasePage):
@@ -18,6 +20,10 @@ class StreamImageCapturePage(BasePage):
         self.logger = LoggerService()
         # Store camera groups: key = (manufacturer, model), value = list of sensor rows
         self.camera_groups = {}
+        # Video path we have already auto-detected, so re-entering the page
+        # (Back/Continue) does not re-probe the file or stomp on an
+        # override the operator has since made.
+        self._detected_for_path = None
 
     def setup_ui(self):
         """Initialize UI components."""
@@ -46,9 +52,99 @@ class StreamImageCapturePage(BasePage):
         self._load_drone_data()
         self._load_preferences()
 
+    def on_enter(self) -> None:
+        """Pre-fill drone and altitude from the video, if we can read them.
+
+        Only for File sources — a live feed has no file to inspect, and
+        its telemetry has not started arriving yet.
+        """
+        self._autodetect_from_video()
+
     def validate(self) -> bool:
         """Validate that capture information is set."""
         return True  # All fields have defaults
+
+    # ------------------------------------------------------------------
+    # auto-detection
+    # ------------------------------------------------------------------
+
+    def _autodetect_from_video(self) -> None:
+        """Read the aircraft and altitude out of the selected video.
+
+        Both drive GSD, and both are recorded in the file for DJI
+        aircraft: the airframe in the container's ``encoder`` tag and the
+        altitude in the embedded telemetry. Guessing them by hand is
+        error-prone in a way that matters — GSD scales with altitude and
+        detection area with GSD², so a 2x altitude error is a ~4x area
+        error, and sibling airframes carry different sensors entirely.
+
+        Values are pre-selected, never forced: the operator can change
+        either afterwards, and a manual change is not overwritten if they
+        navigate back to this page.
+        """
+        if self.wizard_data.get("stream_type", SOURCE_TYPE_FILE) != SOURCE_TYPE_FILE:
+            return
+
+        video_path = (self.wizard_data.get("stream_url") or "").strip()
+        if not video_path or video_path == self._detected_for_path:
+            return
+        self._detected_for_path = video_path
+
+        try:
+            info = detect_capture_info(video_path, logger=self.logger)
+        except Exception as e:  # noqa: BLE001 - detection is advisory
+            self.logger.debug(f"Capture auto-detection failed: {e}")
+            return
+
+        if info.has_device:
+            self._select_detected_drone(info.make, info.model)
+        if info.has_altitude:
+            self._apply_detected_altitude(info.altitude_agl_m)
+
+    def _select_detected_drone(self, make: str, model: str) -> None:
+        """Select the combo entry matching a detected make/model."""
+        combo = self.dialog.droneComboBox
+        for index in range(combo.count()):
+            row = combo.itemData(index)
+            if not isinstance(row, pd.Series):
+                continue
+            row_make = self._cell(row, 'Manufacturer', 'Make')
+            row_model = self._cell(row, 'Model')
+            if (row_make.lower() == str(make).lower()
+                    and row_model.lower() == str(model).lower()):
+                combo.setCurrentIndex(index)
+                self.logger.info(
+                    f"Auto-selected {make} {model} from video metadata"
+                )
+                return
+
+    def _apply_detected_altitude(self, altitude_m: float) -> None:
+        """Set the altitude control from a detected AGL, in the active unit."""
+        unit = self.wizard_data.get('altitude_unit', 'ft')
+        value = altitude_m if unit == 'm' else altitude_m * 3.28084
+        value = int(round(value))
+
+        slider = self.dialog.altitudeSlider
+        # Clamp into the control's range rather than silently dropping a
+        # value the slider cannot represent.
+        value = max(slider.minimum(), min(value, slider.maximum()))
+
+        slider.setValue(value)
+        self.dialog.altitudeSpinBox.setValue(value)
+        self.wizard_data['altitude'] = value
+        self.logger.info(
+            f"Auto-set altitude to {value} {unit} from video telemetry"
+        )
+
+    @staticmethod
+    def _cell(row, *keys) -> str:
+        """First non-empty value among ``keys`` in a drone table row."""
+        for key in keys:
+            if key in row.index:
+                value = row[key]
+                if pd.notna(value) and str(value).strip():
+                    return str(value).strip()
+        return ""
 
     def save_data(self):
         """Save capture information to wizard_data."""

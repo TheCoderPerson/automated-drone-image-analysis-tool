@@ -651,3 +651,158 @@ class TestStreamAlgorithmParametersPage:
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
+
+
+class TestCaptureAutoDetection:
+    """The wizard pre-fills drone + altitude from the video's own metadata.
+
+    Both feed GSD, and GSD feeds the detection-area filter, so a guessed
+    altitude quietly mis-sizes what the detector looks for. Values are
+    pre-selected but always overridable.
+    """
+
+    PAGE_SERVICE = (
+        "core.controllers.streaming.guidePages."
+        "StreamImageCapturePage.detect_capture_info"
+    )
+
+    def _info(self, make="DJI", model="Matrice 4T", agl=88.5):
+        from core.services.telemetry.VideoCaptureInfoService import VideoCaptureInfo
+        return VideoCaptureInfo(
+            make=make, model=model, device_text="DJI M4TD",
+            altitude_agl_m=agl, altitude_samples=100,
+        )
+
+    def test_altitude_is_prefilled_from_telemetry(self, qapp):
+        wizard = StreamingGuide()
+        try:
+            wizard.wizard_data["stream_type"] = "File"
+            wizard.wizard_data["stream_url"] = "C:/videos/flight.mp4"
+            with patch(self.PAGE_SERVICE, return_value=self._info()):
+                wizard.pages[2].on_enter()
+
+            # 88.5 m -> 290 ft, and the unit combo is in feet by default.
+            assert wizard.altitudeSpinBox.value() == 290
+            assert wizard.wizard_data["altitude"] == 290
+        finally:
+            wizard.close()
+
+    def test_altitude_respects_metric_units(self, qapp):
+        wizard = StreamingGuide()
+        try:
+            wizard.wizard_data["stream_type"] = "File"
+            wizard.wizard_data["stream_url"] = "C:/videos/flight.mp4"
+            wizard.wizard_data["altitude_unit"] = "m"
+            with patch(self.PAGE_SERVICE, return_value=self._info()):
+                wizard.pages[2].on_enter()
+
+            assert wizard.altitudeSpinBox.value() == 88
+        finally:
+            wizard.close()
+
+    def test_altitude_is_clamped_to_the_control_range(self, qapp):
+        """A high-altitude clip must not silently set an unrepresentable value."""
+        wizard = StreamingGuide()
+        try:
+            wizard.wizard_data["stream_type"] = "File"
+            wizard.wizard_data["stream_url"] = "C:/videos/flight.mp4"
+            with patch(self.PAGE_SERVICE, return_value=self._info(agl=99999.0)):
+                wizard.pages[2].on_enter()
+
+            assert wizard.altitudeSpinBox.value() <= wizard.altitudeSlider.maximum()
+        finally:
+            wizard.close()
+
+    def test_drone_is_preselected(self, qapp):
+        wizard = StreamingGuide()
+        try:
+            wizard.wizard_data["stream_type"] = "File"
+            wizard.wizard_data["stream_url"] = "C:/videos/flight.mp4"
+            with patch(self.PAGE_SERVICE, return_value=self._info()):
+                wizard.pages[2].on_enter()
+
+            assert "Matrice 4T" in wizard.droneComboBox.currentText()
+        finally:
+            wizard.close()
+
+    def test_live_sources_are_not_probed(self, qapp):
+        """There is no file to inspect for a live feed."""
+        wizard = StreamingGuide()
+        try:
+            wizard.wizard_data["stream_type"] = "ADIAT Flight"
+            wizard.wizard_data["stream_url"] = ""
+            with patch(self.PAGE_SERVICE) as detect:
+                wizard.pages[2].on_enter()
+            detect.assert_not_called()
+        finally:
+            wizard.close()
+
+    def test_missing_path_is_not_probed(self, qapp):
+        wizard = StreamingGuide()
+        try:
+            wizard.wizard_data["stream_type"] = "File"
+            wizard.wizard_data["stream_url"] = ""
+            with patch(self.PAGE_SERVICE) as detect:
+                wizard.pages[2].on_enter()
+            detect.assert_not_called()
+        finally:
+            wizard.close()
+
+    def test_revisiting_does_not_re_probe_or_stomp_an_override(self, qapp):
+        """Going Back then Continue must not undo a manual correction."""
+        wizard = StreamingGuide()
+        try:
+            wizard.wizard_data["stream_type"] = "File"
+            wizard.wizard_data["stream_url"] = "C:/videos/flight.mp4"
+            with patch(self.PAGE_SERVICE, return_value=self._info()) as detect:
+                wizard.pages[2].on_enter()
+                assert detect.call_count == 1
+
+                # Operator overrides the detected altitude...
+                wizard.altitudeSpinBox.setValue(120)
+                # ...and returns to the page.
+                wizard.pages[2].on_enter()
+
+                assert detect.call_count == 1
+            assert wizard.altitudeSpinBox.value() == 120
+        finally:
+            wizard.close()
+
+    def test_a_new_video_is_probed_again(self, qapp):
+        wizard = StreamingGuide()
+        try:
+            wizard.wizard_data["stream_type"] = "File"
+            wizard.wizard_data["stream_url"] = "C:/videos/a.mp4"
+            with patch(self.PAGE_SERVICE, return_value=self._info()) as detect:
+                wizard.pages[2].on_enter()
+                wizard.wizard_data["stream_url"] = "C:/videos/b.mp4"
+                wizard.pages[2].on_enter()
+                assert detect.call_count == 2
+        finally:
+            wizard.close()
+
+    def test_detection_failure_leaves_defaults(self, qapp):
+        wizard = StreamingGuide()
+        try:
+            before = wizard.altitudeSpinBox.value()
+            wizard.wizard_data["stream_type"] = "File"
+            wizard.wizard_data["stream_url"] = "C:/videos/flight.mp4"
+            with patch(self.PAGE_SERVICE, side_effect=OSError("unreadable")):
+                wizard.pages[2].on_enter()
+            assert wizard.altitudeSpinBox.value() == before
+        finally:
+            wizard.close()
+
+    def test_nothing_detected_leaves_defaults(self, qapp):
+        from core.services.telemetry.VideoCaptureInfoService import VideoCaptureInfo
+
+        wizard = StreamingGuide()
+        try:
+            before = wizard.altitudeSpinBox.value()
+            wizard.wizard_data["stream_type"] = "File"
+            wizard.wizard_data["stream_url"] = "C:/videos/flight.mp4"
+            with patch(self.PAGE_SERVICE, return_value=VideoCaptureInfo()):
+                wizard.pages[2].on_enter()
+            assert wizard.altitudeSpinBox.value() == before
+        finally:
+            wizard.close()
