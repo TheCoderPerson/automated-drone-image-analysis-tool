@@ -114,6 +114,9 @@ if platform.system() == 'Windows':
                     # Bundled EGM96 geoid grid (global) for offline ellipsoidal<->orthometric
                     # height conversion; PROJ streams it online otherwise.
                     ('app/resources/geoid/us_nga_egm96_15.tif', 'resources/geoid'),
+                    # Vendored Leaflet for the map widget. Bundled so the map
+                    # never depends on a CDN round-trip at runtime.
+                    ('resources/vendor/leaflet', 'resources/vendor/leaflet'),
                     # AI Person Detector models
                     ('app/algorithms/models/AIPersonDetector/ai_person_model_V3_640.onnx', 'algorithms/models/AIPersonDetector'),
                     ('app/algorithms/models/AIPersonDetector/ai_person_model_V3_1024.onnx', 'algorithms/models/AIPersonDetector')
@@ -140,6 +143,9 @@ elif platform.system() == 'Darwin':
                         # Bundled EGM96 geoid grid (global) for offline ellipsoidal<->orthometric
                         # height conversion; PROJ streams it online otherwise.
                         ('app/resources/geoid/us_nga_egm96_15.tif', 'resources/geoid'),
+                    # Vendored Leaflet for the map widget. Bundled so the map
+                    # never depends on a CDN round-trip at runtime.
+                    ('resources/vendor/leaflet', 'resources/vendor/leaflet'),
                         # AI Person Detector models
                         ('app/algorithms/models/AIPersonDetector/ai_person_model_V3_640.onnx', 'algorithms/models/AIPersonDetector'),
                         ('app/algorithms/models/AIPersonDetector/ai_person_model_V3_1024.onnx', 'algorithms/models/AIPersonDetector')

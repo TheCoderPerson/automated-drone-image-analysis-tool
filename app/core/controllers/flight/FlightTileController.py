@@ -26,6 +26,7 @@ from core.services.streaming.FlightSessionStore import FlightSessionStore
 from core.services.streaming.WebRTCStreamService import WebRTCStreamService
 from core.services.streaming.signaling import SignalingChannel
 from core.services.streaming.TelemetryFeedService import TelemetryFeedService
+from core.services.telemetry import TelemetryEnrichmentService
 from core.views.flight.FlightTile import FlightTile
 from core.views.flight.FlightPairingDialog import FlightPairingDialog
 
@@ -78,6 +79,8 @@ class FlightTileController(QObject):
     tileClosed = Signal(str)
     thumbReady = Signal(str, str, bytes)  # feed_id, track_key, jpeg_bytes
     feedDisplayNameChanged = Signal(str, str)  # feed_id, operator-facing label
+    # DEM-enriched aircraft telemetry, for the map's aircraft marker + path.
+    telemetryReceived = Signal(str, dict)  # feed_id, telemetry envelope
     # Plan §20 session-continuity signals.
     sessionEstablished = Signal(str, str)        # feed_id, session_id
     sessionChanged = Signal(str, str, str)       # feed_id, old_session_id, new_session_id
@@ -114,6 +117,7 @@ class FlightTileController(QObject):
         self._service: Optional[WebRTCStreamService] = None
         self._feed_service: Optional[DetectionFeedService] = None
         self._telemetry_service: Optional[TelemetryFeedService] = None
+        self._telemetry_enrichment: Optional[TelemetryEnrichmentService] = None
         self._tile: Optional[FlightTile] = None
         self._pairing_code: Optional[str] = None
         self._dialog: Optional[FlightPairingDialog] = None
@@ -526,12 +530,19 @@ class FlightTileController(QObject):
         # Telemetry feed (plan §19.3). The same ``dataChannelMessage``
         # signal feeds both services — each filters by label.
         telemetry_service = TelemetryFeedService(parent=self)
-        telemetry_service.telemetryReceived.connect(tile.apply_telemetry)
+        # Envelopes pass through DEM enrichment on the way to the HUD so
+        # the Flight Viewer's AGL accounts for terrain change since
+        # takeoff, matching the streaming window.
+        telemetry_service.telemetryReceived.connect(self._on_telemetry_envelope)
         # Anchor the session baseline to the FIRST telemetry envelope's
         # ``captured_at_ms`` so we can drop snapshot replays carrying
         # tracks from before this pairing started.
         telemetry_service.telemetryReceived.connect(self._maybe_anchor_session)
         self._telemetry_service = telemetry_service
+
+        enrichment = TelemetryEnrichmentService(parent=self)
+        enrichment.envelopeEnriched.connect(self._publish_telemetry)
+        self._telemetry_enrichment = enrichment
 
         svc = self._service
         if svc is None:
@@ -790,6 +801,40 @@ class FlightTileController(QObject):
         if self._pairing_code:
             self.detectionUpdated.emit(self._pairing_code, merged)
 
+    def _on_telemetry_envelope(self, envelope: dict) -> None:
+        """DEM-enrich a telemetry envelope, then push it to HUD and map.
+
+        :meth:`TelemetryEnrichmentService.enrich` returns immediately with
+        the drone-reported AGL — the terrain-corrected value arrives later
+        on ``envelopeEnriched``, so the HUD is never held up waiting on a
+        DEM tile fetch.
+        """
+        if not isinstance(envelope, dict):
+            return
+        enriched = envelope
+        if self._telemetry_enrichment is not None:
+            try:
+                enriched = self._telemetry_enrichment.enrich(envelope)
+            except Exception:  # noqa: BLE001 - never break the live HUD
+                enriched = envelope
+        self._publish_telemetry(enriched)
+
+    def _publish_telemetry(self, envelope: dict) -> None:
+        """Render into the tile HUD and forward for the map."""
+        if not isinstance(envelope, dict):
+            return
+        tile = self._tile
+        if tile is not None:
+            try:
+                tile.apply_telemetry(envelope)
+            except Exception:  # noqa: BLE001 - HUD must not kill the feed
+                self.logger.debug(
+                    f"FlightTileController({self._pairing_code}): "
+                    "HUD update failed"
+                )
+        if self._pairing_code:
+            self.telemetryReceived.emit(self._pairing_code, envelope)
+
     def _on_resume_complete(self, session_id: str, last_seq: int) -> None:
         """Mobile finished streaming backfill events for our resume request."""
         self._resume_armed = False
@@ -927,6 +972,11 @@ class FlightTileController(QObject):
         if self._telemetry_service is not None:
             self._telemetry_service.deleteLater()
             self._telemetry_service = None
+        if self._telemetry_enrichment is not None:
+            # Stops the DEM worker thread before the controller goes away.
+            self._telemetry_enrichment.cleanup()
+            self._telemetry_enrichment.deleteLater()
+            self._telemetry_enrichment = None
         if self._thumb_cropper is not None:
             self._thumb_cropper.deleteLater()
             self._thumb_cropper = None

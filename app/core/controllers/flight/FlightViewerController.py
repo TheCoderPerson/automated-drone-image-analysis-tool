@@ -93,6 +93,8 @@ class FlightViewerController(QObject):
 
         # feed_id -> controller mapping; feed_id is the pairing code in v1
         self._tile_controllers: Dict[str, FlightTileController] = {}
+        # feed_id -> operator-facing label, used to name aircraft on the map
+        self._feed_display_names: Dict[str, str] = {}
         # Keep dialogs alive while they're in flight
         self._dialogs: List[object] = []
 
@@ -383,10 +385,15 @@ class FlightViewerController(QObject):
         # per track. Bridge straight to the Mission Gallery's
         # ``upsert_thumb`` so the row's image refreshes in place.
         controller.thumbReady.connect(self._on_thumb_ready)
+        # Live aircraft position + flight path on the shared map. Keyed by
+        # pairing code so a multi-feed session renders one aircraft and one
+        # trail per drone rather than a single jumping marker.
+        controller.telemetryReceived.connect(self._on_telemetry_for_map)
         # Tile renames + telemetry-derived names → propagate to the
         # gallery's Feed filter dropdown AND every row that already
         # carries this feed's pairing code.
         controller.feedDisplayNameChanged.connect(self.gallery.set_feed_display_name)
+        controller.feedDisplayNameChanged.connect(self._remember_feed_display_name)
         # Plan §20 session-continuity wiring. ``sessionEstablished``
         # fires once per pairing as soon as the publisher's
         # ``session_id`` lands on any envelope; we persist the
@@ -449,6 +456,14 @@ class FlightViewerController(QObject):
         if controller is not None and controller.tile is not None:
             self.window.remove_tile(controller.tile)
         self.gallery.deregister_feed(code)
+        self._feed_display_names.pop(code, None)
+        # Retire this feed's aircraft marker and trail; detection pins stay,
+        # since those locations remain relevant after the feed drops.
+        try:
+            self.window.map_dock.clear_aircraft(code)
+            self.window.map_dock.clear_track(code)
+        except Exception:  # noqa: BLE001 - teardown must not raise
+            pass
         # Drop the dialog/controller pair reference once the tile is gone.
         self._dialogs = [
             (ctrl, dlg) for (ctrl, dlg) in self._dialogs if ctrl is not controller
@@ -687,6 +702,27 @@ class FlightViewerController(QObject):
             return
         self.window.map_dock.add_detection(detection)
         if not self.window.map_dock.isVisible():
+            self.window.show_map_dock()
+
+    def _remember_feed_display_name(self, feed_id: str, label: str) -> None:
+        """Cache a feed's operator-facing label for the map tooltip."""
+        if feed_id and isinstance(label, str) and label.strip():
+            self._feed_display_names[feed_id] = label.strip()
+
+    def _on_telemetry_for_map(self, feed_id: str, envelope: dict) -> None:
+        """Move this feed's aircraft marker and extend its flight path.
+
+        Keyed by ``feed_id`` (the pairing code) so several tiles render
+        several aircraft with independent trails. Reveals the dock on the
+        first geo-tagged envelope, matching the detection behaviour above.
+        """
+        if not isinstance(envelope, dict):
+            return
+        label = self._feed_display_names.get(feed_id) or feed_id
+        plotted = self.window.map_dock.update_aircraft(
+            envelope, feed_id=feed_id, label=label
+        )
+        if plotted and not self.window.map_dock.isVisible():
             self.window.show_map_dock()
 
     def _on_gallery_row_activated(self, detection: dict) -> None:

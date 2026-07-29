@@ -45,6 +45,13 @@ class TelemetryHud(TranslationMixin, QWidget, Ui_TelemetryHud):
         self._last_received_at: Optional[float] = None
         self._distance_unit = self._read_distance_unit()
 
+        # Staleness only means something for a live feed. Video playback
+        # legitimately stops producing telemetry while paused, and dimming
+        # the HUD with "stale 12s" there tells the operator the feed has
+        # dropped when nothing is wrong. Callers driving the HUD from a
+        # file switch this off via :meth:`set_staleness_tracking`.
+        self._staleness_enabled = True
+
         # 1 Hz staleness check — cheap; pure label updates.
         self._stale_timer = QTimer(self)
         self._stale_timer.setInterval(1000)
@@ -89,6 +96,7 @@ class TelemetryHud(TranslationMixin, QWidget, Ui_TelemetryHud):
         self.altLabel.setText(self._format_altitudes(
             env.get("aircraft_altitude_msl_m"),
             env.get("aircraft_altitude_agl_m"),
+            env.get("agl_source"),
         ))
         self.headingLabel.setText(self._format_heading(env.get("aircraft_yaw_deg")))
         self.speedLabel.setText(self._format_speed(env.get("horizontal_speed_ms")))
@@ -129,7 +137,18 @@ class TelemetryHud(TranslationMixin, QWidget, Ui_TelemetryHud):
     # staleness
     # ------------------------------------------------------------------
 
+    def set_staleness_tracking(self, enabled: bool) -> None:
+        """Enable/disable the "stale Ns" badge.
+
+        Disabled for file playback, where a pause is not a dropped feed.
+        """
+        self._staleness_enabled = bool(enabled)
+        if not self._staleness_enabled:
+            self._clear_stale()
+
     def _check_staleness(self) -> None:
+        if not self._staleness_enabled:
+            return
         if self._last_received_at is None:
             return
         age = time.monotonic() - self._last_received_at
@@ -162,7 +181,7 @@ class TelemetryHud(TranslationMixin, QWidget, Ui_TelemetryHud):
             return "—"
         return f"{float(value):.6f}"
 
-    def _format_altitudes(self, msl, agl) -> str:
+    def _format_altitudes(self, msl, agl, agl_source=None) -> str:
         if not isinstance(msl, (int, float)) and not isinstance(agl, (int, float)):
             return self.tr("ALT —")
         if self._distance_unit == "Feet":
@@ -175,6 +194,12 @@ class TelemetryHud(TranslationMixin, QWidget, Ui_TelemetryHud):
             agl_part = self._fmt_num(agl, 0)
             suffix_msl = "m MSL"
             suffix_agl = "m AGL"
+        # Mark AGL corrected against the DEM so the operator can tell it
+        # apart from the drone's takeoff-relative figure — the two diverge
+        # exactly when terrain matters most. Plain ASCII: the HUD renders in
+        # Consolas/Courier New, which lack most symbol glyphs.
+        if agl_source == "terrain":
+            suffix_agl = f"{suffix_agl} (DEM)"
         return self.tr("ALT {msl} {msl_unit} / {agl} {agl_unit}").format(
             msl=msl_part, msl_unit=suffix_msl, agl=agl_part, agl_unit=suffix_agl,
         )
