@@ -80,13 +80,17 @@ class TestColorDetectionControlWidget:
         widget = ColorDetectionControlWidget()
         widget._on_color_selected_from_menu(QColor(255, 0, 0))
 
-        widget.recent_colors_service.add_hsv_color = Mock()
-        widget.recent_colors_service.add_rgb_color = Mock()
+        # RecentColorsService is a process-wide singleton, so assigning the
+        # stubs directly would leave Mocks on the shared instance for every
+        # later test in the session (it silently broke
+        # test_recent_colors_service.py whenever streaming ran first).
+        # patch.object restores the real methods on exit.
+        with patch.object(widget.recent_colors_service, 'add_hsv_color') as add_hsv, \
+                patch.object(widget.recent_colors_service, 'add_rgb_color') as add_rgb:
+            _ = widget.get_config()
 
-        _ = widget.get_config()
-
-        widget.recent_colors_service.add_hsv_color.assert_not_called()
-        widget.recent_colors_service.add_rgb_color.assert_not_called()
+            add_hsv.assert_not_called()
+            add_rgb.assert_not_called()
 
     def test_frame_tab_config_can_clear_mask_path(self, qapp):
         """FrameTab set_config should clear mask path when given None."""
