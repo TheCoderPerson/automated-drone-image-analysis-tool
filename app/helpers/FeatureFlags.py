@@ -12,7 +12,11 @@ code stays in the tree so releasing later only means flipping the flag.
 # tree, so releasing later is just flipping this back to True (and the
 # matching assertion in
 # app/tests/core/controllers/test_selection_dialog_controller.py).
-FLIGHT_VIEWER_ENABLED = False
+#
+# This also gates ADIAT Flight as a *streaming source*: it pairs over the
+# same WebRTC/signaling stack, so the two ship together. Split this into a
+# second flag if the streaming source ever needs to release on its own.
+FLIGHT_VIEWER_ENABLED = True
 
 # Review Results (open a completed analysis straight into review, bypassing
 # the analysis setup screen). Held back from the current release build. When
