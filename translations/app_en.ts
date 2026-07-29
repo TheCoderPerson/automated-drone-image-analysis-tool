@@ -4851,6 +4851,14 @@ thumb</translation>
     </message>
 </context>
 <context>
+    <name>FlightMapView</name>
+    <message>
+        <location filename="../app/core/views/components/FlightMapView.py" line="550"/>
+        <source>QtWebEngine not available — install PySide6-Addons for the interactive map. Showing list view instead.</source>
+        <translation type="unfinished">QtWebEngine not available — install PySide6-Addons for the interactive map. Showing list view instead.</translation>
+    </message>
+</context>
+<context>
     <name>FlightPairingDialog</name>
     <message>
         <location filename="../resources/views/flight/flight_pairing.ui" line="14"/>
@@ -5095,22 +5103,22 @@ thumb</translation>
 <context>
     <name>FlightTileController</name>
     <message>
-        <location filename="../app/core/controllers/flight/FlightTileController.py" line="191"/>
+        <location filename="../app/core/controllers/flight/FlightTileController.py" line="195"/>
         <source>Looking up code {code} and connecting to the drone.</source>
         <translation>Looking up code {code} and connecting to the drone.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/flight/FlightTileController.py" line="266"/>
+        <location filename="../app/core/controllers/flight/FlightTileController.py" line="270"/>
         <source>Name this device</source>
         <translation>Name this device</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/flight/FlightTileController.py" line="268"/>
+        <location filename="../app/core/controllers/flight/FlightTileController.py" line="272"/>
         <source>Give this publisher a name so you can recognise it next time (e.g. &apos;Operator A&apos;s M4E&apos;).</source>
         <translation>Give this publisher a name so you can recognise it next time (e.g. &apos;Operator A&apos;s M4E&apos;).</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/flight/FlightTileController.py" line="286"/>
+        <location filename="../app/core/controllers/flight/FlightTileController.py" line="290"/>
         <source>Device &apos;{label}&apos; presented a different DTLS fingerprint than the last time you paired with it. This could mean the controller was reset, a different controller is using the label, or somebody is impersonating it.
 
 Reject if you weren&apos;t expecting this.</source>
@@ -5119,22 +5127,22 @@ Reject if you weren&apos;t expecting this.</source>
 Reject if you weren&apos;t expecting this.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/flight/FlightTileController.py" line="453"/>
+        <location filename="../app/core/controllers/flight/FlightTileController.py" line="457"/>
         <source>Pairing ended before video could start. Ask the operator to generate a new code and try again.</source>
         <translation>Pairing ended before video could start. Ask the operator to generate a new code and try again.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/flight/FlightTileController.py" line="294"/>
+        <location filename="../app/core/controllers/flight/FlightTileController.py" line="298"/>
         <source>Fingerprint mismatch — &apos;{label}&apos;</source>
         <translation>Fingerprint mismatch — &apos;{label}&apos;</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/flight/FlightTileController.py" line="303"/>
+        <location filename="../app/core/controllers/flight/FlightTileController.py" line="307"/>
         <source>Fingerprint changed on {ts}; previous identity was overwritten after operator review.</source>
         <translation>Fingerprint changed on {ts}; previous identity was overwritten after operator review.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/flight/FlightTileController.py" line="395"/>
+        <location filename="../app/core/controllers/flight/FlightTileController.py" line="399"/>
         <source>This drone already has {current} viewers connected (maximum {limit}). Ask one to disconnect, or try again later.</source>
         <translation>This drone already has {current} viewers connected (maximum {limit}). Ask one to disconnect, or try again later.</translation>
     </message>
@@ -9489,14 +9497,9 @@ AI PERSON DETECTOR: Deep learning model for accurate people detection
 <context>
     <name>MapDock</name>
     <message>
-        <location filename="../app/core/views/flight/MapDock.py" line="263"/>
+        <location filename="../app/core/views/flight/MapDock.py" line="54"/>
         <source>Map</source>
         <translation>Map</translation>
-    </message>
-    <message>
-        <location filename="../app/core/views/flight/MapDock.py" line="360"/>
-        <source>QtWebEngine not available — install PySide6-Addons for the interactive map. Showing list view instead.</source>
-        <translation>QtWebEngine not available — install PySide6-Addons for the interactive map. Showing list view instead.</translation>
     </message>
 </context>
 <context>
@@ -12415,62 +12418,62 @@ Supported formats: MP4, AVI, MOV, MKV, FLV, WMV, M4V, 3GP, WebM</translation>
 <context>
     <name>StreamImageCapturePage</name>
     <message>
-        <location filename="../app/core/controllers/streaming/guidePages/StreamImageCapturePage.py" line="66"/>
+        <location filename="../app/core/controllers/streaming/guidePages/StreamImageCapturePage.py" line="162"/>
         <source>Select Drone/Camera</source>
         <translation>Select Drone/Camera</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/guidePages/StreamImageCapturePage.py" line="70"/>
+        <location filename="../app/core/controllers/streaming/guidePages/StreamImageCapturePage.py" line="166"/>
         <source>No drones available</source>
         <translation>No drones available</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/guidePages/StreamImageCapturePage.py" line="112"/>
+        <location filename="../app/core/controllers/streaming/guidePages/StreamImageCapturePage.py" line="208"/>
         <source>Other</source>
         <translation>Other</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/guidePages/StreamImageCapturePage.py" line="148"/>
+        <location filename="../app/core/controllers/streaming/guidePages/StreamImageCapturePage.py" line="244"/>
         <source>Error loading drone data</source>
         <translation>Error loading drone data</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/guidePages/StreamImageCapturePage.py" line="222"/>
+        <location filename="../app/core/controllers/streaming/guidePages/StreamImageCapturePage.py" line="318"/>
         <source>-- (Invalid camera data)</source>
         <translation>-- (Invalid camera data)</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/guidePages/StreamImageCapturePage.py" line="423"/>
+        <location filename="../app/core/controllers/streaming/guidePages/StreamImageCapturePage.py" line="519"/>
         <source>{sensor_name}: Sensor dimensions not available</source>
         <translation>{sensor_name}: Sensor dimensions not available</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/guidePages/StreamImageCapturePage.py" line="430"/>
+        <location filename="../app/core/controllers/streaming/guidePages/StreamImageCapturePage.py" line="526"/>
         <source>-- (Missing camera data)</source>
         <translation>-- (Missing camera data)</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/guidePages/StreamImageCapturePage.py" line="431"/>
+        <location filename="../app/core/controllers/streaming/guidePages/StreamImageCapturePage.py" line="527"/>
         <source>Unable to calculate GSD. Sensor dimensions are required.</source>
         <translation>Unable to calculate GSD. Sensor dimensions are required.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/guidePages/StreamImageCapturePage.py" line="437"/>
+        <location filename="../app/core/controllers/streaming/guidePages/StreamImageCapturePage.py" line="533"/>
         <source>-- (Error)</source>
         <translation>-- (Error)</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/guidePages/StreamImageCapturePage.py" line="468"/>
+        <location filename="../app/core/controllers/streaming/guidePages/StreamImageCapturePage.py" line="564"/>
         <source>Sensor {n}</source>
         <translation>Sensor {n}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/guidePages/StreamImageCapturePage.py" line="470"/>
+        <location filename="../app/core/controllers/streaming/guidePages/StreamImageCapturePage.py" line="566"/>
         <source>Primary</source>
         <translation>Primary</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/guidePages/StreamImageCapturePage.py" line="472"/>
+        <location filename="../app/core/controllers/streaming/guidePages/StreamImageCapturePage.py" line="568"/>
         <source>Sensor</source>
         <translation>Sensor</translation>
     </message>
@@ -12526,6 +12529,44 @@ Supported formats: MP4, AVI, MOV, MKV, FLV, WMV, M4V, 3GP, WebM</translation>
         <location filename="../app/core/controllers/streaming/guidePages/StreamTargetSizePage.py" line="106"/>
         <source>sqft</source>
         <translation>sqft</translation>
+    </message>
+</context>
+<context>
+    <name>StreamTelemetryCoordinator</name>
+    <message>
+        <location filename="../app/core/controllers/streaming/components/StreamTelemetryCoordinator.py" line="93"/>
+        <source>Waiting for telemetry from ADIAT Flight...</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/controllers/streaming/components/StreamTelemetryCoordinator.py" line="103"/>
+        <source>Could not read location data from video</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/controllers/streaming/components/StreamTelemetryCoordinator.py" line="107"/>
+        <source>No location data in this video</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/controllers/streaming/components/StreamTelemetryCoordinator.py" line="115"/>
+        <source>Location data embedded in video ({count} fixes)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/controllers/streaming/components/StreamTelemetryCoordinator.py" line="121"/>
+        <source>Location data from SRT file ({count} fixes)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/controllers/streaming/components/StreamTelemetryCoordinator.py" line="127"/>
+        <source>Location data loaded ({count} fixes)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/controllers/streaming/components/StreamTelemetryCoordinator.py" line="180"/>
+        <source>Receiving telemetry from ADIAT Flight</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
@@ -13477,60 +13518,60 @@ Click on markers, or use Rectangle Select for area selection.</translation>
 <context>
     <name>TelemetryHud</name>
     <message>
-        <location filename="../app/core/views/flight/TelemetryHud.py" line="83"/>
+        <location filename="../app/core/views/flight/TelemetryHud.py" line="90"/>
         <source>LAT {value}</source>
         <translation>LAT {value}</translation>
     </message>
     <message>
-        <location filename="../app/core/views/flight/TelemetryHud.py" line="86"/>
+        <location filename="../app/core/views/flight/TelemetryHud.py" line="93"/>
         <source>LON {value}</source>
         <translation>LON {value}</translation>
     </message>
     <message>
-        <location filename="../app/core/views/flight/TelemetryHud.py" line="122"/>
+        <location filename="../app/core/views/flight/TelemetryHud.py" line="130"/>
         <source>FLY</source>
         <translation>FLY</translation>
     </message>
     <message>
-        <location filename="../app/core/views/flight/TelemetryHud.py" line="147"/>
+        <location filename="../app/core/views/flight/TelemetryHud.py" line="166"/>
         <source>stale {age}s</source>
         <translation>stale {age}s</translation>
     </message>
     <message>
-        <location filename="../app/core/views/flight/TelemetryHud.py" line="167"/>
+        <location filename="../app/core/views/flight/TelemetryHud.py" line="186"/>
         <location filename="../resources/views/flight/telemetry_hud.ui" line="57"/>
         <source>ALT —</source>
         <translation>ALT —</translation>
     </message>
     <message>
-        <location filename="../app/core/views/flight/TelemetryHud.py" line="178"/>
+        <location filename="../app/core/views/flight/TelemetryHud.py" line="203"/>
         <source>ALT {msl} {msl_unit} / {agl} {agl_unit}</source>
         <translation>ALT {msl} {msl_unit} / {agl} {agl_unit}</translation>
     </message>
     <message>
-        <location filename="../app/core/views/flight/TelemetryHud.py" line="184"/>
+        <location filename="../app/core/views/flight/TelemetryHud.py" line="209"/>
         <location filename="../resources/views/flight/telemetry_hud.ui" line="91"/>
         <source>HDG —</source>
         <translation>HDG —</translation>
     </message>
     <message>
-        <location filename="../app/core/views/flight/TelemetryHud.py" line="188"/>
+        <location filename="../app/core/views/flight/TelemetryHud.py" line="213"/>
         <source>HDG {bearing:03d}° {cardinal}</source>
         <translation>HDG {bearing:03d}° {cardinal}</translation>
     </message>
     <message>
-        <location filename="../app/core/views/flight/TelemetryHud.py" line="194"/>
+        <location filename="../app/core/views/flight/TelemetryHud.py" line="219"/>
         <location filename="../resources/views/flight/telemetry_hud.ui" line="98"/>
         <source>SPD —</source>
         <translation>SPD —</translation>
     </message>
     <message>
-        <location filename="../app/core/views/flight/TelemetryHud.py" line="200"/>
+        <location filename="../app/core/views/flight/TelemetryHud.py" line="225"/>
         <source>SPD {value} mph</source>
         <translation>SPD {value} mph</translation>
     </message>
     <message>
-        <location filename="../app/core/views/flight/TelemetryHud.py" line="203"/>
+        <location filename="../app/core/views/flight/TelemetryHud.py" line="228"/>
         <source>SPD {value} m/s</source>
         <translation>SPD {value} m/s</translation>
     </message>
@@ -15017,40 +15058,24 @@ Supported formats: MP4, AVI, MOV, MKV, and other common video formats.
 Click the Select button to browse for a video file.</translation>
     </message>
     <message>
-        <location filename="../resources/views/images/VideoParser.ui" line="62"/>
-        <source>Metadata file containing GPS telemetry data.
-Supports DJI SRT subtitle files and Skydio CSV flight logs.
-Optional: Provides location information for extracted frames.
-Without a metadata file, frames will have no GPS data.</source>
-        <translation>Metadata file containing GPS telemetry data.
-Supports DJI SRT subtitle files and Skydio CSV flight logs.
-Optional: Provides location information for extracted frames.
-Without a metadata file, frames will have no GPS data.</translation>
-    </message>
-    <message>
-        <location filename="../resources/views/images/VideoParser.ui" line="68"/>
-        <source>The metadata file contains timestamped GPS information for the video.  It is optional, but without it output images won&apos;t include location information.  Supports SRT (DJI) and CSV (Skydio) formats.</source>
-        <translation>The metadata file contains timestamped GPS information for the video.  It is optional, but without it output images won&apos;t include location information.  Supports SRT (DJI) and CSV (Skydio) formats.</translation>
-    </message>
-    <message>
-        <location filename="../resources/views/images/VideoParser.ui" line="71"/>
+        <location filename="../resources/views/images/VideoParser.ui" line="72"/>
         <source>Metadata File (optional): </source>
         <translation>Metadata File (optional): </translation>
     </message>
     <message>
-        <location filename="../resources/views/images/VideoParser.ui" line="83"/>
+        <location filename="../resources/views/images/VideoParser.ui" line="84"/>
         <source>Destination folder where extracted frame images will be saved.
 Each frame is saved as a separate image file with timestamp information.</source>
         <translation>Destination folder where extracted frame images will be saved.
 Each frame is saved as a separate image file with timestamp information.</translation>
     </message>
     <message>
-        <location filename="../resources/views/images/VideoParser.ui" line="87"/>
+        <location filename="../resources/views/images/VideoParser.ui" line="88"/>
         <source>Output Folder:</source>
         <translation>Output Folder:</translation>
     </message>
     <message>
-        <location filename="../resources/views/images/VideoParser.ui" line="99"/>
+        <location filename="../resources/views/images/VideoParser.ui" line="100"/>
         <source>Path to the output folder for extracted frame images.
 All frames will be saved in this directory with sequential naming.
 Click the Select button to choose a different folder.</source>
@@ -15059,56 +15084,45 @@ All frames will be saved in this directory with sequential naming.
 Click the Select button to choose a different folder.</translation>
     </message>
     <message>
-        <location filename="../resources/views/images/VideoParser.ui" line="116"/>
+        <location filename="../resources/views/images/VideoParser.ui" line="117"/>
         <source>Browse for output folder to save extracted frames.
 Opens a folder selection dialog.</source>
         <translation>Browse for output folder to save extracted frames.
 Opens a folder selection dialog.</translation>
     </message>
     <message>
-        <location filename="../resources/views/images/VideoParser.ui" line="120"/>
-        <location filename="../resources/views/images/VideoParser.ui" line="162"/>
-        <location filename="../resources/views/images/VideoParser.ui" line="200"/>
+        <location filename="../resources/views/images/VideoParser.ui" line="121"/>
+        <location filename="../resources/views/images/VideoParser.ui" line="163"/>
+        <location filename="../resources/views/images/VideoParser.ui" line="201"/>
         <source>Select</source>
         <translation>Select</translation>
     </message>
     <message>
-        <location filename="../resources/views/images/VideoParser.ui" line="130"/>
+        <location filename="../resources/views/images/VideoParser.ui" line="131"/>
         <source>folder.png</source>
         <translation>folder.png</translation>
     </message>
     <message>
-        <location filename="../resources/views/images/VideoParser.ui" line="142"/>
+        <location filename="../resources/views/images/VideoParser.ui" line="143"/>
         <source>Select the source video file to parse.
 Video will be split into individual frame images.</source>
         <translation>Select the source video file to parse.
 Video will be split into individual frame images.</translation>
     </message>
     <message>
-        <location filename="../resources/views/images/VideoParser.ui" line="146"/>
+        <location filename="../resources/views/images/VideoParser.ui" line="147"/>
         <source>Video File:</source>
         <translation>Video File:</translation>
     </message>
     <message>
-        <location filename="../resources/views/images/VideoParser.ui" line="158"/>
+        <location filename="../resources/views/images/VideoParser.ui" line="159"/>
         <source>Browse for video file to extract frames from.
 Opens a file selection dialog for video files (MP4, AVI, MOV, etc.).</source>
         <translation>Browse for video file to extract frames from.
 Opens a file selection dialog for video files (MP4, AVI, MOV, etc.).</translation>
     </message>
     <message>
-        <location filename="../resources/views/images/VideoParser.ui" line="177"/>
-        <source>Path to the optional metadata file with GPS telemetry data.
-Supports DJI SRT subtitle files and Skydio CSV flight logs.
-If provided, extracted frames will include GPS metadata (latitude, longitude, altitude).
-Can be left empty if location data is not needed.</source>
-        <translation>Path to the optional metadata file with GPS telemetry data.
-Supports DJI SRT subtitle files and Skydio CSV flight logs.
-If provided, extracted frames will include GPS metadata (latitude, longitude, altitude).
-Can be left empty if location data is not needed.</translation>
-    </message>
-    <message>
-        <location filename="../resources/views/images/VideoParser.ui" line="195"/>
+        <location filename="../resources/views/images/VideoParser.ui" line="196"/>
         <source>Browse for optional metadata file containing GPS telemetry.
 Supports DJI SRT subtitle files and Skydio CSV flight logs.
 Opens a file selection dialog for SRT and CSV files.</source>
@@ -15117,7 +15131,7 @@ Supports DJI SRT subtitle files and Skydio CSV flight logs.
 Opens a file selection dialog for SRT and CSV files.</translation>
     </message>
     <message>
-        <location filename="../resources/views/images/VideoParser.ui" line="301"/>
+        <location filename="../resources/views/images/VideoParser.ui" line="302"/>
         <source>Start extracting frames from the video file.
 Requirements:
 • Video file must be selected
@@ -15134,7 +15148,7 @@ The process will extract frames at the specified interval and save them as image
 If a metadata file (SRT or CSV) is provided, GPS metadata will be embedded in the extracted frames.</translation>
     </message>
     <message>
-        <location filename="../resources/views/images/VideoParser.ui" line="219"/>
+        <location filename="../resources/views/images/VideoParser.ui" line="220"/>
         <source>Time interval between extracted frames.
 Determines how frequently frames are captured from the video.
 Smaller intervals = More frames extracted (larger output)</source>
@@ -15143,12 +15157,34 @@ Determines how frequently frames are captured from the video.
 Smaller intervals = More frames extracted (larger output)</translation>
     </message>
     <message>
-        <location filename="../resources/views/images/VideoParser.ui" line="224"/>
+        <location filename="../resources/views/images/VideoParser.ui" line="62"/>
+        <source>Metadata file containing GPS telemetry data.
+Supports DJI SRT subtitle files and Skydio CSV flight logs.
+Usually not needed: location data is read automatically from an SRT file
+next to the video, or from telemetry embedded in the video itself.
+Select a file here only to override what is found automatically.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../resources/views/images/VideoParser.ui" line="69"/>
+        <source>The metadata file contains timestamped GPS information for the video. It is optional — ADIAT automatically uses an SRT file sitting next to the video, or telemetry embedded inside the video (as newer DJI aircraft record it). Choose a file here only to override that. Supports SRT (DJI) and CSV (Skydio) formats.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../resources/views/images/VideoParser.ui" line="178"/>
+        <source>Path to the optional metadata file with GPS telemetry data.
+Supports DJI SRT subtitle files and Skydio CSV flight logs.
+Leave empty to use an SRT beside the video or telemetry embedded in it —
+the log below reports which source was used.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../resources/views/images/VideoParser.ui" line="225"/>
         <source>Time Interval (seconds):</source>
         <translation>Time Interval (seconds):</translation>
     </message>
     <message>
-        <location filename="../resources/views/images/VideoParser.ui" line="236"/>
+        <location filename="../resources/views/images/VideoParser.ui" line="237"/>
         <source>Set the time interval in seconds between frame extractions.
 • Range: 0.1 to unlimited seconds
 • Default: 5.0 seconds (extracts 1 frame every 5 seconds)
@@ -15163,12 +15199,12 @@ Recommendation: 3-5 seconds for most drone footage analysis</source>
 Recommendation: 3-5 seconds for most drone footage analysis</translation>
     </message>
     <message>
-        <location filename="../resources/views/images/VideoParser.ui" line="320"/>
+        <location filename="../resources/views/images/VideoParser.ui" line="321"/>
         <source>Start</source>
         <translation>Start</translation>
     </message>
     <message>
-        <location filename="../resources/views/images/VideoParser.ui" line="351"/>
+        <location filename="../resources/views/images/VideoParser.ui" line="352"/>
         <source>Cancel the frame extraction process.
 Stops the operation immediately and returns to the ready state.
 Any frames already extracted will be saved in the output folder.
@@ -15179,17 +15215,17 @@ Any frames already extracted will be saved in the output folder.
 Click to abort the current parsing operation.</translation>
     </message>
     <message>
-        <location filename="../resources/views/images/VideoParser.ui" line="360"/>
+        <location filename="../resources/views/images/VideoParser.ui" line="361"/>
         <source> Cancel</source>
         <translation> Cancel</translation>
     </message>
     <message>
-        <location filename="../resources/views/images/VideoParser.ui" line="367"/>
+        <location filename="../resources/views/images/VideoParser.ui" line="368"/>
         <source>cancel.png</source>
         <translation>cancel.png</translation>
     </message>
     <message>
-        <location filename="../resources/views/images/VideoParser.ui" line="397"/>
+        <location filename="../resources/views/images/VideoParser.ui" line="398"/>
         <source>Progress and status output window.
 Displays real-time information during frame extraction:
 • Current frame being processed
