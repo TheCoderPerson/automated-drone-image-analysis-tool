@@ -211,11 +211,12 @@ class Ui_VideoParser(object):
 #if QT_CONFIG(tooltip)
         self.srtSelectLabel.setToolTip(QCoreApplication.translate("VideoParser", u"Metadata file containing GPS telemetry data.\n"
 "Supports DJI SRT subtitle files and Skydio CSV flight logs.\n"
-"Optional: Provides location information for extracted frames.\n"
-"Without a metadata file, frames will have no GPS data.", None))
+"Usually not needed: location data is read automatically from an SRT file\n"
+"next to the video, or from telemetry embedded in the video itself.\n"
+"Select a file here only to override what is found automatically.", None))
 #endif // QT_CONFIG(tooltip)
 #if QT_CONFIG(whatsthis)
-        self.srtSelectLabel.setWhatsThis(QCoreApplication.translate("VideoParser", u"The metadata file contains timestamped GPS information for the video.  It is optional, but without it output images won't include location information.  Supports SRT (DJI) and CSV (Skydio) formats.", None))
+        self.srtSelectLabel.setWhatsThis(QCoreApplication.translate("VideoParser", u"The metadata file contains timestamped GPS information for the video. It is optional \u2014 ADIAT automatically uses an SRT file sitting next to the video, or telemetry embedded inside the video (as newer DJI aircraft record it). Choose a file here only to override that. Supports SRT (DJI) and CSV (Skydio) formats.", None))
 #endif // QT_CONFIG(whatsthis)
         self.srtSelectLabel.setText(QCoreApplication.translate("VideoParser", u"Metadata File (optional): ", None))
 #if QT_CONFIG(tooltip)
@@ -247,8 +248,8 @@ class Ui_VideoParser(object):
 #if QT_CONFIG(tooltip)
         self.srtSelectLine.setToolTip(QCoreApplication.translate("VideoParser", u"Path to the optional metadata file with GPS telemetry data.\n"
 "Supports DJI SRT subtitle files and Skydio CSV flight logs.\n"
-"If provided, extracted frames will include GPS metadata (latitude, longitude, altitude).\n"
-"Can be left empty if location data is not needed.", None))
+"Leave empty to use an SRT beside the video or telemetry embedded in it \u2014\n"
+"the log below reports which source was used.", None))
 #endif // QT_CONFIG(tooltip)
 #if QT_CONFIG(tooltip)
         self.srtSelectButton.setToolTip(QCoreApplication.translate("VideoParser", u"Browse for optional metadata file containing GPS telemetry.\n"

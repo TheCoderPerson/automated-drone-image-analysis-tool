@@ -1,0 +1,177 @@
+"""Tests for deriving capture settings from a video.
+
+The wizard's drone and altitude answers both feed GSD, and GSD feeds the
+detection-area filter — area scales with GSD², so a 2x altitude error is
+a ~4x area error. Detection therefore has to be right or absent, never
+confidently wrong.
+"""
+
+import pandas as pd
+import pytest
+from unittest.mock import patch
+
+from core.services.telemetry.VideoCaptureInfoService import (
+    VideoCaptureInfo,
+    detect_capture_info,
+    match_drone_model,
+    read_device_text,
+)
+
+SERVICE = "core.services.telemetry.VideoCaptureInfoService"
+
+
+@pytest.fixture
+def drones():
+    """A slice of drones.pkl covering both model-naming styles."""
+    return pd.DataFrame([
+        {"Manufacturer": "DJI", "Model": "Matrice 4E", "Model (Exif)": "M4E, M4ED"},
+        {"Manufacturer": "DJI", "Model": "Matrice 4T", "Model (Exif)": "M4T, M4TD"},
+        {"Manufacturer": "DJI", "Model": "Mavic 3", "Model (Exif)": "M3"},
+        {"Manufacturer": "Skydio", "Model": "X10", "Model (Exif)": "X10"},
+    ])
+
+
+class TestModelMatching:
+    def test_human_readable_tag_with_repeated_make(self, drones):
+        """DJI writes the make twice: ``DJI DJI Matrice 4E``."""
+        assert match_drone_model("DJI DJI Matrice 4E", drones) == ("DJI", "Matrice 4E")
+
+    def test_exif_style_code_tag(self, drones):
+        """Other clips carry the short code instead: ``DJI M4TD``."""
+        assert match_drone_model("DJI M4TD", drones) == ("DJI", "Matrice 4T")
+
+    def test_code_matches_whole_words_only(self, drones):
+        """``M4T`` must not match inside ``M4TD`` and pick the wrong row."""
+        assert match_drone_model("DJI M4TD", drones) == ("DJI", "Matrice 4T")
+        assert match_drone_model("DJI M4T", drones) == ("DJI", "Matrice 4T")
+        assert match_drone_model("DJI M4ED", drones) == ("DJI", "Matrice 4E")
+
+    def test_sibling_models_are_not_confused(self, drones):
+        """4E and 4T carry different sensors; a mix-up changes every GSD."""
+        assert match_drone_model("DJI DJI Matrice 4T", drones) == ("DJI", "Matrice 4T")
+        assert match_drone_model("DJI DJI Matrice 4E", drones) == ("DJI", "Matrice 4E")
+
+    def test_make_must_be_present(self, drones):
+        """A bare model name from another vendor must not match a DJI row."""
+        assert match_drone_model("Acme Matrice 4E", drones) is None
+
+    def test_other_manufacturers(self, drones):
+        assert match_drone_model("Skydio X10", drones) == ("Skydio", "X10")
+
+    def test_unknown_device(self, drones):
+        assert match_drone_model("GoPro HERO12", drones) is None
+
+    def test_case_and_punctuation_insensitive(self, drones):
+        assert match_drone_model("dji  matrice-4e", drones) == ("DJI", "Matrice 4E")
+
+    def test_longest_name_wins(self):
+        """A model that prefixes another must not shadow it."""
+        df = pd.DataFrame([
+            {"Manufacturer": "DJI", "Model": "Matrice 4", "Model (Exif)": ""},
+            {"Manufacturer": "DJI", "Model": "Matrice 4E", "Model (Exif)": ""},
+        ])
+        assert match_drone_model("DJI Matrice 4E", df) == ("DJI", "Matrice 4E")
+
+    @pytest.mark.parametrize("text", ["", None])
+    def test_empty_input(self, drones, text):
+        assert match_drone_model(text, drones) is None
+
+    def test_empty_table(self):
+        assert match_drone_model("DJI M4TD", pd.DataFrame()) is None
+
+
+class TestDeviceTagReading:
+    def test_prefers_encoder_tag(self):
+        with patch(f"{SERVICE}.get_video_device_tags",
+                   return_value={"encoder": "DJI M4TD", "make": "DJI"}):
+            assert read_device_text("v.mp4") == "DJI M4TD"
+
+    def test_falls_back_to_model_tag(self):
+        with patch(f"{SERVICE}.get_video_device_tags",
+                   return_value={"model": "FC7303"}):
+            assert read_device_text("v.mp4") == "FC7303"
+
+    def test_no_tags(self):
+        with patch(f"{SERVICE}.get_video_device_tags", return_value={}):
+            assert read_device_text("v.mp4") is None
+
+    def test_blank_tag_is_skipped(self):
+        with patch(f"{SERVICE}.get_video_device_tags",
+                   return_value={"encoder": "   ", "make": "DJI"}):
+            assert read_device_text("v.mp4") == "DJI"
+
+
+class TestDetectCaptureInfo:
+    def _telemetry(self, altitudes):
+        from core.services.telemetry.DjiSrtParser import DjiSrtSample
+        from core.services.telemetry.TelemetrySourceResolver import TelemetryResolution
+        from core.services.telemetry.TelemetryTrack import TelemetryTrack
+
+        track = TelemetryTrack.from_dji_samples([
+            DjiSrtSample(start_seconds=float(i), end_seconds=float(i) + 0.03,
+                         latitude=30.0, longitude=-97.0,
+                         altitude_msl_m=200.0, altitude_agl_m=alt)
+            for i, alt in enumerate(altitudes)
+        ])
+        return TelemetryResolution(track=track, source="embedded", detail="")
+
+    def test_detects_both_fields(self, drones):
+        with patch(f"{SERVICE}.get_video_device_tags",
+                   return_value={"encoder": "DJI M4TD"}), \
+                patch(f"{SERVICE}.load_telemetry_for_video",
+                      return_value=self._telemetry([88.0, 89.0, 90.0])):
+            info = detect_capture_info("v.mp4", drones_df=drones)
+
+        assert info.make == "DJI"
+        assert info.model == "Matrice 4T"
+        assert info.altitude_agl_m == pytest.approx(89.0)
+        assert info.altitude_samples == 3
+        assert info.has_device and info.has_altitude
+
+    def test_uses_the_median_altitude(self, drones):
+        """Takeoff/landing legs must not drag the representative altitude."""
+        with patch(f"{SERVICE}.get_video_device_tags", return_value={}), \
+                patch(f"{SERVICE}.load_telemetry_for_video",
+                      return_value=self._telemetry([0.0, 1.0, 90.0, 91.0, 92.0])):
+            info = detect_capture_info("v.mp4", drones_df=drones)
+        assert info.altitude_agl_m == pytest.approx(90.0)
+
+    def test_device_without_telemetry(self, drones):
+        from core.services.telemetry.TelemetrySourceResolver import TelemetryResolution
+
+        with patch(f"{SERVICE}.get_video_device_tags",
+                   return_value={"encoder": "DJI M4TD"}), \
+                patch(f"{SERVICE}.load_telemetry_for_video",
+                      return_value=TelemetryResolution(track=None, source="none")):
+            info = detect_capture_info("v.mp4", drones_df=drones)
+
+        assert info.has_device
+        assert not info.has_altitude
+
+    def test_telemetry_without_a_known_device(self, drones):
+        with patch(f"{SERVICE}.get_video_device_tags",
+                   return_value={"encoder": "Unknown Cam"}), \
+                patch(f"{SERVICE}.load_telemetry_for_video",
+                      return_value=self._telemetry([50.0])):
+            info = detect_capture_info("v.mp4", drones_df=drones)
+
+        assert not info.has_device
+        assert info.has_altitude
+
+    def test_nothing_detectable(self, drones):
+        from core.services.telemetry.TelemetrySourceResolver import TelemetryResolution
+
+        with patch(f"{SERVICE}.get_video_device_tags", return_value={}), \
+                patch(f"{SERVICE}.load_telemetry_for_video",
+                      return_value=TelemetryResolution(track=None, source="none")):
+            info = detect_capture_info("v.mp4", drones_df=drones)
+
+        assert info == VideoCaptureInfo()
+
+    def test_failures_are_survivable(self, drones):
+        """Detection is advisory — it must never break the wizard."""
+        with patch(f"{SERVICE}.get_video_device_tags", side_effect=OSError("boom")), \
+                patch(f"{SERVICE}.load_telemetry_for_video",
+                      side_effect=OSError("also boom")):
+            info = detect_capture_info("v.mp4", drones_df=drones)
+        assert info == VideoCaptureInfo()

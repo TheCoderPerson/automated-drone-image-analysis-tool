@@ -243,3 +243,171 @@ def remux_to_main_track(source_path, logger=None):
         if logger:
             logger.error(f"Remux error: {e}")
         return None
+
+
+# Subtitle codecs DJI uses to embed per-frame telemetry inside the MP4.
+# ``mov_text`` (tag ``tx3g``) is what current firmware writes; ``subrip``
+# and ``text`` appear on some models and in remuxed files.
+_TELEMETRY_SUBTITLE_CODECS = {'mov_text', 'subrip', 'text', 'ssa', 'ass'}
+
+
+def find_embedded_telemetry_stream(video_path, logger=None):
+    """Locate an embedded subtitle stream carrying telemetry.
+
+    Newer DJI aircraft write per-frame GPS as a ``tx3g``/``mov_text``
+    subtitle track inside the MP4 rather than (or as well as) a ``.SRT``
+    sidecar, so an operator who copies only the video still has telemetry
+    on the card — it just isn't visible without demuxing.
+
+    Args:
+        video_path: Path to the video file.
+        logger: Optional logger with ``.debug()`` / ``.error()``.
+
+    Returns:
+        The ffmpeg stream index of the first telemetry-bearing subtitle
+        stream, or None when the file has none (or ffprobe is missing).
+    """
+    try:
+        ffprobe = _find_ffprobe()
+        if not ffprobe:
+            if logger:
+                logger.debug(_FFMPEG_MISSING_MSG)
+            return None
+
+        probe = subprocess.run(
+            [ffprobe, '-v', 'error', '-show_streams', '-of', 'json', str(video_path)],
+            capture_output=True, text=True, timeout=10
+        )
+        if probe.returncode != 0:
+            if logger:
+                logger.debug(f"ffprobe failed while scanning for telemetry: {probe.stderr}")
+            return None
+
+        for stream in json.loads(probe.stdout).get('streams', []):
+            if stream.get('codec_type') != 'subtitle':
+                continue
+            codec = str(stream.get('codec_name', '')).lower()
+            if codec in _TELEMETRY_SUBTITLE_CODECS:
+                return stream.get('index')
+        return None
+
+    except Exception as e:
+        if logger:
+            logger.debug(f"Embedded telemetry scan error: {e}")
+        return None
+
+
+def extract_embedded_subtitles(video_path, logger=None, stream_index=None):
+    """Demux an embedded telemetry subtitle track to a temporary ``.srt``.
+
+    The extracted text is byte-for-byte the DJI SRT format, so it feeds
+    the same parser as a sidecar file.
+
+    Args:
+        video_path: Path to the video file.
+        logger: Optional logger with ``.info()`` / ``.debug()`` / ``.error()``.
+        stream_index: Stream to extract; discovered automatically when None.
+
+    Returns:
+        Path to a temporary ``.srt`` on success, None on failure or when
+        the file carries no telemetry track. **The caller owns the temp
+        file** and must delete it, matching :func:`remux_to_main_track`.
+    """
+    temp_path = None
+    try:
+        ffmpeg = _find_ffmpeg()
+        if not ffmpeg:
+            if logger:
+                logger.debug(_FFMPEG_MISSING_MSG)
+            return None
+
+        if stream_index is None:
+            stream_index = find_embedded_telemetry_stream(video_path, logger)
+        if stream_index is None:
+            return None
+
+        temp_fd, temp_path = tempfile.mkstemp(suffix='.srt')
+        os.close(temp_fd)
+
+        result = subprocess.run(
+            [ffmpeg, '-y', '-v', 'error', '-i', str(video_path),
+             '-map', f'0:{stream_index}', '-c:s', 'srt', temp_path],
+            capture_output=True, text=True, timeout=120
+        )
+        if result.returncode != 0:
+            if logger:
+                logger.debug(f"Subtitle extraction failed: {result.stderr}")
+            _quiet_unlink(temp_path)
+            return None
+
+        # An empty result is a failure for our purposes — the track existed
+        # but carried nothing parseable, and returning it would look like
+        # success to the caller.
+        if not os.path.exists(temp_path) or os.path.getsize(temp_path) == 0:
+            _quiet_unlink(temp_path)
+            return None
+
+        if logger:
+            logger.info(
+                f"Extracted embedded telemetry from stream {stream_index} to {temp_path}"
+            )
+        return temp_path
+
+    except Exception as e:
+        if logger:
+            logger.debug(f"Embedded subtitle extraction error: {e}")
+        if temp_path:
+            _quiet_unlink(temp_path)
+        return None
+
+
+def get_video_device_tags(video_path, logger=None):
+    """Return container tags that identify the capturing device.
+
+    DJI writes the airframe into the MP4's ``encoder`` tag — e.g.
+    ``"DJI DJI Matrice 4E"`` — which is the video equivalent of the EXIF
+    Make/Model that image analysis matches against. Other vendors use
+    ``make``/``model`` tags, so both are returned when present.
+
+    Args:
+        video_path: Path to the video file.
+        logger: Optional logger.
+
+    Returns:
+        A dict of lower-cased tag name -> value (possibly empty). Never
+        raises; an unreadable file yields ``{}``.
+    """
+    try:
+        ffprobe = _find_ffprobe()
+        if not ffprobe:
+            return {}
+
+        probe = subprocess.run(
+            [ffprobe, '-v', 'error', '-show_entries', 'format_tags',
+             '-of', 'json', str(video_path)],
+            capture_output=True, text=True, timeout=10
+        )
+        if probe.returncode != 0:
+            if logger:
+                logger.debug(f"ffprobe device-tag read failed: {probe.stderr}")
+            return {}
+
+        tags = (json.loads(probe.stdout).get('format') or {}).get('tags') or {}
+        return {
+            str(key).lower(): str(value)
+            for key, value in tags.items()
+            if value is not None
+        }
+
+    except Exception as e:
+        if logger:
+            logger.debug(f"Device tag read error: {e}")
+        return {}
+
+
+def _quiet_unlink(path):
+    """Delete ``path``, ignoring the case where it is already gone."""
+    try:
+        os.unlink(path)
+    except OSError:
+        pass

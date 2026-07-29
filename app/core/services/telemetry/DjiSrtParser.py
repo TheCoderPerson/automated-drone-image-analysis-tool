@@ -1,0 +1,229 @@
+"""Parser for DJI SRT telemetry, in both sidecar and embedded variants.
+
+DJI aircraft record per-frame telemetry as SubRip text. The payload is a
+run of bracketed ``[key: value]`` tokens, but the surrounding structure
+varies by model and firmware, and the same data reaches ADIAT by two
+routes:
+
+* **Sidecar** — a ``.SRT`` written next to the ``.MP4`` on the card.
+* **Embedded** — a ``tx3g`` / ``mov_text`` subtitle track inside the MP4
+  itself (see :func:`helpers.VideoFileHelper.extract_embedded_subtitles`).
+  Newer aircraft write only this, so an operator who copies just the
+  ``.MP4`` has telemetry that older ADIAT builds could not see.
+
+Two shapes are common, and both must parse:
+
+*Classic sidecar* (5+ lines, HTML-wrapped, telemetry on line index 4)::
+
+    1
+    00:00:00,000 --> 00:00:00,033
+    <font size="28">FrameCnt: 1, DiffTime: 33ms
+    2023-05-01 10:00:00,000
+    [iso: 100] [latitude: 30.1] [longitude: -97.2] [altitude: 210.0] </font>
+
+*Embedded / newer firmware* (4 lines, timestamp folded onto the FrameCnt
+line, telemetry on line index 3)::
+
+    1
+    00:00:00,000 --> 00:00:00,033
+    FrameCnt: 0 2026-07-25 14:38:26.477
+    [iso: 120] [latitude: 30.648730] [longitude: -97.675867]
+    [rel_alt: 14.885 abs_alt: 207.027] [gb_yaw: -161.5 ...]
+
+The previous implementation indexed line 4 and required 5+ lines, so the
+embedded variant parsed to **zero** samples. It also split each bracket
+on the first ``:``, which mangles DJI's multi-pair brackets — in
+``[rel_alt: 14.885 abs_alt: 207.027]`` the key ``rel_alt`` captured
+``"14.885 abs_alt"`` and altitude silently fell back to 0.
+
+This module therefore:
+
+* scans **every** line of an entry for bracketed tokens rather than
+  trusting a fixed index, and tolerates 3-line entries;
+* tokenizes with a key/value regex so multi-pair brackets split
+  correctly;
+* distinguishes MSL (``abs_alt``) from AGL (``rel_alt``) instead of
+  collapsing both into one ``altitude``.
+"""
+
+from __future__ import annotations
+
+import re
+from dataclasses import dataclass
+from typing import List, Optional
+
+# A bracketed run, e.g. ``[rel_alt: 14.885 abs_alt: 207.027]``. Non-greedy
+# so adjacent brackets on one line stay separate.
+_BRACKET_RE = re.compile(r"\[(.+?)\]")
+
+# One ``key: value`` pair inside a bracket. The value stops at whitespace
+# so a bracket carrying several pairs yields several matches. Values may
+# carry units or slashes (``1/1250.0``), hence the broad value class.
+_KEY_VALUE_RE = re.compile(r"([A-Za-z_][A-Za-z0-9_]*)\s*:\s*([^\s\]]+)")
+
+# ``00:00:01,234 --> 00:00:01,267``
+_TIMECODE_RE = re.compile(
+    r"(\d{1,2}:\d{2}:\d{2}[,.]\d{1,3})\s*-->\s*(\d{1,2}:\d{2}:\d{2}[,.]\d{1,3})"
+)
+
+# Entries are separated by one or more blank lines.
+_ENTRY_SPLIT_RE = re.compile(r"(?:\r?\n){2,}")
+
+
+@dataclass
+class DjiSrtSample:
+    """One parsed SRT cue.
+
+    Times are **seconds from the start of the video**, which is what both
+    the frame-extraction path and streaming playback need; the original
+    code carried ``datetime`` objects anchored to 1900-01-01, which only
+    worked because both sides used the same fake epoch.
+    """
+
+    start_seconds: float
+    end_seconds: float
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+    altitude_msl_m: Optional[float] = None   # abs_alt — above mean sea level
+    altitude_agl_m: Optional[float] = None   # rel_alt — above takeoff point
+    yaw_deg: Optional[float] = None          # gimbal yaw; see module note below
+    frame_index: Optional[int] = None
+
+    @property
+    def has_position(self) -> bool:
+        """True when both coordinates parsed — the minimum useful fix."""
+        return self.latitude is not None and self.longitude is not None
+
+
+def parse_timecode(value: str) -> Optional[float]:
+    """Convert ``HH:MM:SS,mmm`` to seconds. Returns None if unparseable."""
+    if not value:
+        return None
+    text = value.strip().replace(".", ",")
+    match = re.match(r"^(\d{1,2}):(\d{2}):(\d{2}),(\d{1,3})$", text)
+    if not match:
+        return None
+    hours, minutes, seconds, millis = match.groups()
+    # Pad so ",5" reads as 500 ms rather than 5 ms.
+    millis_padded = millis.ljust(3, "0")
+    return (
+        int(hours) * 3600
+        + int(minutes) * 60
+        + int(seconds)
+        + int(millis_padded) / 1000.0
+    )
+
+
+def _to_float(value: Optional[str]) -> Optional[float]:
+    """Best-effort float conversion tolerating trailing units (``14.885m``)."""
+    if value is None:
+        return None
+    match = re.match(r"^[-+]?\d*\.?\d+", str(value).strip())
+    if not match:
+        return None
+    try:
+        return float(match.group(0))
+    except ValueError:
+        return None
+
+
+def _to_int(value: Optional[str]) -> Optional[int]:
+    number = _to_float(value)
+    return int(number) if number is not None else None
+
+
+def extract_fields(text: str) -> dict:
+    """Pull every ``key: value`` pair out of every bracket in ``text``.
+
+    Handles both one-pair brackets (``[latitude: 30.6]``) and DJI's
+    multi-pair brackets (``[rel_alt: 14.885 abs_alt: 207.027]``), which
+    the previous single-split approach corrupted.
+    """
+    fields: dict = {}
+    for bracket in _BRACKET_RE.findall(text or ""):
+        for key, value in _KEY_VALUE_RE.findall(bracket):
+            fields[key.lower()] = value
+    return fields
+
+
+def _parse_entry(block: str) -> Optional[DjiSrtSample]:
+    """Parse one SRT cue block, or return None if it carries no timecode."""
+    lines = re.split(r"\r?\n", block.strip())
+    if not lines:
+        return None
+
+    start_seconds = end_seconds = None
+    frame_index = None
+    for line in lines:
+        match = _TIMECODE_RE.search(line)
+        if match:
+            start_seconds = parse_timecode(match.group(1))
+            end_seconds = parse_timecode(match.group(2))
+            break
+
+    if start_seconds is None:
+        return None
+    if end_seconds is None:
+        end_seconds = start_seconds
+
+    # FrameCnt may sit on its own line or share one with the wall clock.
+    frame_match = re.search(r"FrameCnt\s*:?\s*(\d+)", block, re.IGNORECASE)
+    if frame_match:
+        frame_index = int(frame_match.group(1))
+
+    # Scan the WHOLE block for bracketed telemetry rather than assuming a
+    # fixed line index — this is what makes the 4-line embedded variant
+    # and the 5-line sidecar variant both work.
+    fields = extract_fields(block)
+
+    longitude = _to_float(fields.get("longitude"))
+    if longitude is None:
+        # Some firmware misspells the key; preserved from the original parser.
+        longitude = _to_float(fields.get("longtitude"))
+
+    # Altitude precedence: DJI's explicit MSL/AGL pair when present,
+    # otherwise the legacy single ``altitude`` key (treated as MSL, which
+    # is how the original code used it for EXIF).
+    altitude_msl = _to_float(fields.get("abs_alt"))
+    altitude_agl = _to_float(fields.get("rel_alt"))
+    if altitude_msl is None:
+        altitude_msl = _to_float(fields.get("altitude"))
+
+    return DjiSrtSample(
+        start_seconds=start_seconds,
+        end_seconds=end_seconds,
+        latitude=_to_float(fields.get("latitude")),
+        longitude=longitude,
+        altitude_msl_m=altitude_msl,
+        altitude_agl_m=altitude_agl,
+        # NB: ``gb_yaw`` is the *gimbal* yaw, not the airframe heading. It
+        # is the only bearing DJI's SRT carries, so consumers surface it as
+        # heading with that caveat.
+        yaw_deg=_to_float(fields.get("gb_yaw")),
+        frame_index=frame_index,
+    )
+
+
+def parse_dji_srt(text: str) -> List[DjiSrtSample]:
+    """Parse DJI SRT content into samples ordered by start time.
+
+    Malformed cues are skipped rather than aborting the whole file — a
+    single truncated entry at the end of a card-pull should not cost the
+    operator the other 890 fixes.
+    """
+    if not text:
+        return []
+
+    samples: List[DjiSrtSample] = []
+    for block in _ENTRY_SPLIT_RE.split(text):
+        if not block.strip():
+            continue
+        try:
+            sample = _parse_entry(block)
+        except Exception:  # noqa: BLE001 - one bad cue must not kill the file
+            continue
+        if sample is not None:
+            samples.append(sample)
+
+    samples.sort(key=lambda s: s.start_seconds)
+    return samples

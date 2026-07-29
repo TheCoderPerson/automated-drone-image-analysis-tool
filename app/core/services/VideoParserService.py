@@ -2,7 +2,6 @@ import os
 import shutil
 from bisect import bisect_left
 from pathlib import Path
-import re
 import cv2
 import math
 import pandas as pd
@@ -11,6 +10,13 @@ from datetime import datetime, timedelta, timezone
 from PySide6.QtCore import QObject, Signal, Slot
 
 from core.services.LoggerService import LoggerService
+from core.services.telemetry import (
+    SOURCE_EMBEDDED,
+    SOURCE_EXPLICIT_FILE,
+    SOURCE_SIDECAR,
+    load_telemetry_for_video,
+    parse_dji_srt,
+)
 from helpers.MetaDataHelper import MetaDataHelper
 from helpers.VideoFileHelper import detect_thumbnail_track, get_video_creation_time, remux_to_main_track, is_ffmpeg_available, _FFMPEG_USER_MSG
 
@@ -90,17 +96,17 @@ class VideoParserService(QObject):
             est_capture = math.floor(duration / self.interval) + 1
             self.sig_msg.emit(f"Video length: {duration} seconds. Estimated {est_capture} images will be captured.")
 
-            # Parse metadata file if provided
-            srt_list = []
+            # Resolve telemetry. SRT handling (explicit file, sidecar, or a
+            # track embedded in the MP4) goes through the shared resolver;
+            # the Skydio CSV flight-log path stays here.
+            telemetry_track = None
             csv_entries = []
             video_start_utc = None
             metadata_format = self._detect_metadata_format(self.metadata_path)
 
-            if metadata_format == 'srt':
-                srt_list = self._parse_srt_file(self.metadata_path)
-                if srt_list is None:
-                    return
-            elif metadata_format == 'csv':
+            if metadata_format != 'csv':
+                telemetry_track = self._resolve_telemetry()
+            if metadata_format == 'csv':
                 result = self._parse_csv_flight_log(self.metadata_path, self.video_path)
                 if result is None:
                     return
@@ -110,8 +116,8 @@ class VideoParserService(QObject):
                     self.sig_msg.emit("Ensure the video file has creation_time metadata (ffprobe required).")
                     self.sig_done.emit(self.__id, 0)
                     return
-            else:
-                self.sig_msg.emit("Metadata File Not Provided")
+            elif telemetry_track is None:
+                self.sig_msg.emit("No location data found for this video")
 
             self._setup_output_dir()
             time_marker = 0
@@ -138,13 +144,20 @@ class VideoParserService(QObject):
                 output_file = f"{self.output_dir}/{base_name}_{time_marker}s.jpg"
                 cv2.imwrite(output_file, image)
 
-                if metadata_format == 'srt':
-                    # Get the actual timestamp after reading the frame
+                if telemetry_track is not None:
+                    # Use the capture position actually reached, not the
+                    # requested marker — seeking lands on the nearest keyframe.
                     ms = cap.get(cv2.CAP_PROP_POS_MSEC)
-                    video_time = datetime(1900, 1, 1) + timedelta(milliseconds=ms)
-                    item = next((item for item in srt_list if item["start"] <= video_time <= item["end"]), None)
-                    if item and item["latitude"] and item["longitude"]:
-                        MetaDataHelper.add_gps_data(output_file, item["latitude"], item["longitude"], item["altitude"])
+                    point = telemetry_track.point_at(ms / 1000.0)
+                    if point is not None and point.latitude is not None and point.longitude is not None:
+                        # EXIF altitude is MSL; fall back to the takeoff-relative
+                        # figure only when the aircraft reported no absolute value.
+                        altitude = point.altitude_msl_m
+                        if altitude is None:
+                            altitude = point.altitude_agl_m
+                        MetaDataHelper.add_gps_data(
+                            output_file, point.latitude, point.longitude, altitude or 0
+                        )
                 elif metadata_format == 'csv':
                     frame_utc = video_start_utc + timedelta(seconds=time_marker)
                     entry = self._find_closest_csv_entry(csv_entries, frame_utc)
@@ -193,8 +206,47 @@ class VideoParserService(QObject):
             return 'csv'
         return None
 
+    def _resolve_telemetry(self):
+        """Find location data for this video and report which source won.
+
+        Precedence (see :mod:`core.services.telemetry.TelemetrySourceResolver`):
+        an explicitly chosen ``.SRT`` → a sidecar next to the video → a
+        subtitle track embedded in the MP4. The last route is what lets a
+        card-pull of just the ``.MP4`` keep its GPS.
+
+        Returns:
+            A :class:`~core.services.telemetry.TelemetryTrack.TelemetryTrack`,
+            or None when the video has no usable location data.
+        """
+        try:
+            resolution = load_telemetry_for_video(
+                self.video_path, self.metadata_path, logger=self.logger
+            )
+        except Exception as e:
+            self.logger.error(f"Telemetry resolution failed: {e}")
+            self.sig_msg.emit(f"Error reading location data: {str(e)}")
+            return None
+
+        if not resolution.found:
+            if resolution.source == SOURCE_EXPLICIT_FILE:
+                self.sig_msg.emit(f"Warning: {resolution.detail}")
+            return None
+
+        if resolution.source == SOURCE_EMBEDDED:
+            self.sig_msg.emit(f"Using location data embedded in the video ({resolution.detail})")
+        elif resolution.source == SOURCE_SIDECAR:
+            self.sig_msg.emit(f"Using location data from {os.path.basename(resolution.path)}")
+        else:
+            self.sig_msg.emit(f"Parsing SRT File ({resolution.detail})")
+        return resolution.track
+
     def _parse_srt_file(self, srt_path):
         """Parse a DJI SRT subtitle file for GPS metadata.
+
+        Retained for backward compatibility with existing callers/tests.
+        Delegates to :func:`core.services.telemetry.parse_dji_srt` and
+        re-renders its samples in this method's historical dict shape
+        (``datetime`` values anchored to 1900-01-01).
 
         Args:
             srt_path: Path to the SRT file.
@@ -204,30 +256,21 @@ class VideoParserService(QObject):
             or None on parse failure.
         """
         self.sig_msg.emit("Parsing SRT File")
-        srt_list = []
         try:
-            srt_data = Path(srt_path).read_text()
-            srt_entries = re.split("(?:\r?\n){2,}", srt_data)
-            for entry in srt_entries:
-                data = re.split("(?:\r?\n)", entry)
-                if len(data) >= 5:
-                    times = re.split(r"\s.*\s", data[1])
-                    start_time = datetime.strptime(times[0], '%H:%M:%S,%f')
-                    end_time = datetime.strptime(times[1], '%H:%M:%S,%f')
-
-                    uav_data = re.findall(r'(?<=\[).+?(?=\])', data[4])
-                    uav_dict = {split[0]: split[1] for entry in uav_data for split in [re.split(r"\s*:\s*", entry)]}
-                    longitude = float(uav_dict.get('longitude')) if 'longitude' in uav_dict else None
-                    # Extra logic for longitude misspelling in some SRT files
-                    if longitude is None:
-                        longitude = float(uav_dict.get('longtitude')) if 'longtitude' in uav_dict else None
-                    srt_list.append({
-                        "start": start_time,
-                        "end": end_time,
-                        "latitude": float(uav_dict.get('latitude')) if 'latitude' in uav_dict else None,
-                        "longitude": longitude,
-                        "altitude": float(uav_dict.get('altitude', 0))
-                    })
+            srt_data = Path(srt_path).read_text(encoding="utf-8-sig", errors="replace")
+            epoch = datetime(1900, 1, 1)
+            srt_list = []
+            for sample in parse_dji_srt(srt_data):
+                altitude = sample.altitude_msl_m
+                if altitude is None:
+                    altitude = sample.altitude_agl_m
+                srt_list.append({
+                    "start": epoch + timedelta(seconds=sample.start_seconds),
+                    "end": epoch + timedelta(seconds=sample.end_seconds),
+                    "latitude": sample.latitude,
+                    "longitude": sample.longitude,
+                    "altitude": altitude if altitude is not None else 0,
+                })
             return srt_list
         except Exception as e:
             self.sig_msg.emit(f"Error parsing SRT file: {str(e)}")
