@@ -70,14 +70,41 @@ def test_stream_controls_offer_adiat_flight(controls):
     ]
 
 
-def test_selecting_adiat_flight_shows_pairing_code_entry(controls):
+def test_selecting_adiat_flight_shows_a_readonly_code_display(controls):
+    """The code is collected at connect time, not typed here.
+
+    Pairing codes are evicted ~30 s after ADIAT Flight issues them, so the
+    field is a display of what we paired with rather than an input.
+    """
     _select_source(controls, SOURCE_TYPE_ADIAT_FLIGHT)
 
     assert controls.url_input.isVisibleTo(controls)
+    assert controls.url_input.isReadOnly()
     assert not controls.hdmi_device_combo.isVisibleTo(controls)
     assert not controls.browse_button.isVisibleTo(controls)
     assert not controls.scan_button.isVisibleTo(controls)
-    assert "pairing code" in controls.url_input.placeholderText().lower()
+    assert "connect" in controls.url_input.placeholderText().lower()
+
+
+def test_switching_away_restores_an_editable_field(controls):
+    _select_source(controls, SOURCE_TYPE_ADIAT_FLIGHT)
+    assert controls.url_input.isReadOnly()
+
+    _select_source(controls, SOURCE_TYPE_RTMP)
+    assert not controls.url_input.isReadOnly()
+
+
+def test_paired_code_is_displayed_once_connected(controls):
+    _select_source(controls, SOURCE_TYPE_ADIAT_FLIGHT)
+    controls.set_paired_code("K7QM3P")
+    assert controls.url_input.text() == "K7QM3P"
+
+
+def test_paired_code_can_be_cleared(controls):
+    _select_source(controls, SOURCE_TYPE_ADIAT_FLIGHT)
+    controls.set_paired_code("K7QM3P")
+    controls.set_paired_code("")
+    assert controls.url_input.text() == ""
 
 
 def test_clicking_pairing_field_does_not_open_file_browser(controls):
@@ -104,33 +131,36 @@ def test_clicking_pairing_field_does_not_open_file_browser(controls):
     browse.assert_called_once()
 
 
-def test_connect_emits_webrtc_with_normalized_code(controls):
-    _select_source(controls, SOURCE_TYPE_ADIAT_FLIGHT)
-    controls.url_input.setText(" k7q-m3p ")
+def test_connect_asks_for_a_pairing_code(controls):
+    """Connect delegates to the owning window's pairing prompt.
 
-    emitted = []
-    controls.connectRequested.connect(
-        lambda url, stream_type, backend: emitted.append((url, stream_type, backend))
-    )
+    It must not emit connectRequested with a stale/blank code — the code
+    is read off the tablet only at this moment.
+    """
+    _select_source(controls, SOURCE_TYPE_ADIAT_FLIGHT)
+
+    connects, prompts = [], []
+    controls.connectRequested.connect(lambda *args: connects.append(args))
+    controls.pairingRequested.connect(lambda: prompts.append(True))
     controls.request_connect()
 
-    assert emitted == [("K7QM3P", StreamType.WEBRTC, None)]
+    assert prompts == [True]
+    assert connects == []
 
 
-def test_connect_rejects_malformed_pairing_code(controls):
-    """A typo is caught here rather than 30s later in signaling lookup."""
+def test_clicking_the_code_field_also_prompts(controls):
     _select_source(controls, SOURCE_TYPE_ADIAT_FLIGHT)
-    controls.url_input.setText("BAD")
+    point = QPointF(1.0, 1.0)
+    event = QMouseEvent(
+        QEvent.MouseButtonPress, point, point, point,
+        Qt.LeftButton, Qt.LeftButton, Qt.NoModifier,
+    )
 
-    emitted = []
-    controls.connectRequested.connect(lambda *args: emitted.append(args))
-    with patch(
-        "core.controllers.streaming.shared_widgets.QMessageBox.warning"
-    ) as warning:
-        controls.request_connect()
+    prompts = []
+    controls.pairingRequested.connect(lambda: prompts.append(True))
+    controls.on_url_input_clicked(event)
 
-    assert emitted == []
-    warning.assert_called_once()
+    assert prompts == [True]
 
 
 def test_other_sources_still_connect_unchanged(controls):
@@ -193,7 +223,13 @@ def test_guide_restores_persisted_adiat_flight_selection(guide):
     assert source_page._current_stream_type() == SOURCE_TYPE_ADIAT_FLIGHT
 
 
-def test_guide_connection_page_prompts_for_pairing_code(guide):
+def test_guide_does_not_ask_for_a_pairing_code(guide):
+    """The code field is hidden entirely for ADIAT Flight.
+
+    Codes are evicted ~30 s after ADIAT Flight issues them, and a pass
+    through the remaining wizard pages takes longer than that, so asking
+    here would hand the viewer an expired code.
+    """
     connection_page = guide.pages[1]
     assert isinstance(connection_page, StreamConnectionPage)
 
@@ -202,42 +238,55 @@ def test_guide_connection_page_prompts_for_pairing_code(guide):
 
     # The guide is never shown in tests, so assert on the explicit
     # hidden flag rather than effective visibility.
-    assert "pairing" in guide.labelStreamUrl.text().lower()
-    assert not guide.streamUrlLineEdit.isHidden()
+    assert guide.streamUrlLineEdit.isHidden()
+    assert guide.labelStreamUrl.isHidden()
     assert guide.browseButton.isHidden()
     assert guide.deviceComboBox.isHidden()
     assert guide.scanDevicesButton.isHidden()
-    assert "ADIAT Flight" in guide.labelConnectionInstructions.text()
 
 
-def test_guide_connection_page_validates_pairing_code(guide):
+def test_guide_explains_when_the_code_is_needed(guide):
+    connection_page = guide.pages[1]
+    guide.wizard_data["stream_type"] = SOURCE_TYPE_ADIAT_FLIGHT
+    connection_page.on_enter()
+
+    text = guide.labelConnectionInstructions.text()
+    assert "ADIAT Flight" in text
+    assert "expire" in text.lower()
+
+
+def test_guide_page_needs_no_input_for_adiat_flight(guide):
+    """Nothing to validate — the operator can always advance."""
     connection_page = guide.pages[1]
     guide.wizard_data["stream_type"] = SOURCE_TYPE_ADIAT_FLIGHT
     connection_page.on_enter()
 
     guide.streamUrlLineEdit.setText("")
-    assert connection_page.validate() is False
-
-    guide.streamUrlLineEdit.setText("BAD")
-    assert connection_page.validate() is False
-
-    # ``I`` is deliberately outside the no-confusables alphabet.
-    guide.streamUrlLineEdit.setText("ABCIL0")
-    assert connection_page.validate() is False
-
-    guide.streamUrlLineEdit.setText("k7q-m3p")
     assert connection_page.validate() is True
 
 
-def test_guide_connection_page_stores_normalized_code(guide):
+def test_guide_carries_no_pairing_code_forward(guide):
+    """A stale code must never reach the viewer."""
     connection_page = guide.pages[1]
     guide.wizard_data["stream_type"] = SOURCE_TYPE_ADIAT_FLIGHT
     connection_page.on_enter()
-
-    guide.streamUrlLineEdit.setText(" k7q-m3p ")
     connection_page.save_data()
 
-    assert guide.wizard_data["stream_url"] == "K7QM3P"
+    assert guide.wizard_data["stream_url"] == ""
+
+
+def test_switching_to_flight_clears_a_previous_url(guide):
+    """A file path left over from another source is not a pairing code."""
+    connection_page = guide.pages[1]
+    guide.wizard_data["stream_type"] = SOURCE_TYPE_FILE
+    connection_page.on_enter()
+    guide.streamUrlLineEdit.setText("C:/videos/flight.mp4")
+
+    guide.wizard_data["stream_type"] = SOURCE_TYPE_ADIAT_FLIGHT
+    connection_page.on_enter()
+
+    assert guide.streamUrlLineEdit.text() == ""
+    assert guide.wizard_data["stream_url"] == ""
 
 
 def test_guide_connection_page_leaves_other_sources_alone(guide):
@@ -251,3 +300,63 @@ def test_guide_connection_page_leaves_other_sources_alone(guide):
 
     assert guide.wizard_data["stream_url"].endswith("flight.mp4")
     assert connection_page.validate() is True
+
+
+class TestFeatureFlagGating:
+    """ADIAT Flight ships behind the Flight Viewer flag.
+
+    Both pair over the same WebRTC/signaling stack, so they release
+    together. When the flag is off the source must be absent from every
+    surface — and unreachable even if a stale setting names it.
+    """
+
+    def test_source_is_offered_when_enabled(self, qtbot):
+        with patch("helpers.FeatureFlags.FLIGHT_VIEWER_ENABLED", True):
+            widget = StreamControlWidget(include_recording=False)
+            qtbot.addWidget(widget)
+        assert widget.type_combo.findData(SOURCE_TYPE_ADIAT_FLIGHT) >= 0
+
+    def test_source_is_hidden_when_disabled(self, qtbot):
+        with patch("helpers.FeatureFlags.FLIGHT_VIEWER_ENABLED", False):
+            widget = StreamControlWidget(include_recording=False)
+            qtbot.addWidget(widget)
+
+        assert widget.type_combo.findData(SOURCE_TYPE_ADIAT_FLIGHT) == -1
+        # The other sources are untouched.
+        for source in (SOURCE_TYPE_FILE, SOURCE_TYPE_HDMI, SOURCE_TYPE_RTMP):
+            assert widget.type_combo.findData(source) >= 0
+        assert "ADIAT Flight" not in widget.type_combo.toolTip()
+
+    def test_wizard_tile_is_hidden_when_disabled(self, qtbot):
+        with patch("helpers.FeatureFlags.FLIGHT_VIEWER_ENABLED", False):
+            wizard = StreamingGuide()
+            qtbot.addWidget(wizard)
+
+            assert wizard.flightButton.isHidden()
+            assert SOURCE_TYPE_ADIAT_FLIGHT not in wizard.pages[0]._source_buttons()
+
+    def test_stale_setting_falls_back_to_file_when_disabled(self, qtbot):
+        """A persisted "ADIAT Flight" must not select an invisible tile."""
+        with patch("helpers.FeatureFlags.FLIGHT_VIEWER_ENABLED", False):
+            wizard = StreamingGuide()
+            qtbot.addWidget(wizard)
+            page = wizard.pages[0]
+
+            page._set_stream_type(SOURCE_TYPE_ADIAT_FLIGHT)
+
+            assert wizard.fileButton.isChecked()
+            assert page._current_stream_type() == SOURCE_TYPE_FILE
+
+    def test_coordinator_refuses_webrtc_when_disabled(self, qtbot):
+        """Backstop: a direct caller cannot start a pairing session."""
+        from core.controllers.streaming.components import StreamCoordinator
+        from core.services.streaming.RTMPStreamService import StreamType
+
+        coordinator = StreamCoordinator()
+        with patch("helpers.FeatureFlags.FLIGHT_VIEWER_ENABLED", False):
+            assert coordinator._create_stream_manager(StreamType.WEBRTC) is None
+            # ...and connecting fails quietly rather than via a modal error.
+            errors = []
+            coordinator.errorOccurred.connect(errors.append)
+            assert coordinator.connect_stream("K7QM3P", StreamType.WEBRTC) is False
+            assert errors == []

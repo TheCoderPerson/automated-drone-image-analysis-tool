@@ -499,6 +499,10 @@ class TestStreamViewerWindow:
         """An unexpected disconnect clears the video display (no retained frame/zoom)."""
         window = StreamViewerWindow(algorithm_name='', theme='dark')
         try:
+            # A loss can only follow a connect. Pre-connection progress is
+            # also reported as connected=False, so the teardown is triggered
+            # on the transition rather than on the flag alone.
+            window.on_connection_changed(True, "connected")
             window.video_display.clear_display = Mock()
 
             window.on_connection_changed(False, "connection lost")
@@ -519,6 +523,9 @@ class TestStreamViewerWindow:
             assert vd.zoomStack  # zoomed on the first source
 
             # Connection loss clears the display (image + zoom + source size).
+            # Establish the connection first: the teardown is edge-triggered,
+            # because pre-connection progress also arrives as connected=False.
+            window.on_connection_changed(True, "connected")
             window.on_connection_changed(False, "lost")
             assert vd._image is None and vd._source_size is None and not vd.zoomStack
 
@@ -876,17 +883,35 @@ class TestStreamViewerWindow:
             QApplication.processEvents()
 
     def test_connection_change_bumps_frame_session(self, qapp):
-        """Every connection change starts a new frame session."""
+        """A connect and a real loss each start a new frame session."""
         window = StreamViewerWindow(algorithm_name='', theme='dark')
         try:
             before = window._frame_session
-            window.on_connection_changed(False, "lost")
-            after_disconnect = window._frame_session
             window.on_connection_changed(True, "connected")
             after_connect = window._frame_session
+            window.on_connection_changed(False, "lost")
+            after_disconnect = window._frame_session
 
-            assert after_disconnect > before
-            assert after_connect > after_disconnect
+            assert after_connect > before
+            assert after_disconnect > after_connect
+        finally:
+            window.close()
+            QApplication.processEvents()
+
+    def test_connection_progress_does_not_bump_frame_session(self, qapp):
+        """Pre-connection progress is not a session change.
+
+        WebRTC pairing reports "Looking up pairing code..." / "Connecting..."
+        as connected=False; bumping the session (and running the teardown)
+        on those discarded state the pending connection still needed.
+        """
+        window = StreamViewerWindow(algorithm_name='', theme='dark')
+        try:
+            before = window._frame_session
+            window.on_connection_changed(False, "Looking up pairing code...")
+            window.on_connection_changed(False, "Connecting...")
+
+            assert window._frame_session == before
         finally:
             window.close()
             QApplication.processEvents()

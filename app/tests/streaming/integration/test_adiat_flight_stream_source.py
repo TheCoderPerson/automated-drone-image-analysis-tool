@@ -38,11 +38,16 @@ class StubReceiveService(QObject):
         self.fps_limit = fps_limit
         self.dropped_frames = 0
         self.disconnect_calls = 0
+        self.terminal_disconnect_calls = 0
 
     def request_connect(self):
         pass
 
     def request_disconnect(self):
+        # Terminal on the Worker — the manager must NOT use this.
+        self.terminal_disconnect_calls += 1
+
+    def cleanup(self, wait=False):
         self.disconnect_calls += 1
 
     def isRunning(self):
@@ -213,16 +218,31 @@ class TestAdiatFlightWizardHandoff:
         assert combo.currentData() == SOURCE_TYPE_ADIAT_FLIGHT
         assert viewer.stream_controls.url_input.text() == "K7QM3P"
 
-    def test_wizard_auto_connect_uses_webrtc(self, viewer, stub_services):
-        viewer.apply_wizard_data({
-            "stream_type": SOURCE_TYPE_ADIAT_FLIGHT,
-            "stream_url": "K7QM3P",
-            "auto_connect": True,
-        })
+    def test_wizard_auto_connect_prompts_for_a_code(self, viewer, stub_services):
+        """Auto-connect means "ask now", not "use a code from minutes ago".
 
-        assert isinstance(viewer.stream_coordinator.stream_manager, FlightStreamManager)
-        assert viewer.stream_coordinator.current_stream_type == StreamType.WEBRTC
-        assert stub_services and stub_services[0].pairing_code == "K7QM3P"
+        Codes expire ~30 s after ADIAT Flight issues them, so the wizard
+        never carries one; it opens the pairing prompt on arrival instead.
+        """
+        with patch.object(viewer, "open_flight_pairing_dialog") as prompt:
+            viewer.apply_wizard_data({
+                "stream_type": SOURCE_TYPE_ADIAT_FLIGHT,
+                "stream_url": "",
+                "auto_connect": True,
+            })
+
+        prompt.assert_called_once()
+        # Nothing connected yet — no code has been supplied.
+        assert stub_services == []
+
+    def test_wizard_without_auto_connect_does_not_prompt(self, viewer, stub_services):
+        with patch.object(viewer, "open_flight_pairing_dialog") as prompt:
+            viewer.apply_wizard_data({
+                "stream_type": SOURCE_TYPE_ADIAT_FLIGHT,
+                "stream_url": "",
+                "auto_connect": False,
+            })
+        prompt.assert_not_called()
 
     def test_wizard_file_source_still_routes_to_opencv(self, viewer, stub_services):
         """Regression guard for the findData-based combo lookup."""
@@ -235,3 +255,174 @@ class TestAdiatFlightWizardHandoff:
         combo = viewer.stream_controls.type_combo
         assert combo.currentData() == SOURCE_TYPE_FILE
         assert stub_services == []
+
+
+class TestConnectionProgressIsNotADisconnect:
+    """``connected=False`` during pairing must not tear the session down.
+
+    A WebRTC pair reports progress as ``connected=False`` ("Looking up
+    pairing code...", "Connecting..."), and RTMP does the same while
+    retrying. Running the disconnect teardown on those discarded state the
+    pending connection still needed — most visibly the wizard's processing
+    resolution, which is applied when the first frame arrives.
+    """
+
+    def test_wizard_resolution_survives_pairing(self, viewer, stub_services):
+        viewer.apply_wizard_data({
+            "stream_type": SOURCE_TYPE_ADIAT_FLIGHT,
+            "stream_url": "K7QM3P",
+            "auto_connect": True,
+            "processing_resolution": 50,      # 720p
+        })
+        assert viewer._pending_processing_resolution == (1280, 720)
+
+    def test_progress_messages_do_not_notify_the_algorithm(self, viewer, stub_services):
+        viewer.on_connect_requested("K7QM3P", StreamType.WEBRTC)
+        algorithm = Mock()
+        viewer.algorithm_widget = algorithm
+
+        service = stub_services[0]
+        service.connectionStatusChanged.emit(False, "Looking up pairing code...")
+        service.connectionStatusChanged.emit(False, "Connecting...")
+        QApplication.processEvents()
+
+        algorithm.on_stream_disconnected.assert_not_called()
+
+    def test_progress_does_not_clear_the_gallery(self, viewer, stub_services):
+        viewer.on_connect_requested("K7QM3P", StreamType.WEBRTC)
+        with patch.object(viewer.gallery_widget, "clear") as clear:
+            stub_services[0].connectionStatusChanged.emit(False, "Connecting...")
+            QApplication.processEvents()
+        clear.assert_not_called()
+
+    def test_a_real_disconnect_still_tears_down(self, viewer, stub_services):
+        """The edge trigger must not suppress genuine losses."""
+        viewer.on_connect_requested("K7QM3P", StreamType.WEBRTC)
+        service = stub_services[0]
+        algorithm = Mock()
+        viewer.algorithm_widget = algorithm
+
+        service.connectionStatusChanged.emit(True, "connected")
+        QApplication.processEvents()
+        service.connectionStatusChanged.emit(False, "remote-closed")
+        QApplication.processEvents()
+
+        algorithm.on_stream_disconnected.assert_called_once()
+        assert viewer._pending_processing_resolution is None
+
+    def test_status_bar_says_connecting_not_disconnected(self, viewer, stub_services):
+        viewer.on_connect_requested("K7QM3P", StreamType.WEBRTC)
+        stub_services[0].connectionStatusChanged.emit(False, "Connecting...")
+        QApplication.processEvents()
+
+        text = viewer.ui.statusbar.currentMessage()
+        assert "Connecting" in text
+        assert "Disconnected" not in text
+
+
+class TestConnectTimePairing:
+    """The pairing prompt is the only place a code is entered.
+
+    ADIAT Flight codes are evicted after ~30 s of inactivity, so the
+    handshake has to follow entry within seconds. The prompt reuses the
+    Flight Viewer's dialog so both surfaces report the same states.
+    """
+
+    def test_connect_button_opens_the_prompt(self, viewer, stub_services):
+        index = viewer.stream_controls.type_combo.findData(SOURCE_TYPE_ADIAT_FLIGHT)
+        viewer.stream_controls.type_combo.setCurrentIndex(index)
+
+        with patch.object(viewer, "open_flight_pairing_dialog") as prompt:
+            viewer.stream_controls.request_connect()
+        prompt.assert_called_once()
+
+    def test_submitting_a_code_starts_the_handshake(self, viewer, stub_services):
+        viewer.open_flight_pairing_dialog()
+        dialog = viewer._pairing_dialog
+        assert dialog is not None
+
+        dialog.codeEdit.setText("k7q-m3p")
+        dialog._on_connect_clicked()
+        QApplication.processEvents()
+
+        assert stub_services and stub_services[0].pairing_code == "K7QM3P"
+        assert viewer.stream_coordinator.current_stream_type == StreamType.WEBRTC
+
+    def test_malformed_code_stays_in_the_prompt(self, viewer, stub_services):
+        viewer.open_flight_pairing_dialog()
+        dialog = viewer._pairing_dialog
+
+        dialog.codeEdit.setText("BAD")
+        dialog._on_connect_clicked()
+        QApplication.processEvents()
+
+        assert stub_services == []
+        assert dialog.codeErrorLabel.text()      # inline, next to the field
+
+    def test_progress_is_shown_in_the_prompt(self, viewer, stub_services):
+        viewer.open_flight_pairing_dialog()
+        dialog = viewer._pairing_dialog
+        dialog.codeEdit.setText("K7QM3P")
+        dialog._on_connect_clicked()
+
+        stub_services[0].connectionStatusChanged.emit(False, "Looking up pairing code...")
+        QApplication.processEvents()
+
+        assert dialog.negotiatingDetail.text() == "Looking up pairing code..."
+
+    def test_failure_is_shown_in_the_prompt(self, viewer, stub_services):
+        viewer.open_flight_pairing_dialog()
+        dialog = viewer._pairing_dialog
+        dialog.codeEdit.setText("K7QM3P")
+        dialog._on_connect_clicked()
+
+        stub_services[0].errorOccurred.emit("no session for code 'K7QM3P'")
+        QApplication.processEvents()
+
+        assert "no session" in dialog.failedDetail.text()
+        # The "Error: " marker is plumbing, not something to show operators.
+        assert not dialog.failedDetail.text().startswith("Error:")
+
+    def test_success_dismisses_the_prompt_and_shows_the_code(self, viewer, stub_services):
+        viewer.open_flight_pairing_dialog()
+        dialog = viewer._pairing_dialog
+        dialog.codeEdit.setText("K7QM3P")
+        dialog._on_connect_clicked()
+
+        stub_services[0].connectionStatusChanged.emit(True, "connected")
+        QApplication.processEvents()
+
+        assert viewer._pairing_dialog is None
+        assert viewer.stream_controls.url_input.text() == "K7QM3P"
+
+    def test_cancelling_abandons_the_attempt(self, viewer, stub_services):
+        viewer.open_flight_pairing_dialog()
+        dialog = viewer._pairing_dialog
+        dialog.codeEdit.setText("K7QM3P")
+        dialog._on_connect_clicked()
+        assert viewer.stream_coordinator.stream_manager is not None
+
+        dialog._on_cancel_clicked()
+        QApplication.processEvents()
+
+        assert viewer.stream_coordinator.stream_manager is None
+
+    def test_only_one_prompt_at_a_time(self, viewer, stub_services):
+        viewer.open_flight_pairing_dialog()
+        first = viewer._pairing_dialog
+        viewer.open_flight_pairing_dialog()
+        assert viewer._pairing_dialog is first
+
+    def test_disconnect_clears_the_displayed_code(self, viewer, stub_services):
+        viewer.open_flight_pairing_dialog()
+        dialog = viewer._pairing_dialog
+        dialog.codeEdit.setText("K7QM3P")
+        dialog._on_connect_clicked()
+        stub_services[0].connectionStatusChanged.emit(True, "connected")
+        QApplication.processEvents()
+        assert viewer.stream_controls.url_input.text() == "K7QM3P"
+
+        viewer.on_disconnect_requested()
+        QApplication.processEvents()
+
+        assert viewer.stream_controls.url_input.text() == ""

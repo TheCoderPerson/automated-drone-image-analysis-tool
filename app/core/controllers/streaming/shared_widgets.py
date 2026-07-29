@@ -29,9 +29,9 @@ from core.services.streaming.RTMPStreamService import (
     StreamType,
     stream_type_from_source_label,
 )
-from core.services.streaming.signaling import pairing
 from core.services.streaming.contracts import FocusTarget
 from core.services.LoggerService import LoggerService
+from helpers import FeatureFlags
 from helpers.TranslationMixin import TranslationMixin
 
 
@@ -819,6 +819,10 @@ class StreamControlWidget(TranslationMixin, QWidget):
     """Shared stream connection and control widget with optional recording controls."""
 
     connectRequested = Signal(str, object, object)  # url, stream_type, hdmi_backend
+    # ADIAT Flight codes expire after 30 s of inactivity, so the code is not
+    # collected up-front — the owning window prompts for it at the moment of
+    # connecting and then emits ``connectRequested`` itself.
+    pairingRequested = Signal()
     disconnectRequested = Signal()
     startRecordingRequested = Signal(str)
     stopRecordingRequested = Signal()
@@ -857,16 +861,22 @@ class StreamControlWidget(TranslationMixin, QWidget):
         self.type_combo.addItem(self.tr("File"), SOURCE_TYPE_FILE)
         self.type_combo.addItem(self.tr("HDMI Capture"), SOURCE_TYPE_HDMI)
         self.type_combo.addItem(self.tr("RTMP Stream"), SOURCE_TYPE_RTMP)
-        self.type_combo.addItem(self.tr("ADIAT Flight"), SOURCE_TYPE_ADIAT_FLIGHT)
-        self.type_combo.setToolTip(
+        tooltip_lines = [
             self.tr(
                 "Select the type of video source:\n"
                 "• File: Pre-recorded video file with timeline controls\n"
                 "• HDMI Capture: Live capture from HDMI capture device\n"
-                "• RTMP Stream: Real-time streaming from RTMP/HTTP source\n"
-                "• ADIAT Flight: Live feed paired with the ADIAT Flight app"
+                "• RTMP Stream: Real-time streaming from RTMP/HTTP source"
             )
-        )
+        ]
+        # ADIAT Flight pairs over the same WebRTC stack as the Flight
+        # Viewer, so it ships behind the same flag.
+        if FeatureFlags.FLIGHT_VIEWER_ENABLED:
+            self.type_combo.addItem(self.tr("ADIAT Flight"), SOURCE_TYPE_ADIAT_FLIGHT)
+            tooltip_lines.append(
+                self.tr("• ADIAT Flight: Live feed paired with the ADIAT Flight app")
+            )
+        self.type_combo.setToolTip("\n".join(tooltip_lines))
         connection_layout.addWidget(self.type_combo, 0, 1)
 
         # Stream URL/Path (moved to row 1)
@@ -1090,15 +1100,22 @@ class StreamControlWidget(TranslationMixin, QWidget):
             self.browse_button.setVisible(False)
             self.scan_button.setVisible(False)
         elif stream_type_value == SOURCE_TYPE_ADIAT_FLIGHT:
-            # Pairing code goes in the same text input; no browse/scan.
+            # The code is NOT collected here. ADIAT Flight pairing codes are
+            # evicted after 30 s of inactivity, so asking for one before the
+            # operator is ready to connect all but guarantees it expires.
+            # The field is a read-only display; Connect prompts for the code.
             self.url_input.setVisible(True)
+            self.url_input.setReadOnly(True)
             self.hdmi_device_combo.setVisible(False)
             self.url_input.setPlaceholderText(
-                self.tr("6-character pairing code (e.g. K7QM3P)")
+                self.tr("Click Connect to enter your pairing code")
             )
             self.url_input.setText("")
             self.browse_button.setVisible(False)
             self.scan_button.setVisible(False)
+        # Every other source types into this field directly.
+        if stream_type_value != SOURCE_TYPE_ADIAT_FLIGHT:
+            self.url_input.setReadOnly(False)
 
     def request_connect(self):
         """Request stream connection."""
@@ -1120,21 +1137,13 @@ class StreamControlWidget(TranslationMixin, QWidget):
             if hasattr(self, '_device_backends'):
                 hdmi_backend = self._device_backends.get(self.hdmi_device_combo.currentIndex())
         elif source_type == SOURCE_TYPE_ADIAT_FLIGHT:
-            # Validate the pairing code up front so a typo produces an
-            # actionable message here rather than a signaling lookup failure
-            # 30 seconds later.
-            try:
-                url = pairing.normalize_pairing_code(self.url_input.text())
-            except ValueError as exc:
-                QMessageBox.warning(
-                    self,
-                    self.tr("Invalid Pairing Code"),
-                    self.tr(
-                        "Enter the 6-character pairing code shown in ADIAT "
-                        "Flight.\n\n{error}"
-                    ).format(error=str(exc))
-                )
-                return
+            # Hand off to the owning window, which prompts for the code and
+            # drives the handshake immediately. Collecting it here would put
+            # minutes of wizard/setup time between the operator reading the
+            # code off the tablet and the code being used — and it only
+            # lives for 30 s.
+            self.pairingRequested.emit()
+            return
         else:
             # Get URL from text input
             url = self.url_input.text().strip()
@@ -1399,11 +1408,27 @@ class StreamControlWidget(TranslationMixin, QWidget):
         if file_path:
             self.url_input.setText(file_path)
 
+    def set_paired_code(self, code: str):
+        """Show the code an ADIAT Flight session actually paired with.
+
+        The field is read-only for that source, so this is the only way it
+        gets populated — it tells the operator which drone they are on.
+        Callers are responsible for only invoking this for ADIAT Flight
+        sessions; gating on the combo here would silently blank the display
+        if the selection changed mid-pair.
+        """
+        self.url_input.setText(code or "")
+
     def on_url_input_clicked(self, event):
         """Handle clicks on URL input field."""
+        source_type = self.type_combo.currentData()
         # If file type is selected, open file browser on click
-        if self.type_combo.currentData() == SOURCE_TYPE_FILE:
+        if source_type == SOURCE_TYPE_FILE:
             self.browse_for_file()
+        elif source_type == SOURCE_TYPE_ADIAT_FLIGHT:
+            # The field is read-only; clicking it is a reasonable way to ask
+            # for the pairing prompt.
+            self.pairingRequested.emit()
         else:
             # Call the original mousePressEvent for normal behavior
             QLineEdit.mousePressEvent(self.url_input, event)

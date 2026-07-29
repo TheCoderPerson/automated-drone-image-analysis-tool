@@ -207,12 +207,8 @@ class StreamConnectionPage(BasePage):
                 return data is not None
             return False
         if stream_type == SOURCE_TYPE_ADIAT_FLIGHT:
-            # Only a well-formed pairing code can advance; a typo here would
-            # otherwise fail much later, during signaling lookup.
-            try:
-                pairing.normalize_pairing_code(self.dialog.streamUrlLineEdit.text())
-            except ValueError:
-                return False
+            # Nothing to validate: the pairing code is collected at connect
+            # time because it expires ~30 s after ADIAT Flight issues it.
             return True
         return bool(self.dialog.streamUrlLineEdit.text().strip())
 
@@ -230,15 +226,11 @@ class StreamConnectionPage(BasePage):
                 index_to_resolution = {0: 25, 1: 50, 2: 75, 3: 100}
                 self.wizard_data["processing_resolution"] = index_to_resolution.get(index, 75)
 
-        # ADIAT Flight pairing codes are stored canonicalized (upper case, no
-        # separators) so the viewer can connect with the value verbatim.
+        # ADIAT Flight carries no URL: the pairing code is requested at
+        # connect time. Persisting a stale code here would let the viewer
+        # try an expired one.
         if self.wizard_data.get("stream_type") == SOURCE_TYPE_ADIAT_FLIGHT:
-            try:
-                self.wizard_data["stream_url"] = pairing.normalize_pairing_code(
-                    self.dialog.streamUrlLineEdit.text()
-                )
-            except ValueError:
-                pass
+            self.wizard_data["stream_url"] = ""
 
         # For HDMI, also store the selected backend and device label
         stream_type = self.wizard_data.get("stream_type", SOURCE_TYPE_FILE)
@@ -256,16 +248,22 @@ class StreamConnectionPage(BasePage):
         settings = self._get_stream_type_settings(stream_type)
         self.dialog.labelConnectionInstructions.setText(settings["instructions"])
 
-        # HDMI-specific UI - hide the manual URL input row entirely
+        # Two source types collect nothing in this row:
+        #  * HDMI picks a device from the combo below.
+        #  * ADIAT Flight codes expire after 30 s of inactivity, so the code
+        #    is requested at connect time instead of here — a pass through
+        #    the remaining wizard pages would outlive it.
         is_hdmi = stream_type == SOURCE_TYPE_HDMI
+        is_flight = stream_type == SOURCE_TYPE_ADIAT_FLIGHT
+        hide_url_row = is_hdmi or is_flight
 
         # Show/hide URL input row based on stream type
-        self.dialog.labelStreamUrl.setVisible(not is_hdmi)
-        self.dialog.streamUrlLineEdit.setVisible(not is_hdmi)
-        self.dialog.browseButton.setVisible(settings["show_browse"] and not is_hdmi)
+        self.dialog.labelStreamUrl.setVisible(not hide_url_row)
+        self.dialog.streamUrlLineEdit.setVisible(not hide_url_row)
+        self.dialog.browseButton.setVisible(settings["show_browse"] and not hide_url_row)
 
-        # Only set placeholder for non-HDMI types
-        if not is_hdmi:
+        # Only set placeholder for types that actually take input here
+        if not hide_url_row:
             self.dialog.labelStreamUrl.setText(settings["field_label"])
             self.dialog.streamUrlLineEdit.setPlaceholderText(settings["placeholder"])
 
@@ -279,11 +277,16 @@ class StreamConnectionPage(BasePage):
         if hasattr(self.dialog, "scanDevicesButton"):
             self.dialog.scanDevicesButton.setVisible(is_hdmi)
 
-        # Auto-populate sensible defaults when switching types (only for non-HDMI)
-        if not is_hdmi:
+        # Auto-populate sensible defaults for types that take input here
+        if not hide_url_row:
             current_value = self.dialog.streamUrlLineEdit.text().strip()
             if not current_value and settings.get("default_value"):
                 self.dialog.streamUrlLineEdit.setText(settings["default_value"])
+        elif is_flight:
+            # Drop anything a previously-selected source left behind so it
+            # cannot be mistaken for a pairing code later.
+            self.dialog.streamUrlLineEdit.setText("")
+            self.wizard_data["stream_url"] = ""
 
     def _get_stream_type_settings(self, stream_type: str) -> dict:
         mapping = {
@@ -316,12 +319,15 @@ class StreamConnectionPage(BasePage):
             },
             SOURCE_TYPE_ADIAT_FLIGHT: {
                 "instructions": self.tr(
-                    "Start a flight in the ADIAT Flight app and tap Share Feed, then enter "
-                    "the 6-character pairing code it displays. Detections reported by ADIAT "
-                    "Flight are ignored — this desktop runs its own analysis on the video."
+                    "You'll be prompted for the pairing code when you connect — pairing "
+                    "codes expire about 30 seconds after ADIAT Flight shows them, so don't "
+                    "generate one until you're ready.\n\n"
+                    "Finish this setup first, then start sharing in ADIAT Flight and enter "
+                    "the code. Detections reported by ADIAT Flight are ignored — this "
+                    "desktop runs its own analysis on the video."
                 ),
                 "field_label": self.tr("Pairing Code:"),
-                "placeholder": self.tr("6-character code (e.g. K7QM3P)"),
+                "placeholder": self.tr(""),
                 "show_browse": False,
                 "default_value": "",
             },

@@ -19,7 +19,7 @@ import time
 
 import numpy as np
 import pytest
-from PySide6.QtCore import QMetaMethod, QObject, Signal
+from PySide6.QtCore import QObject, Signal
 from PySide6.QtWidgets import QApplication
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..")))
@@ -64,12 +64,17 @@ class FakeReceiveService(QObject):
         self.fps_limit = fps_limit
         self.connect_calls = 0
         self.disconnect_calls = 0
+        self.terminal_disconnect_calls = 0
         self.dropped_frames = 0
 
     def request_connect(self):
         self.connect_calls += 1
 
     def request_disconnect(self):
+        # Terminal on the Worker — the manager must NOT use this.
+        self.terminal_disconnect_calls += 1
+
+    def cleanup(self, wait=False):
         self.disconnect_calls += 1
 
     def isRunning(self):
@@ -268,6 +273,24 @@ def test_disconnect_tears_down_and_reports(manager):
     assert manager.get_stream_info() == {}
 
 
+def test_disconnect_keeps_the_pairing_code_reusable(manager):
+    """Disconnect must not end the publish session on the Worker.
+
+    ``request_disconnect`` calls ``delete_session``, which kills the code
+    and forces the operator to mint a new one on the tablet. Disconnect is
+    routinely used to change settings and reconnect, so the slot has to be
+    left in ``awaiting_viewer`` (plan §20) — the same choice the Flight
+    Viewer's tile-close path makes.
+    """
+    manager.connect_to_stream("ABC234", StreamType.WEBRTC)
+    service = manager._created["service"]
+
+    manager.disconnect_stream()
+
+    assert service.disconnect_calls == 1            # cleanup()
+    assert service.terminal_disconnect_calls == 0   # request_disconnect()
+
+
 def test_disconnect_stops_forwarding_frames(manager):
     """A frame emitted by a torn-down service must not reach the viewer."""
     manager.connect_to_stream("ABC234", StreamType.WEBRTC)
@@ -440,36 +463,74 @@ def test_set_fps_limit_requires_active_session(manager):
 def test_detection_data_channel_messages_are_not_consumed(manager):
     """ADIAT Desktop runs its own algorithm; publisher detections are dropped.
 
-    The manager must never subscribe to ``dataChannelMessage`` — doing so
-    would double-report detections into the gallery and mix two detector
-    configurations in one session.
+    Telemetry on the same ``dataChannelMessage`` signal IS consumed (the
+    desktop has no other source for aircraft position), so the invariant
+    is per-label rather than "nothing is subscribed": detection traffic
+    must produce no frames, stats, status changes, or telemetry.
     """
     manager.connect_to_stream("ABC234", StreamType.WEBRTC)
     service = manager._created["service"]
 
-    assert not service.isSignalConnected(
-        QMetaMethod.fromSignal(service.dataChannelMessage)
-    )
-    # ...while the signals the manager *does* observe are connected.
-    assert service.isSignalConnected(QMetaMethod.fromSignal(service.frameReady))
-    assert service.isSignalConnected(
-        QMetaMethod.fromSignal(service.dataChannelOpened)
-    )
-
-    frames, stats, statuses = [], [], []
+    frames, stats, statuses, telemetry = [], [], [], []
     manager.frameReceived.connect(lambda f, ts, n: frames.append(n))
     manager.statsUpdated.connect(stats.append)
     manager.connectionChanged.connect(lambda ok, msg: statuses.append(msg))
+    manager.telemetryReceived.connect(telemetry.append)
 
     service.dataChannelMessage.emit(
         "detections.meta",
         b'{"event": "promote", "track_key": "t1"}',
     )
     service.dataChannelMessage.emit("detections.thumb", b"\xff\xd8\xff")
+    service.dataChannelMessage.emit("detections.snapshot", b'[{"track_key": "t2"}]')
 
     assert frames == []
     assert stats == []
     assert statuses == []
+    assert telemetry == []
+
+
+def test_telemetry_channel_is_consumed(manager):
+    """Aircraft telemetry reaches the desktop — nothing else can supply it."""
+    manager.connect_to_stream("ABC234", StreamType.WEBRTC)
+    service = manager._created["service"]
+
+    received = []
+    manager.telemetryReceived.connect(received.append)
+    service.dataChannelMessage.emit(
+        "telemetry",
+        b'{"aircraft_latitude": 30.5, "aircraft_longitude": -97.7, '
+        b'"aircraft_altitude_msl_m": 210.0, "captured_at_ms": 1234}',
+    )
+
+    assert len(received) == 1
+    assert received[0]["aircraft_latitude"] == 30.5
+    assert received[0]["aircraft_longitude"] == -97.7
+    assert manager.last_telemetry == received[0]
+
+
+def test_telemetry_feed_is_rebuilt_per_session(manager):
+    """A reconnect must not surface the previous flight's last envelope."""
+    manager.connect_to_stream("ABC234", StreamType.WEBRTC)
+    manager._created["service"].dataChannelMessage.emit(
+        "telemetry", b'{"aircraft_latitude": 1.0}'
+    )
+    assert manager.last_telemetry is not None
+
+    manager.connect_to_stream("XYZ789", StreamType.WEBRTC)
+    assert manager.last_telemetry is None
+
+
+def test_malformed_telemetry_does_not_emit(manager):
+    manager.connect_to_stream("ABC234", StreamType.WEBRTC)
+    service = manager._created["service"]
+
+    received = []
+    manager.telemetryReceived.connect(received.append)
+    service.dataChannelMessage.emit("telemetry", b"not json at all")
+    service.dataChannelMessage.emit("telemetry", b'"a bare string"')
+
+    assert received == []
 
 
 def test_opened_detection_channels_are_recorded_as_ignored(manager):

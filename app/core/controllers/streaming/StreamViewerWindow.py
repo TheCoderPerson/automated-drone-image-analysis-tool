@@ -14,8 +14,9 @@ It provides:
 
 from PySide6.QtWidgets import (QMainWindow, QMessageBox, QLabel, QComboBox, QHBoxLayout,
                                QVBoxLayout, QPushButton, QLineEdit, QGroupBox, QWidget,
-                               QFileDialog, QApplication, QDialog, QTabWidget, QSpinBox)
-from PySide6.QtCore import Qt, QTimer, Slot, QSettings, QUrl, QThread, QObject
+                               QFileDialog, QApplication, QDialog, QTabWidget, QSpinBox,
+                               QSplitter)
+from PySide6.QtCore import Qt, QTimer, Slot, QSettings, QUrl, QThread, QObject, QEvent
 from PySide6.QtGui import QAction, QDesktopServices
 from typing import Optional, Dict, Any, List, Callable, Tuple
 import numpy as np
@@ -39,8 +40,13 @@ from core.services.ConfigService import ConfigService
 from core.views.streaming.StreamViewerWindow_ui import Ui_StreamViewerWindow
 from core.services.LoggerService import LoggerService
 from core.controllers.streaming.components import StreamCoordinator, DetectionRenderer, StreamStatistics
+from core.controllers.streaming.components import StreamTelemetryCoordinator
 from core.controllers.streaming.components.FrameProcessingWorker import FrameProcessingWorker
 from core.controllers.streaming.shared_widgets import DetectionThumbnailWidget, StreamControlWidget
+from core.views.components.FlightMapView import FlightMapView
+from core.views.flight.FlightPairingDialog import FlightPairingDialog
+from core.views.flight.TelemetryHud import TelemetryHud
+from core.services.streaming.FlightStreamService import ERROR_STATUS_PREFIX
 from core.views.streaming.components import PlaybackControlBar, StreamingVideoDisplay
 from core.views.streaming.components.TrackGalleryWidget import TrackGalleryWidget
 from core.controllers.streaming.base import StreamAlgorithmController
@@ -99,6 +105,10 @@ class StreamViewerWindow(TranslationMixin, QMainWindow):
         self._pending_algorithm_options = None
         self._pending_processing_resolution = None  # Desired resolution from wizard (to be capped to native)
         self._active_stream_fps_limit: Optional[int] = None
+        # True once the active source has actually connected. Distinguishes a
+        # real disconnect from the pre-connection progress reports that
+        # WebRTC pairing and RTMP reconnect attempts emit as connected=False.
+        self._connection_established = False
 
         # Setup UI
         self.ui = Ui_StreamViewerWindow()
@@ -123,6 +133,9 @@ class StreamViewerWindow(TranslationMixin, QMainWindow):
 
         # Core components
         self.stream_coordinator = StreamCoordinator(self.logger)
+        # Normalizes file-derived and live telemetry into one stream so the
+        # HUD and map have a single input regardless of source.
+        self.telemetry_coordinator = StreamTelemetryCoordinator(logger=self.logger)
         self.detection_renderer = DetectionRenderer()
         self.stream_statistics = StreamStatistics()
         self.algorithm_renders_frame = False
@@ -156,6 +169,14 @@ class StreamViewerWindow(TranslationMixin, QMainWindow):
 
         # Store algorithm configs for session persistence (forgotten on close)
         self._algorithm_configs: Dict[str, Dict[str, Any]] = {}
+
+        # Map pin key -> gallery Track, so clicking a pin can select the
+        # matching gallery entry.
+        self._gallery_tracks_by_key: Dict[str, Any] = {}
+
+        # ADIAT Flight pairing prompt, open only while pairing.
+        self._pairing_dialog: Optional[FlightPairingDialog] = None
+        self._pairing_code: Optional[str] = None
 
         # Frame processing worker thread (moves algorithm processing off main thread)
         self._processing_thread: Optional[QThread] = None
@@ -206,6 +227,21 @@ class StreamViewerWindow(TranslationMixin, QMainWindow):
         # window must NOT clear a pending gallery focus there, or a sought frame
         # that also changes resolution would lose its zoom. Focus is applied via
         # seekCompleted after the (reset) frame is shown.
+
+        # Telemetry HUD, overlaid on the bottom of the video rather than
+        # given its own row — the same treatment the Flight Viewer's tiles
+        # use, so the two surfaces look identical and the map below keeps
+        # the vertical space. Hidden until the first envelope arrives.
+        self.telemetry_hud = TelemetryHud(self.video_display)
+        self.telemetry_hud.move(0, 0)
+        self.telemetry_hud.setVisible(False)
+        # The display is a QGraphicsView that repaints on resize; keep the
+        # overlay pinned to its bottom edge.
+        self.video_display.installEventFilter(self)
+
+        # The video keeps the whole left pane. The map lives in the right
+        # column instead — the left pane is wide and short, which turns a
+        # map into an unusable letterbox strip.
         live_layout.addWidget(self.video_display)
 
         # Playback controls
@@ -227,6 +263,8 @@ class StreamViewerWindow(TranslationMixin, QMainWindow):
 
         # Connect track_confirmed signal from tracker to gallery
         self.thumbnail_widget.tracker.track_confirmed.connect(self.gallery_widget.add_track)
+        # ...and pin it on the map at the aircraft's position for that frame.
+        self.thumbnail_widget.tracker.track_confirmed.connect(self._on_track_confirmed_for_map)
 
         # Replace the placeholder widgets with the tab widget
         # Get the left panel layout and replace videoLabel with tab widget
@@ -251,6 +289,23 @@ class StreamViewerWindow(TranslationMixin, QMainWindow):
             self.ui.streamControlPlaceholder, self.stream_controls
         )
         self.ui.streamControlPlaceholder.deleteLater()
+
+        # Map, in its own collapsible section between the stream and
+        # algorithm controls.
+        self.map_view = FlightMapView()
+        self.map_view.pinClicked.connect(self._on_map_pin_clicked)
+        self.map_view.setMinimumHeight(280)
+        self.ui.mapPlaceholder.parent().layout().replaceWidget(
+            self.ui.mapPlaceholder, self.map_view
+        )
+        self.ui.mapPlaceholder.deleteLater()
+        self._restore_section_states()
+        self.ui.streamControlGroup.collapsedChanged.connect(
+            lambda collapsed: self._save_section_state("stream_controls", collapsed)
+        )
+        self.ui.mapGroup.collapsedChanged.connect(
+            lambda collapsed: self._save_section_state("map", collapsed)
+        )
 
         # Setup recording widget in its own section
         self._setup_recording_widget()
@@ -497,9 +552,20 @@ class StreamViewerWindow(TranslationMixin, QMainWindow):
         self.stream_coordinator.errorOccurred.connect(self.on_error)
         self.stream_coordinator.streamInfoUpdated.connect(self.on_stream_info_updated)
         self.stream_coordinator.seekCompleted.connect(self._on_seek_completed)
+        # Live telemetry (ADIAT Flight) reaches the shared coordinator, which
+        # DEM-corrects it and re-emits alongside file-derived telemetry.
+        self.stream_coordinator.telemetryReceived.connect(
+            self.telemetry_coordinator.on_live_telemetry
+        )
+
+        # Telemetry -> HUD + map
+        self.telemetry_coordinator.telemetryUpdated.connect(self.on_telemetry_updated)
+        self.telemetry_coordinator.trackUpdated.connect(self._on_flight_path_updated)
+        self.telemetry_coordinator.telemetryStatus.connect(self._on_telemetry_status)
 
         # Stream controls signals
         self.stream_controls.connectRequested.connect(self.on_connect_requested)
+        self.stream_controls.pairingRequested.connect(self.open_flight_pairing_dialog)
         self.stream_controls.disconnectRequested.connect(self.on_disconnect_requested)
 
         # Algorithm selection signal (from Algorithm Controls section)
@@ -660,7 +726,7 @@ class StreamViewerWindow(TranslationMixin, QMainWindow):
         self._pending_auto_record = bool(wizard_data.get("auto_record"))
         self._pending_record_dir = recording_dir
 
-        if wizard_data.get("auto_connect") and stream_url:
+        if wizard_data.get("auto_connect"):
             # Resolve from the combo's stable itemData so a translated UI
             # still auto-connects to the source the operator picked.
             source_label = (
@@ -668,9 +734,17 @@ class StreamViewerWindow(TranslationMixin, QMainWindow):
                 or self.stream_controls.type_combo.currentText()
             )
             selected_type = stream_type_from_source_label(source_label)
-            # Extract hdmi_backend if specified in wizard data
-            hdmi_backend = wizard_data.get("hdmi_backend")
-            self.on_connect_requested(stream_url, selected_type, hdmi_backend=hdmi_backend)
+            if selected_type == StreamType.WEBRTC:
+                # No code was collected in the wizard (they expire in ~30 s),
+                # so auto-connect means "prompt for one now" rather than
+                # "connect to a code chosen minutes ago".
+                self.open_flight_pairing_dialog()
+            elif stream_url:
+                # Extract hdmi_backend if specified in wizard data
+                hdmi_backend = wizard_data.get("hdmi_backend")
+                self.on_connect_requested(
+                    stream_url, selected_type, hdmi_backend=hdmi_backend
+                )
 
     def _apply_algorithm_options(self, options: dict):
         """Apply algorithm options from wizard to the current algorithm widget.
@@ -1480,6 +1554,8 @@ class StreamViewerWindow(TranslationMixin, QMainWindow):
         """Handle stream connection request."""
         fps_limit = self._get_target_fps_limit_from_widget()
         self._active_stream_fps_limit = fps_limit
+        # Clear the previous source's HUD/map before the new one attaches.
+        self._reset_telemetry_surfaces()
         connected = self.stream_coordinator.connect_stream(
             url,
             stream_type,
@@ -1488,6 +1564,107 @@ class StreamViewerWindow(TranslationMixin, QMainWindow):
         )
         if not connected:
             self._active_stream_fps_limit = None
+            return
+
+        # Load location data for the new source. For files this reads a
+        # sidecar SRT or the track embedded in the video; live sources
+        # become available on their first envelope.
+        try:
+            self.telemetry_coordinator.begin_source(url, stream_type)
+        except Exception as e:
+            self.logger.error(f"Error initializing telemetry for source: {e}")
+
+        # A paused video is not a dropped feed, so the "stale Ns" badge only
+        # applies to live sources.
+        self.telemetry_hud.set_staleness_tracking(stream_type != StreamType.FILE)
+
+    @Slot()
+    def open_flight_pairing_dialog(self):
+        """Prompt for an ADIAT Flight pairing code and connect immediately.
+
+        The code is deliberately *not* collected in the setup wizard: the
+        signaling Worker evicts a session after 30 s of inactivity, and a
+        pass through the wizard takes far longer than that, so a code
+        entered up-front would routinely be dead by the time it was used.
+        Prompting here puts a couple of seconds between the operator
+        reading the code off the tablet and the handshake.
+
+        Reuses the Flight Viewer's :class:`FlightPairingDialog` so both
+        surfaces show the same negotiating/failed states.
+        """
+        if self._pairing_dialog is not None:
+            self._pairing_dialog.raise_()
+            self._pairing_dialog.activateWindow()
+            return
+
+        dialog = FlightPairingDialog(self)
+        dialog.setAttribute(Qt.WA_DeleteOnClose, True)
+        dialog.codeSubmitted.connect(self._on_pairing_code_submitted)
+        dialog.cancelled.connect(self._on_pairing_cancelled)
+        dialog.destroyed.connect(self._on_pairing_dialog_destroyed)
+        self._pairing_dialog = dialog
+        dialog.show()
+
+    def _on_pairing_code_submitted(self, code: str):
+        """Start the handshake for a submitted code."""
+        self._pairing_code = code
+        if self._pairing_dialog is not None:
+            self._pairing_dialog.show_negotiating(
+                self.tr("Connecting to {code}...").format(code=code)
+            )
+        self.on_connect_requested(code, StreamType.WEBRTC)
+
+    def _on_pairing_cancelled(self):
+        """Operator dismissed the prompt — abandon any in-flight attempt."""
+        if self.stream_coordinator.stream_manager is not None:
+            self.stream_coordinator.disconnect_stream()
+        self._pairing_code = None
+
+    def _on_pairing_dialog_destroyed(self, *_args):
+        self._pairing_dialog = None
+
+    def _close_pairing_dialog(self):
+        """Dismiss the prompt once a session is established."""
+        dialog = self._pairing_dialog
+        self._pairing_dialog = None
+        if dialog is not None:
+            dialog.accept()
+
+    def _report_pairing_progress(self, message: str) -> bool:
+        """Route a pre-connection status into the pairing prompt.
+
+        Returns True when the message was a failure, so the caller knows
+        the attempt is over rather than still in progress.
+        """
+        dialog = self._pairing_dialog
+        if dialog is None:
+            return False
+        if message.startswith(ERROR_STATUS_PREFIX):
+            dialog.show_failed(message[len(ERROR_STATUS_PREFIX):])
+            return True
+        if message:
+            dialog.show_negotiating(message)
+        return False
+
+    def _has_known_stream_resolution(self) -> bool:
+        """True once the source has reported a real frame size."""
+        resolution = (self.stream_coordinator.stream_info or {}).get('resolution')
+        try:
+            width, height = resolution
+            return int(width) > 0 and int(height) > 0
+        except (TypeError, ValueError):
+            return False
+
+    def _start_pending_auto_record(self) -> None:
+        """Fire the wizard's auto-record once, at a known resolution."""
+        self._pending_auto_record = False
+        default_recording_dir = os.path.expanduser("~")
+        record_dir = (
+            self._pending_record_dir
+            or self.recording_dir_edit.text().strip()
+            or default_recording_dir
+        )
+        self.on_start_recording_requested(record_dir)
 
     def _get_target_fps_limit_from_widget(self) -> Optional[int]:
         """Read target FPS from the loaded algorithm widget config."""
@@ -1523,6 +1700,13 @@ class StreamViewerWindow(TranslationMixin, QMainWindow):
         # image + zoom) and drop any pending/highlight focus state.
         self.video_display.clear_display(self.tr("No Stream Connected"))
         self._reset_focus_state()
+        self._reset_telemetry_surfaces()
+        # The pairing code belonged to that session; a reconnect needs a
+        # fresh prompt (and, in practice, a fresh code from the tablet).
+        # Guarded so a File/RTMP disconnect never blanks its own URL field.
+        if self._pairing_code:
+            self._pairing_code = None
+            self.stream_controls.set_paired_code("")
 
         # Clear thumbnails
         if hasattr(self, 'thumbnail_widget'):
@@ -1530,17 +1714,43 @@ class StreamViewerWindow(TranslationMixin, QMainWindow):
 
     @Slot(bool, str)
     def on_connection_changed(self, connected: bool, message: str):
-        """Handle connection status change."""
+        """Handle connection status change.
+
+        ``connected=False`` covers two very different things: an actual
+        loss of a live stream, and *progress* reported while a connection
+        is still being established. A WebRTC pair emits several of the
+        latter ("Looking up pairing code...", "Connecting..."), and RTMP
+        emits "Reconnecting... (attempt N)". Treating those as
+        disconnections ran the full teardown mid-connect — which, among
+        other things, discarded the wizard's pending processing
+        resolution before the first frame could be capped with it.
+
+        Teardown is therefore edge-triggered on a real
+        connected -> disconnected transition.
+        """
+        was_connected = self._connection_established
+        self._connection_established = bool(connected)
+        # Only a genuine loss (or a hard failure of a live attempt) should
+        # tear the session down.
+        real_disconnect = was_connected and not connected
+
         # A new/replacement source or a connection loss invalidates any
         # gallery/thumbnail focus armed against the previous source, and starts
         # a new frame session so late async results from the old one are dropped.
-        self._frame_session += 1
-        self._reset_focus_state()
+        if connected or real_disconnect:
+            self._frame_session += 1
+            self._reset_focus_state()
 
-        # Update bottom status bar with connection state
+        # Update bottom status bar with connection state. Pre-connection
+        # progress is labelled as such rather than as "Disconnected".
+        if connected:
+            state = self.tr("Connected")
+        elif was_connected:
+            state = self.tr("Disconnected")
+        else:
+            state = self.tr("Connecting")
         status_text = self.tr("{state} - {message}").format(
-            state=self.tr("Connected") if connected else self.tr("Disconnected"),
-            message=message
+            state=state, message=message
         )
         self.ui.statusbar.showMessage(status_text)
         # Update stream controls status section
@@ -1548,6 +1758,12 @@ class StreamViewerWindow(TranslationMixin, QMainWindow):
             self.stream_controls.update_connection_status(connected, message)
 
         if connected:
+            # Pairing succeeded — dismiss the prompt and show which drone
+            # this session is on.
+            self._close_pairing_dialog()
+            if self._pairing_code:
+                self.stream_controls.set_paired_code(self._pairing_code)
+
             if self._active_stream_fps_limit is None:
                 self._active_stream_fps_limit = self._get_target_fps_limit_from_widget()
             self.ui.infoPanel.append(
@@ -1572,11 +1788,27 @@ class StreamViewerWindow(TranslationMixin, QMainWindow):
             if self.algorithm_widget and not self._processing_worker:
                 self._setup_processing_worker()
 
+            # Auto-record sizes its writer from the stream resolution, and
+            # any mismatched frame is downscaled to it. File/RTMP report
+            # resolution before reporting "connected", but a WebRTC pair
+            # reports connected as soon as ICE completes — before any frame
+            # exists — so starting here would silently record a 4K ADIAT
+            # Flight feed at the 1280x720 fallback. Defer to the first frame
+            # when the resolution isn't known yet.
             if self._pending_auto_record:
-                default_recording_dir = os.path.expanduser("~")
-                record_dir = self._pending_record_dir or self.recording_dir_edit.text().strip() or default_recording_dir
-                self.on_start_recording_requested(record_dir)
-                self._pending_auto_record = False
+                if self._has_known_stream_resolution():
+                    self._start_pending_auto_record()
+        elif not real_disconnect:
+            # Still connecting — report progress without tearing anything
+            # down. The session has not started, so there is nothing to
+            # reset, and resetting here would discard state the pending
+            # connection still needs (e.g. the wizard's processing
+            # resolution, applied when the first frame arrives).
+            self._report_pairing_progress(message)
+            if message:
+                self.ui.infoPanel.append(
+                    self.tr("… {message}").format(message=message)
+                )
         else:
             self._active_stream_fps_limit = None
             self.ui.infoPanel.append(
@@ -1682,6 +1914,11 @@ class StreamViewerWindow(TranslationMixin, QMainWindow):
                 del self._original_frames_queue[oldest_ts]
         else:
             self._original_frame_for_thumbnails = None
+
+        # Auto-record deferred from connect because the source had not yet
+        # reported a resolution (WebRTC connects before the first frame).
+        if self._pending_auto_record and self._has_known_stream_resolution():
+            self._start_pending_auto_record()
 
         # Apply resolution capping on first frame (to prevent upscaling)
         if self._pending_processing_resolution is not None:
@@ -2253,9 +2490,135 @@ class StreamViewerWindow(TranslationMixin, QMainWindow):
         if self.stream_coordinator.current_stream_type == StreamType.FILE:
             if 'current_time' in stream_info and 'total_time' in stream_info:
                 self.playback_controls.update_time(stream_info['current_time'], stream_info['total_time'])
+                # Drive file-derived telemetry from the playhead so the HUD
+                # and map track the video, including while scrubbing.
+                self.telemetry_coordinator.on_position_changed(stream_info['current_time'])
             if 'is_playing' in stream_info:
                 is_playing = stream_info['is_playing']
                 self.playback_controls.update_play_state(is_playing)
+
+    @Slot(dict)
+    def on_telemetry_updated(self, envelope: dict):
+        """Render a telemetry envelope into the HUD and move the aircraft."""
+        if not isinstance(envelope, dict):
+            return
+
+        self.telemetry_hud.apply_envelope(envelope)
+        if not self.telemetry_hud.isVisible():
+            self.telemetry_hud.setVisible(True)
+        self._reposition_telemetry_hud()
+
+        # For a file we replace the whole trail from ``trackUpdated`` (so
+        # seeking backwards shortens it); for a live feed there is no track
+        # to recompute, so each fix extends the path.
+        is_live = self.stream_coordinator.current_stream_type != StreamType.FILE
+        self.map_view.update_aircraft(envelope, extend_track=is_live)
+
+    @Slot(list)
+    def _on_flight_path_updated(self, path: list):
+        """Replace the plotted flight path (file playback)."""
+        self.map_view.set_track(path)
+
+    @Slot(str)
+    def _on_telemetry_status(self, message: str):
+        """Report where location data came from, or that there is none."""
+        if message:
+            self.ui.infoPanel.append(message)
+
+    def _on_track_confirmed_for_map(self, track):
+        """Pin a confirmed detection at the aircraft position of its frame.
+
+        Detections carry no coordinates of their own — the aircraft's
+        position when the detection was captured is the best available
+        geotag, which is the same approximation the image-analysis AOI
+        pipeline starts from. Silently skipped when the source has no
+        location data, so non-telemetry videos behave exactly as before.
+        """
+        if track is None or not self.telemetry_coordinator.is_available:
+            return
+
+        position = None
+        # For a file we can look up the exact frame time; for a live feed the
+        # most recent fix is the closest we can get.
+        if self.stream_coordinator.current_stream_type == StreamType.FILE:
+            seconds = self._video_time_for_frame(getattr(track, "first_frame_index", None))
+            if seconds is not None:
+                position = self.telemetry_coordinator.position_at(seconds)
+        if position is None:
+            position = self.telemetry_coordinator.current_position()
+        if position is None:
+            return
+
+        key = f"track-{getattr(track, 'track_id', id(track))}"
+        self._gallery_tracks_by_key[key] = track
+        self.map_view.add_detection({
+            "track_key": key,
+            "location": {"lat": position[0], "lon": position[1]},
+            "class_name": getattr(track, "detection_type", "detection"),
+            "confidence": getattr(track, "confidence", 0.0),
+        })
+
+    def _video_time_for_frame(self, frame_index) -> Optional[float]:
+        """Convert a video frame index to seconds using the source FPS."""
+        if not isinstance(frame_index, int) or frame_index < 0:
+            return None
+        info = self.stream_coordinator.stream_info or {}
+        fps = info.get("source_fps") or info.get("fps") or 0
+        try:
+            fps = float(fps)
+        except (TypeError, ValueError):
+            return None
+        if fps <= 0:
+            return None
+        return frame_index / fps
+
+    def _on_map_pin_clicked(self, track_key: str):
+        """Select the gallery track behind a clicked map pin."""
+        track = self._gallery_tracks_by_key.get(track_key)
+        if track is not None:
+            self._on_gallery_track_clicked(track)
+
+    def _reposition_telemetry_hud(self):
+        """Anchor the HUD to the bottom edge of the video pane."""
+        if not self.telemetry_hud.isVisible():
+            return
+        rect = self.video_display.rect()
+        height = self.telemetry_hud.sizeHint().height()
+        self.telemetry_hud.setGeometry(
+            0,
+            max(0, rect.height() - height),
+            max(120, rect.width()),
+            height,
+        )
+
+    def eventFilter(self, watched, event):
+        """Keep the telemetry overlay pinned as the video pane resizes."""
+        if watched is self.video_display and event.type() == QEvent.Resize:
+            self._reposition_telemetry_hud()
+        return super().eventFilter(watched, event)
+
+    def _reset_telemetry_surfaces(self):
+        """Clear HUD, aircraft marker, flight path, and detection pins."""
+        self.telemetry_coordinator.reset()
+        self.telemetry_hud.setVisible(False)
+        self.map_view.reset()
+        self._gallery_tracks_by_key.clear()
+
+    def _restore_section_states(self):
+        """Restore which right-panel sections were folded away last time."""
+        for key, section in (
+            ("stream_controls", self.ui.streamControlGroup),
+            ("map", self.ui.mapGroup),
+        ):
+            saved = self.settings.value(f"panel/{key}_collapsed")
+            if saved is None:
+                continue
+            # QSettings round-trips booleans as strings on some backends.
+            collapsed = saved if isinstance(saved, bool) else str(saved).lower() == "true"
+            section.setCollapsed(collapsed)
+
+    def _save_section_state(self, key: str, collapsed: bool):
+        self.settings.setValue(f"panel/{key}_collapsed", bool(collapsed))
 
     def update_statistics_display(self):
         """Update statistics display."""
@@ -2382,6 +2745,9 @@ class StreamViewerWindow(TranslationMixin, QMainWindow):
 
         # Disconnect stream first - this stops frame delivery and signals stream to stop
         self.stream_coordinator.cleanup()
+
+        # Stop the DEM lookup worker thread before the window goes away.
+        self.telemetry_coordinator.cleanup()
 
         # Then cleanup processing worker (should be quick since no frames coming)
         self._cleanup_processing_worker()

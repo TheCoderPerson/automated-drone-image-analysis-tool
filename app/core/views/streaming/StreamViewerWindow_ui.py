@@ -10,6 +10,8 @@ from PySide6.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
                                QScrollArea)
 from PySide6.QtCore import QCoreApplication, Qt
 
+from core.views.components.CollapsibleSection import CollapsibleSection
+
 
 class Ui_StreamViewerWindow:
     """UI for the main streaming detection window."""
@@ -78,17 +80,28 @@ class Ui_StreamViewerWindow:
         right_layout.setContentsMargins(0, 0, 0, 0)
         right_layout.setSpacing(10)
         
-        # Stream controls group
-        self.streamControlGroup = QGroupBox("Stream Controls")
+        # Stream controls group. Collapsible: it matters during setup and
+        # mostly just takes room once a source is running.
+        self.streamControlGroup = CollapsibleSection("Stream Controls")
         self.streamControlGroup.setObjectName("streamControlGroup")
-        streamControlLayout = QVBoxLayout(self.streamControlGroup)
 
         # Stream control placeholder
         self.streamControlPlaceholder = QWidget()
         self.streamControlPlaceholder.setObjectName("streamControlPlaceholder")
-        streamControlLayout.addWidget(self.streamControlPlaceholder)
+        self.streamControlGroup.addWidget(self.streamControlPlaceholder)
 
         right_layout.addWidget(self.streamControlGroup)
+
+        # Map. Lives here rather than under the video because the left pane
+        # is wide and short — a map there ends up a useless letterbox strip.
+        # Collapsible for the operators who do not want it at all.
+        self.mapGroup = CollapsibleSection("Map")
+        self.mapGroup.setObjectName("mapGroup")
+        self.mapPlaceholder = QWidget()
+        self.mapPlaceholder.setObjectName("mapPlaceholder")
+        self.mapPlaceholder.setMinimumHeight(280)
+        self.mapGroup.addWidget(self.mapPlaceholder)
+        right_layout.addWidget(self.mapGroup)
 
         # Algorithm controls placeholder (will be replaced with loaded algorithm)
         self.algorithmControlGroup = QGroupBox("Algorithm Controls")
@@ -143,6 +156,7 @@ class Ui_StreamViewerWindow:
         StreamViewerWindow.setWindowTitle(_translate("StreamViewerWindow", "ADIAT - Real-Time Stream Detection"))
         self.videoLabel.setText(_translate("StreamViewerWindow", "Video Stream"))
         self.streamControlGroup.setTitle(_translate("StreamViewerWindow", "Stream Controls"))
+        self.mapGroup.setTitle(_translate("StreamViewerWindow", "Map"))
         self.algorithmControlGroup.setTitle(_translate("StreamViewerWindow", "Algorithm Controls"))
         self.recordingGroup.setTitle(_translate("StreamViewerWindow", "Recording"))
         self.infoPanel.setPlaceholderText(_translate("StreamViewerWindow", "Stream information and logs will appear here..."))

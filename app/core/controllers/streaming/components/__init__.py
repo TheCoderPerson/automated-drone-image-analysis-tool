@@ -7,6 +7,7 @@ This module contains reusable logic components used across all streaming detecti
 from .StreamCoordinator import StreamCoordinator
 from .DetectionRenderer import DetectionRenderer, RenderConfig
 from .StreamStatistics import StreamStatistics, PerformanceStats
+from .StreamTelemetryCoordinator import StreamTelemetryCoordinator
 
 __all__ = [
     'StreamCoordinator',
@@ -14,4 +15,5 @@ __all__ = [
     'RenderConfig',
     'StreamStatistics',
     'PerformanceStats',
+    'StreamTelemetryCoordinator',
 ]

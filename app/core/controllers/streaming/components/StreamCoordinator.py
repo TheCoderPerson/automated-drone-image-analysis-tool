@@ -20,6 +20,7 @@ from core.services.streaming.RTMPStreamService import (
 )
 from core.services.streaming.FlightStreamService import FlightStreamManager
 from core.services.streaming.VideoRecordingService import RecordingManager, RecordingConfig
+from helpers import FeatureFlags
 
 
 class StreamCoordinator(QObject):
@@ -41,6 +42,7 @@ class StreamCoordinator(QObject):
     streamInfoUpdated = Signal(dict)  # Stream info (fps, resolution, etc.)
     errorOccurred = Signal(str)  # Error message
     seekCompleted = Signal(int, int, bool)  # (request_id, frame_position, success)
+    telemetryReceived = Signal(dict)  # Live aircraft telemetry (ADIAT Flight)
 
     def __init__(self, logger: Optional[LoggerService] = None):
         super().__init__()
@@ -97,6 +99,12 @@ class StreamCoordinator(QObject):
             # feeds arrive over WebRTC, which OpenCV cannot open, so they use
             # a dedicated manager exposing the same signals/methods.
             self.stream_manager = self._create_stream_manager(stream_type)
+            if self.stream_manager is None:
+                # Transport unavailable in this build (see
+                # _create_stream_manager). Already logged; fail quietly
+                # rather than popping a modal for a disabled feature.
+                self.connectionChanged.emit(False, "Source unavailable")
+                return False
 
             # Connect signals
             self.stream_manager.frameReceived.connect(self._on_frame_ready)
@@ -108,6 +116,10 @@ class StreamCoordinator(QObject):
                 self.stream_manager.videoPositionChanged.connect(self._on_video_position_changed)
             if hasattr(self.stream_manager, "seekCompleted"):
                 self.stream_manager.seekCompleted.connect(self.seekCompleted)
+            # Only the ADIAT Flight manager publishes live telemetry; the
+            # OpenCV-backed manager has no such signal.
+            if hasattr(self.stream_manager, "telemetryReceived"):
+                self.stream_manager.telemetryReceived.connect(self.telemetryReceived)
 
             # Connect to stream (pass hdmi_backend for HDMI capture, fps_limit for rate control)
             if self.stream_manager.connect_to_stream(url, stream_type, hdmi_backend=hdmi_backend, fps_limit=fps_limit):
@@ -134,8 +146,25 @@ class StreamCoordinator(QObject):
         and the ADIAT Flight path needs no per-algorithm configuration.
         Both managers expose the identical signal/method surface, so every
         caller downstream of this method is transport-agnostic.
+
+        The WebRTC transport is gated on the Flight Viewer feature flag.
+        The UI already hides the source when it is off; this is the
+        backstop for a stale persisted ``StreamingSourceType`` or a direct
+        caller, so a disabled feature can never spin up a pairing session.
+
+        Returns None when the requested transport is unavailable. It
+        deliberately does not raise: an exception here surfaces through
+        ``connect_stream``'s handler as a modal error dialog, and a
+        feature that is simply switched off in this build is not an error
+        worth interrupting the operator for.
         """
         if stream_type == StreamType.WEBRTC:
+            if not FeatureFlags.FLIGHT_VIEWER_ENABLED:
+                self.logger.warning(
+                    "Ignoring ADIAT Flight source request: "
+                    "FLIGHT_VIEWER_ENABLED is off in this build"
+                )
+                return None
             return FlightStreamManager()
         return StreamManager()
 
@@ -165,6 +194,11 @@ class StreamCoordinator(QObject):
                 if hasattr(self.stream_manager, "seekCompleted"):
                     try:
                         self.stream_manager.seekCompleted.disconnect(self.seekCompleted)
+                    except TypeError:
+                        pass
+                if hasattr(self.stream_manager, "telemetryReceived"):
+                    try:
+                        self.stream_manager.telemetryReceived.disconnect(self.telemetryReceived)
                     except TypeError:
                         pass
             except Exception:

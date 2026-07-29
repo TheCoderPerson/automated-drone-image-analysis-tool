@@ -20,10 +20,16 @@ StreamCoordinator` and everything downstream of it (frame worker,
   renderer, recorder, gallery) treat an ADIAT Flight feed exactly like a
   file, HDMI capture, or RTMP stream.
 
-**Detection data is deliberately ignored.** The manager never constructs
-a ``DetectionFeedService`` and never connects
-``WebRTCStreamService.dataChannelMessage``. Channels that the publisher
-opens are logged once at debug level and dropped. See
+**Detection data is deliberately ignored, telemetry is not.** ADIAT
+Desktop runs its own detector over these frames, so consuming the
+publisher's detections would double-report into the gallery and mix two
+detector configurations in one session — the manager never constructs a
+``DetectionFeedService``. Aircraft *telemetry* is a different matter:
+nothing else can supply it, and the HUD and map need it, so the
+``telemetry`` channel is consumed via
+:class:`~core.services.streaming.TelemetryFeedService.TelemetryFeedService`
+and re-emitted on :attr:`FlightStreamManager.telemetryReceived`. Every
+other channel is logged once at debug level and dropped. See
 :meth:`FlightStreamManager._on_data_channel_opened`.
 """
 
@@ -40,6 +46,10 @@ from core.services.streaming.RTMPStreamService import (
     MAX_REASONABLE_FPS_LIMIT,
     StreamType,
 )
+from core.services.streaming.TelemetryFeedService import (
+    TELEMETRY_LABEL,
+    TelemetryFeedService,
+)
 from core.services.streaming.WebRTCStreamService import WebRTCStreamService
 from core.services.streaming.signaling import (
     SignalingChannel,
@@ -51,6 +61,12 @@ from core.services.streaming.signaling import (
 # before we stop blocking the UI thread. aiortc's SCTP/DTLS teardown is
 # normally well under a second; the Flight Viewer uses the same budget.
 DISCONNECT_WAIT_MS = 3000
+
+# Prefix on ``connectionChanged`` messages that report a failure rather than
+# progress. The pairing UI keys off this to tell "still connecting" from
+# "this attempt failed"; it is deliberately not translated so both sides
+# agree on the marker.
+ERROR_STATUS_PREFIX = "Error: "
 
 
 class FlightFeedStreamService(WebRTCStreamService):
@@ -144,6 +160,7 @@ class FlightStreamManager(QObject):
     statsUpdated = Signal(dict)                     # stream statistics
     videoPositionChanged = Signal(float, float)     # current_time, total_time
     seekCompleted = Signal(int, int, bool)          # request_id, position, success
+    telemetryReceived = Signal(dict)                # parsed aircraft telemetry
 
     def __init__(
         self,
@@ -170,6 +187,9 @@ class FlightStreamManager(QObject):
         self._resolution = (0, 0)
         self._observed_fps = 0.0
         self._ignored_channels: set = set()
+        # Demuxes the ``telemetry`` DataChannel. Constructed per session so
+        # a reconnect cannot surface the previous flight's last envelope.
+        self._telemetry_feed: Optional[TelemetryFeedService] = None
 
     # ------------------------------------------------------------------
     # construction helpers
@@ -218,7 +238,7 @@ class FlightStreamManager(QObject):
         except ValueError as exc:
             message = str(exc)
             self.logger.error(f"ADIAT Flight: invalid pairing code {url!r}: {message}")
-            self.connectionChanged.emit(False, f"Error: {message}")
+            self.connectionChanged.emit(False, f"{ERROR_STATUS_PREFIX}{message}")
             return False
 
         if self._signaling is None:
@@ -226,7 +246,7 @@ class FlightStreamManager(QObject):
                 self._signaling = default_signaling_channel()
             except Exception as exc:  # noqa: BLE001 - surfaced to the operator
                 self.logger.error(f"ADIAT Flight: signaling setup failed: {exc}")
-                self.connectionChanged.emit(False, f"Error: {exc}")
+                self.connectionChanged.emit(False, f"{ERROR_STATUS_PREFIX}{exc}")
                 return False
 
         self._pairing_code = code
@@ -240,7 +260,7 @@ class FlightStreamManager(QObject):
             self._service = self._service_factory(self._signaling, code, fps_limit)
         except Exception as exc:  # noqa: BLE001 - surfaced to the operator
             self.logger.error(f"ADIAT Flight: failed to create receive service: {exc}")
-            self.connectionChanged.emit(False, f"Error: {exc}")
+            self.connectionChanged.emit(False, f"{ERROR_STATUS_PREFIX}{exc}")
             self._service = None
             return False
 
@@ -249,17 +269,27 @@ class FlightStreamManager(QObject):
         service.connectionStatusChanged.connect(self._on_connection_status_changed)
         service.streamStatsChanged.connect(self._on_service_stats)
         service.errorOccurred.connect(self._on_error)
-        # Detection channels are intentionally NOT wired. ADIAT Desktop runs
-        # its own algorithm over these frames; consuming the publisher's
-        # detections would double-report into the gallery and mix two
-        # different detector configurations in one session.
         service.dataChannelOpened.connect(self._on_data_channel_opened)
+
+        # Telemetry IS consumed — nothing else can tell the desktop where
+        # the aircraft is, and the HUD and map both need it. The feed
+        # service filters by label, so detection traffic on the same
+        # ``dataChannelMessage`` signal is dropped inside it.
+        #
+        # Detections remain deliberately unwired: no DetectionFeedService is
+        # constructed here, because ADIAT Desktop runs its own algorithm
+        # over these frames and consuming the publisher's detections would
+        # double-report into the gallery.
+        telemetry_feed = TelemetryFeedService(parent=self)
+        telemetry_feed.telemetryReceived.connect(self._on_telemetry)
+        service.dataChannelMessage.connect(telemetry_feed.handle_message)
+        self._telemetry_feed = telemetry_feed
 
         try:
             service.request_connect()
         except Exception as exc:  # noqa: BLE001 - surfaced to the operator
             self.logger.error(f"ADIAT Flight: failed to start receive service: {exc}")
-            self.connectionChanged.emit(False, f"Error: {exc}")
+            self.connectionChanged.emit(False, f"{ERROR_STATUS_PREFIX}{exc}")
             self.disconnect_stream(emit_status=False)
             return False
 
@@ -278,27 +308,43 @@ class FlightStreamManager(QObject):
         service = self._service
         self._service = None
         self._connected = False
+        telemetry_feed = self._telemetry_feed
+        self._telemetry_feed = None
 
         if service is not None:
-            for signal, slot in (
+            disconnects = [
                 (service.frameReady, self._on_frame_ready),
                 (service.connectionStatusChanged, self._on_connection_status_changed),
                 (service.streamStatsChanged, self._on_service_stats),
                 (service.errorOccurred, self._on_error),
                 (service.dataChannelOpened, self._on_data_channel_opened),
-            ):
+            ]
+            if telemetry_feed is not None:
+                disconnects.append(
+                    (service.dataChannelMessage, telemetry_feed.handle_message)
+                )
+            for signal, slot in disconnects:
                 try:
                     signal.disconnect(slot)
                 except (TypeError, RuntimeError):
                     pass
 
+        if telemetry_feed is not None:
+            try:
+                telemetry_feed.deleteLater()
+            except (AttributeError, RuntimeError):
+                pass
+
             stopped = True
             try:
-                # Operator-initiated stop: end the publish session so the
-                # Worker slot is released rather than parked in
-                # ``awaiting_viewer`` waiting for a viewer that is not
-                # coming back.
-                service.request_disconnect()
+                # ``cleanup`` — NOT ``request_disconnect``. The latter calls
+                # ``delete_session`` on the Worker, which is terminal: the
+                # pairing code dies and the operator has to generate a fresh
+                # one on the tablet before reconnecting. Disconnect here is
+                # routinely used to change algorithm settings and reconnect,
+                # so the slot must be left in ``awaiting_viewer`` (plan §20)
+                # exactly as the Flight Viewer's tile-close path does.
+                service.cleanup()
                 if hasattr(service, "isRunning") and service.isRunning():
                     stopped = bool(service.wait(DISCONNECT_WAIT_MS))
                     if not stopped:
@@ -458,14 +504,26 @@ class FlightStreamManager(QObject):
     def _on_error(self, error_message: str):
         """Surface receive-service errors as a connection failure."""
         self.logger.error(f"ADIAT Flight stream error: {error_message}")
-        self.connectionChanged.emit(False, f"Error: {error_message}")
+        self.connectionChanged.emit(False, f"{ERROR_STATUS_PREFIX}{error_message}")
+
+    def _on_telemetry(self, envelope: dict):
+        """Forward a parsed aircraft telemetry envelope."""
+        if isinstance(envelope, dict):
+            self.telemetryReceived.emit(envelope)
+
+    @property
+    def last_telemetry(self) -> Optional[dict]:
+        """Most recent telemetry envelope, or None if none has arrived."""
+        if self._telemetry_feed is None:
+            return None
+        return self._telemetry_feed.last_envelope
 
     def _on_data_channel_opened(self, label: str):
-        """Log and ignore publisher DataChannels.
+        """Log which publisher DataChannels are consumed vs dropped.
 
         ADIAT Flight opens ``detections.meta`` / ``detections.thumb`` /
-        ``telemetry`` alongside the video track. Streaming analysis uses
-        only the video: the desktop's own algorithm is the authority on
+        ``telemetry`` alongside the video track. Only ``telemetry`` is
+        consumed — the desktop's own algorithm is the authority on
         detections for this session, so the publisher's are discarded
         rather than merged. Logged once per label to keep the debug log
         readable.
@@ -473,7 +531,12 @@ class FlightStreamManager(QObject):
         if label in self._ignored_channels:
             return
         self._ignored_channels.add(label)
+        if label == TELEMETRY_LABEL:
+            self.logger.debug(
+                f"ADIAT Flight: consuming publisher DataChannel {label!r}"
+            )
+            return
         self.logger.debug(
             f"ADIAT Flight: ignoring publisher DataChannel {label!r} "
-            "(streaming analysis consumes video only)"
+            "(streaming analysis consumes video and telemetry only)"
         )
