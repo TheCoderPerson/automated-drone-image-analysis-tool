@@ -52,6 +52,8 @@ import re
 from dataclasses import dataclass
 from typing import List, Optional
 
+from core.services.telemetry.VideoProfileService import DATUM_MSL, DATUM_RELATIVE
+
 # A bracketed run, e.g. ``[rel_alt: 14.885 abs_alt: 207.027]``. Non-greedy
 # so adjacent brackets on one line stay separate.
 _BRACKET_RE = re.compile(r"\[(.+?)\]")
@@ -68,6 +70,10 @@ _TIMECODE_RE = re.compile(
 
 # Entries are separated by one or more blank lines.
 _ENTRY_SPLIT_RE = re.compile(r"(?:\r?\n){2,}")
+
+# Below this, a legacy ``altitude`` track is read as takeoff-relative rather
+# than MSL. See _resolve_legacy_altitude for why the threshold is safe.
+_LEGACY_RELATIVE_CEILING_M = 50.0
 
 
 @dataclass
@@ -88,6 +94,9 @@ class DjiSrtSample:
     altitude_agl_m: Optional[float] = None   # rel_alt — above takeoff point
     yaw_deg: Optional[float] = None          # gimbal yaw; see module note below
     frame_index: Optional[int] = None
+    # True when the altitude came from the legacy single ``altitude`` key,
+    # whose datum varies by aircraft. See _resolve_legacy_altitude.
+    altitude_datum_unknown: bool = False
 
     @property
     def has_position(self) -> bool:
@@ -182,12 +191,16 @@ def _parse_entry(block: str) -> Optional[DjiSrtSample]:
         longitude = _to_float(fields.get("longtitude"))
 
     # Altitude precedence: DJI's explicit MSL/AGL pair when present,
-    # otherwise the legacy single ``altitude`` key (treated as MSL, which
-    # is how the original code used it for EXIF).
+    # otherwise the legacy single ``altitude`` key. That key's datum is not
+    # knowable from one cue, so it is parked in the MSL slot and flagged;
+    # :func:`_resolve_legacy_altitude` decides once it can see the whole
+    # track.
     altitude_msl = _to_float(fields.get("abs_alt"))
     altitude_agl = _to_float(fields.get("rel_alt"))
-    if altitude_msl is None:
+    datum_unknown = False
+    if altitude_msl is None and altitude_agl is None:
         altitude_msl = _to_float(fields.get("altitude"))
+        datum_unknown = altitude_msl is not None
 
     return DjiSrtSample(
         start_seconds=start_seconds,
@@ -201,15 +214,74 @@ def _parse_entry(block: str) -> Optional[DjiSrtSample]:
         # heading with that caveat.
         yaw_deg=_to_float(fields.get("gb_yaw")),
         frame_index=frame_index,
+        altitude_datum_unknown=datum_unknown,
     )
 
 
-def parse_dji_srt(text: str) -> List[DjiSrtSample]:
+def _resolve_legacy_altitude(
+    samples: List[DjiSrtSample],
+    altitude_datum: Optional[str] = None,
+) -> None:
+    """Decide whether a legacy ``altitude`` key is MSL or takeoff-relative.
+
+    Older DJI firmware writes one ``altitude`` value with no datum, and the
+    datum is **not consistent between aircraft** — verified against four
+    sample tracks, three relative (one starting at −9.7 m) and one Mavic 2
+    Pro genuinely MSL at 1622 m. Modern firmware removed the ambiguity by
+    writing the explicit ``rel_alt``/``abs_alt`` pair instead, so this only
+    applies to legacy files.
+
+    Filing a relative altitude as MSL is not cosmetic: the HUD labels it
+    "MSL" and leaves AGL blank, the wizard's altitude auto-detection reads
+    AGL only and so finds nothing, and
+    :class:`~core.services.telemetry.TelemetryEnrichmentService.\
+TelemetryEnrichmentService` needs a reported AGL to anchor its DEM
+    correction — without one there is no terrain correction at all.
+
+    Args:
+        samples: Parsed cues, mutated in place.
+        altitude_datum: The datum recorded for this aircraft in
+            ``drones.csv`` (see :mod:`~core.services.telemetry.\
+VideoProfileService`). When given it is authoritative. When None — an
+            unrecorded aircraft, or a remuxed video that no longer names
+            itself — the datum is inferred from the track minimum instead.
+
+    Inference is a fallback, not the primary answer, because it is a guess.
+    It is nonetheless a safe one: a drone's *MSL* altitude can only dip
+    below ~50 m where the ground itself is near sea level, and at those
+    elevations the two readings differ by less than the threshold anyway,
+    so a wrong call costs less than the threshold that produced it. No DEM
+    lookup, so this stays off the network.
+    """
+    ambiguous = [s for s in samples if s.altitude_datum_unknown]
+    if not ambiguous:
+        return
+
+    if altitude_datum == DATUM_MSL:
+        # Already parked in the MSL slot; nothing to move.
+        return
+    if altitude_datum != DATUM_RELATIVE:
+        values = [s.altitude_msl_m for s in ambiguous if s.altitude_msl_m is not None]
+        if not values or min(values) >= _LEGACY_RELATIVE_CEILING_M:
+            return
+
+    for sample in ambiguous:
+        sample.altitude_agl_m = sample.altitude_msl_m
+        sample.altitude_msl_m = None
+
+
+def parse_dji_srt(text: str, altitude_datum: Optional[str] = None) -> List[DjiSrtSample]:
     """Parse DJI SRT content into samples ordered by start time.
 
     Malformed cues are skipped rather than aborting the whole file — a
     single truncated entry at the end of a card-pull should not cost the
     operator the other 890 fixes.
+
+    Args:
+        text: SRT content.
+        altitude_datum: Datum recorded for the capturing aircraft, if
+            known. Only consulted for legacy single-``altitude`` tracks;
+            see :func:`_resolve_legacy_altitude`.
     """
     if not text:
         return []
@@ -226,4 +298,7 @@ def parse_dji_srt(text: str) -> List[DjiSrtSample]:
             samples.append(sample)
 
     samples.sort(key=lambda s: s.start_seconds)
+    # Deferred to here because inference needs the whole track: one cue
+    # cannot reveal which datum a legacy ``altitude`` key is using.
+    _resolve_legacy_altitude(samples, altitude_datum)
     return samples

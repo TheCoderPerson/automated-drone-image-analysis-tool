@@ -6,7 +6,7 @@ usually recorded *in* the file:
 
 * **Aircraft** — DJI writes it into the MP4's ``encoder`` container tag
   (``"DJI DJI Matrice 4E"``). This is the video counterpart to the EXIF
-  Make/Model that image analysis already matches against ``drones.pkl``.
+  Make/Model that image analysis already matches against ``drones.csv``.
 * **Altitude** — the embedded telemetry track carries per-frame
   ``rel_alt`` (height above the takeoff point), the same field the HUD
   and map use.
@@ -35,6 +35,12 @@ from helpers.VideoFileHelper import get_video_device_tags
 
 # Container tags that may name the capturing device, best first.
 _DEVICE_TAG_KEYS = ("encoder", "model", "com.apple.quicktime.model", "make")
+
+# Fixes below this are treated as ground time rather than flight. Clips that
+# start on the pad or end on landing are common, and a legacy relative
+# altitude can even read slightly negative, so ground fixes have to be
+# excluded before asking "what altitude was this shot at".
+_AIRBORNE_FLOOR_M = 2.0
 
 
 @dataclass
@@ -87,7 +93,10 @@ def match_drone_model(device_text: str, drones_df) -> Optional[tuple]:
         return None
 
     haystack = _normalize(device_text)
-    words = set(haystack.split())
+    # Padded so a code can be tested as a bounded phrase. A set of single
+    # words would not do: normalization turns a hyphenated code such as
+    # ``L1D-20c`` into two tokens, which could then never match.
+    padded_haystack = f" {haystack} "
 
     code_match = None
     name_match = None
@@ -103,9 +112,11 @@ def match_drone_model(device_text: str, drones_df) -> Optional[tuple]:
         if _normalize(make) not in haystack:
             continue
 
-        # 1. EXIF-style codes, as whole words.
+        # 1. EXIF-style codes, as bounded phrases. Bounding keeps the
+        #    whole-word property (``M4T`` still does not match inside
+        #    ``M4TD``) while letting multi-token codes match.
         for code in _split_codes(row.get("Model (Exif)")):
-            if code and code in words:
+            if code and f" {code} " in padded_haystack:
                 code_match = (make, model)
                 break
         if code_match:
@@ -121,13 +132,22 @@ def match_drone_model(device_text: str, drones_df) -> Optional[tuple]:
     return code_match or name_match
 
 
-def detect_capture_info(video_path, drones_df=None, logger=None) -> VideoCaptureInfo:
+def detect_capture_info(
+    video_path, drones_df=None, logger=None, metadata_path=None
+) -> VideoCaptureInfo:
     """Work out the aircraft and flight altitude for ``video_path``.
 
     Args:
         video_path: Path to the video.
-        drones_df: Drone/sensor table. Loaded from ``drones.pkl`` when None.
+        drones_df: Drone/sensor table. Loaded from ``drones.csv`` when None.
         logger: Optional logger.
+        metadata_path: Optional operator-selected ``.SRT`` / ``.csv``
+            metadata file, used instead of the video's own telemetry.
+            Altitude detection needs **AGL** specifically — height above
+            takeoff, which is what GSD is computed from — so a log carrying
+            only MSL yields no altitude. That is deliberate: AGL is not
+            derivable from MSL without terrain data, and a wrong altitude
+            squares into the detection-area filter.
 
     Returns:
         A :class:`VideoCaptureInfo`; every field is optional, so callers
@@ -152,19 +172,27 @@ def detect_capture_info(video_path, drones_df=None, logger=None) -> VideoCapture
 
     # --- altitude -----------------------------------------------------
     try:
-        resolution = load_telemetry_for_video(video_path, None, logger=logger)
+        resolution = load_telemetry_for_video(
+            video_path, metadata_path, logger=logger
+        )
         if resolution.found:
-            altitudes = [
+            airborne = [
                 point.altitude_agl_m
                 for point in resolution.track.points
                 if point.altitude_agl_m is not None
+                and point.altitude_agl_m >= _AIRBORNE_FLOOR_M
             ]
-            if altitudes:
-                # Median, not mean: takeoff/landing segments and the odd
-                # bad fix would drag an average away from the altitude the
-                # bulk of the footage was actually shot at.
-                info.altitude_agl_m = float(statistics.median(altitudes))
-                info.altitude_samples = len(altitudes)
+            if airborne:
+                # Median of the *airborne* fixes. Median alone is not enough:
+                # a real 80-second clip in the test data spends 58% of its
+                # fixes on the ground and 42% at 77 m, so the plain median is
+                # -4.4 m — which clamps to 0 and makes GSD uncomputable,
+                # worse than not detecting at all. Excluding ground time
+                # gives 76.9 m, the altitude the footage was actually shot
+                # at. Median rather than mean still guards against the odd
+                # bad fix and the climb/descent legs.
+                info.altitude_agl_m = float(statistics.median(airborne))
+                info.altitude_samples = len(airborne)
     except Exception as e:  # noqa: BLE001 - detection is advisory
         logger.debug(f"Altitude detection failed for {video_path}: {e}")
 

@@ -40,6 +40,16 @@ class TestModelMatching:
         """Other clips carry the short code instead: ``DJI M4TD``."""
         assert match_drone_model("DJI M4TD", drones) == ("DJI", "Matrice 4T")
 
+    def test_a_hyphenated_code_can_match(self, drones):
+        """Regression: normalization splits ``L1D-20c`` into two tokens, and
+        codes were tested against a set of single words, so any code with
+        punctuation could never match."""
+        table = pd.DataFrame([{
+            "Manufacturer": "DJI", "Model": "Mavic 2 Pro",
+            "Model (Exif)": "L1D-20c",
+        }])
+        assert match_drone_model("DJI L1D-20c", table) == ("DJI", "Mavic 2 Pro")
+
     def test_code_matches_whole_words_only(self, drones):
         """``M4T`` must not match inside ``M4TD`` and pick the wrong row."""
         assert match_drone_model("DJI M4TD", drones) == ("DJI", "Matrice 4T")
@@ -134,7 +144,32 @@ class TestDetectCaptureInfo:
                 patch(f"{SERVICE}.load_telemetry_for_video",
                       return_value=self._telemetry([0.0, 1.0, 90.0, 91.0, 92.0])):
             info = detect_capture_info("v.mp4", drones_df=drones)
-        assert info.altitude_agl_m == pytest.approx(90.0)
+        assert info.altitude_agl_m == pytest.approx(91.0)
+        # Ground fixes are excluded outright, not merely outvoted.
+        assert info.altitude_samples == 3
+
+    def test_ground_dominated_clip_reports_the_flying_altitude(self, drones):
+        """Real regression: an 80 s clip in the test data has 58% of its
+        fixes on the ground and 42% at 77 m. The plain median was -4.4 m,
+        which clamps to 0 ft and makes GSD uncomputable — worse than not
+        detecting anything."""
+        ground = [-4.4] * 58
+        flying = [76.9] * 42
+        with patch(f"{SERVICE}.get_video_device_tags", return_value={}), \
+                patch(f"{SERVICE}.load_telemetry_for_video",
+                      return_value=self._telemetry(ground + flying)):
+            info = detect_capture_info("v.mp4", drones_df=drones)
+
+        assert info.altitude_agl_m == pytest.approx(76.9)
+        assert info.altitude_samples == 42
+
+    def test_a_clip_that_never_left_the_ground_detects_nothing(self, drones):
+        """Declining to guess beats pre-selecting an altitude of zero."""
+        with patch(f"{SERVICE}.get_video_device_tags", return_value={}), \
+                patch(f"{SERVICE}.load_telemetry_for_video",
+                      return_value=self._telemetry([-5.6, -4.9, -4.2])):
+            info = detect_capture_info("v.mp4", drones_df=drones)
+        assert not info.has_altitude
 
     def test_device_without_telemetry(self, drones):
         from core.services.telemetry.TelemetrySourceResolver import TelemetryResolution
@@ -175,3 +210,49 @@ class TestDetectCaptureInfo:
                       side_effect=OSError("also boom")):
             info = detect_capture_info("v.mp4", drones_df=drones)
         assert info == VideoCaptureInfo()
+
+    def test_msl_only_telemetry_yields_no_altitude(self, drones):
+        """Deliberate: GSD is computed from height above ground, and AGL is
+        not derivable from MSL without terrain data. A Skydio CSV carries
+        only MSL, so the operator keeps setting altitude by hand — guessing
+        here would square a wrong altitude into the area filter."""
+        from core.services.telemetry.DjiSrtParser import DjiSrtSample
+        from core.services.telemetry.TelemetrySourceResolver import TelemetryResolution
+        from core.services.telemetry.TelemetryTrack import TelemetryTrack
+
+        msl_only = TelemetryResolution(
+            track=TelemetryTrack.from_dji_samples([
+                DjiSrtSample(start_seconds=0.0, end_seconds=0.03,
+                             latitude=30.0, longitude=-97.0,
+                             altitude_msl_m=207.0, altitude_agl_m=None),
+            ]),
+            source="explicit-file", detail="",
+        )
+        with patch(f"{SERVICE}.get_video_device_tags", return_value={}), \
+                patch(f"{SERVICE}.load_telemetry_for_video", return_value=msl_only):
+            info = detect_capture_info("v.mp4", drones_df=drones,
+                                       metadata_path="C:/logs/msl.csv")
+
+        assert not info.has_altitude
+        assert info.altitude_samples == 0
+
+    def test_a_selected_metadata_file_is_used(self, drones):
+        """A video whose own telemetry is missing still yields an altitude
+        when the operator's file carries AGL — otherwise the wizard falls
+        back to a hand-typed guess, and altitude error squares into
+        detection-area error."""
+        with patch(f"{SERVICE}.get_video_device_tags", return_value={}), \
+                patch(f"{SERVICE}.load_telemetry_for_video",
+                      return_value=self._telemetry([75.0])) as loader:
+            info = detect_capture_info(
+                "v.mp4", drones_df=drones, metadata_path="C:/logs/flight.csv")
+
+        assert loader.call_args[0][1] == "C:/logs/flight.csv"
+        assert info.altitude_agl_m == pytest.approx(75.0)
+
+    def test_no_metadata_file_still_probes_the_video(self, drones):
+        with patch(f"{SERVICE}.get_video_device_tags", return_value={}), \
+                patch(f"{SERVICE}.load_telemetry_for_video",
+                      return_value=self._telemetry([60.0])) as loader:
+            detect_capture_info("v.mp4", drones_df=drones)
+        assert loader.call_args[0][1] is None

@@ -139,6 +139,78 @@ class TestClassicVariant:
         first = parse_dji_srt(CLASSIC_SRT)[0]
         assert first.longitude == pytest.approx(-97.200000)
 
+    def test_legacy_relative_altitude_lands_in_the_agl_slot(self):
+        """Older firmware writes one ``altitude`` key with no datum, and the
+        datum differs between aircraft — verified on four real tracks, three
+        relative (one starting at -9.7 m) and a Mavic 2 Pro genuinely MSL at
+        1622 m. Filing a relative value as MSL made the HUD label it "MSL",
+        left AGL blank, and starved both the wizard's altitude detection and
+        the DEM correction, which anchor on reported AGL.
+        """
+        relative = (
+            '1\n'
+            '00:00:00,000 --> 00:00:00,033\n'
+            '<font size="36">SrtCnt : 1, DiffTime : 33ms\n'
+            '2024-03-22 16:51:55,597,864\n'
+            '[latitude: 30.652916] [longitude: -97.954593] [altitude: -4.600000] </font>\n'
+            '\n'
+            '2\n'
+            '00:00:00,033 --> 00:00:00,066\n'
+            '<font size="36">SrtCnt : 2, DiffTime : 33ms\n'
+            '2024-03-22 16:51:55,631,227\n'
+            '[latitude: 30.652920] [longitude: -97.954600] [altitude: 77.100000] </font>\n'
+        )
+        samples = parse_dji_srt(relative)
+        assert len(samples) == 2
+        assert samples[0].altitude_agl_m == pytest.approx(-4.6)
+        assert samples[1].altitude_agl_m == pytest.approx(77.1)
+        # No absolute datum is knowable, so MSL must stay unset rather than
+        # be filled with a number that is 320 m wrong.
+        assert all(s.altitude_msl_m is None for s in samples)
+
+    def test_an_explicit_pair_is_never_reinterpreted(self):
+        """Modern firmware states both datums; the heuristic must not touch
+        it even when rel_alt is small or negative."""
+        modern = (
+            '1\n'
+            '00:00:00,000 --> 00:00:00,033\n'
+            'FrameCnt: 0 2026-07-25 15:04:50.177\n'
+            '[latitude: 30.648621] [longitude: -97.675879] '
+            '[rel_alt: -0.100 abs_alt: 194.900]\n'
+        )
+        first = parse_dji_srt(modern)[0]
+        assert first.altitude_agl_m == pytest.approx(-0.1)
+        assert first.altitude_msl_m == pytest.approx(194.9)
+        assert first.altitude_datum_unknown is False
+
+    def test_a_high_legacy_track_is_still_read_as_msl(self):
+        """The Mavic 2 Pro case: 1622 m cannot be height above takeoff."""
+        high = (
+            '1\n'
+            '00:00:00,000 --> 00:00:00,033\n'
+            '<font size="36">SrtCnt : 1, DiffTime : 33ms\n'
+            '2019-08-01 10:00:00,000,000\n'
+            '[latitude: 41.357636] [longitude: -111.867787] [altitude: 1622.800000] </font>\n'
+        )
+        first = parse_dji_srt(high)[0]
+        assert first.altitude_msl_m == pytest.approx(1622.8)
+        assert first.altitude_agl_m is None
+
+    def test_the_whole_track_decides_not_one_cue(self):
+        """A track that climbs from near zero is relative throughout, even
+        though its later cues are individually above the threshold."""
+        climbing = "".join(
+            f'{i + 1}\n'
+            f'00:00:0{i},000 --> 00:00:0{i},033\n'
+            f'<font size="36">SrtCnt : {i + 1}, DiffTime : 33ms\n'
+            f'2024-03-22 16:51:5{i},000,000\n'
+            f'[latitude: 30.65] [longitude: -97.95] [altitude: {i * 40}.0] </font>\n\n'
+            for i in range(4)
+        )
+        samples = parse_dji_srt(climbing)
+        assert [s.altitude_agl_m for s in samples] == [0.0, 40.0, 80.0, 120.0]
+        assert all(s.altitude_msl_m is None for s in samples)
+
     def test_legacy_altitude_key_maps_to_msl(self):
         first = parse_dji_srt(CLASSIC_SRT)[0]
         assert first.altitude_msl_m == pytest.approx(210.5)
