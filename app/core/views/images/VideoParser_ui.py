@@ -209,16 +209,16 @@ class Ui_VideoParser(object):
 "Click the Select button to browse for a video file.", None))
 #endif // QT_CONFIG(tooltip)
 #if QT_CONFIG(tooltip)
-        self.srtSelectLabel.setToolTip(QCoreApplication.translate("VideoParser", u"Metadata file containing GPS telemetry data.\n"
-"Supports DJI SRT subtitle files and Skydio CSV flight logs.\n"
-"Usually not needed: location data is read automatically from an SRT file\n"
-"next to the video, or from telemetry embedded in the video itself.\n"
-"Select a file here only to override what is found automatically.", None))
+        self.srtSelectLabel.setToolTip(QCoreApplication.translate("VideoParser", u"Optional. ADIAT already finds location data on its own, from:\n"
+"\u2022 an .SRT file sitting next to the video\n"
+"\u2022 telemetry embedded in the video (newer DJI aircraft)\n"
+"\n"
+"Choose a file here only to override that, or to supply location data the video does not have. Supports DJI .SRT and .CSV flight logs (Skydio and similar).", None))
 #endif // QT_CONFIG(tooltip)
 #if QT_CONFIG(whatsthis)
-        self.srtSelectLabel.setWhatsThis(QCoreApplication.translate("VideoParser", u"The metadata file contains timestamped GPS information for the video. It is optional \u2014 ADIAT automatically uses an SRT file sitting next to the video, or telemetry embedded inside the video (as newer DJI aircraft record it). Choose a file here only to override that. Supports SRT (DJI) and CSV (Skydio) formats.", None))
+        self.srtSelectLabel.setWhatsThis(QCoreApplication.translate("VideoParser", u"Optional. ADIAT automatically uses an .SRT file sitting next to the video, or telemetry embedded inside the video (as newer DJI aircraft record it). Choose a file here only to override that, or to supply location data the video does not have. Supports DJI .SRT and .CSV flight logs (Skydio and similar).", None))
 #endif // QT_CONFIG(whatsthis)
-        self.srtSelectLabel.setText(QCoreApplication.translate("VideoParser", u"Metadata File (optional): ", None))
+        self.srtSelectLabel.setText(QCoreApplication.translate("VideoParser", u"Location Data (optional):", None))
 #if QT_CONFIG(tooltip)
         self.outputLabel.setToolTip(QCoreApplication.translate("VideoParser", u"Destination folder where extracted frame images will be saved.\n"
 "Each frame is saved as a separate image file with timestamp information.", None))
@@ -246,15 +246,16 @@ class Ui_VideoParser(object):
 #endif // QT_CONFIG(tooltip)
         self.videoSelectButton.setText(QCoreApplication.translate("VideoParser", u"Select", None))
 #if QT_CONFIG(tooltip)
-        self.srtSelectLine.setToolTip(QCoreApplication.translate("VideoParser", u"Path to the optional metadata file with GPS telemetry data.\n"
-"Supports DJI SRT subtitle files and Skydio CSV flight logs.\n"
-"Leave empty to use an SRT beside the video or telemetry embedded in it \u2014\n"
-"the log below reports which source was used.", None))
+        self.srtSelectLine.setToolTip(QCoreApplication.translate("VideoParser", u"Optional. ADIAT already finds location data on its own, from:\n"
+"\u2022 an .SRT file sitting next to the video\n"
+"\u2022 telemetry embedded in the video (newer DJI aircraft)\n"
+"\n"
+"Choose a file here only to override that, or to supply location data the video does not have. Supports DJI .SRT and .CSV flight logs (Skydio and similar).", None))
 #endif // QT_CONFIG(tooltip)
+        self.srtSelectLine.setPlaceholderText(QCoreApplication.translate("VideoParser", u"Optional - usually detected automatically", None))
 #if QT_CONFIG(tooltip)
-        self.srtSelectButton.setToolTip(QCoreApplication.translate("VideoParser", u"Browse for optional metadata file containing GPS telemetry.\n"
-"Supports DJI SRT subtitle files and Skydio CSV flight logs.\n"
-"Opens a file selection dialog for SRT and CSV files.", None))
+        self.srtSelectButton.setToolTip(QCoreApplication.translate("VideoParser", u"Browse for an SRT or CSV file with the flight's location data.\n"
+"Not needed for most videos, which already carry it.", None))
 #endif // QT_CONFIG(tooltip)
         self.srtSelectButton.setText(QCoreApplication.translate("VideoParser", u"Select", None))
 #if QT_CONFIG(tooltip)

@@ -59,17 +59,17 @@ Click the Select button to browse for a video file.</string>
            </font>
           </property>
           <property name="toolTip">
-           <string>Metadata file containing GPS telemetry data.
-Supports DJI SRT subtitle files and Skydio CSV flight logs.
-Usually not needed: location data is read automatically from an SRT file
-next to the video, or from telemetry embedded in the video itself.
-Select a file here only to override what is found automatically.</string>
+           <string>Optional. ADIAT already finds location data on its own, from:
+• an .SRT file sitting next to the video
+• telemetry embedded in the video (newer DJI aircraft)
+
+Choose a file here only to override that, or to supply location data the video does not have. Supports DJI .SRT and .CSV flight logs (Skydio and similar).</string>
           </property>
           <property name="whatsThis">
-           <string>The metadata file contains timestamped GPS information for the video. It is optional — ADIAT automatically uses an SRT file sitting next to the video, or telemetry embedded inside the video (as newer DJI aircraft record it). Choose a file here only to override that. Supports SRT (DJI) and CSV (Skydio) formats.</string>
+           <string>Optional. ADIAT automatically uses an .SRT file sitting next to the video, or telemetry embedded inside the video (as newer DJI aircraft record it). Choose a file here only to override that, or to supply location data the video does not have. Supports DJI .SRT and .CSV flight logs (Skydio and similar).</string>
           </property>
           <property name="text">
-           <string>Metadata File (optional): </string>
+           <string>Location Data (optional):</string>
           </property>
          </widget>
         </item>
@@ -175,10 +175,14 @@ Opens a file selection dialog for video files (MP4, AVI, MOV, etc.).</string>
            </font>
           </property>
           <property name="toolTip">
-           <string>Path to the optional metadata file with GPS telemetry data.
-Supports DJI SRT subtitle files and Skydio CSV flight logs.
-Leave empty to use an SRT beside the video or telemetry embedded in it —
-the log below reports which source was used.</string>
+           <string>Optional. ADIAT already finds location data on its own, from:
+• an .SRT file sitting next to the video
+• telemetry embedded in the video (newer DJI aircraft)
+
+Choose a file here only to override that, or to supply location data the video does not have. Supports DJI .SRT and .CSV flight logs (Skydio and similar).</string>
+          </property>
+          <property name="placeholderText">
+           <string>Optional - usually detected automatically</string>
           </property>
           <property name="readOnly">
            <bool>true</bool>
@@ -193,9 +197,8 @@ the log below reports which source was used.</string>
            </font>
           </property>
           <property name="toolTip">
-           <string>Browse for optional metadata file containing GPS telemetry.
-Supports DJI SRT subtitle files and Skydio CSV flight logs.
-Opens a file selection dialog for SRT and CSV files.</string>
+           <string>Browse for an SRT or CSV file with the flight's location data.
+Not needed for most videos, which already carry it.</string>
           </property>
           <property name="text">
            <string>Select</string>
