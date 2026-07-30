@@ -21,7 +21,7 @@ import os
 os.environ['NUMPY_EXPERIMENTAL_DTYPE_API'] = '0'
 
 
-version = '2.1.4'
+version = '2.2.0 Alpha 3'
 
 
 def update_app_version(app_version):
@@ -172,6 +172,15 @@ def check_and_update_pickle_files(app_version):
         # Ensure xmp.csv exists
         if PickleHelper.get_xmp_mapping() is None:
             PickleHelper.copy_pickle('xmp.csv')
+
+        # Ensure video.csv (the video/telemetry data dictionary) exists.
+        # Deliberately copy-if-missing only, like xmp.csv: updates are handled
+        # by PickleHelper._refresh_if_bundle_newer, which re-copies when the
+        # bundled file's own '# version:' header advances. Copying on an
+        # app-version bump instead would overwrite an operator's edits to the
+        # table even when the shipped file had not changed.
+        if PickleHelper.get_video_telemetry_info() is None:
+            PickleHelper.copy_pickle('video.csv')
 
     except Exception as e:
         logger.error(f"Error checking/updating data files: {e}")

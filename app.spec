@@ -109,6 +109,7 @@ if platform.system() == 'Windows':
                     ('app/algorithms.conf','.'),
                     ('app/drones.csv', '.'),
                     ('app/xmp.csv', '.'),
+                    ('app/video.csv', '.'),
                     ('app/colors.pkl', '.'),
                     ('colors.csv', '.'),
                     # Bundled EGM96 geoid grid (global) for offline ellipsoidal<->orthometric
@@ -137,6 +138,7 @@ elif platform.system() == 'Darwin':
                         ('app/algorithms.conf','.'),
                         ('app/drones.csv', '.'),
                         ('app/xmp.csv', '.'),
+                        ('app/video.csv', '.'),
                         # Color lists used by ColorListService (expects under app/)
                         ('app/colors.pkl', 'app'),
                         ('colors.csv', 'app'),

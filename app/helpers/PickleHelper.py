@@ -24,6 +24,7 @@ class PickleHelper:
 
     _drones_df = None
     _xmp_df = None
+    _video_df = None
 
     @classmethod
     def get_drone_sensor_info(cls):
@@ -43,6 +44,36 @@ class PickleHelper:
         if cls._drones_df is not None:
             return {'Version': cls._drones_df['version'], 'Date': cls._drones_df['date']}
         return None
+
+    @classmethod
+    def get_video_telemetry_info(cls):
+        """Returns the video/telemetry data-dictionary DataFrame (cached).
+
+        ``video.csv`` is the video counterpart to ``xmp.csv``: it records
+        where each telemetry value lives in a video's SRT/container, keyed by
+        the *container* device tag rather than the EXIF model. Returns None
+        when the file is absent, so callers must degrade rather than rely on
+        it.
+        """
+        if cls._video_df is None:
+            cls._video_df = cls.load_video_info_pickle()
+        if cls._video_df is not None:
+            return cls._video_df['data']
+        return None
+
+    @classmethod
+    def get_video_telemetry_file_version(cls):
+        """Returns {'Version': str, 'Date': str} for the video dictionary."""
+        if cls._video_df is None:
+            cls._video_df = cls.load_video_info_pickle()
+        if cls._video_df is not None:
+            return {'Version': cls._video_df['version'], 'Date': cls._video_df['date']}
+        return None
+
+    @staticmethod
+    def load_video_info_pickle():
+        """Loads the video/telemetry dictionary from video.csv, or None."""
+        return PickleHelper._load_csv_with_meta('video.csv')
 
     @classmethod
     def get_xmp_mapping(cls):
@@ -237,3 +268,4 @@ class PickleHelper:
         """Clear cached DataFrames so the next access re-reads from disk."""
         cls._drones_df = None
         cls._xmp_df = None
+        cls._video_df = None

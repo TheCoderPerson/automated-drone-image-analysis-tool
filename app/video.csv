@@ -1,0 +1,46 @@
+# version: 1.3.0
+# date: 2026-07-29
+# Video/telemetry data dictionary. One row per (Model, Camera).
+#
+# Identity     : Video Device Tag is the CONTAINER tag (encoder/model), which is
+#                NOT the EXIF Model in drones.csv - DJI writes either the human
+#                name ('DJI DJI Matrice 4E') or the short code ('DJI M4TD').
+#                Comma-separate alternatives. Blank = never seen an intact file;
+#                note that any video remuxed through ffmpeg reports 'Lavf...'
+#                and cannot be identified at all.
+# Camera       : joins drones.csv 'Camera' for sensor geometry. Two ways to tell
+#                which camera shot a video: Filename Suffix (the M30T writes one
+#                file per camera - _W/_Z/_T) and SRT Focal Len (the 4E writes a
+#                single _V file and reports focal_len 24.00 for Wide). The
+#                suffix is the stronger signal - it survives remuxing and needs
+#                no telemetry - but it cannot identify the MODEL, only the
+#                camera within an already-known model.
+# Value Scales : per-key divisors, because legacy firmware scales each key
+#                differently: focal_len 224 = 22.4 mm (/10), fnum 280 = f/2.8
+#                (/100), dzoom_ratio 10000 = 1.0x (/10000). Blank = all 1.
+# Altitude Datum: MSL / Relative for the legacy single-key format, Both when the
+#                explicit rel_alt+abs_alt pair is written. Blank = unverified,
+#                parser infers. NB abs_alt is ELLIPSOIDAL, not orthometric.
+# Telemetry Format: cue SHAPE only ('-font' = 5-line <font> wrapper, '-plain' =
+#                4-line). It implies nothing else: a Mavic 3T writes the -font
+#                shape yet carries the modern rel_alt+abs_alt pair, the full
+#                gimbal triad and decimal scaling. Shape, key set, scaling and
+#                gimbal availability all vary independently - which is why each
+#                has its own column.
+# Nadir Conv.  : gimbal pitch value meaning straight down (DJI: -90).
+# Blank cells mean 'not verified', never 'absent' - do not guess.
+Manufacturer,Model,Video Device Tag,Camera,Filename Suffix,SRT Focal Len,Telemetry Location,Telemetry Format,Value Scales,Latitude Key,Longitude Key,Altitude MSL Key,Altitude AGL Key,Altitude Datum,Gimbal Pitch Key,Gimbal Yaw Key,Gimbal Roll Key,Nadir Convention,Zoom Ratio Key
+DJI,Air 2S,,,,224,Sidecar,dji-srt-font,"focal_len:10, fnum:100, dzoom_ratio:10000",latitude,longitude,,altitude,Relative,,,,,dzoom_ratio
+DJI,Matrice 30T,,Thermal,T,,,,,,,,,,,,,,
+DJI,Matrice 30T,,Wide,W,,,,,,,,,,,,,,
+DJI,Matrice 30T,,Zoom,Z,,,,,,,,,,,,,,
+DJI,Matrice 4E,"DJI DJI Matrice 4E, M4E, M4ED",Medium,,,Embedded,dji-srt-plain,,latitude,longitude,abs_alt,rel_alt,Both,gb_pitch,gb_yaw,gb_roll,-90,dzoom_ratio
+DJI,Matrice 4E,"DJI DJI Matrice 4E, M4E, M4ED",Wide,,24.00,Embedded,dji-srt-plain,,latitude,longitude,abs_alt,rel_alt,Both,gb_pitch,gb_yaw,gb_roll,-90,dzoom_ratio
+DJI,Matrice 4E,"DJI DJI Matrice 4E, M4E, M4ED",Zoom,,,Embedded,dji-srt-plain,,latitude,longitude,abs_alt,rel_alt,Both,gb_pitch,gb_yaw,gb_roll,-90,dzoom_ratio
+DJI,Matrice 4T,"DJI M4TD, M4T, M4TD",Thermal,,,Embedded,dji-srt-plain,,latitude,longitude,abs_alt,rel_alt,Both,gb_pitch,gb_yaw,gb_roll,-90,dzoom_ratio
+DJI,Matrice 4T,"DJI M4TD, M4T, M4TD",Wide,,24.00,Embedded,dji-srt-plain,,latitude,longitude,abs_alt,rel_alt,Both,gb_pitch,gb_yaw,gb_roll,-90,dzoom_ratio
+DJI,Matrice 4T,"DJI M4TD, M4T, M4TD",Zoom,,,Embedded,dji-srt-plain,,latitude,longitude,abs_alt,rel_alt,Both,gb_pitch,gb_yaw,gb_roll,-90,dzoom_ratio
+DJI,Mavic 2 Pro,,,,280,Sidecar,dji-srt-font,"focal_len:10, fnum:100, dzoom_ratio:10000",latitude,longitude,altitude,,MSL,,,,,
+DJI,Mavic 3T,"DJI M3T, M3T, M3TD",Thermal,T,40.00,Sidecar,dji-srt-font,,latitude,longitude,abs_alt,rel_alt,Both,gb_pitch,gb_yaw,gb_roll,-90,dzoom_ratio
+DJI,Mavic 3T,"DJI M3T, M3T, M3TD",Wide,W,,Sidecar,dji-srt-font,,latitude,longitude,abs_alt,rel_alt,Both,gb_pitch,gb_yaw,gb_roll,-90,dzoom_ratio
+DJI,Mavic 3T,"DJI M3T, M3T, M3TD",Zoom,Z,,Sidecar,dji-srt-font,,latitude,longitude,abs_alt,rel_alt,Both,gb_pitch,gb_yaw,gb_roll,-90,dzoom_ratio
