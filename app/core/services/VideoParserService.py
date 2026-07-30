@@ -1,11 +1,9 @@
 import os
-import shutil
 from bisect import bisect_left
 from pathlib import Path
 import cv2
 import math
-import pandas as pd
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 
 from PySide6.QtCore import QObject, Signal, Slot
 
@@ -16,6 +14,7 @@ from core.services.telemetry import (
     SOURCE_SIDECAR,
     load_telemetry_for_video,
     parse_dji_srt,
+    read_flight_log_rows,
 )
 from helpers.MetaDataHelper import MetaDataHelper
 from helpers.VideoFileHelper import detect_thumbnail_track, get_video_creation_time, remux_to_main_track, is_ffmpeg_available, _FFMPEG_USER_MSG
@@ -161,8 +160,20 @@ class VideoParserService(QObject):
                 elif metadata_format == 'csv':
                     frame_utc = video_start_utc + timedelta(seconds=time_marker)
                     entry = self._find_closest_csv_entry(csv_entries, frame_utc)
-                    if entry and entry['latitude'] and entry['longitude']:
-                        MetaDataHelper.add_gps_data(output_file, entry['latitude'], entry['longitude'], entry['altitude_m'])
+                    # `is not None`, not truthiness: a coordinate of exactly
+                    # 0.0 is a real position (the prime meridian and the
+                    # equator), and testing it for truth silently drops the
+                    # geotag. The SRT branch above already gets this right.
+                    if (entry and entry['latitude'] is not None
+                            and entry['longitude'] is not None):
+                        # A log row can carry a position but a blank altitude
+                        # cell; EXIF needs a number, so fall back to 0 rather
+                        # than writing None.
+                        altitude = entry.get('altitude_m')
+                        MetaDataHelper.add_gps_data(
+                            output_file, entry['latitude'], entry['longitude'],
+                            altitude if altitude is not None else 0
+                        )
 
                 image_count += 1
                 time_marker += self.interval
@@ -277,7 +288,13 @@ class VideoParserService(QObject):
             return None
 
     def _parse_csv_flight_log(self, csv_path, video_path):
-        """Parse a Skydio CSV flight log for GPS metadata.
+        """Parse a CSV flight log (Skydio and similar) for GPS metadata.
+
+        Reading and normalizing the CSV is delegated to
+        :func:`core.services.telemetry.read_flight_log_rows`, which is the
+        same code path the streaming window uses for an operator-selected
+        metadata file. This method keeps the historical return shape so
+        the frame loop and its callers are unchanged.
 
         Args:
             csv_path: Path to the CSV flight log.
@@ -289,29 +306,17 @@ class VideoParserService(QObject):
         """
         self.sig_msg.emit("Parsing CSV flight log...")
         try:
-            df = pd.read_csv(csv_path)
-
-            # Validate required columns
-            required_cols = ['Datetime (UTC)', 'Latitude', 'Longitude', 'GPS Altitude (ft MSL)']
-            missing = [col for col in required_cols if col not in df.columns]
-            if missing:
-                self.sig_msg.emit(f"Error: CSV missing required columns: {', '.join(missing)}")
+            result = read_flight_log_rows(csv_path)
+            if result.missing_columns:
+                self.sig_msg.emit(
+                    f"Error: CSV missing required columns: {', '.join(result.missing_columns)}"
+                )
+                return None
+            if result.error:
+                self.sig_msg.emit(f"Error parsing CSV flight log: {result.error}")
                 return None
 
-            # Parse timestamps and convert altitude from feet to meters
-            df['utc_time'] = pd.to_datetime(df['Datetime (UTC)'], utc=True)
-            df['altitude_m'] = df['GPS Altitude (ft MSL)'] * 0.3048
-            df = df.sort_values('utc_time').reset_index(drop=True)
-
-            csv_entries = []
-            for _, row in df.iterrows():
-                csv_entries.append({
-                    'utc_time': row['utc_time'].to_pydatetime(),
-                    'latitude': row['Latitude'],
-                    'longitude': row['Longitude'],
-                    'altitude_m': row['altitude_m']
-                })
-
+            csv_entries = result.rows
             self.sig_msg.emit(f"Loaded {len(csv_entries)} GPS entries from CSV")
 
             # Get video start time from MP4 container metadata

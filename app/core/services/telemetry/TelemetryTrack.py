@@ -108,19 +108,28 @@ class TelemetryTrack:
     # ------------------------------------------------------------------
 
     @classmethod
-    def from_dji_samples(
+    def from_samples(
         cls,
-        samples: Sequence[DjiSrtSample],
+        samples: Sequence,
         *,
-        source: str = "dji-srt",
+        source: str = "unknown",
         max_gap_seconds: float = DEFAULT_MAX_GAP_SECONDS,
     ) -> "TelemetryTrack":
-        """Build a track from parsed SRT cues, deriving speeds.
+        """Build a track from time-ordered samples, deriving speeds.
 
-        SRT carries no velocity, so horizontal and vertical speed are
-        differentiated from consecutive fixes. Pairs closer together than
-        :data:`_MIN_SPEED_INTERVAL_SECONDS` are skipped so per-frame GPS
-        jitter does not masquerade as movement.
+        Accepts anything exposing ``has_position``, ``start_seconds``,
+        ``latitude``/``longitude``, ``altitude_msl_m``/``altitude_agl_m``
+        and ``yaw_deg`` — DJI SRT cues
+        (:class:`~core.services.telemetry.DjiSrtParser.DjiSrtSample`) and
+        CSV flight-log rows
+        (:class:`~core.services.telemetry.FlightLogCsvParser.\
+FlightLogSample`) both qualify, so every source gets identical speed
+        derivation and sampling behaviour.
+
+        Neither source carries velocity, so horizontal and vertical speed
+        are differentiated from consecutive fixes. Pairs closer together
+        than :data:`_MIN_SPEED_INTERVAL_SECONDS` are skipped so per-frame
+        GPS jitter does not masquerade as movement.
         """
         usable = [s for s in samples if s.has_position]
         points: List[TelemetryPoint] = []
@@ -185,6 +194,23 @@ class TelemetryTrack:
             ))
 
         return cls(points, source=source, max_gap_seconds=max_gap_seconds)
+
+    @classmethod
+    def from_dji_samples(
+        cls,
+        samples: Sequence[DjiSrtSample],
+        *,
+        source: str = "dji-srt",
+        max_gap_seconds: float = DEFAULT_MAX_GAP_SECONDS,
+    ) -> "TelemetryTrack":
+        """Build a track from parsed DJI SRT cues.
+
+        Retained as the SRT-specific entry point (and for its default
+        ``source`` label); :meth:`from_samples` is the general one.
+        """
+        return cls.from_samples(
+            samples, source=source, max_gap_seconds=max_gap_seconds
+        )
 
     # ------------------------------------------------------------------
     # querying

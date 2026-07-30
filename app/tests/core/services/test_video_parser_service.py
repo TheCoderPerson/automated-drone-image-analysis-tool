@@ -221,3 +221,120 @@ class TestLegacySrtDelegate:
         with tempfile.TemporaryDirectory() as tmpdir:
             service = VideoParserService(1, 'v.mp4', '', tmpdir, 1.0)
             assert service._parse_srt_file(os.path.join(tmpdir, 'nope.srt')) is None
+
+
+class TestCsvFlightLog:
+    """CSV reading is shared with the streaming window's metadata-file path.
+
+    The shape this method returns is load-bearing: ``process_video`` and
+    ``_find_closest_csv_entry`` have consumed ``utc_time`` /
+    ``latitude`` / ``longitude`` / ``altitude_m`` since the Skydio path was
+    added, so the delegation must not change it.
+    """
+
+    SKYDIO = (
+        'Datetime (UTC),Latitude,Longitude,GPS Altitude (ft MSL)\n'
+        '2026-07-25T14:38:26Z,30.648730,-97.675867,679.2\n'
+        '2026-07-25T14:38:27Z,30.648740,-97.675877,682.5\n'
+    )
+
+    def _service(self, tmpdir, csv_path):
+        return VideoParserService(1, os.path.join(tmpdir, 'v.mp4'),
+                                  csv_path, tmpdir, 1.0)
+
+    def _write(self, tmpdir, text, name='flight.csv'):
+        path = os.path.join(tmpdir, name)
+        with open(path, 'w', encoding='utf-8') as handle:
+            handle.write(text)
+        return path
+
+    def test_detects_the_csv_format(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            service = self._service(tmpdir, 'log.csv')
+            assert service._detect_metadata_format('log.csv') == 'csv'
+            assert service._detect_metadata_format('a.SRT') == 'srt'
+            assert service._detect_metadata_format('') is None
+
+    def test_returns_the_historical_entry_shape(self):
+        from datetime import datetime, timezone
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            csv_path = self._write(tmpdir, self.SKYDIO)
+            service = self._service(tmpdir, csv_path)
+            start = datetime(2026, 7, 25, 14, 38, 26, tzinfo=timezone.utc)
+
+            with patch('core.services.VideoParserService.get_video_creation_time',
+                       return_value=start):
+                video_start, entries = service._parse_csv_flight_log(
+                    csv_path, 'v.mp4')
+
+            assert video_start == start
+            assert len(entries) == 2
+            entry = entries[0]
+            assert {'utc_time', 'latitude', 'longitude', 'altitude_m'} <= set(entry)
+            assert entry['latitude'] == pytest.approx(30.648730)
+            # Feet in the log, metres in the entry.
+            assert entry['altitude_m'] == pytest.approx(679.2 * 0.3048)
+
+    def test_entries_feed_the_closest_match_lookup(self):
+        """The delegated rows must still be sortable/searchable by time."""
+        from datetime import datetime, timedelta, timezone
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            csv_path = self._write(tmpdir, self.SKYDIO)
+            service = self._service(tmpdir, csv_path)
+            start = datetime(2026, 7, 25, 14, 38, 26, tzinfo=timezone.utc)
+
+            with patch('core.services.VideoParserService.get_video_creation_time',
+                       return_value=start):
+                _video_start, entries = service._parse_csv_flight_log(
+                    csv_path, 'v.mp4')
+
+            match = service._find_closest_csv_entry(
+                entries, start + timedelta(seconds=1))
+            assert match['latitude'] == pytest.approx(30.648740)
+
+    def test_missing_columns_are_reported_and_abort(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            csv_path = self._write(tmpdir, 'Time,Alt\n1,2\n')
+            service = self._service(tmpdir, csv_path)
+            messages = []
+            service.sig_msg.connect(messages.append)
+
+            assert service._parse_csv_flight_log(csv_path, 'v.mp4') is None
+            assert any('missing required columns' in m for m in messages)
+
+    def test_a_zero_coordinate_is_a_real_position(self):
+        """Regression: the CSV branch tested coordinates for truth, so a
+        flight on the prime meridian or the equator lost its geotag. The SRT
+        branch in the same method already used ``is not None``."""
+        from datetime import datetime, timezone
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            csv_path = self._write(tmpdir, (
+                'Datetime (UTC),Latitude,Longitude,GPS Altitude (ft MSL)\n'
+                '2026-07-25T14:38:26Z,0.0,0.0,679.2\n'
+            ))
+            service = self._service(tmpdir, csv_path)
+            start = datetime(2026, 7, 25, 14, 38, 26, tzinfo=timezone.utc)
+
+            with patch('core.services.VideoParserService.get_video_creation_time',
+                       return_value=start):
+                _video_start, entries = service._parse_csv_flight_log(
+                    csv_path, 'v.mp4')
+
+            entry = entries[0]
+            assert entry['latitude'] == 0.0 and entry['longitude'] == 0.0
+            # The guard the frame loop applies must accept this row.
+            assert (entry['latitude'] is not None
+                    and entry['longitude'] is not None)
+
+    def test_unreadable_file_is_reported(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            service = self._service(tmpdir, 'nope.csv')
+            messages = []
+            service.sig_msg.connect(messages.append)
+
+            assert service._parse_csv_flight_log(
+                os.path.join(tmpdir, 'nope.csv'), 'v.mp4') is None
+            assert any('Error' in m for m in messages)

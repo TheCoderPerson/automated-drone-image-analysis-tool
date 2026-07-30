@@ -1,13 +1,14 @@
 """Tests for telemetry source resolution and embedded extraction.
 
-Precedence under test: an explicitly chosen file beats a sidecar, which
-beats a track embedded in the MP4. ffmpeg is mocked throughout; the
-real-video check lives in ``test_dji_video_telemetry.py`` and skips when
-the sample file is absent.
+Precedence under test: an explicitly chosen file (``.SRT`` or ``.csv``)
+beats a sidecar, which beats a track embedded in the MP4. ffmpeg is mocked
+throughout; the real-video check lives in ``test_dji_video_telemetry.py``
+and skips when the sample file is absent.
 """
 
 import os
 import tempfile
+from datetime import datetime, timezone
 
 import pytest
 from unittest.mock import MagicMock, patch
@@ -96,6 +97,66 @@ class TestReadSrtTrack:
         assert len(read_srt_track(srt, source="test")) == 2
 
 
+class TestDatumLookupIsLazy:
+    """Identifying the aircraft costs an ffprobe spawn (~130 ms measured), and
+    only a legacy single-``altitude`` track can use the answer. A track that
+    states both datums must not pay for it — that was 5/6 of the load time on
+    a real 2985-cue Mavic 3T sidecar.
+    """
+
+    MODERN = (
+        "1\n00:00:00,000 --> 00:00:00,033\n"
+        "FrameCnt: 0 2026-07-25 14:38:26.477\n"
+        "[latitude: 30.6] [longitude: -97.6] [rel_alt: 14.885 abs_alt: 207.027]\n"
+    )
+    LEGACY = (
+        "1\n00:00:00,000 --> 00:00:00,033\n"
+        '<font size="36">SrtCnt : 1, DiffTime : 33ms\n2024-03-22 16:51:55,597,864\n'
+        "[latitude: 30.6] [longitude: -97.9] [altitude: 9.8] </font>\n"
+    )
+
+    def test_a_modern_track_never_calls_the_provider(self, workspace):
+        tmp, _video = workspace
+        srt = _write(os.path.join(tmp, "modern.srt"), self.MODERN)
+        calls = []
+        read_srt_track(srt, source="test",
+                       datum_provider=lambda: calls.append(1))
+        assert calls == []
+
+    def test_a_legacy_track_does_call_it(self, workspace):
+        tmp, _video = workspace
+        srt = _write(os.path.join(tmp, "legacy.srt"), self.LEGACY)
+        calls = []
+
+        def provider():
+            calls.append(1)
+            return "msl"
+
+        track = read_srt_track(srt, source="test", datum_provider=provider)
+        assert calls == [1]
+        # And the recorded datum was actually applied.
+        assert track.points[0].altitude_msl_m == pytest.approx(9.8)
+
+    def test_a_failing_provider_falls_back_to_inference(self, workspace):
+        tmp, _video = workspace
+        srt = _write(os.path.join(tmp, "legacy.srt"), self.LEGACY)
+
+        def provider():
+            raise OSError("ffprobe exploded")
+
+        track = read_srt_track(srt, source="test", datum_provider=provider)
+        # Inference ran: 9.8 m is below the ceiling, so relative.
+        assert track.points[0].altitude_agl_m == pytest.approx(9.8)
+
+    def test_an_explicit_datum_short_circuits_the_provider(self, workspace):
+        tmp, _video = workspace
+        srt = _write(os.path.join(tmp, "legacy.srt"), self.LEGACY)
+        calls = []
+        read_srt_track(srt, source="test", altitude_datum="msl",
+                       datum_provider=lambda: calls.append(1))
+        assert calls == []
+
+
 class TestPrecedence:
     def test_explicit_file_wins_over_embedded(self, workspace):
         tmp, video = workspace
@@ -151,15 +212,6 @@ class TestPrecedence:
         assert not resolution.found
         assert resolution.track is None
 
-    def test_csv_choice_is_not_ours_to_resolve(self, workspace):
-        """The Skydio CSV path stays in VideoParserService."""
-        tmp, video = workspace
-        csv_path = os.path.join(tmp, "flight.csv")
-        with open(csv_path, "w") as handle:
-            handle.write("Datetime (UTC),Latitude\n")
-        resolution = load_telemetry_for_video(video, csv_path)
-        assert resolution.source == SOURCE_NONE
-
     def test_unparseable_explicit_file_is_reported(self, workspace):
         tmp, video = workspace
         bad = _write(os.path.join(tmp, "bad.srt"), "not an srt at all")
@@ -174,6 +226,126 @@ class TestPrecedence:
                 patch(f"{RESOLVER}.extract_embedded_subtitles", return_value=None):
             resolution = load_telemetry_for_video(video, None)
         assert resolution.source == SOURCE_NONE
+
+    def test_missing_explicit_file_is_reported(self, workspace):
+        tmp, video = workspace
+        resolution = load_telemetry_for_video(video, os.path.join(tmp, "gone.srt"))
+        assert resolution.source == SOURCE_EXPLICIT_FILE
+        assert not resolution.found
+        assert "could not be found" in resolution.detail
+
+    def test_unsupported_extension_is_reported(self, workspace):
+        """A .txt is neither format; say so instead of falling back silently."""
+        tmp, video = workspace
+        other = _write(os.path.join(tmp, "notes.txt"))
+        resolution = load_telemetry_for_video(video, other)
+        assert resolution.source == SOURCE_EXPLICIT_FILE
+        assert not resolution.found
+        assert "not a supported metadata format" in resolution.detail
+
+    def test_explicit_choice_suppresses_the_embedded_fallback(self, workspace):
+        """Geotagging from a source the operator didn't pick would be worse
+        than telling them their file failed."""
+        tmp, video = workspace
+        bad = _write(os.path.join(tmp, "bad.srt"), "not an srt at all")
+
+        with patch(f"{RESOLVER}.find_embedded_telemetry_stream") as find_embedded:
+            load_telemetry_for_video(video, bad)
+        find_embedded.assert_not_called()
+
+
+CSV_TEXT = """\
+Datetime (UTC),Latitude,Longitude,GPS Altitude (ft MSL)
+2026-07-25T14:38:26Z,30.648730,-97.675867,679.2
+2026-07-25T14:38:27Z,30.648740,-97.675877,682.5
+2026-07-25T14:38:28Z,30.648750,-97.675887,685.8
+"""
+
+VIDEO_START = datetime(2026, 7, 25, 14, 38, 26, tzinfo=timezone.utc)
+
+
+def _timing(start, duration=120.0):
+    """Stand in for the container's creation_time + duration."""
+    return patch("helpers.VideoFileHelper.get_video_timing",
+                 return_value=(start, duration))
+
+
+class TestExplicitCsv:
+    """A CSV flight log is a first-class secondary metadata file."""
+
+    def _csv(self, tmp, text=CSV_TEXT, name="flight.csv"):
+        return _write(os.path.join(tmp, name), text)
+
+    def test_csv_resolves_to_a_track(self, workspace):
+        tmp, video = workspace
+        csv_path = self._csv(tmp)
+        with _timing(VIDEO_START):
+            resolution = load_telemetry_for_video(video, csv_path)
+
+        assert resolution.source == SOURCE_EXPLICIT_FILE
+        assert resolution.found
+        assert len(resolution.track) == 3
+        assert resolution.path == csv_path
+        assert "flight log" in resolution.detail
+
+    def test_times_are_relative_to_the_video(self, workspace):
+        """CSV rows are absolute UTC; the track must be video-relative."""
+        tmp, video = workspace
+        csv_path = self._csv(tmp)
+        with _timing(VIDEO_START):
+            track = load_telemetry_for_video(video, csv_path).track
+
+        assert [p.time_seconds for p in track.points] == [0.0, 1.0, 2.0]
+        assert track.point_at(1.0).latitude == pytest.approx(30.648740)
+
+    def test_feet_are_converted_to_metres(self, workspace):
+        tmp, video = workspace
+        csv_path = self._csv(tmp)
+        with _timing(VIDEO_START):
+            track = load_telemetry_for_video(video, csv_path).track
+
+        assert track.points[0].altitude_msl_m == pytest.approx(679.2 * 0.3048)
+
+    def test_csv_beats_an_embedded_track(self, workspace):
+        tmp, video = workspace
+        csv_path = self._csv(tmp)
+        with patch("helpers.VideoFileHelper.get_video_creation_time",
+                   return_value=VIDEO_START), \
+                patch(f"{RESOLVER}.find_embedded_telemetry_stream") as find_embedded:
+            load_telemetry_for_video(video, csv_path)
+        find_embedded.assert_not_called()
+
+    def test_missing_columns_are_named(self, workspace):
+        tmp, video = workspace
+        csv_path = self._csv(tmp, "Time,Altitude\n1,2\n")
+        resolution = load_telemetry_for_video(video, csv_path)
+
+        assert resolution.source == SOURCE_EXPLICIT_FILE
+        assert not resolution.found
+        assert "Latitude" in resolution.detail
+        assert "Longitude" in resolution.detail
+
+    def test_video_without_creation_time_is_reported(self, workspace):
+        """Aligning absolute timestamps needs the video's start time; there
+        is no defensible guess, so this must fail loudly."""
+        tmp, video = workspace
+        csv_path = self._csv(tmp)
+        with _timing(None):
+            resolution = load_telemetry_for_video(video, csv_path)
+
+        assert resolution.source == SOURCE_EXPLICIT_FILE
+        assert not resolution.found
+        assert "creation_time" in resolution.detail
+
+    def test_log_from_a_different_flight_is_reported(self, workspace):
+        tmp, video = workspace
+        csv_path = self._csv(tmp)
+        with _timing(datetime(2020, 1, 1, tzinfo=timezone.utc)):
+            resolution = load_telemetry_for_video(video, csv_path)
+
+        # Every row predates the video, so nothing lands in its window.
+        assert not resolution.found
+        assert "recording window" in resolution.detail
 
 
 class TestEmbeddedHelpers:

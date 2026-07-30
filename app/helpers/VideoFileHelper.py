@@ -16,6 +16,68 @@ import cv2
 from datetime import datetime, timezone
 
 
+def get_video_timing(video_path, logger=None):
+    """Read a video's start time and duration from its container.
+
+    Both come from one ffprobe call because both answer the same question —
+    *which slice of wall-clock time does this video cover?* — which is what
+    a CSV flight log's absolute UTC timestamps have to be aligned against
+    (see :mod:`core.services.telemetry.FlightLogCsvParser`).
+
+    Args:
+        video_path: Path to the video file.
+        logger: Optional logger for error reporting.
+
+    Returns:
+        ``(creation_time_utc, duration_seconds)``. Either element may be
+        None when the container does not carry it.
+    """
+    try:
+        ffprobe = _find_ffprobe()
+        if not ffprobe:
+            if logger:
+                logger.error(_FFMPEG_MISSING_MSG)
+            return (None, None)
+
+        result = subprocess.run(
+            [
+                ffprobe, '-v', 'error',
+                '-show_entries', 'format=duration:format_tags=creation_time',
+                '-of', 'json', video_path
+            ],
+            capture_output=True, text=True, timeout=30
+        )
+        if result.returncode != 0:
+            if logger:
+                logger.error(f"ffprobe failed: {result.stderr}")
+            return (None, None)
+
+        container = json.loads(result.stdout).get('format', {})
+
+        creation_time = None
+        creation_time_str = container.get('tags', {}).get('creation_time')
+        if creation_time_str:
+            # Parse ISO 8601 UTC timestamp (e.g. "2024-02-24T19:09:57.000000Z")
+            creation_time_str = creation_time_str.replace('Z', '+00:00')
+            creation_time = datetime.fromisoformat(
+                creation_time_str).astimezone(timezone.utc)
+
+        duration = None
+        try:
+            duration_value = float(container.get('duration'))
+            if duration_value > 0:
+                duration = duration_value
+        except (TypeError, ValueError):
+            pass
+
+        return (creation_time, duration)
+
+    except Exception as e:
+        if logger:
+            logger.error(f"Error extracting video timing: {e}")
+        return (None, None)
+
+
 def get_video_creation_time(video_path, logger=None):
     """Extract creation_time from MP4 container via ffprobe.
 
@@ -26,33 +88,7 @@ def get_video_creation_time(video_path, logger=None):
     Returns:
         A timezone-aware UTC datetime, or None if extraction fails.
     """
-    try:
-        result = subprocess.run(
-            [
-                'ffprobe', '-v', 'error',
-                '-show_entries', 'format_tags=creation_time',
-                '-of', 'json', video_path
-            ],
-            capture_output=True, text=True, timeout=30
-        )
-        if result.returncode != 0:
-            if logger:
-                logger.error(f"ffprobe failed: {result.stderr}")
-            return None
-
-        data = json.loads(result.stdout)
-        creation_time_str = data.get('format', {}).get('tags', {}).get('creation_time')
-        if not creation_time_str:
-            return None
-
-        # Parse ISO 8601 UTC timestamp (e.g. "2024-02-24T19:09:57.000000Z")
-        creation_time_str = creation_time_str.replace('Z', '+00:00')
-        return datetime.fromisoformat(creation_time_str).astimezone(timezone.utc)
-
-    except Exception as e:
-        if logger:
-            logger.error(f"Error extracting video creation time: {e}")
-        return None
+    return get_video_timing(video_path, logger)[0]
 
 
 # Common Homebrew binary directories that may not be in PATH when the app
