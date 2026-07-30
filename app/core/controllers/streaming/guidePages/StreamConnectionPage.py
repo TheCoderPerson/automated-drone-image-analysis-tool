@@ -91,6 +91,12 @@ class DeviceScanWorker(QObject):
 class StreamConnectionPage(BasePage):
     """Page for providing stream URL/path and auto-connect preference."""
 
+    def __init__(self, wizard_data, settings_service, dialog):
+        super().__init__(wizard_data, settings_service, dialog)
+        # The video path the selected metadata file belongs to, so switching
+        # videos drops a metadata file that is no longer about this flight.
+        self._metadata_source_url = ""
+
     def setup_ui(self) -> None:
         # Initialize HDMI device combo with placeholder
         if hasattr(self.dialog, "deviceComboBox"):
@@ -129,6 +135,8 @@ class StreamConnectionPage(BasePage):
     def connect_signals(self) -> None:
         self.dialog.streamUrlLineEdit.textChanged.connect(self._on_stream_url_changed)
         self.dialog.browseButton.clicked.connect(self._on_browse_clicked)
+        self.dialog.metadataFileLineEdit.textChanged.connect(self._on_metadata_file_changed)
+        self.dialog.metadataBrowseButton.clicked.connect(self._on_metadata_browse_clicked)
         self.dialog.autoConnectCheckBox.stateChanged.connect(self._on_auto_connect_changed)
         if hasattr(self.dialog, "scanDevicesButton"):
             self.dialog.scanDevicesButton.clicked.connect(self._on_scan_devices_clicked)
@@ -140,10 +148,13 @@ class StreamConnectionPage(BasePage):
     def load_data(self) -> None:
         # Don't load previous file selection - start fresh each time
         stream_url = self.wizard_data.get("stream_url", "")
+        metadata_path = self.wizard_data.get("metadata_path", "")
         auto_connect_raw = self.wizard_data.get("auto_connect", False)
 
         if stream_url:
             self.dialog.streamUrlLineEdit.setText(stream_url)
+        if metadata_path:
+            self.dialog.metadataFileLineEdit.setText(metadata_path)
         self.dialog.autoConnectCheckBox.setChecked(bool(auto_connect_raw))
 
         self._apply_stream_type_settings()
@@ -184,6 +195,7 @@ class StreamConnectionPage(BasePage):
 
         # Initialize wizard data
         self.wizard_data["stream_url"] = self.dialog.streamUrlLineEdit.text().strip()
+        self.wizard_data["metadata_path"] = self.dialog.metadataFileLineEdit.text().strip()
         self.wizard_data["auto_connect"] = self.dialog.autoConnectCheckBox.isChecked()
         self.wizard_data["processing_resolution"] = current_resolution
 
@@ -215,6 +227,15 @@ class StreamConnectionPage(BasePage):
     def save_data(self) -> None:
         self.wizard_data["stream_url"] = self.dialog.streamUrlLineEdit.text().strip()
         self.wizard_data["auto_connect"] = self.dialog.autoConnectCheckBox.isChecked()
+        # Only file sources can take a metadata file; anything left in the
+        # field from a previous selection must not follow a live source
+        # through to the viewer.
+        if self.wizard_data.get("stream_type", SOURCE_TYPE_FILE) == SOURCE_TYPE_FILE:
+            self.wizard_data["metadata_path"] = (
+                self.dialog.metadataFileLineEdit.text().strip()
+            )
+        else:
+            self.wizard_data["metadata_path"] = ""
         if hasattr(self, "resolution_slider"):
             # Get the numeric value (percentage) from the selected preset
             numeric_value = self.resolution_slider.getNumericValue()
@@ -262,6 +283,17 @@ class StreamConnectionPage(BasePage):
         self.dialog.streamUrlLineEdit.setVisible(not hide_url_row)
         self.dialog.browseButton.setVisible(settings["show_browse"] and not hide_url_row)
 
+        # A secondary metadata file only applies to a video file. Live feeds
+        # either carry telemetry in-band (ADIAT Flight) or not at all, so
+        # offering the row would promise something it cannot deliver.
+        is_file = stream_type == SOURCE_TYPE_FILE
+        self.dialog.labelMetadataFile.setVisible(is_file)
+        self.dialog.metadataFileLineEdit.setVisible(is_file)
+        self.dialog.metadataBrowseButton.setVisible(is_file)
+        if not is_file:
+            self.dialog.metadataFileLineEdit.setText("")
+            self.wizard_data["metadata_path"] = ""
+
         # Only set placeholder for types that actually take input here
         if not hide_url_row:
             self.dialog.labelStreamUrl.setText(settings["field_label"])
@@ -292,7 +324,11 @@ class StreamConnectionPage(BasePage):
         mapping = {
             SOURCE_TYPE_FILE: {
                 "instructions": self.tr(
-                    "Choose the video file you want to analyze. Use Browse to pick a file from disk."
+                    "Choose the video file you want to analyze. Use Browse to pick a file from disk.\n\n"
+                    "Location data is optional and usually detected automatically — ADIAT reads an "
+                    ".SRT sitting next to the video, or telemetry embedded in the video, on its own. "
+                    "Set it only to override that, or to supply location data the video does not "
+                    "have: a DJI .SRT or a .CSV flight log."
                 ),
                 "field_label": self.tr("Video File:"),
                 "placeholder": self.tr("Click Browse to select a video file..."),
@@ -413,8 +449,36 @@ class StreamConnectionPage(BasePage):
         if os.name == "nt":
             cleaned = cleaned.replace("/", "\\")
         self.wizard_data["stream_url"] = cleaned
+        # Compare on the raw field text, not the separator-normalized form,
+        # so this matches what _on_metadata_file_changed records.
+        self._drop_stale_metadata(text.strip())
         if hasattr(self, "on_validation_changed"):
             self.on_validation_changed()
+
+    def _drop_stale_metadata(self, video_path: str) -> None:
+        """Clear the metadata file when a different video is selected.
+
+        A metadata file *overrides* the video's own embedded telemetry, so
+        one left over from a previous video does not merely linger — it
+        geotags the new video with the old flight's positions. SRT cue times
+        are video-relative, so the result looks plausible and is wrong.
+        """
+        if video_path == self._metadata_source_url:
+            return
+        self._metadata_source_url = video_path
+        if self.dialog.metadataFileLineEdit.text():
+            self.dialog.metadataFileLineEdit.clear()
+            self.wizard_data["metadata_path"] = ""
+
+    def _on_metadata_file_changed(self, text: str) -> None:
+        cleaned = text.strip()
+        # Always a local file, so normalizing separators is safe here in a
+        # way it is not for the URL field.
+        if os.name == "nt":
+            cleaned = cleaned.replace("/", "\\")
+        self.wizard_data["metadata_path"] = cleaned
+        # Bind it to the video selected now, so it survives until that changes.
+        self._metadata_source_url = self.dialog.streamUrlLineEdit.text().strip()
 
     def _on_auto_connect_changed(self, state: int) -> None:
         self.wizard_data["auto_connect"] = state == Qt.Checked
@@ -431,6 +495,29 @@ class StreamConnectionPage(BasePage):
         )
         if file_path:
             self.dialog.streamUrlLineEdit.setText(file_path)
+
+    def _on_metadata_browse_clicked(self) -> None:
+        """Pick an SRT or CSV metadata file.
+
+        Starts in the video's folder, which is where a sidecar or an
+        exported flight log usually sits. Filter matches the image-analysis
+        Video Parser so both surfaces accept the same files.
+        """
+        current = self.dialog.metadataFileLineEdit.text().strip()
+        if not current:
+            video = self.dialog.streamUrlLineEdit.text().strip()
+            current = os.path.dirname(video) if video else os.getcwd()
+        file_path, _ = QFileDialog.getOpenFileName(
+            self.dialog,
+            self.tr("Select a Metadata File"),
+            current,
+            self.tr(
+                "Metadata Files (*.srt *.csv);;SRT Files (*.srt);;"
+                "CSV Flight Logs (*.csv);;All Files (*)"
+            ),
+        )
+        if file_path:
+            self.dialog.metadataFileLineEdit.setText(file_path)
 
     def _on_resolution_changed(self, index: int) -> None:
         """Handle resolution slider change."""

@@ -446,7 +446,60 @@ QToolButton:checked { border-color: #4CAF50; background-color: #1b2d44; }</strin
            </item>
           </layout>
          </item>
-         <item row="2" column="0">
+         <item row="1" column="0">
+          <widget class="QLabel" name="labelMetadataFile">
+           <property name="font">
+            <font>
+             <pointsize>12</pointsize>
+            </font>
+           </property>
+           <property name="toolTip">
+            <string>Optional. ADIAT already finds location data on its own, from:
+• an .SRT file sitting next to the video
+• telemetry embedded in the video (newer DJI aircraft)
+
+Choose a file here only to override that, or to supply location data the video does not have. Supports DJI .SRT and .CSV flight logs (Skydio and similar).</string>
+           </property>
+           <property name="text">
+            <string>Location Data (optional):</string>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="1">
+          <layout class="QHBoxLayout" name="horizontalLayout_metadata">
+           <item>
+            <widget class="QLineEdit" name="metadataFileLineEdit">
+             <property name="toolTip">
+              <string>Optional. ADIAT already finds location data on its own, from:
+• an .SRT file sitting next to the video
+• telemetry embedded in the video (newer DJI aircraft)
+
+Choose a file here only to override that, or to supply location data the video does not have. Supports DJI .SRT and .CSV flight logs (Skydio and similar).</string>
+             </property>
+             <property name="placeholderText">
+              <string>Optional - usually detected automatically</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPushButton" name="metadataBrowseButton">
+             <property name="font">
+              <font>
+               <pointsize>11</pointsize>
+              </font>
+             </property>
+             <property name="toolTip">
+              <string>Browse for an SRT or CSV file with the flight's location data.
+Not needed for most videos, which already carry it.</string>
+             </property>
+             <property name="text">
+              <string>Browse...</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+         <item row="3" column="0">
           <widget class="QLabel" name="labelAutoConnect">
            <property name="font">
             <font>
@@ -458,7 +511,7 @@ QToolButton:checked { border-color: #4CAF50; background-color: #1b2d44; }</strin
            </property>
           </widget>
          </item>
-         <item row="2" column="1">
+         <item row="3" column="1">
           <widget class="QCheckBox" name="autoConnectCheckBox">
            <property name="font">
             <font>
@@ -470,7 +523,7 @@ QToolButton:checked { border-color: #4CAF50; background-color: #1b2d44; }</strin
            </property>
           </widget>
          </item>
-         <item row="1" column="0">
+         <item row="2" column="0">
           <widget class="QLabel" name="labelHdmiDevices">
            <property name="font">
             <font>
@@ -482,7 +535,7 @@ QToolButton:checked { border-color: #4CAF50; background-color: #1b2d44; }</strin
            </property>
           </widget>
          </item>
-         <item row="1" column="1">
+         <item row="2" column="1">
           <layout class="QHBoxLayout" name="horizontalLayout_hdmiDevices">
            <item>
             <widget class="QComboBox" name="deviceComboBox">
@@ -505,7 +558,7 @@ QToolButton:checked { border-color: #4CAF50; background-color: #1b2d44; }</strin
            </item>
           </layout>
          </item>
-         <item row="3" column="0">
+         <item row="4" column="0">
           <spacer name="verticalSpacer_resolution">
            <property name="orientation">
             <enum>Qt::Vertical</enum>
@@ -518,7 +571,7 @@ QToolButton:checked { border-color: #4CAF50; background-color: #1b2d44; }</strin
            </property>
           </spacer>
          </item>
-         <item row="3" column="1">
+         <item row="4" column="1">
           <spacer name="verticalSpacer_resolution2">
            <property name="orientation">
             <enum>Qt::Vertical</enum>
@@ -531,7 +584,7 @@ QToolButton:checked { border-color: #4CAF50; background-color: #1b2d44; }</strin
            </property>
           </spacer>
          </item>
-         <item row="4" column="0">
+         <item row="5" column="0">
           <widget class="QLabel" name="labelProcessingResolution">
            <property name="font">
             <font>
@@ -543,7 +596,7 @@ QToolButton:checked { border-color: #4CAF50; background-color: #1b2d44; }</strin
            </property>
           </widget>
          </item>
-         <item row="4" column="1">
+         <item row="5" column="1">
           <widget class="QWidget" name="resolutionSliderWidget" native="true">
            <property name="minimumSize">
             <size>

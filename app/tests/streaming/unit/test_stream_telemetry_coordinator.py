@@ -18,6 +18,7 @@ from core.services.streaming.RTMPStreamService import StreamType
 from core.services.telemetry.DjiSrtParser import DjiSrtSample
 from core.services.telemetry.TelemetrySourceResolver import (
     SOURCE_EMBEDDED,
+    SOURCE_EXPLICIT_FILE,
     SOURCE_NONE,
     SOURCE_SIDECAR,
     TelemetryResolution,
@@ -106,6 +107,59 @@ class TestFileSource:
         with patch(f"{COORD}.load_telemetry_for_video", side_effect=OSError("boom")):
             assert coordinator.begin_source("v.mp4", StreamType.FILE) is False
         assert not coordinator.is_available
+
+
+class TestSecondaryMetadataFile:
+    """An operator-selected SRT/CSV must reach the resolver.
+
+    This is the whole point of the feature: a video whose own telemetry is
+    absent or unusable gets its location data from a file the operator
+    supplies, exactly as the image-analysis Video Parser has always allowed.
+    """
+
+    def test_metadata_path_is_passed_to_the_resolver(self, coordinator):
+        with patch(f"{COORD}.load_telemetry_for_video",
+                   return_value=_resolution(_track())) as loader:
+            coordinator.begin_source("v.mp4", StreamType.FILE, "log.csv")
+        loader.assert_called_once()
+        assert loader.call_args[0][1] == "log.csv"
+
+    def test_absent_metadata_path_is_none(self, coordinator):
+        """Omitting it must still let the sidecar/embedded routes run."""
+        with patch(f"{COORD}.load_telemetry_for_video",
+                   return_value=_resolution(_track())) as loader:
+            coordinator.begin_source("v.mp4", StreamType.FILE)
+        assert loader.call_args[0][1] is None
+
+    def test_explicit_source_is_named_in_the_status(self, coordinator):
+        messages = []
+        coordinator.telemetryStatus.connect(messages.append)
+        resolution = TelemetryResolution(
+            track=_track(), source=SOURCE_EXPLICIT_FILE,
+            path="C:/logs/flight.csv", detail="5 fixes from flight log",
+        )
+        with patch(f"{COORD}.load_telemetry_for_video", return_value=resolution):
+            coordinator.begin_source("v.mp4", StreamType.FILE, "C:/logs/flight.csv")
+        assert any("flight.csv" in m for m in messages)
+
+    def test_a_rejected_metadata_file_explains_why(self, coordinator):
+        """"No location data" hides a fixable problem — a missing column or
+        an unaligned timestamp — behind a dead end."""
+        messages = []
+        coordinator.telemetryStatus.connect(messages.append)
+        resolution = TelemetryResolution(
+            track=None, source=SOURCE_EXPLICIT_FILE, path="log.csv",
+            detail="flight log is missing required columns: Longitude",
+        )
+        with patch(f"{COORD}.load_telemetry_for_video", return_value=resolution):
+            assert coordinator.begin_source(
+                "v.mp4", StreamType.FILE, "log.csv") is False
+        assert any("Longitude" in m for m in messages)
+
+    def test_live_sources_ignore_a_metadata_path(self, coordinator):
+        with patch(f"{COORD}.load_telemetry_for_video") as loader:
+            coordinator.begin_source("K7QM3P", StreamType.WEBRTC, "log.csv")
+        loader.assert_not_called()
 
 
 class TestPlaybackSampling:

@@ -3,8 +3,9 @@
 Streaming analysis can get aircraft location from two very different
 places:
 
-* a **video file** with a DJI telemetry track (sidecar ``.SRT`` or a
-  subtitle stream embedded in the MP4), sampled by playback position; or
+* a **video file**, sampled by playback position — from a metadata file
+  the operator selected (a DJI ``.SRT`` or a ``.csv`` flight log), a
+  sidecar ``.SRT``, or a subtitle stream embedded in the MP4; or
 * a **live ADIAT Flight feed**, pushing envelopes over WebRTC.
 
 Rather than teach the window about both, this component normalizes them
@@ -21,6 +22,7 @@ exists — without ever blocking the UI thread on a tile fetch.
 
 from __future__ import annotations
 
+import os
 from typing import List, Optional, Tuple
 
 from PySide6.QtCore import QObject, Signal, Slot
@@ -29,6 +31,7 @@ from core.services.LoggerService import LoggerService
 from core.services.streaming.RTMPStreamService import StreamType
 from core.services.telemetry import (
     SOURCE_EMBEDDED,
+    SOURCE_EXPLICIT_FILE,
     SOURCE_SIDECAR,
     TelemetryEnrichmentService,
     TelemetryTrack,
@@ -70,12 +73,16 @@ class StreamTelemetryCoordinator(QObject):
     # source lifecycle
     # ------------------------------------------------------------------
 
-    def begin_source(self, url: str, stream_type) -> bool:
+    def begin_source(self, url: str, stream_type, metadata_path: Optional[str] = None) -> bool:
         """Prepare for a new source; load a telemetry track for files.
 
         Args:
             url: Stream URL, file path, or pairing code.
             stream_type: The resolved :class:`StreamType`.
+            metadata_path: Optional operator-selected metadata file — a
+                DJI ``.SRT`` or a ``.csv`` flight log. Only meaningful for
+                file sources, and takes precedence over a sidecar or an
+                embedded track when given.
 
         Returns:
             True when this source has usable location data available now.
@@ -86,7 +93,7 @@ class StreamTelemetryCoordinator(QObject):
         self._stream_type = stream_type
 
         if stream_type == StreamType.FILE and url:
-            self._load_file_track(url)
+            self._load_file_track(url, metadata_path)
         elif stream_type == StreamType.WEBRTC:
             # Availability is decided by the first live envelope.
             self.telemetryStatus.emit(
@@ -95,16 +102,29 @@ class StreamTelemetryCoordinator(QObject):
 
         return self._available
 
-    def _load_file_track(self, path: str) -> None:
+    def _load_file_track(self, path: str, metadata_path: Optional[str] = None) -> None:
         try:
-            resolution = load_telemetry_for_video(path, None, logger=self.logger)
+            resolution = load_telemetry_for_video(
+                path, metadata_path, logger=self.logger
+            )
         except Exception as exc:  # noqa: BLE001 - never block playback
             self.logger.error(f"Telemetry load failed for {path}: {exc}")
             self.telemetryStatus.emit(self.tr("Could not read location data from video"))
             return
 
         if not resolution.found:
-            self.telemetryStatus.emit(self.tr("No location data in this video"))
+            if resolution.source == SOURCE_EXPLICIT_FILE and resolution.detail:
+                # The operator picked this file, so say what went wrong with
+                # it rather than the generic "no location data" — a missing
+                # column or an unaligned timestamp is fixable, and they can
+                # only fix what they're told about.
+                self.telemetryStatus.emit(
+                    self.tr("Could not use the selected metadata file: {reason}").format(
+                        reason=resolution.detail
+                    )
+                )
+            else:
+                self.telemetryStatus.emit(self.tr("No location data in this video"))
             return
 
         self._track = resolution.track
@@ -120,6 +140,13 @@ class StreamTelemetryCoordinator(QObject):
             self.telemetryStatus.emit(
                 self.tr("Location data from SRT file ({count} fixes)").format(
                     count=len(resolution.track)
+                )
+            )
+        elif resolution.source == SOURCE_EXPLICIT_FILE:
+            self.telemetryStatus.emit(
+                self.tr("Location data from {name} ({count} fixes)").format(
+                    name=os.path.basename(resolution.path or ""),
+                    count=len(resolution.track),
                 )
             )
         else:

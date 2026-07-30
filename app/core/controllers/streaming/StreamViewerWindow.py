@@ -53,6 +53,7 @@ from core.controllers.streaming.base import StreamAlgorithmController
 from core.services.streaming.StreamAlgorithmService import StreamAlgorithmService
 from core.services.streaming.StreamAnalyzeService import StreamAnalyzeService
 from core.services.streaming.RTMPStreamService import (
+    SOURCE_TYPE_FILE,
     SOURCE_TYPE_HDMI,
     StreamType,
     is_live_source,
@@ -626,6 +627,13 @@ class StreamViewerWindow(TranslationMixin, QMainWindow):
                     pass
             else:
                 self.stream_controls.url_input.setText(stream_url)
+
+        # Carry the wizard's metadata-file choice into the controls, which
+        # are the single source of truth for it at connect time (including
+        # the auto-connect below).
+        metadata_path = wizard_data.get("metadata_path")
+        if metadata_path and stream_type == SOURCE_TYPE_FILE:
+            self.stream_controls.set_metadata_path(metadata_path)
 
         default_recording_dir = os.path.expanduser("~")
         recording_dir = wizard_data.get("recording_dir") or default_recording_dir
@@ -1566,17 +1574,35 @@ class StreamViewerWindow(TranslationMixin, QMainWindow):
             self._active_stream_fps_limit = None
             return
 
-        # Load location data for the new source. For files this reads a
-        # sidecar SRT or the track embedded in the video; live sources
-        # become available on their first envelope.
+        # Load location data for the new source. For files this uses the
+        # metadata file the operator selected, else a sidecar SRT, else the
+        # track embedded in the video; live sources become available on
+        # their first envelope.
         try:
-            self.telemetry_coordinator.begin_source(url, stream_type)
+            self.telemetry_coordinator.begin_source(
+                url, stream_type, self._selected_metadata_path()
+            )
         except Exception as e:
             self.logger.error(f"Error initializing telemetry for source: {e}")
 
         # A paused video is not a dropped feed, so the "stale Ns" badge only
         # applies to live sources.
         self.telemetry_hud.set_staleness_tracking(stream_type != StreamType.FILE)
+
+    def _selected_metadata_path(self) -> str:
+        """The metadata file chosen in the controls, if any.
+
+        The controls own this value rather than it riding on
+        ``connectRequested``: the signal is also emitted by the wizard's
+        auto-connect path and by the pairing prompt, and widening it would
+        make every caller responsible for a field only one source uses.
+        Non-string results (a stubbed widget in tests) degrade to "".
+        """
+        try:
+            value = self.stream_controls.get_metadata_path()
+        except Exception:  # noqa: BLE001 - telemetry is never load-bearing
+            return ""
+        return value.strip() if isinstance(value, str) else ""
 
     @Slot()
     def open_flight_pairing_dialog(self):

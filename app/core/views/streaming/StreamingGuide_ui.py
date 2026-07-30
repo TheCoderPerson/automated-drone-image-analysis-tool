@@ -216,23 +216,45 @@ class Ui_StreamingGuide(object):
 
         self.gridLayout_connection.addLayout(self.horizontalLayout_url, 0, 1, 1, 1)
 
+        self.labelMetadataFile = QLabel(self.pageConnection)
+        self.labelMetadataFile.setObjectName(u"labelMetadataFile")
+        self.labelMetadataFile.setFont(font1)
+
+        self.gridLayout_connection.addWidget(self.labelMetadataFile, 1, 0, 1, 1)
+
+        self.horizontalLayout_metadata = QHBoxLayout()
+        self.horizontalLayout_metadata.setObjectName(u"horizontalLayout_metadata")
+        self.metadataFileLineEdit = QLineEdit(self.pageConnection)
+        self.metadataFileLineEdit.setObjectName(u"metadataFileLineEdit")
+
+        self.horizontalLayout_metadata.addWidget(self.metadataFileLineEdit)
+
+        self.metadataBrowseButton = QPushButton(self.pageConnection)
+        self.metadataBrowseButton.setObjectName(u"metadataBrowseButton")
+        self.metadataBrowseButton.setFont(font2)
+
+        self.horizontalLayout_metadata.addWidget(self.metadataBrowseButton)
+
+
+        self.gridLayout_connection.addLayout(self.horizontalLayout_metadata, 1, 1, 1, 1)
+
         self.labelAutoConnect = QLabel(self.pageConnection)
         self.labelAutoConnect.setObjectName(u"labelAutoConnect")
         self.labelAutoConnect.setFont(font1)
 
-        self.gridLayout_connection.addWidget(self.labelAutoConnect, 2, 0, 1, 1)
+        self.gridLayout_connection.addWidget(self.labelAutoConnect, 3, 0, 1, 1)
 
         self.autoConnectCheckBox = QCheckBox(self.pageConnection)
         self.autoConnectCheckBox.setObjectName(u"autoConnectCheckBox")
         self.autoConnectCheckBox.setFont(font2)
 
-        self.gridLayout_connection.addWidget(self.autoConnectCheckBox, 2, 1, 1, 1)
+        self.gridLayout_connection.addWidget(self.autoConnectCheckBox, 3, 1, 1, 1)
 
         self.labelHdmiDevices = QLabel(self.pageConnection)
         self.labelHdmiDevices.setObjectName(u"labelHdmiDevices")
         self.labelHdmiDevices.setFont(font1)
 
-        self.gridLayout_connection.addWidget(self.labelHdmiDevices, 1, 0, 1, 1)
+        self.gridLayout_connection.addWidget(self.labelHdmiDevices, 2, 0, 1, 1)
 
         self.horizontalLayout_hdmiDevices = QHBoxLayout()
         self.horizontalLayout_hdmiDevices.setObjectName(u"horizontalLayout_hdmiDevices")
@@ -249,27 +271,27 @@ class Ui_StreamingGuide(object):
         self.horizontalLayout_hdmiDevices.addWidget(self.scanDevicesButton)
 
 
-        self.gridLayout_connection.addLayout(self.horizontalLayout_hdmiDevices, 1, 1, 1, 1)
+        self.gridLayout_connection.addLayout(self.horizontalLayout_hdmiDevices, 2, 1, 1, 1)
 
         self.verticalSpacer_resolution = QSpacerItem(20, 20, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
 
-        self.gridLayout_connection.addItem(self.verticalSpacer_resolution, 3, 0, 1, 1)
+        self.gridLayout_connection.addItem(self.verticalSpacer_resolution, 4, 0, 1, 1)
 
         self.verticalSpacer_resolution2 = QSpacerItem(20, 20, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
 
-        self.gridLayout_connection.addItem(self.verticalSpacer_resolution2, 3, 1, 1, 1)
+        self.gridLayout_connection.addItem(self.verticalSpacer_resolution2, 4, 1, 1, 1)
 
         self.labelProcessingResolution = QLabel(self.pageConnection)
         self.labelProcessingResolution.setObjectName(u"labelProcessingResolution")
         self.labelProcessingResolution.setFont(font1)
 
-        self.gridLayout_connection.addWidget(self.labelProcessingResolution, 4, 0, 1, 1)
+        self.gridLayout_connection.addWidget(self.labelProcessingResolution, 5, 0, 1, 1)
 
         self.resolutionSliderWidget = QWidget(self.pageConnection)
         self.resolutionSliderWidget.setObjectName(u"resolutionSliderWidget")
         self.resolutionSliderWidget.setMinimumSize(QSize(400, 60))
 
-        self.gridLayout_connection.addWidget(self.resolutionSliderWidget, 4, 1, 1, 1)
+        self.gridLayout_connection.addWidget(self.resolutionSliderWidget, 5, 1, 1, 1)
 
 
         self.verticalLayout_connection.addLayout(self.gridLayout_connection)
@@ -659,6 +681,27 @@ class Ui_StreamingGuide(object):
         self.labelStreamUrl.setText(QCoreApplication.translate("StreamingGuide", u"Stream URL/Path:", None))
         self.streamUrlLineEdit.setPlaceholderText(QCoreApplication.translate("StreamingGuide", u"Click Browse to select a file or enter a URL...", None))
         self.browseButton.setText(QCoreApplication.translate("StreamingGuide", u"Browse...", None))
+#if QT_CONFIG(tooltip)
+        self.labelMetadataFile.setToolTip(QCoreApplication.translate("StreamingGuide", u"Optional. ADIAT already finds location data on its own, from:\n"
+"\u2022 an .SRT file sitting next to the video\n"
+"\u2022 telemetry embedded in the video (newer DJI aircraft)\n"
+"\n"
+"Choose a file here only to override that, or to supply location data the video does not have. Supports DJI .SRT and .CSV flight logs (Skydio and similar).", None))
+#endif // QT_CONFIG(tooltip)
+        self.labelMetadataFile.setText(QCoreApplication.translate("StreamingGuide", u"Location Data (optional):", None))
+#if QT_CONFIG(tooltip)
+        self.metadataFileLineEdit.setToolTip(QCoreApplication.translate("StreamingGuide", u"Optional. ADIAT already finds location data on its own, from:\n"
+"\u2022 an .SRT file sitting next to the video\n"
+"\u2022 telemetry embedded in the video (newer DJI aircraft)\n"
+"\n"
+"Choose a file here only to override that, or to supply location data the video does not have. Supports DJI .SRT and .CSV flight logs (Skydio and similar).", None))
+#endif // QT_CONFIG(tooltip)
+        self.metadataFileLineEdit.setPlaceholderText(QCoreApplication.translate("StreamingGuide", u"Optional - usually detected automatically", None))
+#if QT_CONFIG(tooltip)
+        self.metadataBrowseButton.setToolTip(QCoreApplication.translate("StreamingGuide", u"Browse for an SRT or CSV file with the flight's location data.\n"
+"Not needed for most videos, which already carry it.", None))
+#endif // QT_CONFIG(tooltip)
+        self.metadataBrowseButton.setText(QCoreApplication.translate("StreamingGuide", u"Browse...", None))
         self.labelAutoConnect.setText(QCoreApplication.translate("StreamingGuide", u"Auto Connect:", None))
         self.autoConnectCheckBox.setText(QCoreApplication.translate("StreamingGuide", u"Connect as soon as the guide finishes", None))
         self.labelHdmiDevices.setText(QCoreApplication.translate("StreamingGuide", u"Capture Devices:", None))

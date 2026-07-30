@@ -12,6 +12,7 @@ core.views.streaming.components.StreamingVideoDisplay.
 
 import numpy as np
 import cv2
+import os
 import time
 from dataclasses import dataclass, field
 from typing import List, Dict, Optional, Any, Tuple
@@ -838,6 +839,9 @@ class StreamControlWidget(TranslationMixin, QWidget):
         """
         super().__init__(parent)
         self.include_recording = include_recording
+        # The video path the current metadata file was chosen for, so a new
+        # video drops a metadata file that no longer belongs to it.
+        self._metadata_source_url = ""
         self.setup_ui()
         self.connect_signals()
 
@@ -924,6 +928,52 @@ class StreamControlWidget(TranslationMixin, QWidget):
         url_layout.addWidget(self.scan_button)
 
         connection_layout.addLayout(url_layout, 1, 1)
+
+        # Secondary metadata file (row 2). Only file sources can have one:
+        # a live feed either carries telemetry in-band or not at all. Kept
+        # optional — an SRT sidecar or an embedded track is found without
+        # any help, so this row is for the cases that need overriding.
+        # Wording is deliberately identical to the streaming wizard
+        # (resources/views/streaming/StreamingGuide.ui) and the image-analysis
+        # Video Parser (resources/views/images/VideoParser.ui). All three offer
+        # the same field, so all three must say the same thing about it — most
+        # notably that it is not needed. TestWordingIsConsistentAcrossSurfaces
+        # asserts the three stay identical.
+        #
+        # Spelled out as literals rather than shared constants because
+        # ``tr()`` extraction needs a literal argument: ``tr(CONSTANT)``
+        # compiles and runs but is invisible to lupdate, so the string would
+        # silently never be translatable (CLAUDE.md 2.8).
+        metadata_tooltip = self.tr(
+            "Optional. ADIAT already finds location data on its own, from:\n"
+            "• an .SRT file sitting next to the video\n"
+            "• telemetry embedded in the video (newer DJI aircraft)\n"
+            "\n"
+            "Choose a file here only to override that, or to supply location "
+            "data the video does not have. Supports DJI .SRT and .CSV flight "
+            "logs (Skydio and similar)."
+        )
+
+        self.metadata_label = QLabel(self.tr("Location Data (optional):"))
+        self.metadata_label.setToolTip(metadata_tooltip)
+        connection_layout.addWidget(self.metadata_label, 2, 0)
+
+        metadata_layout = QHBoxLayout()
+        self.metadata_input = QLineEdit()
+        self.metadata_input.setPlaceholderText(
+            self.tr("Optional - usually detected automatically")
+        )
+        self.metadata_input.setToolTip(metadata_tooltip)
+        metadata_layout.addWidget(self.metadata_input, 1)
+
+        self.metadata_browse_button = QPushButton(self.tr("Browse..."))
+        self.metadata_browse_button.setToolTip(self.tr(
+            "Browse for an SRT or CSV file with the flight's location data.\n"
+            "Not needed for most videos, which already carry it."
+        ))
+        metadata_layout.addWidget(self.metadata_browse_button)
+
+        connection_layout.addLayout(metadata_layout, 2, 1)
 
         # Connection buttons
         button_layout = QHBoxLayout()
@@ -1064,6 +1114,8 @@ class StreamControlWidget(TranslationMixin, QWidget):
         self.disconnect_button.clicked.connect(self.disconnectRequested.emit)
         self.type_combo.currentTextChanged.connect(self.on_stream_type_changed)
         self.browse_button.clicked.connect(self.browse_for_file)
+        self.url_input.textChanged.connect(self._on_url_changed)
+        self.metadata_browse_button.clicked.connect(self.browse_for_metadata_file)
         self.scan_button.clicked.connect(self._scan_hdmi_devices)
         self.hdmi_device_combo.currentIndexChanged.connect(self._on_hdmi_device_selected)
         self.url_input.mousePressEvent = self.on_url_input_clicked
@@ -1076,6 +1128,7 @@ class StreamControlWidget(TranslationMixin, QWidget):
     def on_stream_type_changed(self, stream_type: str):
         """Handle stream type selection changes."""
         stream_type_value = self.type_combo.currentData() or stream_type
+        self._set_metadata_row_visible(stream_type_value == SOURCE_TYPE_FILE)
         if stream_type_value == SOURCE_TYPE_HDMI:
             # Show HDMI device combo, hide URL input
             self.url_input.setVisible(False)
@@ -1173,6 +1226,8 @@ class StreamControlWidget(TranslationMixin, QWidget):
             self.scan_button.setEnabled(False)
             self.url_input.setEnabled(False)
             self.browse_button.setEnabled(False)
+            self.metadata_input.setEnabled(False)
+            self.metadata_browse_button.setEnabled(False)
         else:
             self.status_label.setText(
                 self.tr("Status: {message}").format(message=message)
@@ -1184,6 +1239,8 @@ class StreamControlWidget(TranslationMixin, QWidget):
             self.type_combo.setEnabled(True)
             self.url_input.setEnabled(True)
             self.browse_button.setEnabled(True)
+            self.metadata_input.setEnabled(True)
+            self.metadata_browse_button.setEnabled(True)
             # For HDMI, re-enable device combo and scan button
             if self.type_combo.currentData() == SOURCE_TYPE_HDMI:
                 self.hdmi_device_combo.setEnabled(True)
@@ -1407,6 +1464,75 @@ class StreamControlWidget(TranslationMixin, QWidget):
         )
         if file_path:
             self.url_input.setText(file_path)
+
+    def browse_for_metadata_file(self):
+        """Open a file dialog to select an SRT or CSV metadata file.
+
+        Filter mirrors the image-analysis Video Parser so the two surfaces
+        accept the same set of files.
+        """
+        start_dir = ""
+        current = self.metadata_input.text().strip() or self.url_input.text().strip()
+        if current:
+            start_dir = os.path.dirname(current)
+        file_path, _ = QFileDialog.getOpenFileName(
+            self,
+            self.tr("Select a Metadata File"),
+            start_dir,
+            self.tr(
+                "Metadata Files (*.srt *.csv);;SRT Files (*.srt);;"
+                "CSV Flight Logs (*.csv);;All Files (*)"
+            )
+        )
+        if file_path:
+            self.metadata_input.setText(file_path)
+
+    def get_metadata_path(self) -> str:
+        """The selected metadata file, or "" when none applies.
+
+        Returns "" for every non-file source: a live feed's telemetry comes
+        in-band, and returning a stale path from a previous file selection
+        would send the resolver looking for a track that cannot exist.
+        """
+        if self.type_combo.currentData() != SOURCE_TYPE_FILE:
+            return ""
+        return self.metadata_input.text().strip()
+
+    def set_metadata_path(self, path: str):
+        """Pre-fill the metadata file field (used by the setup wizard)."""
+        # Bind it to whatever video is selected now, so it survives until
+        # that video changes.
+        self._metadata_source_url = self.url_input.text().strip()
+        self.metadata_input.setText(path or "")
+
+    def _on_url_changed(self, text: str):
+        """Drop a metadata file that belonged to the previous video.
+
+        A metadata file *overrides* the video's own embedded telemetry, so
+        carrying one across a video change is not a cosmetic leftover — it
+        geotags the new video with the old flight's positions. SRT cue times
+        are video-relative, so the result looks entirely plausible while
+        being completely wrong.
+        """
+        cleaned = text.strip()
+        if cleaned == self._metadata_source_url:
+            return
+        self._metadata_source_url = cleaned
+        if self.metadata_input.text():
+            self.metadata_input.clear()
+
+    def _set_metadata_row_visible(self, visible: bool):
+        """Show the metadata row, clearing it when it goes away.
+
+        Clearing matters: leaving a path behind while the row is hidden
+        means switching File -> RTMP -> File silently re-applies a metadata
+        file the operator can no longer see.
+        """
+        self.metadata_label.setVisible(visible)
+        self.metadata_input.setVisible(visible)
+        self.metadata_browse_button.setVisible(visible)
+        if not visible:
+            self.metadata_input.clear()
 
     def set_paired_code(self, code: str):
         """Show the code an ADIAT Flight session actually paired with.

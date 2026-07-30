@@ -20,9 +20,9 @@ class StreamImageCapturePage(BasePage):
         self.logger = LoggerService()
         # Store camera groups: key = (manufacturer, model), value = list of sensor rows
         self.camera_groups = {}
-        # Video path we have already auto-detected, so re-entering the page
-        # (Back/Continue) does not re-probe the file or stomp on an
-        # override the operator has since made.
+        # (video, metadata file) we have already auto-detected, so
+        # re-entering the page (Back/Continue) does not re-probe the file or
+        # stomp on an override the operator has since made.
         self._detected_for_path = None
 
     def setup_ui(self):
@@ -86,12 +86,21 @@ class StreamImageCapturePage(BasePage):
             return
 
         video_path = (self.wizard_data.get("stream_url") or "").strip()
-        if not video_path or video_path == self._detected_for_path:
+        metadata_path = (self.wizard_data.get("metadata_path") or "").strip()
+        if not video_path:
             return
-        self._detected_for_path = video_path
+        # Keyed on the pair: choosing a metadata file on the previous page is
+        # exactly the case where re-probing is worth it, because the altitude
+        # may only be readable from that file.
+        signature = (video_path, metadata_path)
+        if signature == self._detected_for_path:
+            return
+        self._detected_for_path = signature
 
         try:
-            info = detect_capture_info(video_path, logger=self.logger)
+            info = detect_capture_info(
+                video_path, logger=self.logger, metadata_path=metadata_path or None
+            )
         except Exception as e:  # noqa: BLE001 - detection is advisory
             self.logger.debug(f"Capture auto-detection failed: {e}")
             return

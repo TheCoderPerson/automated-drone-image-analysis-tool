@@ -43,6 +43,8 @@ class StreamingGuide(TranslationMixin, QDialog, Ui_StreamingGuide):
         self.wizard_data = {
             "stream_type": "File",
             "stream_url": "",
+            # Optional SRT/CSV supplying location data for a file source.
+            "metadata_path": "",
             "auto_connect": False,
             "algorithm": None,
             "processing_resolution": 75,  # Changed to integer for slider (25, 50, 75, 100)

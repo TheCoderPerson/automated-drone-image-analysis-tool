@@ -17,6 +17,7 @@ from core.services.streaming.RTMPStreamService import StreamType
 from core.services.telemetry.DjiSrtParser import DjiSrtSample
 from core.services.telemetry.TelemetrySourceResolver import (
     SOURCE_EMBEDDED,
+    SOURCE_EXPLICIT_FILE,
     TelemetryResolution,
 )
 from core.services.telemetry.TelemetryTrack import TelemetryTrack
@@ -237,6 +238,96 @@ class TestFileSourceTelemetry:
         assert viewer.telemetry_hud.isHidden()
         assert viewer.map_view.track_length() == 0
         assert not viewer.telemetry_coordinator.is_available
+
+
+class TestSecondaryMetadataFile:
+    """An operator-selected SRT/CSV must survive the trip from the controls
+    (or the wizard) to the resolver.
+
+    Threading this through the widget rather than ``connectRequested`` is
+    the fragile part: the signal is also fired by the wizard's auto-connect
+    and by the pairing prompt, so the widget is the single source of truth
+    and these tests pin that down.
+    """
+
+    def _connect(self, viewer, url="v.mp4", stream_type=StreamType.FILE):
+        manager = MagicMock()
+        manager.connect_to_stream = MagicMock(return_value=True)
+        resolution = TelemetryResolution(
+            track=_track(), source=SOURCE_EXPLICIT_FILE,
+            path="C:/logs/flight.csv", detail="6 fixes from flight log",
+        )
+        with patch("core.controllers.streaming.components."
+                   "StreamCoordinator.StreamManager", return_value=manager), \
+                patch(f"{COORD}.load_telemetry_for_video",
+                      return_value=resolution) as loader:
+            viewer.on_connect_requested(url, stream_type)
+        return loader
+
+    def test_selected_file_reaches_the_resolver(self, viewer):
+        viewer.stream_controls.set_metadata_path("C:/logs/flight.csv")
+        loader = self._connect(viewer)
+        assert loader.call_args[0][1] == "C:/logs/flight.csv"
+
+    def test_no_selection_passes_nothing(self, viewer):
+        loader = self._connect(viewer)
+        assert not loader.call_args[0][1]
+
+    def test_the_file_is_named_in_the_info_panel(self, viewer):
+        viewer.stream_controls.set_metadata_path("C:/logs/flight.csv")
+        self._connect(viewer)
+        assert "flight.csv" in viewer.ui.infoPanel.toPlainText()
+
+    def test_it_drives_the_hud_like_any_other_source(self, viewer):
+        viewer.stream_controls.set_metadata_path("C:/logs/flight.csv")
+        self._connect(viewer)
+        viewer.on_stream_info_updated({"current_time": 3.0, "total_time": 6.0})
+        QApplication.processEvents()
+
+        assert not viewer.telemetry_hud.isHidden()
+        assert viewer.telemetry_hud.last_envelope["aircraft_latitude"] == \
+            pytest.approx(30.003)
+
+    def test_it_draws_the_flight_path(self, viewer):
+        viewer.stream_controls.set_metadata_path("C:/logs/flight.srt")
+        self._connect(viewer)
+        viewer.on_stream_info_updated({"current_time": 4.0, "total_time": 6.0})
+        assert viewer.map_view.track_length() == 5
+
+    def test_wizard_selection_is_carried_into_the_controls(self, viewer):
+        viewer.apply_wizard_data({
+            "stream_type": "File",
+            "stream_url": "C:/videos/flight.mp4",
+            "metadata_path": "C:/logs/flight.csv",
+        })
+        assert viewer.stream_controls.get_metadata_path() == "C:/logs/flight.csv"
+
+    def test_wizard_selection_reaches_the_resolver_on_autoconnect(self, viewer):
+        manager = MagicMock()
+        manager.connect_to_stream = MagicMock(return_value=True)
+        resolution = TelemetryResolution(
+            track=_track(), source=SOURCE_EXPLICIT_FILE,
+            path="C:/logs/flight.csv", detail="6 fixes",
+        )
+        with patch("core.controllers.streaming.components."
+                   "StreamCoordinator.StreamManager", return_value=manager), \
+                patch(f"{COORD}.load_telemetry_for_video",
+                      return_value=resolution) as loader:
+            viewer.apply_wizard_data({
+                "stream_type": "File",
+                "stream_url": "C:/videos/flight.mp4",
+                "metadata_path": "C:/logs/flight.csv",
+                "auto_connect": True,
+            })
+        assert loader.call_args[0][1] == "C:/logs/flight.csv"
+
+    def test_a_live_source_never_receives_a_path(self, viewer, flight_services):
+        """A pairing code has no sidecar; a leftover path would send the
+        resolver hunting for a track that cannot exist."""
+        viewer.stream_controls.set_metadata_path("C:/logs/flight.csv")
+        with patch(f"{COORD}.load_telemetry_for_video") as loader:
+            viewer.on_connect_requested("K7QM3P", StreamType.WEBRTC)
+        loader.assert_not_called()
 
 
 class TestAdiatFlightTelemetry:
