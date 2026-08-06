@@ -371,6 +371,7 @@ class UnifiedMapExportController:
             include_flagged_aois = dialog.should_include_flagged_aois()
             include_coverage = dialog.should_include_coverage()
             include_images = dialog.should_include_images() if export_type == 'caltopo' else False
+            aoi_photo_mode = dialog.get_aoi_photo_mode() if export_type == 'caltopo' else 'full'
 
             # Validate selections
             if not (include_locations or include_flagged_aois or include_coverage):
@@ -394,9 +395,10 @@ class UnifiedMapExportController:
                 method = method_dialog.get_selected_method()
                 if method == 'api':
                     self._export_to_caltopo_via_api(include_locations, include_images_without_flagged_aois,
-                                                    include_flagged_aois, include_coverage, include_images)
+                                                    include_flagged_aois, include_coverage, include_images, aoi_photo_mode)
                 else:  # browser
-                    self._export_to_caltopo(include_locations, include_images_without_flagged_aois, include_flagged_aois, include_coverage, include_images)
+                    self._export_to_caltopo(include_locations, include_images_without_flagged_aois, include_flagged_aois,
+                                            include_coverage, include_images, aoi_photo_mode)
 
         except Exception as e:
             self.logger.error(f"Error in unified map export: {str(e)}")
@@ -503,7 +505,8 @@ class UnifiedMapExportController:
                 f"Failed to export to KML:\n{str(e)}"
             )
 
-    def _export_to_caltopo(self, include_locations, include_images_without_flagged_aois, include_flagged_aois, include_coverage, include_images=True):
+    def _export_to_caltopo(self, include_locations, include_images_without_flagged_aois, include_flagged_aois,
+                           include_coverage, include_images=True, aoi_photo_mode='full'):
         """
         Export to CalTopo using browser-based authentication.
 
@@ -513,6 +516,7 @@ class UnifiedMapExportController:
             include_flagged_aois: Whether to include flagged AOIs
             include_coverage: Whether to include coverage extent polygons
             include_images: Whether to upload photos to CalTopo markers
+            aoi_photo_mode: Photo(s) to attach to flagged AOI markers ('full', 'thumbnail', or 'both')
         """
         try:
             # Use the existing CalTopo export controller
@@ -526,7 +530,8 @@ class UnifiedMapExportController:
                 include_locations=include_locations,
                 include_images_without_flagged_aois=include_images_without_flagged_aois,
                 include_coverage_area=include_coverage,
-                include_images=include_images
+                include_images=include_images,
+                aoi_photo_mode=aoi_photo_mode
             )
 
         except Exception as e:
@@ -537,7 +542,8 @@ class UnifiedMapExportController:
                 f"Failed to export to CalTopo:\n{str(e)}"
             )
 
-    def _export_to_caltopo_via_api(self, include_locations, include_images_without_flagged_aois, include_flagged_aois, include_coverage, include_images=True):
+    def _export_to_caltopo_via_api(self, include_locations, include_images_without_flagged_aois, include_flagged_aois,
+                                   include_coverage, include_images=True, aoi_photo_mode='full'):
         """
         Export to CalTopo using API-based authentication.
 
@@ -547,6 +553,7 @@ class UnifiedMapExportController:
             include_flagged_aois: Whether to include flagged AOIs
             include_coverage: Whether to include coverage extent polygons
             include_images: Whether to upload photos to CalTopo markers
+            aoi_photo_mode: Photo(s) to attach to flagged AOI markers ('full', 'thumbnail', or 'both')
         """
         try:
             # Use the CalTopo export controller with API method
@@ -560,7 +567,8 @@ class UnifiedMapExportController:
                 include_locations=include_locations,
                 include_images_without_flagged_aois=include_images_without_flagged_aois,
                 include_coverage_area=include_coverage,
-                include_images=include_images
+                include_images=include_images,
+                aoi_photo_mode=aoi_photo_mode
             )
 
         except Exception as e:

@@ -9,12 +9,14 @@ import json
 import base64
 import os
 import time
+from pathlib import Path
 
 from PySide6.QtWidgets import QApplication, QMessageBox
 from PySide6.QtCore import QTimer, QThread, Signal
 from core.services.export.CalTopoService import CalTopoService
 from core.services.export.CalTopoAPIService import CalTopoAPIService
 from core.services.export.CalTopoCredentialHelper import CalTopoCredentialHelper
+from core.services.export.AOIThumbnailService import AOIThumbnailService
 from core.views.images.viewer.dialogs.CalTopoAuthDialog import CalTopoAuthDialog
 from core.views.images.viewer.dialogs.CalTopoCredentialDialog import CalTopoCredentialDialog
 from core.views.images.viewer.dialogs.CalTopoAPIMapDialog import CalTopoAPIMapDialog
@@ -80,7 +82,8 @@ class CalTopoDataPreparationThread(QThread):
     canceled = Signal()
 
     def __init__(self, controller, images, flagged_aois, include_flagged_aois,
-                 include_locations, include_images_without_flagged_aois, include_coverage_area, include_images):
+                 include_locations, include_images_without_flagged_aois, include_coverage_area, include_images,
+                 aoi_photo_mode='full'):
         """
         Initialize the data preparation thread.
 
@@ -93,6 +96,7 @@ class CalTopoDataPreparationThread(QThread):
             include_images_without_flagged_aois: Whether to include images without flagged AOIs in location export
             include_coverage_area: Whether to include coverage area
             include_images: Whether to include images
+            aoi_photo_mode: Photo(s) to attach to flagged AOI markers ('full', 'thumbnail', or 'both')
         """
         super().__init__()
         self.controller = controller
@@ -103,6 +107,7 @@ class CalTopoDataPreparationThread(QThread):
         self.include_images_without_flagged_aois = include_images_without_flagged_aois
         self.include_coverage_area = include_coverage_area
         self.include_images = include_images
+        self.aoi_photo_mode = aoi_photo_mode
         self._cancelled = False
 
     def cancel(self):
@@ -139,7 +144,8 @@ class CalTopoDataPreparationThread(QThread):
                     return
                 self.progressUpdated.emit(0, 100, "Preparing flagged AOI markers...")
                 markers.extend(self.controller._prepare_markers(
-                    self.images, self.flagged_aois, include_images=self.include_images
+                    self.images, self.flagged_aois, include_images=self.include_images,
+                    aoi_photo_mode=self.aoi_photo_mode
                 ))
 
             if self.include_locations and not self.is_cancelled():
@@ -200,7 +206,8 @@ class CalTopoAPIExportThread(QThread):
 
     def __init__(self, api_service, controller, map_id, team_id, credential_id, credential_secret,
                  images, flagged_aois, include_flagged_aois, include_locations,
-                 include_images_without_flagged_aois, include_coverage_area, include_images):
+                 include_images_without_flagged_aois, include_coverage_area, include_images,
+                 aoi_photo_mode='full'):
         """
         Initialize the CalTopo API export thread.
 
@@ -218,6 +225,7 @@ class CalTopoAPIExportThread(QThread):
             include_images_without_flagged_aois: Whether to include images without flagged AOIs in location export
             include_coverage_area: Whether to include coverage area
             include_images: Whether to include images
+            aoi_photo_mode: Photo(s) to attach to flagged AOI markers ('full', 'thumbnail', or 'both')
         """
         super().__init__()
         self.api_service = api_service
@@ -233,6 +241,7 @@ class CalTopoAPIExportThread(QThread):
         self.include_images_without_flagged_aois = include_images_without_flagged_aois
         self.include_coverage_area = include_coverage_area
         self.include_images = include_images
+        self.aoi_photo_mode = aoi_photo_mode
         self._cancelled = False
 
     def cancel(self):
@@ -265,7 +274,8 @@ class CalTopoAPIExportThread(QThread):
                     return
                 self.progressUpdated.emit(0, 100, "Preparing flagged AOI markers...")
                 markers.extend(self.controller._prepare_markers(
-                    self.images, self.flagged_aois, include_images=self.include_images
+                    self.images, self.flagged_aois, include_images=self.include_images,
+                    aoi_photo_mode=self.aoi_photo_mode
                 ))
 
             if self.include_locations and not self.is_cancelled():
@@ -338,13 +348,13 @@ class CalTopoAPIExportThread(QThread):
                     if success:
                         marker_success_count += 1
 
-                        # Upload photo if available
-                        if marker.get('image_path') and os.path.exists(marker.get('image_path', '')):
+                        # Upload photo(s) if available (full image, AOI thumbnail, or both)
+                        for photo in self.controller._get_marker_photos(marker):
                             self.api_service.upload_photo_via_api(
                                 self.map_id, self.team_id, self.credential_id, self.credential_secret,
-                                marker['image_path'],
+                                photo['path'],
                                 marker['lat'], marker['lon'],
-                                title=marker.get('title'),
+                                title=photo.get('title') or marker.get('title'),
                                 description=marker.get('description', ''),
                                 marker_id=marker_id
                             )
@@ -408,6 +418,7 @@ class CalTopoExportController:
         self.caltopo_service = CalTopoService()  # Browser-based service
         self.caltopo_api_service = CalTopoAPIService()  # API-based service
         self.credential_helper = CalTopoCredentialHelper()
+        self.aoi_thumbnail_service = None  # Created on demand when AOI thumbnails are exported
 
     def export_to_caltopo(
             self,
@@ -417,7 +428,8 @@ class CalTopoExportController:
             include_locations=False,
             include_images_without_flagged_aois=True,
             include_coverage_area=False,
-            include_images=True):
+            include_images=True,
+            aoi_photo_mode='full'):
         """
         Export data to CalTopo.
 
@@ -429,6 +441,8 @@ class CalTopoExportController:
             include_images_without_flagged_aois (bool): Include images without flagged AOIs in location export
             include_coverage_area (bool): Include coverage area as polygons
             include_images (bool): Upload photos to CalTopo markers
+            aoi_photo_mode (str): Photo(s) to attach to flagged AOI markers:
+                'full' (whole overhead image), 'thumbnail' (zoomed AOI crop), or 'both'
 
         Returns:
             bool: True if export was successful, False otherwise
@@ -486,7 +500,8 @@ class CalTopoExportController:
 
             prep_thread = CalTopoDataPreparationThread(
                 self, images, flagged_aois, include_flagged_aois,
-                include_locations, include_images_without_flagged_aois, include_coverage_area, include_images
+                include_locations, include_images_without_flagged_aois, include_coverage_area, include_images,
+                aoi_photo_mode
             )
             prep_thread.progressUpdated.connect(on_prep_progress)
             prep_thread.finished.connect(on_prep_finished)
@@ -672,6 +687,8 @@ class CalTopoExportController:
                 f"An error occurred during CalTopo export:\n\n{str(e)}"
             )
             return False
+        finally:
+            self._cleanup_aoi_thumbnails()
 
     def _is_offline_only(self) -> bool:
         """Return whether OfflineOnly is enabled on the parent settings service."""
@@ -682,13 +699,16 @@ class CalTopoExportController:
             pass
         return False
 
-    def _prepare_markers(self, images, flagged_aois, include_images=True):
+    def _prepare_markers(self, images, flagged_aois, include_images=True, aoi_photo_mode='full'):
         """Prepare marker data from flagged AOIs.
 
         Args:
             images: List of image data dictionaries
             flagged_aois: Dictionary mapping image indices to sets of flagged AOI indices
             include_images (bool): Whether to include image_path for photo uploads
+            aoi_photo_mode (str): Which photo(s) to attach to each AOI marker:
+                'full' for the whole overhead image, 'thumbnail' for a zoomed crop
+                centered on the AOI, or 'both'
 
         Returns:
             list: List of marker dictionaries with 'lat', 'lon', 'title', 'description'
@@ -838,13 +858,92 @@ class CalTopoExportController:
                     'description': description,
                     'rgb': marker_rgb,  # RGB tuple (R, G, B) or None
                 }
-                # Only include image_path if photos should be uploaded
+                # Only include photos if they should be uploaded
                 if include_images:
-                    marker['image_path'] = image_path
+                    photos = self._build_aoi_photos(image_path, image_name, aoi, aoi_idx, aoi_photo_mode)
+                    if photos:
+                        marker['photos'] = photos
+                        # Keep image_path for consumers expecting a single photo
+                        marker['image_path'] = photos[0]['path']
 
                 markers.append(marker)
 
         return markers
+
+    def _build_aoi_photos(self, image_path, image_name, aoi, aoi_idx, aoi_photo_mode):
+        """Build the list of photos to upload for a flagged AOI marker.
+
+        Args:
+            image_path (str): Path to the source image
+            image_name (str): Display name of the source image
+            aoi (dict): AOI dictionary
+            aoi_idx (int): Index of the AOI within the image
+            aoi_photo_mode (str): 'full', 'thumbnail', or 'both'
+
+        Returns:
+            list: List of dictionaries with 'path' and 'title' keys
+        """
+        photos = []
+
+        if not image_path:
+            return photos
+
+        if aoi_photo_mode in ('thumbnail', 'both'):
+            try:
+                if self.aoi_thumbnail_service is None:
+                    self.aoi_thumbnail_service = AOIThumbnailService(logger=self.logger)
+
+                thumbnail_path = self.aoi_thumbnail_service.generate_thumbnail(
+                    image_path,
+                    aoi,
+                    output_name=f"{Path(image_path).stem}_AOI{aoi_idx + 1}_closeup"
+                )
+                if thumbnail_path:
+                    photos.append({
+                        'path': thumbnail_path,
+                        'title': f"{image_name} - AOI {aoi_idx + 1} (close-up)"
+                    })
+                else:
+                    self.logger.warning(f"Could not generate AOI thumbnail for {image_name} - AOI {aoi_idx + 1}")
+            except Exception as e:
+                self.logger.error(f"Error generating AOI thumbnail for {image_name} - AOI {aoi_idx + 1}: {e}")
+
+        # Fall back to the full image when it was requested, or when the thumbnail failed
+        if aoi_photo_mode in ('full', 'both') or not photos:
+            photos.append({'path': image_path, 'title': image_name})
+
+        return photos
+
+    def _get_marker_photos(self, marker):
+        """Return the photos that should be uploaded for a marker.
+
+        Supports markers that carry a 'photos' list as well as legacy markers that
+        only carry a single 'image_path'.
+
+        Args:
+            marker (dict): Marker dictionary
+
+        Returns:
+            list: List of dictionaries with 'path' and 'title' keys
+        """
+        photos = []
+        for photo in marker.get('photos') or []:
+            path = photo.get('path')
+            if path and os.path.exists(path):
+                photos.append({'path': path, 'title': photo.get('title') or os.path.basename(path)})
+
+        if not photos:
+            image_path = marker.get('image_path')
+            if image_path and os.path.exists(image_path):
+                photos.append({'path': image_path, 'title': marker.get('title') or os.path.basename(image_path)})
+
+        return photos
+
+    def _cleanup_aoi_thumbnails(self):
+        """Remove any temporary AOI thumbnails generated for this export."""
+        if self.aoi_thumbnail_service is not None:
+            self.aoi_thumbnail_service.cleanup()
+            self.aoi_thumbnail_service = None
 
     def _prepare_location_markers(self, images, include_images=True):
         """Prepare marker data for drone/image locations.
@@ -1062,23 +1161,21 @@ class CalTopoExportController:
                 "properties": marker_properties,
             }
 
-            # Prepare photo data if needed
-            has_photo = marker.get('image_path') and os.path.exists(marker.get('image_path', ''))
-            base64_image_data = None
-            photo_filename = None
-
-            if has_photo:
+            # Prepare photo data if needed (full image, AOI thumbnail, or both)
+            photo_payloads = []
+            for photo in self._get_marker_photos(marker):
                 try:
-                    image_path = marker['image_path']
-                    photo_filename = os.path.basename(image_path)
-                    with open(image_path, "rb") as img_file:
-                        image_bytes = img_file.read()
-                        base64_image_data = base64.b64encode(image_bytes).decode("utf-8")
-                except Exception:
-                    has_photo = False
+                    with open(photo['path'], "rb") as img_file:
+                        photo_payloads.append({
+                            "filename": os.path.basename(photo['path']),
+                            "title": photo.get('title') or os.path.basename(photo['path']),
+                            "data": base64.b64encode(img_file.read()).decode("utf-8"),
+                        })
+                except Exception as e:
+                    self.logger.warning(f"Could not read photo {photo['path']} for CalTopo upload: {e}")
 
-            # Create marker and optionally photo in one JavaScript call
-            base64_js = json.dumps(base64_image_data) if base64_image_data else "null"
+            # Create marker and optionally photo(s) in one JavaScript call
+            photos_js = json.dumps(photo_payloads)
             photo_desc_js = json.dumps(marker.get('description', ''))
 
             js_code = f"""
@@ -1116,101 +1213,101 @@ class CalTopoExportController:
                     return 'error:marker:exception:' + e.toString();
                 }}
 
-                // STEP 2: Upload photo if we have one and marker was created
-                if (markerId && {json.dumps(has_photo)}) {{
+                // STEP 2: Upload photo(s) if we have any and marker was created
+                const photos = {photos_js};
+                if (markerId && photos.length > 0) {{
+                    // Get creator ID (once for all photos on this marker)
+                    let creatorId = 'ADIAT_User';
                     try {{
-                        // Get creator ID
-                        let creatorId = 'ADIAT_User';
-                        try {{
-                            const mapResponse = await fetch('/api/v1/map/{map_id}/since/0', {{
-                                method: 'GET',
-                                credentials: 'include'
-                            }});
-                            if (mapResponse.ok) {{
-                                const mapData = await mapResponse.json();
-                                if (mapData && mapData.result && mapData.result.state && mapData.result.state.features) {{
-                                    for (let feature of mapData.result.state.features) {{
-                                        if (feature.properties && feature.properties.creator) {{
-                                            creatorId = feature.properties.creator;
-                                            break;
-                                        }}
+                        const mapResponse = await fetch('/api/v1/map/{map_id}/since/0', {{
+                            method: 'GET',
+                            credentials: 'include'
+                        }});
+                        if (mapResponse.ok) {{
+                            const mapData = await mapResponse.json();
+                            if (mapData && mapData.result && mapData.result.state && mapData.result.state.features) {{
+                                for (let feature of mapData.result.state.features) {{
+                                    if (feature.properties && feature.properties.creator) {{
+                                        creatorId = feature.properties.creator;
+                                        break;
                                     }}
                                 }}
                             }}
-                        }} catch (e) {{
-                            // Use fallback
-                        }}
-
-                        const mediaId = crypto.randomUUID();
-                        const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-                        const base64Data = {base64_js};
-
-                        // Step 2.1: Create media object
-                        const mediaMetadataPayload = {{
-                            properties: {{
-                                creator: creatorId,
-                                filename: {json.dumps(photo_filename)},
-                                exifCreatedTZ: timezone
-                            }}
-                        }};
-                        const step1FormData = new URLSearchParams();
-                        step1FormData.append('json', JSON.stringify(mediaMetadataPayload));
-                        const step1Response = await fetch(window.location.origin + '/api/v1/media/' + mediaId, {{
-                            method: 'POST',
-                            headers: {{ 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' }},
-                            credentials: 'include',
-                            body: step1FormData.toString()
-                        }});
-                        if (!step1Response.ok) {{
-                            return 'success:' + markerId;
-                        }}
-
-                        // Step 2.2: Upload image data
-                        const mediaDataPayload = {{ data: base64Data }};
-                        const step2FormData = new URLSearchParams();
-                        step2FormData.append('json', JSON.stringify(mediaDataPayload));
-                        const step2Response = await fetch(window.location.origin + '/api/v1/media/' + mediaId + '/data', {{
-                            method: 'POST',
-                            headers: {{ 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' }},
-                            credentials: 'include',
-                            body: step2FormData.toString()
-                        }});
-                        if (!step2Response.ok) {{
-                            return 'success:' + markerId;
-                        }}
-
-                        // Step 2.3: Attach media to map
-                        const mediaObjectPayload = {{
-                            type: 'Feature',
-                            geometry: {{
-                                type: 'Point',
-                                coordinates: [{marker['lon']}, {marker['lat']}]
-                            }},
-                            properties: {{
-                                parentId: 'Marker:' + markerId,
-                                backendMediaId: mediaId,
-                                created: Date.now(),
-                                title: {json.dumps(photo_filename)},
-                                heading: null,
-                                description: {photo_desc_js},
-                                'marker-symbol': 'aperture',
-                                'marker-color': '#FFFFFF',
-                                'marker-size': 1
-                            }}
-                        }};
-                        const step3FormData = new URLSearchParams();
-                        step3FormData.append('json', JSON.stringify(mediaObjectPayload));
-                        const step3Response = await fetch(window.location.origin + '/api/v1/map/{map_id}/MapMediaObject', {{
-                            method: 'POST',
-                            headers: {{ 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' }},
-                            credentials: 'include',
-                            body: step3FormData.toString()
-                        }});
-                        if (!step3Response.ok) {{
-                            return 'success:' + markerId;
                         }}
                     }} catch (e) {{
-                        return 'success:' + markerId;
+                        // Use fallback
+                    }}
+
+                    const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+                    for (const photo of photos) {{
+                        try {{
+                            const mediaId = crypto.randomUUID();
+
+                            // Step 2.1: Create media object
+                            const mediaMetadataPayload = {{
+                                properties: {{
+                                    creator: creatorId,
+                                    filename: photo.filename,
+                                    exifCreatedTZ: timezone
+                                }}
+                            }};
+                            const step1FormData = new URLSearchParams();
+                            step1FormData.append('json', JSON.stringify(mediaMetadataPayload));
+                            const step1Response = await fetch(window.location.origin + '/api/v1/media/' + mediaId, {{
+                                method: 'POST',
+                                headers: {{ 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' }},
+                                credentials: 'include',
+                                body: step1FormData.toString()
+                            }});
+                            if (!step1Response.ok) {{
+                                continue;
+                            }}
+
+                            // Step 2.2: Upload image data
+                            const mediaDataPayload = {{ data: photo.data }};
+                            const step2FormData = new URLSearchParams();
+                            step2FormData.append('json', JSON.stringify(mediaDataPayload));
+                            const step2Response = await fetch(window.location.origin + '/api/v1/media/' + mediaId + '/data', {{
+                                method: 'POST',
+                                headers: {{ 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' }},
+                                credentials: 'include',
+                                body: step2FormData.toString()
+                            }});
+                            if (!step2Response.ok) {{
+                                continue;
+                            }}
+
+                            // Step 2.3: Attach media to map
+                            const mediaObjectPayload = {{
+                                type: 'Feature',
+                                geometry: {{
+                                    type: 'Point',
+                                    coordinates: [{marker['lon']}, {marker['lat']}]
+                                }},
+                                properties: {{
+                                    parentId: 'Marker:' + markerId,
+                                    backendMediaId: mediaId,
+                                    created: Date.now(),
+                                    title: photo.title,
+                                    heading: null,
+                                    description: {photo_desc_js},
+                                    'marker-symbol': 'aperture',
+                                    'marker-color': '#FFFFFF',
+                                    'marker-size': 1
+                                }}
+                            }};
+                            const step3FormData = new URLSearchParams();
+                            step3FormData.append('json', JSON.stringify(mediaObjectPayload));
+                            await fetch(window.location.origin + '/api/v1/map/{map_id}/MapMediaObject', {{
+                                method: 'POST',
+                                headers: {{ 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' }},
+                                credentials: 'include',
+                                body: step3FormData.toString()
+                            }});
+                        }} catch (e) {{
+                            continue;
+                        }}
                     }}
                 }}
 
@@ -1436,7 +1533,8 @@ class CalTopoExportController:
         )
 
     def export_to_caltopo_via_api(self, images, flagged_aois, include_flagged_aois=True,
-                                  include_locations=False, include_images_without_flagged_aois=True, include_coverage_area=False, include_images=True):
+                                  include_locations=False, include_images_without_flagged_aois=True,
+                                  include_coverage_area=False, include_images=True, aoi_photo_mode='full'):
         """
         Export data to CalTopo using the official Team API.
 
@@ -1451,6 +1549,8 @@ class CalTopoExportController:
             include_images_without_flagged_aois (bool): Include images without flagged AOIs in location export
             include_coverage_area (bool): Include coverage area as polygons
             include_images (bool): Upload photos to CalTopo markers
+            aoi_photo_mode (str): Photo(s) to attach to flagged AOI markers:
+                'full' (whole overhead image), 'thumbnail' (zoomed AOI crop), or 'both'
 
         Returns:
             bool: True if export was successful, False otherwise
@@ -1583,7 +1683,8 @@ class CalTopoExportController:
             return self._export_via_api_threaded(
                 map_id, map_team_id, credential_id, credential_secret,
                 images, flagged_aois, include_flagged_aois, include_locations,
-                include_images_without_flagged_aois, include_coverage_area, include_images
+                include_images_without_flagged_aois, include_coverage_area, include_images,
+                aoi_photo_mode
             )
 
         except Exception as e:
@@ -1594,10 +1695,13 @@ class CalTopoExportController:
                 f"An error occurred during CalTopo API export:\n\n{str(e)}"
             )
             return False
+        finally:
+            self._cleanup_aoi_thumbnails()
 
     def _export_via_api_threaded(self, map_id, team_id, credential_id, credential_secret,
                                  images, flagged_aois, include_flagged_aois, include_locations,
-                                 include_images_without_flagged_aois, include_coverage_area, include_images):
+                                 include_images_without_flagged_aois, include_coverage_area, include_images,
+                                 aoi_photo_mode='full'):
         """Export markers and polygons via API in a separate thread.
 
         Args:
@@ -1612,6 +1716,7 @@ class CalTopoExportController:
             include_images_without_flagged_aois: Whether to include images without flagged AOIs
             include_coverage_area: Whether to include coverage area
             include_images: Whether to include images
+            aoi_photo_mode: Photo(s) to attach to flagged AOI markers ('full', 'thumbnail', or 'both')
 
         Returns:
             bool: True if export was successful, False otherwise
@@ -1639,7 +1744,8 @@ class CalTopoExportController:
             include_locations,
             include_images_without_flagged_aois,
             include_coverage_area,
-            include_images
+            include_images,
+            aoi_photo_mode
         )
 
         # Store result for return value
