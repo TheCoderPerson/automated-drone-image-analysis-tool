@@ -964,8 +964,9 @@ class CalTopoExportController:
                     )
                     if photos:
                         marker['photos'] = photos
-                        # Keep image_path for consumers expecting a single photo
-                        marker['image_path'] = photos[0]['path']
+                        # Legacy single-photo consumers fall back to the real image on
+                        # disk, which outlives the generated temp files
+                        marker['image_path'] = image_path
 
                 markers.append(marker)
 
@@ -1303,20 +1304,28 @@ class CalTopoExportController:
 
         return polygons
 
-    def _run_export_javascript(self, web_view, js_code, result_var, timeout_s, progress_dialog):
+    def _run_export_javascript(self, web_view, js_code, result_token, timeout_s, progress_dialog):
         """Run an async export script in the page and wait for it to report completion.
 
         QWebEnginePage.runJavaScript does not wait for JavaScript Promises, so an
         async script is fire-and-forget: its uploads are silently killed when the
-        page is torn down at the end of the export. The script instead writes its
-        outcome to window.<result_var>, which is polled here until it appears, the
-        timeout elapses, or the user cancels. This keeps the page alive until
-        uploads actually finish and yields a real success/failure per item.
+        page is torn down at the end of the export. The script therefore reports
+        its outcome over two channels and this method waits for either one:
+
+        1. document.title, prefixed with 'ADIAT:<token>:'. Title updates arrive
+           via the titleChanged signal on the normal event loop, so they work even
+           when runJavaScript result callbacks are never delivered (observed on
+           some systems).
+        2. window.__adiatResult_<token>, polled via runJavaScript callbacks.
+
+        The script also sets the title to 'ADIAT:<token>:started' immediately, so
+        an injection/parse failure (no start marker) can be told apart from a
+        slow or hung upload.
 
         Args:
             web_view: QWebEngineView with the authenticated CalTopo session
-            js_code (str): Script to execute; must set window.<result_var> when done
-            result_var (str): Name of the window variable the script reports into
+            js_code (str): Script to execute; must report via title and window var
+            result_token (str): Per-item token, e.g. 'm3' for marker 3
             timeout_s (float): Maximum seconds to wait for completion
             progress_dialog: ExportProgressDialog used to detect cancellation
 
@@ -1325,6 +1334,9 @@ class CalTopoExportController:
         """
         web_view.page().runJavaScript(js_code)
 
+        title_prefix = f"ADIAT:{result_token}:"
+        result_var = f"__adiatResult_{result_token}"
+
         poll_state = {'value': None, 'pending': False}
 
         def on_poll(value):
@@ -1332,16 +1344,42 @@ class CalTopoExportController:
             if value:
                 poll_state['value'] = value
 
-        deadline = time.monotonic() + timeout_s
+        start_time = time.monotonic()
+        deadline = start_time + timeout_s
+        start_marker_seen = False
+        start_warning_logged = False
+
         while time.monotonic() < deadline:
             QApplication.processEvents()
             if progress_dialog.is_cancelled():
                 return None, True
+
+            # Channel 1: document.title (needs no runJavaScript callback delivery)
+            try:
+                title = web_view.title() or ''
+            except Exception:
+                title = ''
+            if title.startswith(title_prefix):
+                start_marker_seen = True
+                payload = title[len(title_prefix):]
+                if payload != 'started':
+                    return payload, False
+
+            # Channel 2: polled window variable
             if poll_state['value'] is not None:
                 return poll_state['value'], False
             if not poll_state['pending']:
                 poll_state['pending'] = True
                 web_view.page().runJavaScript(f"window.{result_var} || null", on_poll)
+
+            # Diagnose scripts that never even started (injection or parse failure)
+            if not start_marker_seen and not start_warning_logged and time.monotonic() - start_time > 5:
+                start_warning_logged = True
+                self.logger.warning(
+                    f"CalTopo export script {result_token} has not reported starting after 5s; "
+                    "the page may not be executing injected scripts"
+                )
+
             time.sleep(self.JS_POLL_INTERVAL_S)
         return None, False
 
@@ -1424,9 +1462,20 @@ class CalTopoExportController:
                 "properties": marker_properties,
             }
 
-            # Prepare photo data if needed (full image, AOI thumbnail, or both)
+            # Prepare photo data if needed (composite, AOI thumbnail, or both)
+            marker_photos = self._get_marker_photos(marker)
+
+            # If photos were prepared but none can be found on disk, say so - a marker
+            # that silently uploads without its photos is very hard to diagnose
+            declared_photos = marker.get('photos') or []
+            if declared_photos and not marker_photos:
+                for photo in declared_photos:
+                    self.logger.warning(
+                        f"Marker {index}: prepared photo is missing on disk, cannot upload: {photo.get('path')}"
+                    )
+
             photo_payloads = []
-            for photo in self._get_marker_photos(marker):
+            for photo in marker_photos:
                 try:
                     with open(photo['path'], "rb") as img_file:
                         photo_payloads.append({
@@ -1437,6 +1486,8 @@ class CalTopoExportController:
                 except Exception as e:
                     self.logger.warning(f"Could not read photo {photo['path']} for CalTopo upload: {e}")
 
+            self.logger.info(f"CalTopo marker {index} of {total}: attaching {len(photo_payloads)} photo(s)")
+
             # Create marker and photo(s) in one observable JavaScript call
             photos_js = json.dumps(photo_payloads)
             photo_desc_js = json.dumps(marker.get('description', ''))
@@ -1445,8 +1496,12 @@ class CalTopoExportController:
             js_code = f"""
             (function() {{
                 window.{result_var} = null;
+                try {{ document.title = 'ADIAT:m{index}:started'; }} catch (e) {{}}
                 (async function() {{
-                    const report = function(message) {{ window.{result_var} = message; }};
+                    const report = function(message) {{
+                        window.{result_var} = message;
+                        try {{ document.title = 'ADIAT:m{index}:' + message; }} catch (e) {{}}
+                    }};
                     try {{
                         // STEP 1: Create marker
                         const markerData = {json.dumps(marker_payload)};
@@ -1605,7 +1660,7 @@ class CalTopoExportController:
             # Wait for the page to confirm the marker AND its photo uploads finished
             timeout_s = self.JS_BASE_TIMEOUT_S + self.JS_PER_PHOTO_TIMEOUT_S * len(photo_payloads)
             result, was_cancelled = self._run_export_javascript(
-                web_view, js_code, result_var, timeout_s, progress_dialog
+                web_view, js_code, f"m{index}", timeout_s, progress_dialog
             )
 
             if was_cancelled:
@@ -1735,8 +1790,12 @@ class CalTopoExportController:
             js_code = f"""
             (function() {{
                 window.{result_var} = null;
+                try {{ document.title = 'ADIAT:p{index}:started'; }} catch (e) {{}}
                 (async function() {{
-                    const report = function(message) {{ window.{result_var} = message; }};
+                    const report = function(message) {{
+                        window.{result_var} = message;
+                        try {{ document.title = 'ADIAT:p{index}:' + message; }} catch (e) {{}}
+                    }};
                     try {{
                         const shapeData = {json.dumps(shape_payload)};
                         const shapeFormData = new URLSearchParams();
@@ -1774,7 +1833,7 @@ class CalTopoExportController:
 
             # Wait for the page to confirm the polygon was posted
             result, was_cancelled = self._run_export_javascript(
-                web_view, js_code, result_var, self.JS_BASE_TIMEOUT_S, progress_dialog
+                web_view, js_code, f"p{index}", self.JS_BASE_TIMEOUT_S, progress_dialog
             )
 
             if was_cancelled:

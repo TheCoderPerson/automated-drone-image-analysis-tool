@@ -486,8 +486,8 @@ def test_prepare_markers_attaches_aoi_thumbnail(caltopo_controller, mock_viewer,
     assert len(photos) == 1
     assert photos[0]['path'] != aoi_source_image
     assert os.path.exists(photos[0]['path'])
-    # image_path stays in sync with the primary photo
-    assert markers[0]['image_path'] == photos[0]['path']
+    # image_path falls back to the durable image on disk, not the temp photo
+    assert markers[0]['image_path'] == aoi_source_image
 
     caltopo_controller._cleanup_aoi_thumbnails()
 
@@ -511,7 +511,7 @@ def test_prepare_markers_default_mode_uses_composite(caltopo_controller, mock_vi
     assert photos[0]['path'] != aoi_source_image
     assert os.path.exists(photos[0]['path'])
     assert 'overview' in os.path.basename(photos[0]['path'])
-    assert markers[0]['image_path'] == photos[0]['path']
+    assert markers[0]['image_path'] == aoi_source_image
 
     caltopo_controller._cleanup_aoi_thumbnails()
 
@@ -733,13 +733,20 @@ class _FakeCalTopoPage:
 
 
 class _FakeCalTopoWebView:
-    """Wraps _FakeCalTopoPage with the page() accessor the controller expects."""
+    """Wraps _FakeCalTopoPage with the page() and title() accessors the controller expects."""
 
-    def __init__(self, poll_results):
+    def __init__(self, poll_results, titles=None):
         self._page = _FakeCalTopoPage(poll_results)
+        self._titles = list(titles) if titles else []
+        self._last_title = ''
 
     def page(self):
         return self._page
+
+    def title(self):
+        if self._titles:
+            self._last_title = self._titles.pop(0)
+        return self._last_title
 
 
 def _run_marker_js_export(controller, markers, poll_results):
@@ -826,3 +833,47 @@ def test_export_polygons_via_javascript_success(caltopo_controller):
     assert success_count == 1
     assert cancelled is False
     assert '__adiatResult_p1' in view.page().fired_scripts[0]
+
+
+def test_export_markers_via_javascript_title_channel(caltopo_controller, aoi_source_image):
+    """The document.title channel delivers results even when JS callbacks never fire."""
+    module = 'core.controllers.images.viewer.exports.CalTopoExportController'
+    caltopo_controller.JS_POLL_INTERVAL_S = 0.001
+    markers = [{
+        'lat': 39.5, 'lon': -105.2, 'title': 'IMG - AOI 1', 'description': 'desc',
+        'photos': [{'path': aoi_source_image, 'title': 'overview'}],
+        'image_path': aoi_source_image,
+    }]
+
+    # Polls never answer (empty poll results simulate undelivered callbacks);
+    # the title progresses from started to the final result
+    view = _FakeCalTopoWebView(
+        poll_results=[],
+        titles=['CalTopo', 'ADIAT:m1:started', 'ADIAT:m1:success:MARKER-9:photos:1/1']
+    )
+    with patch(f'{module}.ExportProgressDialog') as mock_dialog, patch(f'{module}.QTimer'):
+        mock_dialog.return_value.is_cancelled.return_value = False
+        success_count, cancelled = caltopo_controller._export_markers_via_javascript(view, 'MAPID', markers)
+
+    assert success_count == 1
+    assert cancelled is False
+
+
+def test_export_markers_warns_when_prepared_photos_missing(caltopo_controller, aoi_source_image):
+    """Markers whose prepared photo files vanished log a clear warning per photo."""
+    module = 'core.controllers.images.viewer.exports.CalTopoExportController'
+    caltopo_controller.JS_POLL_INTERVAL_S = 0.001
+    markers = [{
+        'lat': 39.5, 'lon': -105.2, 'title': 'IMG - AOI 1', 'description': 'desc',
+        'photos': [{'path': '/gone/overview.jpg', 'title': 'overview'}],
+        'image_path': '/gone/original.jpg',
+    }]
+
+    view = _FakeCalTopoWebView(poll_results=['success:MARKER-1:photos:0/0'])
+    with patch(f'{module}.ExportProgressDialog') as mock_dialog, patch(f'{module}.QTimer'):
+        mock_dialog.return_value.is_cancelled.return_value = False
+        success_count, cancelled = caltopo_controller._export_markers_via_javascript(view, 'MAPID', markers)
+
+    assert success_count == 1
+    warning_messages = [str(call) for call in caltopo_controller.logger.warning.call_args_list]
+    assert any('missing on disk' in message for message in warning_messages)
