@@ -108,13 +108,14 @@ class MapExportDialog(QDialog):
         aoi_photo_layout = QHBoxLayout()
         self.aoi_photo_label = QLabel("Photo for flagged AOIs:")
         self.aoi_photo_mode = QComboBox()
-        self.aoi_photo_mode.addItem("Full Image", 'full')
-        self.aoi_photo_mode.addItem("AOI Thumbnail (Zoomed)", 'thumbnail')
+        self.aoi_photo_mode.addItem("Large Image (with zoom insets)", 'full')
+        self.aoi_photo_mode.addItem("AOI Thumbnail Only", 'thumbnail')
         self.aoi_photo_mode.addItem("Both", 'both')
-        self.aoi_photo_mode.setCurrentIndex(0)  # Default: full image (existing behavior)
+        self.aoi_photo_mode.setCurrentIndex(0)  # Default: large multi-zoom image
         self.aoi_photo_mode.setToolTip(
-            "Choose whether flagged AOI markers get the full overhead image, a zoomed\n"
-            "crop centered on the detection, or both"
+            "Large Image uploads the same multi-zoom composite used in the PDF report\n"
+            "(full image with 3x and 6x insets). AOI Thumbnail uploads a zoomed crop\n"
+            "centered on the detection. Both uploads each."
         )
         aoi_photo_layout.addWidget(self.aoi_photo_label)
         aoi_photo_layout.addWidget(self.aoi_photo_mode)
@@ -204,8 +205,9 @@ class MapExportDialog(QDialog):
         Get the photo mode to use for flagged AOI markers (CalTopo only).
 
         Returns:
-            str: 'full' for the full overhead image, 'thumbnail' for a zoomed crop
-                 centered on the AOI, or 'both' to upload each.
+            str: 'full' for the large multi-zoom composite (same image as the PDF
+                 report), 'thumbnail' for a zoomed crop centered on the AOI, or
+                 'both' to upload each.
         """
         return self.aoi_photo_mode.currentData() or 'full'
 

@@ -11,12 +11,15 @@ import os
 import time
 from pathlib import Path
 
+import cv2
+
 from PySide6.QtWidgets import QApplication, QMessageBox
 from PySide6.QtCore import QTimer, QThread, Signal
 from core.services.export.CalTopoService import CalTopoService
 from core.services.export.CalTopoAPIService import CalTopoAPIService
 from core.services.export.CalTopoCredentialHelper import CalTopoCredentialHelper
 from core.services.export.AOIThumbnailService import AOIThumbnailService
+from core.services.image.AOICompositeService import AOICompositeService
 from core.views.images.viewer.dialogs.CalTopoAuthDialog import CalTopoAuthDialog
 from core.views.images.viewer.dialogs.CalTopoCredentialDialog import CalTopoCredentialDialog
 from core.views.images.viewer.dialogs.CalTopoAPIMapDialog import CalTopoAPIMapDialog
@@ -419,6 +422,7 @@ class CalTopoExportController:
         self.caltopo_api_service = CalTopoAPIService()  # API-based service
         self.credential_helper = CalTopoCredentialHelper()
         self.aoi_thumbnail_service = None  # Created on demand when AOI thumbnails are exported
+        self.aoi_composite_service = None  # Created on demand when multi-zoom composites are exported
 
     def export_to_caltopo(
             self,
@@ -442,7 +446,8 @@ class CalTopoExportController:
             include_coverage_area (bool): Include coverage area as polygons
             include_images (bool): Upload photos to CalTopo markers
             aoi_photo_mode (str): Photo(s) to attach to flagged AOI markers:
-                'full' (whole overhead image), 'thumbnail' (zoomed AOI crop), or 'both'
+                'full' (large multi-zoom composite, as in the PDF report),
+                'thumbnail' (zoomed AOI crop), or 'both'
 
         Returns:
             bool: True if export was successful, False otherwise
@@ -707,8 +712,8 @@ class CalTopoExportController:
             flagged_aois: Dictionary mapping image indices to sets of flagged AOI indices
             include_images (bool): Whether to include image_path for photo uploads
             aoi_photo_mode (str): Which photo(s) to attach to each AOI marker:
-                'full' for the whole overhead image, 'thumbnail' for a zoomed crop
-                centered on the AOI, or 'both'
+                'full' for the large multi-zoom composite (same image as the PDF
+                report), 'thumbnail' for a zoomed crop centered on the AOI, or 'both'
 
         Returns:
             list: List of marker dictionaries with 'lat', 'lon', 'title', 'description'
@@ -773,6 +778,12 @@ class CalTopoExportController:
 
             except Exception:
                 continue
+
+            # Prepare the source pixels for the multi-zoom composite once per image.
+            # Uses the same source as the PDF report (original image when available).
+            composite_context = None
+            if include_images and aoi_photo_mode in ('full', 'both'):
+                composite_context = self._build_composite_context(image, image_path, img_array, bearing)
 
             # Get AOI data
             aois = image.get('areas_of_interest', [])
@@ -860,7 +871,10 @@ class CalTopoExportController:
                 }
                 # Only include photos if they should be uploaded
                 if include_images:
-                    photos = self._build_aoi_photos(image_path, image_name, aoi, aoi_idx, aoi_photo_mode)
+                    photos = self._build_aoi_photos(
+                        image_path, image_name, aoi, aoi_idx, aoi_photo_mode,
+                        composite_context=composite_context
+                    )
                     if photos:
                         marker['photos'] = photos
                         # Keep image_path for consumers expecting a single photo
@@ -868,9 +882,89 @@ class CalTopoExportController:
 
                 markers.append(marker)
 
+            # Free the rotated-image cache for this image before moving to the next
+            if composite_context is not None and self.aoi_composite_service is not None:
+                self.aoi_composite_service.clear_cache_for(composite_context['cache_key'])
+
         return markers
 
-    def _build_aoi_photos(self, image_path, image_name, aoi, aoi_idx, aoi_photo_mode):
+    def _build_composite_context(self, image, image_path, img_array, bearing):
+        """Prepare the per-image inputs needed to build multi-zoom composites.
+
+        Args:
+            image (dict): Image data dictionary
+            image_path (str): Path used to load img_array
+            img_array: Image array already loaded for this image (RGB)
+            bearing: Drone bearing in degrees
+
+        Returns:
+            dict: Context with 'img_array_bgr', 'bearing', 'identifier_color',
+                  and 'cache_key' keys, or None if it could not be prepared
+        """
+        try:
+            # Match the PDF report: use the original image pixels when available
+            source_path = image.get('original_path', image_path) if 'original_path' in image else image_path
+            if source_path == image_path:
+                source_array = img_array
+            else:
+                source_array = ImageService(source_path, image.get('mask_path', '')).img_array
+
+            # Same identifier color the PDF uses for the AOI circle
+            identifier_color = (255, 255, 0)
+            if hasattr(self.parent, 'settings') and isinstance(self.parent.settings, dict):
+                identifier_color = self.parent.settings.get('identifier_color', identifier_color)
+
+            return {
+                'img_array_bgr': cv2.cvtColor(source_array, cv2.COLOR_RGB2BGR),
+                'bearing': bearing,
+                'identifier_color': identifier_color,
+                'cache_key': source_path,
+            }
+        except Exception as e:
+            self.logger.error(f"Error preparing composite source for {image_path}: {e}")
+            return None
+
+    def _build_composite_photo(self, image_path, image_name, aoi, aoi_idx, composite_context):
+        """Generate the multi-zoom composite photo (same layout as the PDF report) for an AOI.
+
+        Args:
+            image_path (str): Path to the source image
+            image_name (str): Display name of the source image
+            aoi (dict): AOI dictionary
+            aoi_idx (int): Index of the AOI within the image
+            composite_context (dict): Context from _build_composite_context, or None
+
+        Returns:
+            str: Path to the generated composite image, or None if it could not be created
+        """
+        if composite_context is None:
+            return None
+
+        try:
+            if self.aoi_composite_service is None:
+                self.aoi_composite_service = AOICompositeService(logger=self.logger)
+            if self.aoi_thumbnail_service is None:
+                self.aoi_thumbnail_service = AOIThumbnailService(logger=self.logger)
+
+            composite = self.aoi_composite_service.create_composite(
+                composite_context['img_array_bgr'],
+                aoi,
+                composite_context['bearing'],
+                composite_context['identifier_color'],
+                cache_key=composite_context['cache_key']
+            )
+            if composite is None:
+                return None
+
+            return self.aoi_thumbnail_service.save_composite(
+                composite,
+                output_name=f"{Path(image_path).stem}_AOI{aoi_idx + 1}_overview"
+            )
+        except Exception as e:
+            self.logger.error(f"Error generating composite for {image_name} - AOI {aoi_idx + 1}: {e}")
+            return None
+
+    def _build_aoi_photos(self, image_path, image_name, aoi, aoi_idx, aoi_photo_mode, composite_context=None):
         """Build the list of photos to upload for a flagged AOI marker.
 
         Args:
@@ -878,7 +972,10 @@ class CalTopoExportController:
             image_name (str): Display name of the source image
             aoi (dict): AOI dictionary
             aoi_idx (int): Index of the AOI within the image
-            aoi_photo_mode (str): 'full', 'thumbnail', or 'both'
+            aoi_photo_mode (str): 'full' (multi-zoom composite, as in the PDF report),
+                'thumbnail' (zoomed AOI crop), or 'both'
+            composite_context (dict, optional): Per-image context from
+                _build_composite_context; required to build composites
 
         Returns:
             list: List of dictionaries with 'path' and 'title' keys
@@ -908,8 +1005,19 @@ class CalTopoExportController:
             except Exception as e:
                 self.logger.error(f"Error generating AOI thumbnail for {image_name} - AOI {aoi_idx + 1}: {e}")
 
-        # Fall back to the full image when it was requested, or when the thumbnail failed
-        if aoi_photo_mode in ('full', 'both') or not photos:
+        if aoi_photo_mode in ('full', 'both'):
+            composite_path = self._build_composite_photo(image_path, image_name, aoi, aoi_idx, composite_context)
+            if composite_path:
+                photos.append({
+                    'path': composite_path,
+                    'title': f"{image_name} - AOI {aoi_idx + 1} (overview)"
+                })
+            else:
+                # Fall back to the plain full image so the marker still gets a photo
+                photos.append({'path': image_path, 'title': image_name})
+
+        # Last-resort fallback: never leave the marker photo-less when photos were requested
+        if not photos:
             photos.append({'path': image_path, 'title': image_name})
 
         return photos
@@ -940,10 +1048,13 @@ class CalTopoExportController:
         return photos
 
     def _cleanup_aoi_thumbnails(self):
-        """Remove any temporary AOI thumbnails generated for this export."""
+        """Remove any temporary AOI photos generated for this export and free caches."""
         if self.aoi_thumbnail_service is not None:
             self.aoi_thumbnail_service.cleanup()
             self.aoi_thumbnail_service = None
+        if self.aoi_composite_service is not None:
+            self.aoi_composite_service.clear_cache()
+            self.aoi_composite_service = None
 
     def _prepare_location_markers(self, images, include_images=True):
         """Prepare marker data for drone/image locations.
@@ -1550,7 +1661,8 @@ class CalTopoExportController:
             include_coverage_area (bool): Include coverage area as polygons
             include_images (bool): Upload photos to CalTopo markers
             aoi_photo_mode (str): Photo(s) to attach to flagged AOI markers:
-                'full' (whole overhead image), 'thumbnail' (zoomed AOI crop), or 'both'
+                'full' (large multi-zoom composite, as in the PDF report),
+                'thumbnail' (zoomed AOI crop), or 'both'
 
         Returns:
             bool: True if export was successful, False otherwise

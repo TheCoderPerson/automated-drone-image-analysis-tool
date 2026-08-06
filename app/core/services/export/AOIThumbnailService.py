@@ -13,6 +13,7 @@ import tempfile
 from pathlib import Path
 from typing import Any, Dict, Optional, Tuple
 
+import numpy as np
 from PIL import Image, ImageDraw
 
 from core.services.LoggerService import LoggerService
@@ -34,6 +35,8 @@ class AOIThumbnailService:
     # Output images are scaled into this range (longest edge, in pixels)
     MIN_OUTPUT_SIZE = 800
     MAX_OUTPUT_SIZE = 1600
+    # Composite (multi-zoom) images may be larger since they contain the full frame
+    MAX_COMPOSITE_SIZE = 2048
     JPEG_QUALITY = 90
     # Default color of the circle drawn around the AOI
     DEFAULT_HIGHLIGHT_RGB = (255, 0, 0)
@@ -139,6 +142,41 @@ class AOIThumbnailService:
 
         except Exception as e:
             self.logger.error(f"Error generating AOI thumbnail for {image_path}: {e}")
+            return None
+
+    def save_composite(self, composite_bgr: np.ndarray, output_name: str) -> Optional[str]:
+        """
+        Save a multi-zoom composite image (BGR array) into the output directory.
+
+        Args:
+            composite_bgr: Composite image as a numpy array in BGR order (OpenCV convention).
+            output_name (str): Base name (without extension) for the generated file.
+
+        Returns:
+            str: Path to the saved image, or None if it could not be saved.
+        """
+        try:
+            if composite_bgr is None or composite_bgr.size == 0:
+                return None
+
+            # BGR -> RGB for PIL
+            image = Image.fromarray(np.ascontiguousarray(composite_bgr[:, :, ::-1]))
+
+            # Cap the long edge so uploads stay a reasonable size
+            longest = max(image.size)
+            if longest > self.MAX_COMPOSITE_SIZE:
+                scale = self.MAX_COMPOSITE_SIZE / longest
+                image = image.resize(
+                    (max(1, int(round(image.width * scale))), max(1, int(round(image.height * scale)))),
+                    Image.Resampling.LANCZOS
+                )
+
+            output_path = self._build_output_path(output_name)
+            image.save(output_path, format="JPEG", quality=self.JPEG_QUALITY)
+            return str(output_path)
+
+        except Exception as e:
+            self.logger.error(f"Error saving AOI composite image {output_name}: {e}")
             return None
 
     def _draw_highlight(self, image: Image.Image, x: float, y: float, radius: float,

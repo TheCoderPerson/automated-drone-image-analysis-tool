@@ -352,14 +352,38 @@ def aoi_source_image(tmp_path):
     return str(path)
 
 
-def test_build_aoi_photos_full_image(caltopo_controller, aoi_source_image):
-    """Full mode attaches only the original overhead image."""
+def test_build_aoi_photos_full_without_context_falls_back(caltopo_controller, aoi_source_image):
+    """Full mode without a composite context falls back to the plain image."""
     aoi = {'center': (400, 300), 'radius': 20}
 
     photos = caltopo_controller._build_aoi_photos(aoi_source_image, 'IMG_0001.jpg', aoi, 0, 'full')
 
     assert [photo['path'] for photo in photos] == [aoi_source_image]
     assert caltopo_controller.aoi_thumbnail_service is None
+
+
+def test_build_aoi_photos_full_with_context_builds_composite(caltopo_controller, aoi_source_image):
+    """Full mode with a composite context attaches the multi-zoom composite."""
+    import os
+    import numpy as np
+    aoi = {'center': (400, 300), 'radius': 20}
+    image = {'path': aoi_source_image, 'mask_path': ''}
+    img_array = np.zeros((600, 800, 3), dtype=np.uint8)
+
+    context = caltopo_controller._build_composite_context(image, aoi_source_image, img_array, 0)
+    assert context is not None
+
+    photos = caltopo_controller._build_aoi_photos(
+        aoi_source_image, 'IMG_0001.jpg', aoi, 0, 'full', composite_context=context
+    )
+
+    assert len(photos) == 1
+    assert photos[0]['path'] != aoi_source_image
+    assert os.path.exists(photos[0]['path'])
+    assert 'overview' in os.path.basename(photos[0]['path'])
+    assert 'overview' in photos[0]['title']
+
+    caltopo_controller._cleanup_aoi_thumbnails()
 
 
 def test_build_aoi_photos_thumbnail_only(caltopo_controller, aoi_source_image):
@@ -379,7 +403,7 @@ def test_build_aoi_photos_thumbnail_only(caltopo_controller, aoi_source_image):
 
 
 def test_build_aoi_photos_both(caltopo_controller, aoi_source_image):
-    """Both mode attaches the AOI crop first, then the full image."""
+    """Both mode attaches the AOI crop first, then the large image (fallback without context)."""
     aoi = {'center': (400, 300), 'radius': 20}
 
     photos = caltopo_controller._build_aoi_photos(aoi_source_image, 'IMG_0001.jpg', aoi, 0, 'both')
@@ -387,6 +411,28 @@ def test_build_aoi_photos_both(caltopo_controller, aoi_source_image):
     assert len(photos) == 2
     assert photos[0]['path'] != aoi_source_image
     assert photos[1]['path'] == aoi_source_image
+
+    caltopo_controller._cleanup_aoi_thumbnails()
+
+
+def test_build_aoi_photos_both_with_context(caltopo_controller, aoi_source_image):
+    """Both mode with a composite context attaches the crop and the composite."""
+    import os
+    import numpy as np
+    aoi = {'center': (400, 300), 'radius': 20}
+    image = {'path': aoi_source_image, 'mask_path': ''}
+    img_array = np.zeros((600, 800, 3), dtype=np.uint8)
+
+    context = caltopo_controller._build_composite_context(image, aoi_source_image, img_array, 0)
+    photos = caltopo_controller._build_aoi_photos(
+        aoi_source_image, 'IMG_0001.jpg', aoi, 0, 'both', composite_context=context
+    )
+
+    assert len(photos) == 2
+    assert 'close-up' in photos[0]['title']
+    assert 'overview' in photos[1]['title']
+    assert all(photo['path'] != aoi_source_image for photo in photos)
+    assert all(os.path.exists(photo['path']) for photo in photos)
 
     caltopo_controller._cleanup_aoi_thumbnails()
 
@@ -446,8 +492,9 @@ def test_prepare_markers_attaches_aoi_thumbnail(caltopo_controller, mock_viewer,
     caltopo_controller._cleanup_aoi_thumbnails()
 
 
-def test_prepare_markers_default_mode_uses_full_image(caltopo_controller, mock_viewer, aoi_source_image):
-    """The default photo mode keeps the existing full-image behavior."""
+def test_prepare_markers_default_mode_uses_composite(caltopo_controller, mock_viewer, aoi_source_image):
+    """The default photo mode attaches the multi-zoom composite (same image as the PDF)."""
+    import os
     mock_viewer.messages = {}
     mock_viewer.custom_agl_altitude_ft = None
     images = [{
@@ -459,8 +506,39 @@ def test_prepare_markers_default_mode_uses_full_image(caltopo_controller, mock_v
 
     markers = _patched_prepare_markers(caltopo_controller, images, {0: {0}}, include_images=True)
 
-    assert markers[0]['image_path'] == aoi_source_image
-    assert [photo['path'] for photo in markers[0]['photos']] == [aoi_source_image]
+    photos = markers[0]['photos']
+    assert len(photos) == 1
+    assert photos[0]['path'] != aoi_source_image
+    assert os.path.exists(photos[0]['path'])
+    assert 'overview' in os.path.basename(photos[0]['path'])
+    assert markers[0]['image_path'] == photos[0]['path']
+
+    caltopo_controller._cleanup_aoi_thumbnails()
+
+
+def test_prepare_markers_both_mode_attaches_two_photos(caltopo_controller, mock_viewer, aoi_source_image):
+    """Both mode attaches the close-up crop and the composite to the marker."""
+    import os
+    mock_viewer.messages = {}
+    mock_viewer.custom_agl_altitude_ft = None
+    images = [{
+        'path': aoi_source_image,
+        'name': 'IMG_0001.jpg',
+        'areas_of_interest': [{'center': (400, 300), 'radius': 20}],
+        'hidden': False
+    }]
+
+    markers = _patched_prepare_markers(
+        caltopo_controller, images, {0: {0}}, include_images=True, aoi_photo_mode='both'
+    )
+
+    photos = markers[0]['photos']
+    assert len(photos) == 2
+    assert 'close-up' in photos[0]['title']
+    assert 'overview' in photos[1]['title']
+    assert all(os.path.exists(photo['path']) for photo in photos)
+
+    caltopo_controller._cleanup_aoi_thumbnails()
 
 
 def test_prepare_markers_without_images_has_no_photos(caltopo_controller, mock_viewer, aoi_source_image):
