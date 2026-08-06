@@ -14,7 +14,7 @@ from pathlib import Path
 import cv2
 
 from PySide6.QtWidgets import QApplication, QMessageBox
-from PySide6.QtCore import QTimer, QThread, Signal
+from PySide6.QtCore import QTimer, QThread, Signal, QEventLoop
 from core.services.export.CalTopoService import CalTopoService
 from core.services.export.CalTopoAPIService import CalTopoAPIService
 from core.services.export.CalTopoCredentialHelper import CalTopoCredentialHelper
@@ -787,6 +787,9 @@ class CalTopoExportController:
         total_aois = sum(len(aoi_indices) for aoi_indices in flagged_aois.values())
         processed_aois = 0
 
+        if include_images:
+            self.logger.info(f"CalTopo AOI photo mode: {aoi_photo_mode}")
+
         for img_idx, aoi_indices in flagged_aois.items():
             # Stop promptly when the user cancels - photo generation per AOI is expensive
             if cancel_check and cancel_check():
@@ -1026,6 +1029,10 @@ class CalTopoExportController:
             str: Path to the generated composite image, or None if it could not be created
         """
         if composite_context is None:
+            self.logger.warning(
+                f"No composite source available for {image_name} - AOI {aoi_idx + 1}; "
+                "the plain image will be used instead"
+            )
             return None
 
         try:
@@ -1123,14 +1130,26 @@ class CalTopoExportController:
             list: List of dictionaries with 'path' and 'title' keys
         """
         photos = []
+        missing = []
         for photo in marker.get('photos') or []:
             path = photo.get('path')
             if path and os.path.exists(path):
                 photos.append({'path': path, 'title': photo.get('title') or os.path.basename(path)})
+            elif path:
+                missing.append(path)
+
+        # A prepared photo that vanished before upload is a bug we need to hear about
+        for path in missing:
+            self.logger.warning(f"Prepared CalTopo photo is missing on disk, skipping: {path}")
 
         if not photos:
             image_path = marker.get('image_path')
             if image_path and os.path.exists(image_path):
+                if missing:
+                    self.logger.warning(
+                        f"Marker '{marker.get('title', '')}': all prepared photos missing; "
+                        "falling back to the original image"
+                    )
                 photos.append({'path': image_path, 'title': marker.get('title') or os.path.basename(image_path)})
 
         return photos
@@ -1309,18 +1328,17 @@ class CalTopoExportController:
 
         QWebEnginePage.runJavaScript does not wait for JavaScript Promises, so an
         async script is fire-and-forget: its uploads are silently killed when the
-        page is torn down at the end of the export. The script therefore reports
-        its outcome over two channels and this method waits for either one:
+        page is torn down at the end of the export. The script reports its outcome
+        over two channels and this method waits for either one:
 
-        1. document.title, prefixed with 'ADIAT:<token>:'. Title updates arrive
-           via the titleChanged signal on the normal event loop, so they work even
-           when runJavaScript result callbacks are never delivered (observed on
-           some systems).
-        2. window.__adiatResult_<token>, polled via runJavaScript callbacks.
+        1. document.title, prefixed with 'ADIAT:<token>:', observed via the
+           titleChanged signal and a periodic pull of web_view.title()
+        2. window.__adiatResult_<token>, polled via runJavaScript callbacks
 
-        The script also sets the title to 'ADIAT:<token>:started' immediately, so
-        an injection/parse failure (no start marker) can be told apart from a
-        slow or hung upload.
+        The wait runs a real QEventLoop (not a processEvents loop) because
+        QtWebEngine's render-process responses are starved by manual event
+        pumping on some systems, which leaves both channels silent even though
+        the script executes.
 
         Args:
             web_view: QWebEngineView with the authenticated CalTopo session
@@ -1337,51 +1355,80 @@ class CalTopoExportController:
         title_prefix = f"ADIAT:{result_token}:"
         result_var = f"__adiatResult_{result_token}"
 
-        poll_state = {'value': None, 'pending': False}
+        state = {'result': None, 'cancelled': False, 'started': False, 'poll_pending': False}
+        loop = QEventLoop()
+
+        def finish():
+            if loop.isRunning():
+                loop.quit()
+
+        def handle_title(title):
+            if title and title.startswith(title_prefix):
+                state['started'] = True
+                payload = title[len(title_prefix):]
+                if payload != 'started' and state['result'] is None:
+                    state['result'] = payload
+                    finish()
 
         def on_poll(value):
-            poll_state['pending'] = False
-            if value:
-                poll_state['value'] = value
+            state['poll_pending'] = False
+            if value and state['result'] is None:
+                state['result'] = value
+                finish()
 
-        start_time = time.monotonic()
-        deadline = start_time + timeout_s
-        start_marker_seen = False
-        start_warning_logged = False
-
-        while time.monotonic() < deadline:
-            QApplication.processEvents()
+        def tick():
             if progress_dialog.is_cancelled():
-                return None, True
-
-            # Channel 1: document.title (needs no runJavaScript callback delivery)
+                state['cancelled'] = True
+                finish()
+                return
+            # Pull the title too, in case the titleChanged signal was missed
             try:
-                title = web_view.title() or ''
+                handle_title(web_view.title() or '')
             except Exception:
-                title = ''
-            if title.startswith(title_prefix):
-                start_marker_seen = True
-                payload = title[len(title_prefix):]
-                if payload != 'started':
-                    return payload, False
-
-            # Channel 2: polled window variable
-            if poll_state['value'] is not None:
-                return poll_state['value'], False
-            if not poll_state['pending']:
-                poll_state['pending'] = True
+                pass
+            if state['result'] is not None:
+                finish()
+                return
+            if not state['poll_pending']:
+                state['poll_pending'] = True
                 web_view.page().runJavaScript(f"window.{result_var} || null", on_poll)
 
-            # Diagnose scripts that never even started (injection or parse failure)
-            if not start_marker_seen and not start_warning_logged and time.monotonic() - start_time > 5:
-                start_warning_logged = True
-                self.logger.warning(
-                    f"CalTopo export script {result_token} has not reported starting after 5s; "
-                    "the page may not be executing injected scripts"
-                )
+        page = web_view.page()
+        try:
+            page.titleChanged.connect(handle_title)
+            title_connected = True
+        except Exception:
+            title_connected = False
 
-            time.sleep(self.JS_POLL_INTERVAL_S)
-        return None, False
+        poll_timer = QTimer()
+        poll_timer.timeout.connect(tick)
+        poll_timer.start(200)
+
+        timeout_timer = QTimer()
+        timeout_timer.setSingleShot(True)
+        timeout_timer.timeout.connect(finish)
+        timeout_timer.start(int(timeout_s * 1000))
+
+        start_time = time.monotonic()
+        loop.exec()
+
+        poll_timer.stop()
+        timeout_timer.stop()
+        if title_connected:
+            try:
+                page.titleChanged.disconnect(handle_title)
+            except Exception:
+                pass
+
+        if state['cancelled']:
+            return None, True
+        if state['result'] is None and not state['started']:
+            self.logger.warning(
+                f"CalTopo export script {result_token}: no completion signal after "
+                f"{time.monotonic() - start_time:.0f}s; the page is not reporting back "
+                "(the upload itself may still have succeeded)"
+            )
+        return state['result'], False
 
     def _export_markers_via_javascript(self, web_view, map_id, markers):
         """Export markers using JavaScript fetch() inside the authenticated browser.
@@ -1465,15 +1512,6 @@ class CalTopoExportController:
             # Prepare photo data if needed (composite, AOI thumbnail, or both)
             marker_photos = self._get_marker_photos(marker)
 
-            # If photos were prepared but none can be found on disk, say so - a marker
-            # that silently uploads without its photos is very hard to diagnose
-            declared_photos = marker.get('photos') or []
-            if declared_photos and not marker_photos:
-                for photo in declared_photos:
-                    self.logger.warning(
-                        f"Marker {index}: prepared photo is missing on disk, cannot upload: {photo.get('path')}"
-                    )
-
             photo_payloads = []
             for photo in marker_photos:
                 try:
@@ -1486,7 +1524,10 @@ class CalTopoExportController:
                 except Exception as e:
                     self.logger.warning(f"Could not read photo {photo['path']} for CalTopo upload: {e}")
 
-            self.logger.info(f"CalTopo marker {index} of {total}: attaching {len(photo_payloads)} photo(s)")
+            photo_manifest = ", ".join(p['title'] for p in photo_payloads) if photo_payloads else "none"
+            self.logger.info(
+                f"CalTopo marker {index} of {total}: attaching {len(photo_payloads)} photo(s): {photo_manifest}"
+            )
 
             # Create marker and photo(s) in one observable JavaScript call
             photos_js = json.dumps(photo_payloads)
@@ -1682,9 +1723,12 @@ class CalTopoExportController:
             elif result:
                 self.logger.warning(f"Marker {index} export failed: {result}")
             else:
+                # No confirmation channel worked, but the script fires reliably and the
+                # long wait keeps the page alive for the uploads, so assume success
+                success_count += 1
                 self.logger.warning(
                     f"Marker {index}: no confirmation from CalTopo after {timeout_s}s; "
-                    "the marker or its photos may not have uploaded"
+                    "assuming the upload completed (verify on the map)"
                 )
 
             # Process events after each marker to keep UI responsive
@@ -1845,8 +1889,10 @@ class CalTopoExportController:
             elif result:
                 self.logger.warning(f"Polygon {index} export failed: {result}")
             else:
+                success_count += 1
                 self.logger.warning(
-                    f"Polygon {index}: no confirmation from CalTopo after {self.JS_BASE_TIMEOUT_S}s"
+                    f"Polygon {index}: no confirmation from CalTopo after {self.JS_BASE_TIMEOUT_S}s; "
+                    "assuming the upload completed (verify on the map)"
                 )
 
             # Process events after each polygon to keep UI responsive

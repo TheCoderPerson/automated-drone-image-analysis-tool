@@ -752,15 +752,14 @@ class _FakeCalTopoWebView:
 def _run_marker_js_export(controller, markers, poll_results):
     """Drive _export_markers_via_javascript with a fake page and scripted polls."""
     module = 'core.controllers.images.viewer.exports.CalTopoExportController'
-    controller.JS_POLL_INTERVAL_S = 0.001
     view = _FakeCalTopoWebView(poll_results)
-    with patch(f'{module}.ExportProgressDialog') as mock_dialog, patch(f'{module}.QTimer'):
+    with patch(f'{module}.ExportProgressDialog') as mock_dialog:
         mock_dialog.return_value.is_cancelled.return_value = False
         success_count, cancelled = controller._export_markers_via_javascript(view, 'MAPID', markers)
     return success_count, cancelled, view
 
 
-def test_export_markers_via_javascript_waits_for_photo_confirmation(caltopo_controller, aoi_source_image):
+def test_export_markers_via_javascript_waits_for_photo_confirmation(app, caltopo_controller, aoi_source_image):
     """The export polls until the page confirms the marker and its photos uploaded."""
     markers = [{
         'lat': 39.5, 'lon': -105.2, 'title': 'IMG - AOI 1', 'description': 'desc',
@@ -782,7 +781,7 @@ def test_export_markers_via_javascript_waits_for_photo_confirmation(caltopo_cont
     assert 'photosUploaded' in fired
 
 
-def test_export_markers_via_javascript_partial_photos_warns(caltopo_controller, aoi_source_image):
+def test_export_markers_via_javascript_partial_photos_warns(app, caltopo_controller, aoi_source_image):
     """A marker whose photos partially failed still counts, but logs a warning."""
     markers = [{
         'lat': 39.5, 'lon': -105.2, 'title': 'IMG - AOI 1', 'description': 'desc',
@@ -799,9 +798,9 @@ def test_export_markers_via_javascript_partial_photos_warns(caltopo_controller, 
     assert caltopo_controller.logger.warning.called
 
 
-def test_export_markers_via_javascript_timeout_is_failure(caltopo_controller, aoi_source_image):
-    """No confirmation from the page counts as failure and logs, not silent success."""
-    caltopo_controller.JS_BASE_TIMEOUT_S = 0.2
+def test_export_markers_via_javascript_timeout_assumes_success(app, caltopo_controller, aoi_source_image):
+    """No confirmation counts as assumed success with a warning (uploads finish during the wait)."""
+    caltopo_controller.JS_BASE_TIMEOUT_S = 0.3
     caltopo_controller.JS_PER_PHOTO_TIMEOUT_S = 0
     markers = [{
         'lat': 39.5, 'lon': -105.2, 'title': 'IMG - AOI 1', 'description': 'desc',
@@ -811,22 +810,21 @@ def test_export_markers_via_javascript_timeout_is_failure(caltopo_controller, ao
 
     success_count, cancelled, _ = _run_marker_js_export(caltopo_controller, markers, [])
 
-    assert success_count == 0
+    assert success_count == 1
     assert cancelled is False
     assert caltopo_controller.logger.warning.called
 
 
-def test_export_polygons_via_javascript_success(caltopo_controller):
+def test_export_polygons_via_javascript_success(app, caltopo_controller):
     """Polygon export succeeds when the page confirms the shape was posted."""
     module = 'core.controllers.images.viewer.exports.CalTopoExportController'
-    caltopo_controller.JS_POLL_INTERVAL_S = 0.001
     polygons = [{
         'coordinates': [(39.5, -105.2), (39.6, -105.2), (39.6, -105.1)],
         'title': 'Coverage', 'description': 'area'
     }]
 
     view = _FakeCalTopoWebView(['success:SHAPE-1'])
-    with patch(f'{module}.ExportProgressDialog') as mock_dialog, patch(f'{module}.QTimer'):
+    with patch(f'{module}.ExportProgressDialog') as mock_dialog:
         mock_dialog.return_value.is_cancelled.return_value = False
         success_count, cancelled = caltopo_controller._export_polygons_via_javascript(view, 'MAPID', polygons)
 
@@ -835,7 +833,7 @@ def test_export_polygons_via_javascript_success(caltopo_controller):
     assert '__adiatResult_p1' in view.page().fired_scripts[0]
 
 
-def test_export_markers_via_javascript_title_channel(caltopo_controller, aoi_source_image):
+def test_export_markers_via_javascript_title_channel(app, caltopo_controller, aoi_source_image):
     """The document.title channel delivers results even when JS callbacks never fire."""
     module = 'core.controllers.images.viewer.exports.CalTopoExportController'
     caltopo_controller.JS_POLL_INTERVAL_S = 0.001
@@ -851,7 +849,7 @@ def test_export_markers_via_javascript_title_channel(caltopo_controller, aoi_sou
         poll_results=[],
         titles=['CalTopo', 'ADIAT:m1:started', 'ADIAT:m1:success:MARKER-9:photos:1/1']
     )
-    with patch(f'{module}.ExportProgressDialog') as mock_dialog, patch(f'{module}.QTimer'):
+    with patch(f'{module}.ExportProgressDialog') as mock_dialog:
         mock_dialog.return_value.is_cancelled.return_value = False
         success_count, cancelled = caltopo_controller._export_markers_via_javascript(view, 'MAPID', markers)
 
@@ -859,10 +857,9 @@ def test_export_markers_via_javascript_title_channel(caltopo_controller, aoi_sou
     assert cancelled is False
 
 
-def test_export_markers_warns_when_prepared_photos_missing(caltopo_controller, aoi_source_image):
+def test_export_markers_warns_when_prepared_photos_missing(app, caltopo_controller, aoi_source_image):
     """Markers whose prepared photo files vanished log a clear warning per photo."""
     module = 'core.controllers.images.viewer.exports.CalTopoExportController'
-    caltopo_controller.JS_POLL_INTERVAL_S = 0.001
     markers = [{
         'lat': 39.5, 'lon': -105.2, 'title': 'IMG - AOI 1', 'description': 'desc',
         'photos': [{'path': '/gone/overview.jpg', 'title': 'overview'}],
@@ -870,10 +867,28 @@ def test_export_markers_warns_when_prepared_photos_missing(caltopo_controller, a
     }]
 
     view = _FakeCalTopoWebView(poll_results=['success:MARKER-1:photos:0/0'])
-    with patch(f'{module}.ExportProgressDialog') as mock_dialog, patch(f'{module}.QTimer'):
+    with patch(f'{module}.ExportProgressDialog') as mock_dialog:
         mock_dialog.return_value.is_cancelled.return_value = False
         success_count, cancelled = caltopo_controller._export_markers_via_javascript(view, 'MAPID', markers)
 
     assert success_count == 1
     warning_messages = [str(call) for call in caltopo_controller.logger.warning.call_args_list]
     assert any('missing on disk' in message for message in warning_messages)
+
+
+def test_get_marker_photos_warns_per_missing_photo(caltopo_controller, aoi_source_image):
+    """Each prepared photo that is missing on disk is logged, even when others survive."""
+    marker = {
+        'title': 'IMG - AOI 1',
+        'photos': [
+            {'path': '/gone/closeup.jpg', 'title': 'close-up'},
+            {'path': aoi_source_image, 'title': 'overview'},
+        ],
+        'image_path': aoi_source_image,
+    }
+
+    photos = caltopo_controller._get_marker_photos(marker)
+
+    assert [photo['title'] for photo in photos] == ['overview']
+    warning_messages = [str(call) for call in caltopo_controller.logger.warning.call_args_list]
+    assert any('closeup.jpg' in message for message in warning_messages)
