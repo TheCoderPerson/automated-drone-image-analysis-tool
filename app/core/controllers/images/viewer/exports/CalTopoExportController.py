@@ -460,6 +460,12 @@ class CalTopoExportController:
     and/or image locations to CalTopo maps as markers/waypoints.
     """
 
+    # Browser-export polling: how long to wait for the page to confirm each item.
+    # Photo uploads are multi-megabyte POSTs, so each photo gets a generous allowance.
+    JS_BASE_TIMEOUT_S = 30
+    JS_PER_PHOTO_TIMEOUT_S = 60
+    JS_POLL_INTERVAL_S = 0.05
+
     def __init__(self, parent_widget, logger=None):
         """
         Initialize the CalTopo export controller.
@@ -1297,6 +1303,48 @@ class CalTopoExportController:
 
         return polygons
 
+    def _run_export_javascript(self, web_view, js_code, result_var, timeout_s, progress_dialog):
+        """Run an async export script in the page and wait for it to report completion.
+
+        QWebEnginePage.runJavaScript does not wait for JavaScript Promises, so an
+        async script is fire-and-forget: its uploads are silently killed when the
+        page is torn down at the end of the export. The script instead writes its
+        outcome to window.<result_var>, which is polled here until it appears, the
+        timeout elapses, or the user cancels. This keeps the page alive until
+        uploads actually finish and yields a real success/failure per item.
+
+        Args:
+            web_view: QWebEngineView with the authenticated CalTopo session
+            js_code (str): Script to execute; must set window.<result_var> when done
+            result_var (str): Name of the window variable the script reports into
+            timeout_s (float): Maximum seconds to wait for completion
+            progress_dialog: ExportProgressDialog used to detect cancellation
+
+        Returns:
+            tuple: (result string, or None on timeout, cancelled flag)
+        """
+        web_view.page().runJavaScript(js_code)
+
+        poll_state = {'value': None, 'pending': False}
+
+        def on_poll(value):
+            poll_state['pending'] = False
+            if value:
+                poll_state['value'] = value
+
+        deadline = time.monotonic() + timeout_s
+        while time.monotonic() < deadline:
+            QApplication.processEvents()
+            if progress_dialog.is_cancelled():
+                return None, True
+            if poll_state['value'] is not None:
+                return poll_state['value'], False
+            if not poll_state['pending']:
+                poll_state['pending'] = True
+                web_view.page().runJavaScript(f"window.{result_var} || null", on_poll)
+            time.sleep(self.JS_POLL_INTERVAL_S)
+        return None, False
+
     def _export_markers_via_javascript(self, web_view, map_id, markers):
         """Export markers using JavaScript fetch() inside the authenticated browser.
 
@@ -1389,179 +1437,200 @@ class CalTopoExportController:
                 except Exception as e:
                     self.logger.warning(f"Could not read photo {photo['path']} for CalTopo upload: {e}")
 
-            # Create marker and optionally photo(s) in one JavaScript call
+            # Create marker and photo(s) in one observable JavaScript call
             photos_js = json.dumps(photo_payloads)
             photo_desc_js = json.dumps(marker.get('description', ''))
+            result_var = f"__adiatResult_m{index}"
 
             js_code = f"""
-            (async function() {{
-                // STEP 1: Create marker
-                const markerData = {json.dumps(marker_payload)};
-                const markerFormData = new URLSearchParams();
-                markerFormData.append('json', JSON.stringify(markerData));
-
-                let markerId = null;
-                try {{
-                    const markerResponse = await fetch('/api/v1/map/{map_id}/Marker', {{
-                        method: 'POST',
-                        headers: {{
-                            'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8'
-                        }},
-                        credentials: 'include',
-                        body: markerFormData.toString()
-                    }});
-
-                    if (markerResponse.ok) {{
-                        const markerText = await markerResponse.text();
-                        try {{
-                            const markerData = JSON.parse(markerText);
-                            if (markerData.result && markerData.result.id) {{
-                                markerId = markerData.result.id;
-                            }}
-                        }} catch (e) {{
-                            // Ignore parse errors
-                        }}
-                    }} else {{
-                        return 'error:marker:' + markerResponse.status;
-                    }}
-                }} catch (e) {{
-                    return 'error:marker:exception:' + e.toString();
-                }}
-
-                // STEP 2: Upload photo(s) if we have any and marker was created
-                const photos = {photos_js};
-                if (markerId && photos.length > 0) {{
-                    // Get creator ID (once for all photos on this marker)
-                    let creatorId = 'ADIAT_User';
+            (function() {{
+                window.{result_var} = null;
+                (async function() {{
+                    const report = function(message) {{ window.{result_var} = message; }};
                     try {{
-                        const mapResponse = await fetch('/api/v1/map/{map_id}/since/0', {{
-                            method: 'GET',
-                            credentials: 'include'
+                        // STEP 1: Create marker
+                        const markerData = {json.dumps(marker_payload)};
+                        const markerFormData = new URLSearchParams();
+                        markerFormData.append('json', JSON.stringify(markerData));
+
+                        const markerResponse = await fetch('/api/v1/map/{map_id}/Marker', {{
+                            method: 'POST',
+                            headers: {{
+                                'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8'
+                            }},
+                            credentials: 'include',
+                            body: markerFormData.toString()
                         }});
-                        if (mapResponse.ok) {{
-                            const mapData = await mapResponse.json();
-                            if (mapData && mapData.result && mapData.result.state && mapData.result.state.features) {{
-                                for (let feature of mapData.result.state.features) {{
-                                    if (feature.properties && feature.properties.creator) {{
-                                        creatorId = feature.properties.creator;
-                                        break;
-                                    }}
-                                }}
-                            }}
+
+                        if (!markerResponse.ok) {{
+                            report('error:marker:' + markerResponse.status);
+                            return;
                         }}
-                    }} catch (e) {{
-                        // Use fallback
-                    }}
 
-                    const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-
-                    for (const photo of photos) {{
+                        let markerId = null;
                         try {{
-                            const mediaId = crypto.randomUUID();
-
-                            // Step 2.1: Create media object
-                            const mediaMetadataPayload = {{
-                                properties: {{
-                                    creator: creatorId,
-                                    filename: photo.filename,
-                                    exifCreatedTZ: timezone
-                                }}
-                            }};
-                            const step1FormData = new URLSearchParams();
-                            step1FormData.append('json', JSON.stringify(mediaMetadataPayload));
-                            const step1Response = await fetch(window.location.origin + '/api/v1/media/' + mediaId, {{
-                                method: 'POST',
-                                headers: {{ 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' }},
-                                credentials: 'include',
-                                body: step1FormData.toString()
-                            }});
-                            if (!step1Response.ok) {{
-                                continue;
-                            }}
-
-                            // Step 2.2: Upload image data
-                            const mediaDataPayload = {{ data: photo.data }};
-                            const step2FormData = new URLSearchParams();
-                            step2FormData.append('json', JSON.stringify(mediaDataPayload));
-                            const step2Response = await fetch(window.location.origin + '/api/v1/media/' + mediaId + '/data', {{
-                                method: 'POST',
-                                headers: {{ 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' }},
-                                credentials: 'include',
-                                body: step2FormData.toString()
-                            }});
-                            if (!step2Response.ok) {{
-                                continue;
-                            }}
-
-                            // Step 2.3: Attach media to map
-                            const mediaObjectPayload = {{
-                                type: 'Feature',
-                                geometry: {{
-                                    type: 'Point',
-                                    coordinates: [{marker['lon']}, {marker['lat']}]
-                                }},
-                                properties: {{
-                                    parentId: 'Marker:' + markerId,
-                                    backendMediaId: mediaId,
-                                    created: Date.now(),
-                                    title: photo.title,
-                                    heading: null,
-                                    description: {photo_desc_js},
-                                    'marker-symbol': 'aperture',
-                                    'marker-color': '#FFFFFF',
-                                    'marker-size': 1
-                                }}
-                            }};
-                            const step3FormData = new URLSearchParams();
-                            step3FormData.append('json', JSON.stringify(mediaObjectPayload));
-                            await fetch(window.location.origin + '/api/v1/map/{map_id}/MapMediaObject', {{
-                                method: 'POST',
-                                headers: {{ 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' }},
-                                credentials: 'include',
-                                body: step3FormData.toString()
-                            }});
+                            const parsed = JSON.parse(await markerResponse.text());
+                            markerId = (parsed && parsed.result && parsed.result.id) || (parsed && parsed.id) || null;
                         }} catch (e) {{
-                            continue;
+                            // Response was OK but not parseable - marker likely created without a usable id
                         }}
-                    }}
-                }}
 
-                return 'success:' + markerId;
+                        // STEP 2: Upload photo(s) and attach them to the marker
+                        const photos = {photos_js};
+                        if (!markerId) {{
+                            // Marker was created but no id came back, so photos cannot be attached
+                            report('success:no-id:photos:0/' + photos.length);
+                            return;
+                        }}
+
+                        let photosUploaded = 0;
+                        if (photos.length > 0) {{
+                            // Creator ID is needed for media metadata; cache it across markers
+                            let creatorId = window.__adiatCreatorId || null;
+                            if (!creatorId) {{
+                                creatorId = 'ADIAT_User';
+                                try {{
+                                    const mapResponse = await fetch('/api/v1/map/{map_id}/since/0', {{
+                                        method: 'GET',
+                                        credentials: 'include'
+                                    }});
+                                    if (mapResponse.ok) {{
+                                        const mapData = await mapResponse.json();
+                                        if (mapData && mapData.result && mapData.result.state && mapData.result.state.features) {{
+                                            for (let feature of mapData.result.state.features) {{
+                                                if (feature.properties && feature.properties.creator) {{
+                                                    creatorId = feature.properties.creator;
+                                                    break;
+                                                }}
+                                            }}
+                                        }}
+                                    }}
+                                }} catch (e) {{
+                                    // Use fallback creator
+                                }}
+                                window.__adiatCreatorId = creatorId;
+                            }}
+
+                            const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+                            for (const photo of photos) {{
+                                try {{
+                                    const mediaId = crypto.randomUUID();
+
+                                    // Step 2.1: Create media object
+                                    const mediaMetadataPayload = {{
+                                        properties: {{
+                                            creator: creatorId,
+                                            filename: photo.filename,
+                                            exifCreatedTZ: timezone
+                                        }}
+                                    }};
+                                    const step1FormData = new URLSearchParams();
+                                    step1FormData.append('json', JSON.stringify(mediaMetadataPayload));
+                                    const step1Response = await fetch(window.location.origin + '/api/v1/media/' + mediaId, {{
+                                        method: 'POST',
+                                        headers: {{ 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' }},
+                                        credentials: 'include',
+                                        body: step1FormData.toString()
+                                    }});
+                                    if (!step1Response.ok) {{
+                                        continue;
+                                    }}
+
+                                    // Step 2.2: Upload image data
+                                    const mediaDataPayload = {{ data: photo.data }};
+                                    const step2FormData = new URLSearchParams();
+                                    step2FormData.append('json', JSON.stringify(mediaDataPayload));
+                                    const step2Response = await fetch(window.location.origin + '/api/v1/media/' + mediaId + '/data', {{
+                                        method: 'POST',
+                                        headers: {{ 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' }},
+                                        credentials: 'include',
+                                        body: step2FormData.toString()
+                                    }});
+                                    if (!step2Response.ok) {{
+                                        continue;
+                                    }}
+
+                                    // Step 2.3: Attach media to map
+                                    const mediaObjectPayload = {{
+                                        type: 'Feature',
+                                        geometry: {{
+                                            type: 'Point',
+                                            coordinates: [{marker['lon']}, {marker['lat']}]
+                                        }},
+                                        properties: {{
+                                            parentId: 'Marker:' + markerId,
+                                            backendMediaId: mediaId,
+                                            created: Date.now(),
+                                            title: photo.title,
+                                            heading: null,
+                                            description: {photo_desc_js},
+                                            'marker-symbol': 'aperture',
+                                            'marker-color': '#FFFFFF',
+                                            'marker-size': 1
+                                        }}
+                                    }};
+                                    const step3FormData = new URLSearchParams();
+                                    step3FormData.append('json', JSON.stringify(mediaObjectPayload));
+                                    const step3Response = await fetch(window.location.origin + '/api/v1/map/{map_id}/MapMediaObject', {{
+                                        method: 'POST',
+                                        headers: {{ 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' }},
+                                        credentials: 'include',
+                                        body: step3FormData.toString()
+                                    }});
+                                    if (step3Response.ok) {{
+                                        photosUploaded++;
+                                    }}
+                                }} catch (e) {{
+                                    continue;
+                                }}
+                            }}
+                        }}
+
+                        report('success:' + markerId + ':photos:' + photosUploaded + '/' + photos.length);
+                    }} catch (e) {{
+                        report('error:exception:' + e.toString());
+                    }}
+                }})();
+                return true;
             }})();
             """
 
-            result_container = {"result": None}
-
-            def callback(result):
-                result_container["result"] = result
-
-            web_view.page().runJavaScript(js_code, callback)
-
-            # Wait for completion with 2 second timeout
-            max_wait_iterations = 200  # 2 seconds max (200 * 0.01)
-            for iteration in range(max_wait_iterations):
+            if photo_payloads:
+                progress_dialog.set_status(
+                    f"Uploading marker {index} of {total} with {len(photo_payloads)} photo(s)..."
+                )
                 QApplication.processEvents()
-                if result_container["result"] is not None:
-                    break
-                # Bail out immediately if the user cancels while waiting on the callback
-                if progress_dialog.is_cancelled():
-                    cancelled = True
-                    break
-                time.sleep(0.01)
 
-            if cancelled:
+            # Wait for the page to confirm the marker AND its photo uploads finished
+            timeout_s = self.JS_BASE_TIMEOUT_S + self.JS_PER_PHOTO_TIMEOUT_S * len(photo_payloads)
+            result, was_cancelled = self._run_export_javascript(
+                web_view, js_code, result_var, timeout_s, progress_dialog
+            )
+
+            if was_cancelled:
+                cancelled = True
                 break
 
-            result = result_container["result"]
-            if result and isinstance(result, str) and "success" in result:
+            if result and isinstance(result, str) and result.startswith('success'):
                 success_count += 1
-            elif result and isinstance(result, str) and "error" in result:
-                # Only log actual errors
+                # Surface partial photo uploads instead of failing silently
+                try:
+                    if ':photos:' in result:
+                        uploaded, requested = result.rsplit(':photos:', 1)[1].split('/')
+                        if int(uploaded) < int(requested):
+                            self.logger.warning(
+                                f"Marker {index}: only {uploaded} of {requested} photo(s) uploaded (result: {result})"
+                            )
+                except (ValueError, IndexError):
+                    pass
+            elif result:
                 self.logger.warning(f"Marker {index} export failed: {result}")
             else:
-                # Callback didn't fire, but assume success (exports are working)
-                # The JavaScript is executing, just callbacks aren't being received
-                success_count += 1
+                self.logger.warning(
+                    f"Marker {index}: no confirmation from CalTopo after {timeout_s}s; "
+                    "the marker or its photos may not have uploaded"
+                )
 
             # Process events after each marker to keep UI responsive
             QApplication.processEvents()
@@ -1661,76 +1730,65 @@ class CalTopoExportController:
                 }
             }
 
-            # Create JavaScript code to export polygon
+            # Create JavaScript code to export polygon (observable via window variable)
+            result_var = f"__adiatResult_p{index}"
             js_code = f"""
-            (async function() {{
-                const shapeData = {json.dumps(shape_payload)};
-                const shapeFormData = new URLSearchParams();
-                shapeFormData.append('json', JSON.stringify(shapeData));
+            (function() {{
+                window.{result_var} = null;
+                (async function() {{
+                    const report = function(message) {{ window.{result_var} = message; }};
+                    try {{
+                        const shapeData = {json.dumps(shape_payload)};
+                        const shapeFormData = new URLSearchParams();
+                        shapeFormData.append('json', JSON.stringify(shapeData));
 
-                try {{
-                    const shapeResponse = await fetch('/api/v1/map/{map_id}/Shape', {{
-                        method: 'POST',
-                        headers: {{
-                            'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8'
-                        }},
-                        credentials: 'include',
-                        body: shapeFormData.toString()
-                    }});
+                        const shapeResponse = await fetch('/api/v1/map/{map_id}/Shape', {{
+                            method: 'POST',
+                            headers: {{
+                                'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8'
+                            }},
+                            credentials: 'include',
+                            body: shapeFormData.toString()
+                        }});
 
-                    if (shapeResponse.ok) {{
-                        const shapeText = await shapeResponse.text();
+                        if (!shapeResponse.ok) {{
+                            report('error:shape:' + shapeResponse.status);
+                            return;
+                        }}
+
+                        let shapeId = 'unknown';
                         try {{
-                            const shapeResult = JSON.parse(shapeText);
-                            if (shapeResult.result && shapeResult.result.id) {{
-                                return 'success:' + shapeResult.result.id;
-                            }}
+                            const parsed = JSON.parse(await shapeResponse.text());
+                            shapeId = (parsed && parsed.result && parsed.result.id) || (parsed && parsed.id) || 'unknown';
                         }} catch (e) {{
                             // Ignore parse errors if response is OK
-                            return 'success:unknown';
                         }}
-                        return 'success:unknown';
-                    }} else {{
-                        return 'error:shape:' + shapeResponse.status;
+                        report('success:' + shapeId);
+                    }} catch (e) {{
+                        report('error:shape:exception:' + e.toString());
                     }}
-                }} catch (e) {{
-                    return 'error:shape:exception:' + e.toString();
-                }}
+                }})();
+                return true;
             }})();
             """
 
-            result_container = {"result": None}
+            # Wait for the page to confirm the polygon was posted
+            result, was_cancelled = self._run_export_javascript(
+                web_view, js_code, result_var, self.JS_BASE_TIMEOUT_S, progress_dialog
+            )
 
-            def callback(result):
-                result_container["result"] = result
-
-            web_view.page().runJavaScript(js_code, callback)
-
-            # Wait for completion with 2 second timeout
-            max_wait_iterations = 200  # 2 seconds max (200 * 0.01)
-            for iteration in range(max_wait_iterations):
-                QApplication.processEvents()
-                if result_container["result"] is not None:
-                    break
-                # Bail out immediately if the user cancels while waiting on the callback
-                if progress_dialog.is_cancelled():
-                    cancelled = True
-                    break
-                time.sleep(0.01)
-
-            if cancelled:
+            if was_cancelled:
+                cancelled = True
                 break
 
-            result = result_container["result"]
-            if result and isinstance(result, str) and "success" in result:
+            if result and isinstance(result, str) and result.startswith('success'):
                 success_count += 1
-            elif result and isinstance(result, str) and "error" in result:
-                # Only log actual errors
+            elif result:
                 self.logger.warning(f"Polygon {index} export failed: {result}")
             else:
-                # Callback didn't fire, but assume success (exports are working)
-                # The JavaScript is executing, just callbacks aren't being received
-                success_count += 1
+                self.logger.warning(
+                    f"Polygon {index}: no confirmation from CalTopo after {self.JS_BASE_TIMEOUT_S}s"
+                )
 
             # Process events after each polygon to keep UI responsive
             QApplication.processEvents()

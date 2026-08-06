@@ -710,3 +710,119 @@ def test_prepare_coverage_polygons_forwards_cancel_check(caltopo_controller, moc
     mock_service.return_value.calculate_coverage_extents.assert_called_once_with(
         images, progress_callback=progress_callback, cancel_check=cancel_check
     )
+
+
+class _FakeCalTopoPage:
+    """Simulates QWebEnginePage.runJavaScript for the browser export flow.
+
+    Calls without a callback are the fired export scripts (recorded); calls with
+    a callback are result polls, answered from a scripted list.
+    """
+
+    def __init__(self, poll_results):
+        self.fired_scripts = []
+        self.poll_results = list(poll_results)
+
+    def runJavaScript(self, code, callback=None):
+        if callback is None:
+            self.fired_scripts.append(code)
+        elif self.poll_results:
+            callback(self.poll_results.pop(0))
+        else:
+            callback(None)
+
+
+class _FakeCalTopoWebView:
+    """Wraps _FakeCalTopoPage with the page() accessor the controller expects."""
+
+    def __init__(self, poll_results):
+        self._page = _FakeCalTopoPage(poll_results)
+
+    def page(self):
+        return self._page
+
+
+def _run_marker_js_export(controller, markers, poll_results):
+    """Drive _export_markers_via_javascript with a fake page and scripted polls."""
+    module = 'core.controllers.images.viewer.exports.CalTopoExportController'
+    controller.JS_POLL_INTERVAL_S = 0.001
+    view = _FakeCalTopoWebView(poll_results)
+    with patch(f'{module}.ExportProgressDialog') as mock_dialog, patch(f'{module}.QTimer'):
+        mock_dialog.return_value.is_cancelled.return_value = False
+        success_count, cancelled = controller._export_markers_via_javascript(view, 'MAPID', markers)
+    return success_count, cancelled, view
+
+
+def test_export_markers_via_javascript_waits_for_photo_confirmation(caltopo_controller, aoi_source_image):
+    """The export polls until the page confirms the marker and its photos uploaded."""
+    markers = [{
+        'lat': 39.5, 'lon': -105.2, 'title': 'IMG - AOI 1', 'description': 'desc',
+        'photos': [{'path': aoi_source_image, 'title': 'overview'},
+                   {'path': aoi_source_image, 'title': 'close-up'}],
+        'image_path': aoi_source_image,
+    }]
+
+    # First poll: still running; second poll: done with both photos confirmed
+    success_count, cancelled, view = _run_marker_js_export(
+        caltopo_controller, markers, [None, 'success:MARKER-1:photos:2/2']
+    )
+
+    assert success_count == 1
+    assert cancelled is False
+    # The script reports into a per-marker window variable that gets polled
+    fired = view.page().fired_scripts[0]
+    assert '__adiatResult_m1' in fired
+    assert 'photosUploaded' in fired
+
+
+def test_export_markers_via_javascript_partial_photos_warns(caltopo_controller, aoi_source_image):
+    """A marker whose photos partially failed still counts, but logs a warning."""
+    markers = [{
+        'lat': 39.5, 'lon': -105.2, 'title': 'IMG - AOI 1', 'description': 'desc',
+        'photos': [{'path': aoi_source_image, 'title': 'overview'},
+                   {'path': aoi_source_image, 'title': 'close-up'}],
+        'image_path': aoi_source_image,
+    }]
+
+    success_count, cancelled, _ = _run_marker_js_export(
+        caltopo_controller, markers, ['success:MARKER-1:photos:1/2']
+    )
+
+    assert success_count == 1
+    assert caltopo_controller.logger.warning.called
+
+
+def test_export_markers_via_javascript_timeout_is_failure(caltopo_controller, aoi_source_image):
+    """No confirmation from the page counts as failure and logs, not silent success."""
+    caltopo_controller.JS_BASE_TIMEOUT_S = 0.2
+    caltopo_controller.JS_PER_PHOTO_TIMEOUT_S = 0
+    markers = [{
+        'lat': 39.5, 'lon': -105.2, 'title': 'IMG - AOI 1', 'description': 'desc',
+        'photos': [{'path': aoi_source_image, 'title': 'overview'}],
+        'image_path': aoi_source_image,
+    }]
+
+    success_count, cancelled, _ = _run_marker_js_export(caltopo_controller, markers, [])
+
+    assert success_count == 0
+    assert cancelled is False
+    assert caltopo_controller.logger.warning.called
+
+
+def test_export_polygons_via_javascript_success(caltopo_controller):
+    """Polygon export succeeds when the page confirms the shape was posted."""
+    module = 'core.controllers.images.viewer.exports.CalTopoExportController'
+    caltopo_controller.JS_POLL_INTERVAL_S = 0.001
+    polygons = [{
+        'coordinates': [(39.5, -105.2), (39.6, -105.2), (39.6, -105.1)],
+        'title': 'Coverage', 'description': 'area'
+    }]
+
+    view = _FakeCalTopoWebView(['success:SHAPE-1'])
+    with patch(f'{module}.ExportProgressDialog') as mock_dialog, patch(f'{module}.QTimer'):
+        mock_dialog.return_value.is_cancelled.return_value = False
+        success_count, cancelled = caltopo_controller._export_polygons_via_javascript(view, 'MAPID', polygons)
+
+    assert success_count == 1
+    assert cancelled is False
+    assert '__adiatResult_p1' in view.page().fired_scripts[0]
