@@ -602,3 +602,111 @@ def test_cleanup_aoi_thumbnails_removes_generated_files(caltopo_controller, aoi_
 
     assert not os.path.exists(thumbnail_path)
     assert caltopo_controller.aoi_thumbnail_service is None
+
+
+def test_prepare_markers_cancelled_immediately(caltopo_controller, mock_viewer, aoi_source_image):
+    """A cancel before any work returns immediately with no markers or photos."""
+    mock_viewer.messages = {}
+    mock_viewer.custom_agl_altitude_ft = None
+    images = [{
+        'path': aoi_source_image,
+        'name': 'IMG_0001.jpg',
+        'areas_of_interest': [{'center': (400, 300), 'radius': 20}],
+        'hidden': False
+    }]
+
+    markers = _patched_prepare_markers(
+        caltopo_controller, images, {0: {0}}, include_images=True, cancel_check=lambda: True
+    )
+
+    assert markers == []
+    # No photo services were spun up because no AOI was processed
+    assert caltopo_controller.aoi_thumbnail_service is None
+
+
+def test_prepare_markers_cancel_mid_run_returns_partial(caltopo_controller, mock_viewer, aoi_source_image):
+    """Cancelling mid-run stops before the next AOI and returns the markers built so far."""
+    mock_viewer.messages = {}
+    mock_viewer.custom_agl_altitude_ft = None
+    images = [{
+        'path': aoi_source_image,
+        'name': 'IMG_0001.jpg',
+        'areas_of_interest': [
+            {'center': (400, 300), 'radius': 20},
+            {'center': (200, 200), 'radius': 20},
+        ],
+        'hidden': False
+    }]
+
+    # Cancel as soon as the first AOI has been reported via the progress callback
+    state = {'aois_seen': 0}
+
+    def progress_callback(current, total, message):
+        state['aois_seen'] = current
+
+    def cancel_check():
+        return state['aois_seen'] >= 1
+
+    markers = _patched_prepare_markers(
+        caltopo_controller, images, {0: [0, 1]}, include_images=False,
+        cancel_check=cancel_check, progress_callback=progress_callback
+    )
+
+    assert len(markers) == 1
+
+    caltopo_controller._cleanup_aoi_thumbnails()
+
+
+def test_prepare_markers_reports_progress(caltopo_controller, mock_viewer, aoi_source_image):
+    """The progress callback is invoked once per AOI with a running count."""
+    mock_viewer.messages = {}
+    mock_viewer.custom_agl_altitude_ft = None
+    images = [{
+        'path': aoi_source_image,
+        'name': 'IMG_0001.jpg',
+        'areas_of_interest': [
+            {'center': (400, 300), 'radius': 20},
+            {'center': (200, 200), 'radius': 20},
+        ],
+        'hidden': False
+    }]
+
+    calls = []
+    _patched_prepare_markers(
+        caltopo_controller, images, {0: [0, 1]}, include_images=False,
+        progress_callback=lambda current, total, message: calls.append((current, total))
+    )
+
+    assert calls == [(1, 2), (2, 2)]
+
+
+def test_prepare_location_markers_cancelled_immediately(caltopo_controller, mock_viewer, aoi_source_image):
+    """A cancelled location prep returns immediately with no markers."""
+    images = [{'path': aoi_source_image, 'name': 'IMG_0001.jpg', 'hidden': False}]
+
+    markers = caltopo_controller._prepare_location_markers(images, cancel_check=lambda: True)
+
+    assert markers == []
+
+
+def test_prepare_coverage_polygons_forwards_cancel_check(caltopo_controller, mock_viewer, aoi_source_image):
+    """The cancel check and progress callback are forwarded to the coverage service."""
+    module = 'core.controllers.images.viewer.exports.CalTopoExportController'
+    mock_viewer.custom_agl_altitude_ft = None
+    images = [{'path': aoi_source_image, 'name': 'IMG_0001.jpg', 'hidden': False}]
+
+    def cancel_check():
+        return False
+
+    def progress_callback(current, total, message):
+        pass
+
+    with patch(f'{module}.CoverageExtentService') as mock_service:
+        mock_service.return_value.calculate_coverage_extents.return_value = {'polygons': []}
+        caltopo_controller._prepare_coverage_polygons(
+            images, cancel_check=cancel_check, progress_callback=progress_callback
+        )
+
+    mock_service.return_value.calculate_coverage_extents.assert_called_once_with(
+        images, progress_callback=progress_callback, cancel_check=cancel_check
+    )

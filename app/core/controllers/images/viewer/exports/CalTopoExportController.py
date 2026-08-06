@@ -130,6 +130,23 @@ class CalTopoDataPreparationThread(QThread):
         """
         return self._cancelled
 
+    def _phase_progress(self, base, span):
+        """Return a progress callback that maps a phase's progress into the overall 0-100 range.
+
+        Args:
+            base: Overall percentage where this phase starts
+            span: Percentage points this phase covers
+
+        Returns:
+            callable: Callback with the (current, total, message) signature
+        """
+        def callback(current, total, message):
+            if total > 0:
+                self.progressUpdated.emit(base + int((current / total) * span), 100, message)
+            else:
+                self.progressUpdated.emit(base, 100, message)
+        return callback
+
     def run(self):
         """
         Execute the data preparation.
@@ -148,7 +165,9 @@ class CalTopoDataPreparationThread(QThread):
                 self.progressUpdated.emit(0, 100, "Preparing flagged AOI markers...")
                 markers.extend(self.controller._prepare_markers(
                     self.images, self.flagged_aois, include_images=self.include_images,
-                    aoi_photo_mode=self.aoi_photo_mode
+                    aoi_photo_mode=self.aoi_photo_mode,
+                    cancel_check=self.is_cancelled,
+                    progress_callback=self._phase_progress(0, 33)
                 ))
 
             if self.include_locations and not self.is_cancelled():
@@ -162,7 +181,9 @@ class CalTopoDataPreparationThread(QThread):
                     if has_flagged_aois or self.include_images_without_flagged_aois:
                         images_for_locations.append(img)
                 markers.extend(self.controller._prepare_location_markers(
-                    images_for_locations, include_images=self.include_images
+                    images_for_locations, include_images=self.include_images,
+                    cancel_check=self.is_cancelled,
+                    progress_callback=self._phase_progress(33, 33)
                 ))
 
             if self.include_coverage_area and not self.is_cancelled():
@@ -186,7 +207,11 @@ class CalTopoDataPreparationThread(QThread):
 
                 # Filter images to only those being exported
                 images_for_coverage = [self.images[idx] for idx in exported_image_indices if idx < len(self.images)]
-                polygons.extend(self.controller._prepare_coverage_polygons(images_for_coverage))
+                polygons.extend(self.controller._prepare_coverage_polygons(
+                    images_for_coverage,
+                    cancel_check=self.is_cancelled,
+                    progress_callback=self._phase_progress(66, 34)
+                ))
 
             if self.is_cancelled():
                 self.canceled.emit()
@@ -247,6 +272,23 @@ class CalTopoAPIExportThread(QThread):
         self.aoi_photo_mode = aoi_photo_mode
         self._cancelled = False
 
+    def _phase_progress(self, base, span):
+        """Return a progress callback that maps a phase's progress into the overall 0-100 range.
+
+        Args:
+            base: Overall percentage where this phase starts
+            span: Percentage points this phase covers
+
+        Returns:
+            callable: Callback with the (current, total, message) signature
+        """
+        def callback(current, total, message):
+            if total > 0:
+                self.progressUpdated.emit(base + int((current / total) * span), 100, message)
+            else:
+                self.progressUpdated.emit(base, 100, message)
+        return callback
+
     def cancel(self):
         """
         Cancel the export operation.
@@ -278,7 +320,9 @@ class CalTopoAPIExportThread(QThread):
                 self.progressUpdated.emit(0, 100, "Preparing flagged AOI markers...")
                 markers.extend(self.controller._prepare_markers(
                     self.images, self.flagged_aois, include_images=self.include_images,
-                    aoi_photo_mode=self.aoi_photo_mode
+                    aoi_photo_mode=self.aoi_photo_mode,
+                    cancel_check=self.is_cancelled,
+                    progress_callback=self._phase_progress(0, 20)
                 ))
 
             if self.include_locations and not self.is_cancelled():
@@ -292,7 +336,9 @@ class CalTopoAPIExportThread(QThread):
                     if has_flagged_aois or self.include_images_without_flagged_aois:
                         images_for_locations.append(img)
                 markers.extend(self.controller._prepare_location_markers(
-                    images_for_locations, include_images=self.include_images
+                    images_for_locations, include_images=self.include_images,
+                    cancel_check=self.is_cancelled,
+                    progress_callback=self._phase_progress(20, 20)
                 ))
 
             if self.include_coverage_area and not self.is_cancelled():
@@ -316,7 +362,11 @@ class CalTopoAPIExportThread(QThread):
 
                 # Filter images to only those being exported
                 images_for_coverage = [self.images[idx] for idx in exported_image_indices if idx < len(self.images)]
-                polygons.extend(self.controller._prepare_coverage_polygons(images_for_coverage))
+                polygons.extend(self.controller._prepare_coverage_polygons(
+                    images_for_coverage,
+                    cancel_check=self.is_cancelled,
+                    progress_callback=self._phase_progress(40, 10)
+                ))
 
             if self.is_cancelled():
                 self.canceled.emit()
@@ -351,8 +401,10 @@ class CalTopoAPIExportThread(QThread):
                     if success:
                         marker_success_count += 1
 
-                        # Upload photo(s) if available (full image, AOI thumbnail, or both)
+                        # Upload photo(s) if available (composite, AOI thumbnail, or both)
                         for photo in self.controller._get_marker_photos(marker):
+                            if self.is_cancelled():
+                                break
                             self.api_service.upload_photo_via_api(
                                 self.map_id, self.team_id, self.credential_id, self.credential_secret,
                                 photo['path'],
@@ -704,7 +756,8 @@ class CalTopoExportController:
             pass
         return False
 
-    def _prepare_markers(self, images, flagged_aois, include_images=True, aoi_photo_mode='full'):
+    def _prepare_markers(self, images, flagged_aois, include_images=True, aoi_photo_mode='full',
+                         cancel_check=None, progress_callback=None):
         """Prepare marker data from flagged AOIs.
 
         Args:
@@ -714,20 +767,34 @@ class CalTopoExportController:
             aoi_photo_mode (str): Which photo(s) to attach to each AOI marker:
                 'full' for the large multi-zoom composite (same image as the PDF
                 report), 'thumbnail' for a zoomed crop centered on the AOI, or 'both'
+            cancel_check (callable, optional): Returns True when the user cancelled;
+                checked before each image and each AOI so cancellation is prompt
+            progress_callback (callable, optional): Called with (current, total, message)
+                as each AOI is processed
 
         Returns:
             list: List of marker dictionaries with 'lat', 'lon', 'title', 'description'
+                  (may be partial if cancelled)
         """
         markers = []
 
+        total_aois = sum(len(aoi_indices) for aoi_indices in flagged_aois.values())
+        processed_aois = 0
+
         for img_idx, aoi_indices in flagged_aois.items():
+            # Stop promptly when the user cancels - photo generation per AOI is expensive
+            if cancel_check and cancel_check():
+                return markers
+
             if img_idx >= len(images):
+                processed_aois += len(aoi_indices)
                 continue
 
             image = images[img_idx]
 
             # Skip hidden images - don't export their flagged AOIs
             if image.get('hidden', False):
+                processed_aois += len(aoi_indices)
                 continue
 
             image_name = image.get('name', f'Image {img_idx + 1}')
@@ -744,6 +811,7 @@ class CalTopoExportController:
                 image_gps = LocationInfo.get_gps(exif_data=exif_data)
 
                 if not image_gps:
+                    processed_aois += len(aoi_indices)
                     continue
 
                 # Get image dimensions for AOI GPS calculation
@@ -777,6 +845,7 @@ class CalTopoExportController:
                     gsd_cm = image_service.get_average_gsd(custom_altitude_ft=custom_alt)
 
             except Exception:
+                processed_aois += len(aoi_indices)
                 continue
 
             # Prepare the source pixels for the multi-zoom composite once per image.
@@ -789,6 +858,18 @@ class CalTopoExportController:
             aois = image.get('areas_of_interest', [])
 
             for aoi_idx in aoi_indices:
+                # Check per AOI as well - composite/thumbnail generation dominates prep time
+                if cancel_check and cancel_check():
+                    return markers
+
+                processed_aois += 1
+                if progress_callback:
+                    progress_callback(
+                        processed_aois,
+                        total_aois,
+                        f"Preparing AOI marker {processed_aois} of {total_aois} ({image_name})..."
+                    )
+
                 if aoi_idx >= len(aois):
                     continue
 
@@ -1056,19 +1137,34 @@ class CalTopoExportController:
             self.aoi_composite_service.clear_cache()
             self.aoi_composite_service = None
 
-    def _prepare_location_markers(self, images, include_images=True):
+    def _prepare_location_markers(self, images, include_images=True, cancel_check=None, progress_callback=None):
         """Prepare marker data for drone/image locations.
 
         Args:
             images: List of image data dictionaries
             include_images (bool): Whether to include image_path for photo uploads
+            cancel_check (callable, optional): Returns True when the user cancelled;
+                checked before each image so cancellation is prompt
+            progress_callback (callable, optional): Called with (current, total, message)
+                as each image is processed
 
         Returns:
             list: List of marker dictionaries with 'lat', 'lon', 'title', 'description'
+                  (may be partial if cancelled)
         """
         markers = []
 
         for img_idx, image in enumerate(images):
+            # Stop promptly when the user cancels - each image loads EXIF from disk
+            if cancel_check and cancel_check():
+                return markers
+
+            if progress_callback:
+                progress_callback(
+                    img_idx + 1,
+                    len(images),
+                    f"Preparing location marker {img_idx + 1} of {len(images)}..."
+                )
             if image.get('hidden', False):
                 continue
 
@@ -1124,11 +1220,15 @@ class CalTopoExportController:
 
         return markers
 
-    def _prepare_coverage_polygons(self, images):
+    def _prepare_coverage_polygons(self, images, cancel_check=None, progress_callback=None):
         """Prepare polygon data for coverage areas.
 
         Args:
             images: List of image data dictionaries
+            cancel_check (callable, optional): Returns True when the user cancelled;
+                forwarded to the coverage calculation so it stops promptly
+            progress_callback (callable, optional): Called with (current, total, message)
+                during the coverage calculation
 
         Returns:
             list: List of polygon dictionaries with 'coordinates', 'title', 'description', 'area_sqm'
@@ -1152,7 +1252,11 @@ class CalTopoExportController:
             coverage_service = CoverageExtentService(custom_altitude_ft=custom_alt, logger=self.logger)
 
             # Calculate coverage extents using only non-hidden images
-            coverage_data = coverage_service.calculate_coverage_extents(filtered_images)
+            coverage_data = coverage_service.calculate_coverage_extents(
+                filtered_images,
+                progress_callback=progress_callback,
+                cancel_check=cancel_check
+            )
 
             if not coverage_data or coverage_data.get('cancelled', False):
                 return polygons
@@ -1439,7 +1543,14 @@ class CalTopoExportController:
                 QApplication.processEvents()
                 if result_container["result"] is not None:
                     break
+                # Bail out immediately if the user cancels while waiting on the callback
+                if progress_dialog.is_cancelled():
+                    cancelled = True
+                    break
                 time.sleep(0.01)
+
+            if cancelled:
+                break
 
             result = result_container["result"]
             if result and isinstance(result, str) and "success" in result:
@@ -1601,7 +1712,14 @@ class CalTopoExportController:
                 QApplication.processEvents()
                 if result_container["result"] is not None:
                     break
+                # Bail out immediately if the user cancels while waiting on the callback
+                if progress_dialog.is_cancelled():
+                    cancelled = True
+                    break
                 time.sleep(0.01)
+
+            if cancelled:
+                break
 
             result = result_container["result"]
             if result and isinstance(result, str) and "success" in result:
