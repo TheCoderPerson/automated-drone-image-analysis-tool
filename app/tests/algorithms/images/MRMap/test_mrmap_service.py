@@ -527,3 +527,63 @@ def test_process_image_with_threshold_expansion_and_hue():
         full_path = os.path.join(tmpdir, "test.jpg")
         result = service.process_image(img, full_path, tmpdir, tmpdir)
     assert isinstance(result, AnalysisResult)
+
+
+# ---------------------------------------------------------------------------
+# Histogram equivalence: bincount fast path must reproduce np.histogramdd
+# ---------------------------------------------------------------------------
+
+@pytest.mark.parametrize('colorspace', ['RGB', 'HSV', 'LAB'])
+def test_histogram_matches_histogramdd(colorspace):
+    """The fused-index bincount must equal the histogramdd it replaced."""
+    rng = np.random.default_rng(42)
+    img = rng.integers(0, 256, (120, 160, 3), dtype=np.uint8)
+    if colorspace == 'HSV':
+        img[:, :, 0] = rng.integers(0, 180, (120, 160), dtype=np.uint8)
+
+    hist = Histogram(img, colorspace=colorspace)
+
+    ch0_mapped = hist.mapping_ch0[img[:, :, 0]]
+    ch1_mapped = hist.mapping_ch1[img[:, :, 1]]
+    ch2_mapped = hist.mapping_ch2[img[:, :, 2]]
+    from algorithms.images.MRMap.services.MRMapService import NUMBER_OF_QUANTIZED_HISTOGRAM_BINS as B
+    reference, _ = np.histogramdd(
+        (ch0_mapped.ravel(), ch1_mapped.ravel(), ch2_mapped.ravel()),
+        bins=(B,) * 3, range=((0, B),) * 3
+    )
+
+    assert hist.q_histogram.dtype == reference.dtype
+    assert np.array_equal(hist.q_histogram, reference)
+
+
+def test_bin_count_matches_direct_indexing():
+    """The flat-gather lookup must equal 3D fancy indexing of the histogram."""
+    rng = np.random.default_rng(7)
+    img = rng.integers(0, 256, (80, 100, 3), dtype=np.uint8)
+    hist = Histogram(img, colorspace='LAB')
+
+    ch0, ch1, ch2 = img[:, :, 0], img[:, :, 1], img[:, :, 2]
+    counts = hist.bin_count(ch0, ch1, ch2)
+
+    q0 = hist.mapping_ch0[ch0]
+    q1 = hist.mapping_ch1[ch1]
+    q2 = hist.mapping_ch2[ch2]
+    reference = hist.q_histogram[q0, q1, q2]
+
+    assert counts.shape == reference.shape
+    assert np.array_equal(counts, reference)
+    # Every pixel's own bin contains at least itself
+    assert (hist.bin_count(ch0, ch1, ch2) >= 1).all()
+
+
+def test_bin_count_for_image_matches_bin_count():
+    """The cached-index fast path must equal the general lookup."""
+    rng = np.random.default_rng(9)
+    img = rng.integers(0, 256, (60, 90, 3), dtype=np.uint8)
+    hist = Histogram(img, colorspace='LAB')
+
+    fast = hist.bin_count_for_image()
+    general = hist.bin_count(img[:, :, 0], img[:, :, 1], img[:, :, 2])
+
+    assert fast.shape == (60, 90)
+    assert np.array_equal(fast, general)

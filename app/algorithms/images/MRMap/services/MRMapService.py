@@ -88,11 +88,9 @@ class MRMapService(AlgorithmService):
 
             hist = Histogram(img_converted, self.colorspace)
 
-            # Extract channels (order depends on colorspace)
-            # For all colorspaces, channels are in order [0, 1, 2]
-            ch0, ch1, ch2 = img_converted[:, :, 0], img_converted[:, :, 1], img_converted[:, :, 2]
-            # Compute bin counts for each pixel
-            bin_counts = hist.bin_count(ch0, ch1, ch2)
+            # Bin counts for the histogram's own image: reuses the quantization
+            # computed while the histogram was built
+            bin_counts = hist.bin_count_for_image()
             bin_counts = bin_counts * ((8000 * 6000) / (width * height))
             # Adjust counts based on image size
             # adjusted_counts = bin_counts * (STANDARD_IMAGE_SIZE / (width * height))
@@ -578,6 +576,17 @@ class Histogram:
         # Create color-space-aware quantization mappings
         self.mapping_ch0, self.mapping_ch1, self.mapping_ch2 = self._create_mappings()
 
+        # Premultiplied lookup tables: value -> its term of the fused flat bin
+        # index. B^3 = 17576 fits in uint16, so the whole fused index is three
+        # table lookups and two uint16 adds per pixel - no wide temporaries.
+        bins = NUMBER_OF_QUANTIZED_HISTOGRAM_BINS
+        self._fused_ch0 = self.mapping_ch0.astype(np.uint16) * (bins * bins)
+        self._fused_ch1 = self.mapping_ch1.astype(np.uint16) * bins
+        self._fused_ch2 = self.mapping_ch2.astype(np.uint16)
+
+        # Fused index of this image's own pixels, kept for bin_count_for_image
+        self._own_fused = None
+
         self.q_histogram = None
         self.create_histogram()
 
@@ -655,23 +664,49 @@ class Histogram:
             mapping = np.clip(mapping, 0, NUMBER_OF_QUANTIZED_HISTOGRAM_BINS - 1)
             return mapping, mapping, mapping
 
+    def _fused_bin_index(self, ch0, ch1, ch2):
+        """Map channel values to a single flat index into the 3D histogram.
+
+        Args:
+            ch0, ch1, ch2: Channel value arrays (0-255 / 0-179 raw values).
+
+        Returns:
+            numpy.ndarray: uint16 flat indices into the B*B*B histogram.
+        """
+        fused = self._fused_ch0[ch0]
+        fused += self._fused_ch1[ch1]
+        fused += self._fused_ch2[ch2]
+        return fused
+
     def create_histogram(self):
         """Create quantized 3D histogram from image.
 
-        Maps pixel values to quantized bins using color-space-aware mappings
-        and computes histogram for efficient bin count lookups.
+        The channels are quantized to integer bin indices by the mapping
+        tables, so the counts come from np.bincount on a fused index.
+        np.histogramdd computed the identical result here, but through
+        generic float bin-edge searches (searchsorted) over every pixel -
+        the single largest cost of an MRMap pass on 48MP imagery.
         """
-        # Use channel-specific mappings for better quantization
-        ch0_mapped = self.mapping_ch0[self.image_array[:, :, 0]]
-        ch1_mapped = self.mapping_ch1[self.image_array[:, :, 1]]
-        ch2_mapped = self.mapping_ch2[self.image_array[:, :, 2]]
-
-        # Compute histogram directly without storing a large intermediate array
-        self.q_histogram, _ = np.histogramdd(
-            (ch0_mapped.ravel(), ch1_mapped.ravel(), ch2_mapped.ravel()),  # Direct ravel to avoid memory overhead
-            bins=(NUMBER_OF_QUANTIZED_HISTOGRAM_BINS,) * 3,
-            range=((0, NUMBER_OF_QUANTIZED_HISTOGRAM_BINS),) * 3
+        bins = NUMBER_OF_QUANTIZED_HISTOGRAM_BINS
+        self._own_fused = self._fused_bin_index(
+            self.image_array[:, :, 0],
+            self.image_array[:, :, 1],
+            self.image_array[:, :, 2]
         )
+        counts = np.bincount(self._own_fused.ravel(), minlength=bins ** 3)
+        # float64 to match np.histogramdd's output dtype for downstream math
+        self.q_histogram = counts.reshape(bins, bins, bins).astype(np.float64)
+
+    def bin_count_for_image(self):
+        """Bin counts for every pixel of the image this histogram was built on.
+
+        Reuses the fused index computed while building the histogram, so the
+        per-pixel quantization is not paid a second time.
+
+        Returns:
+            numpy.ndarray: Bin counts, shaped like the image's first two dims.
+        """
+        return self.q_histogram.ravel()[self._own_fused]
 
     def bin_count(self, ch0, ch1, ch2):
         """
@@ -683,9 +718,5 @@ class Histogram:
         Returns:
             numpy.ndarray: Bin counts for each pixel
         """
-        # Use channel-specific mappings
-        q0 = self.mapping_ch0[ch0]
-        q1 = self.mapping_ch1[ch1]
-        q2 = self.mapping_ch2[ch2]
-
-        return self.q_histogram[q0, q1, q2]
+        # Single flat gather instead of broadcast 3-array fancy indexing
+        return self.q_histogram.ravel()[self._fused_bin_index(ch0, ch1, ch2)]
