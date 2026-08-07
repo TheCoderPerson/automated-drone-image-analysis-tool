@@ -155,6 +155,9 @@ class AOIService:
             roll = self.image_service.get_gimbal_roll() or 0.0
             if abs(roll) > 90.0:
                 roll = 0.0
+            # WALDO v6 stamps expect the roll about the flight axis; None keeps
+            # the historical yaw-axis behaviour for everything else
+            roll_axis = self.image_service.get_roll_axis_azimuth() if roll else None
 
             # Get altitude - use override or get from ImageService
             if agl_override_m and agl_override_m > 0:
@@ -238,7 +241,8 @@ class AOIService:
             initial_result = self._calculate_ground_position(
                 lat0, lon0, u, v, cx, cy, img_width, img_height,
                 focal_mm, sensor_w_mm, sensor_h_mm,
-                reported_agl, pitch, yaw, roll
+                reported_agl, pitch, yaw, roll,
+                roll_axis_azimuth_deg=roll_axis
             )
 
             if initial_result is None:
@@ -258,7 +262,8 @@ class AOIService:
                     reported_agl, pitch, yaw, roll,
                     terrain_service,
                     absolute_alt,
-                    geoid_undulation
+                    geoid_undulation,
+                    roll_axis_azimuth_deg=roll_axis
                 )
 
             # No terrain data - return flat terrain result
@@ -453,7 +458,8 @@ class AOIService:
         img_width: int, img_height: int,
         focal_mm: float, sensor_w_mm: float, sensor_h_mm: float,
         altitude_m: float, pitch_deg: float, yaw_deg: float,
-        roll_deg: float = 0.0
+        roll_deg: float = 0.0,
+        roll_axis_azimuth_deg: Optional[float] = None
     ) -> Optional[Tuple[float, float]]:
         """
         Calculate ground position using 3D ray-casting projection.
@@ -475,6 +481,11 @@ class AOIService:
                 Positive rotates the optical axis to the left of heading; negative
                 to the right. Used for fixed-wing rigs (WALDO ±22.5°) where the
                 pod is mounted with outward roll relative to flight direction.
+            roll_axis_azimuth_deg: Compass azimuth of the axis the roll rotates
+                about. Default None keeps the historical behaviour (the axis at
+                the yaw azimuth). WALDO processor version >= 6 stamps roll about
+                the flight axis, which can differ arbitrarily from the stored
+                image orientation.
 
         Returns:
             (lat, lon) or None
@@ -536,7 +547,11 @@ class AOIService:
         # behaviour is preserved at roll_deg = 0.
         if roll_deg != 0.0:
             roll_rad = math.radians(roll_deg)
-            heading_axis = np.array([math.cos(opt_azimuth), math.sin(opt_azimuth), 0.0])
+            if roll_axis_azimuth_deg is not None:
+                axis_azimuth = math.radians(roll_axis_azimuth_deg)
+            else:
+                axis_azimuth = opt_azimuth
+            heading_axis = np.array([math.cos(axis_azimuth), math.sin(axis_azimuth), 0.0])
             kx, ky, kz = heading_axis
             K = np.array([
                 [0.0, -kz, ky],
@@ -643,7 +658,8 @@ class AOIService:
         roll: float,
         terrain_service,
         absolute_alt: Optional[float] = None,
-        precomputed_geoid: Optional[float] = None
+        precomputed_geoid: Optional[float] = None,
+        roll_axis_azimuth_deg: Optional[float] = None
     ) -> AOIGPSResult:
         """
         Calculate AOI position using terrain elevation data with iterative refinement.
@@ -732,7 +748,8 @@ class AOIService:
             new_result = self._calculate_ground_position(
                 drone_lat, drone_lon, u, v, cx, cy, img_width, img_height,
                 focal_mm, sensor_w_mm, sensor_h_mm,
-                effective_agl, pitch, yaw, roll
+                effective_agl, pitch, yaw, roll,
+                roll_axis_azimuth_deg=roll_axis_azimuth_deg
             )
 
             if new_result is None:

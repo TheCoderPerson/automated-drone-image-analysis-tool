@@ -15857,17 +15857,22 @@ Installeer deze met: pip install qimage2ndarray</translation>
         <translation>Fouten:          {n}</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/WaldoPrePassDialog.py" line="160"/>
+        <location filename="../app/core/views/images/viewer/dialogs/WaldoPrePassDialog.py" line="161"/>
+        <source>⚠ Capture-time warnings (camera clock is suspect):</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/views/images/viewer/dialogs/WaldoPrePassDialog.py" line="166"/>
         <source>Per-image errors:</source>
         <translation>Fouten per afbeelding:</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/WaldoPrePassDialog.py" line="174"/>
+        <location filename="../app/core/views/images/viewer/dialogs/WaldoPrePassDialog.py" line="180"/>
         <source>Cancelling...</source>
         <translation>Annuleren...</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/WaldoPrePassDialog.py" line="175"/>
+        <location filename="../app/core/views/images/viewer/dialogs/WaldoPrePassDialog.py" line="181"/>
         <source>Cancellation requested...</source>
         <translation>Annulering aangevraagd...</translation>
     </message>
