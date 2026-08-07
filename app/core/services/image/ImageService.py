@@ -204,6 +204,62 @@ class ImageService:
         except (TypeError, ValueError):
             return None
 
+    def get_flight_yaw(self):
+        """Retrieve the aircraft/drone flight heading from XMP metadata.
+
+        Distinct from the gimbal yaw: for WALDO imagery the stored image
+        orientation (GimbalYawDegree) and the plane's travel direction
+        (FlightYawDegree) can differ arbitrarily, and the pod-tilt roll is
+        physically anchored to the flight direction.
+
+        Returns:
+            float or None: Heading in degrees [0, 360), or None if unavailable.
+        """
+        if self.xmp_data is None:
+            return None
+        for key in ('FlightYawDegree', 'drone-dji:FlightYawDegree'):
+            value = self.xmp_data.get(key)
+            if value is not None:
+                try:
+                    return float(value) % 360.0
+                except (TypeError, ValueError):
+                    return None
+        return None
+
+    def get_waldo_processor_version(self):
+        """Return the WALDO pre-pass processor version stamped on this image.
+
+        Returns:
+            int or None: Version number, or None for non-WALDO imagery.
+        """
+        if self.xmp_data is None:
+            return None
+        for key in ('waldo:ProcessorVersion', 'ProcessorVersion',
+                    'XMP-waldo:ProcessorVersion'):
+            value = self.xmp_data.get(key)
+            if value is not None:
+                try:
+                    return int(str(value))
+                except (TypeError, ValueError):
+                    return None
+        return None
+
+    def get_roll_axis_azimuth(self):
+        """Compass azimuth of the axis the stamped gimbal roll rotates about.
+
+        WALDO processor version >= 6 stamps the pod-tilt roll about the FLIGHT
+        axis, decoupled from the stored image orientation. Returns None for
+        everything else, which keeps the historical behaviour (roll about the
+        gimbal-yaw axis).
+
+        Returns:
+            float or None: Axis azimuth in degrees, or None for legacy handling.
+        """
+        version = self.get_waldo_processor_version()
+        if version is None or version < 6:
+            return None
+        return self.get_flight_yaw()
+
     def get_camera_yaw(self):
         """
         Get the camera yaw/bearing (direction the camera is pointing).
@@ -582,6 +638,7 @@ class ImageService:
                 'pitch': fg.pitch_deg,
                 'yaw': fg.yaw_deg,
                 'roll': fg.roll_deg,
+                'roll_axis': self.get_roll_axis_azimuth() if fg.roll_deg else None,
                 'reported_agl': reported_agl,
                 'drone_terrain_elev_m': drone_terrain_elev_m,
                 'drone_absolute_elev_m': drone_absolute_elev_m,
@@ -634,6 +691,7 @@ class ImageService:
             ctx['cx'], ctx['cy'], ctx['img_w'], ctx['img_h'],
             ctx['focal_mm'], ctx['sensor_w_mm'], ctx['sensor_h_mm'],
             reported_agl, ctx['pitch'], ctx['yaw'], ctx['roll'],
+            roll_axis_azimuth_deg=ctx['roll_axis'],
         )
         if initial is None:
             cache[ck] = None
@@ -660,6 +718,7 @@ class ImageService:
                 ctx['cx'], ctx['cy'], ctx['img_w'], ctx['img_h'],
                 ctx['focal_mm'], ctx['sensor_w_mm'], ctx['sensor_h_mm'],
                 effective_agl, ctx['pitch'], ctx['yaw'], ctx['roll'],
+                roll_axis_azimuth_deg=ctx['roll_axis'],
             )
             if new_pos is None:
                 break

@@ -1,8 +1,13 @@
 """Unit tests for WaldoMetadataService."""
 
+import math
 from datetime import datetime, timedelta
 
+import cv2
+import numpy as np
 import pytest
+
+from core.services.image.AOIService import AOIService
 
 from core.services.waldo.WaldoMetadataService import (
     WaldoMetadataService,
@@ -35,25 +40,36 @@ def test_is_waldo_image(name, expected):
 # compute_optical_axis_angles
 # --------------------------------------------------------------------------
 
-def test_optical_axis_cam_0_right_pod_image_flipped_180():
-    # `0_*` = RIGHT pod, body top forward, but WALDO software rotates the
-    # saved JPEG 180° so stored image-top = plane backward. GimbalYaw
-    # therefore points backward (heading + 180°). Positive roll about
-    # that flipped heading axis tilts the optical axis to plane RIGHT.
+def test_optical_axis_cam_0_fallback_yaw_and_flight_axis_roll():
+    # No measured orientation: yaw falls back to the mounting model
+    # (image-top = plane backward = heading + 180). As of v6 the roll is
+    # expressed about the FLIGHT axis: about the forward axis a positive
+    # Rodrigues roll tilts LEFT, so cam 0 (right tilt) is negative.
     angles = WaldoMetadataService.compute_optical_axis_angles(45.0, 0)
     assert angles['pitch'] == -90.0
     assert angles['yaw'] == 225.0  # 45 + 180
-    assert angles['roll'] == +OUTWARD_ROLL_DEG
+    assert angles['roll'] == -OUTWARD_ROLL_DEG
 
 
-def test_optical_axis_cam_1_left_pod_top_backward():
-    # `1_*` = LEFT pod, body top backward, no software rotation. Stored
-    # image-top = plane backward as well, so GimbalYaw = heading + 180°.
-    # Negative roll about the flipped heading axis tilts west (LEFT).
+def test_optical_axis_cam_1_fallback_yaw_and_flight_axis_roll():
+    # `1_*` = LEFT pod: tilt to plane LEFT = positive roll about the
+    # forward flight axis.
     angles = WaldoMetadataService.compute_optical_axis_angles(0.0, 1)
     assert angles['pitch'] == -90.0
     assert angles['yaw'] == 180.0
+    assert angles['roll'] == +OUTWARD_ROLL_DEG
+
+
+def test_optical_axis_measured_orientation_wins_over_model():
+    # A measured image-top bearing overrides the mounting model entirely;
+    # the roll stays anchored to the flight axis so the physical tilt is
+    # unchanged by whatever orientation the frames are stored in.
+    angles = WaldoMetadataService.compute_optical_axis_angles(45.0, 0, image_up_deg=1.5)
+    assert angles['yaw'] == 1.5
     assert angles['roll'] == -OUTWARD_ROLL_DEG
+    angles = WaldoMetadataService.compute_optical_axis_angles(45.0, 1, image_up_deg=359.0)
+    assert angles['yaw'] == 359.0
+    assert angles['roll'] == +OUTWARD_ROLL_DEG
 
 
 def test_optical_axis_cam_1_yaw_wraps_past_360():
@@ -195,3 +211,174 @@ def test_process_folder_emits_indeterminate_phases_before_per_image(tmp_path):
     # And at least one of the early events should advertise reading metadata.
     assert any("metadata" in e[2].lower() for e in events[:3]), \
         f"Expected an early 'metadata' phase status, got {events[:3]}"
+
+# --------------------------------------------------------------------------
+# v5 -> v6 tilt equivalence and orientation measurement
+# --------------------------------------------------------------------------
+
+
+def _ground_offset_m(lat0, lon0, lat, lon):
+    north = (lat - lat0) * 111320.0
+    east = (lon - lon0) * 111320.0 * math.cos(math.radians(lat0))
+    return north, east
+
+
+def test_flight_axis_roll_reproduces_v5_tilt_direction():
+    """The v6 stamping (flight-axis roll) must tilt the footprint the same
+    way the v5 stamping (backward gimbal-yaw-axis roll) did.
+
+    Projects the image-centre pixel with both parameterizations through the
+    real ray-casting code: the ground point must land cross-track on the
+    same side of the aircraft, in the same place.
+    """
+    heading = 45.0
+    lat0, lon0 = 41.0, -122.0
+    kwargs = dict(cx=2000.0, cy=1500.0, img_width=4000, img_height=3000,
+                  focal_mm=50.0, sensor_w_mm=36.0, sensor_h_mm=24.0)
+
+    for cam_idx, side_sign in ((0, +1), (1, -1)):  # cam0 tilts plane-RIGHT
+        # v5: yaw = heading+180, roll about the (default) yaw axis
+        v5_roll = (+OUTWARD_ROLL_DEG) if cam_idx == 0 else (-OUTWARD_ROLL_DEG)
+        v5 = AOIService._calculate_ground_position(
+            lat0, lon0, 2000.0, 1500.0,
+            altitude_m=1000.0, pitch_deg=-90.0,
+            yaw_deg=(heading + 180.0) % 360.0, roll_deg=v5_roll,
+            **kwargs)
+
+        # v6: measured yaw (north-up here), roll about the flight axis
+        angles = WaldoMetadataService.compute_optical_axis_angles(
+            heading, cam_idx, image_up_deg=0.0)
+        v6 = AOIService._calculate_ground_position(
+            lat0, lon0, 2000.0, 1500.0,
+            altitude_m=1000.0, pitch_deg=angles['pitch'],
+            yaw_deg=angles['yaw'], roll_deg=angles['roll'],
+            roll_axis_azimuth_deg=heading,
+            **kwargs)
+
+        assert v5 is not None and v6 is not None
+        n5, e5 = _ground_offset_m(lat0, lon0, *v5)
+        n6, e6 = _ground_offset_m(lat0, lon0, *v6)
+        # Same physical point: the centre-pixel footprint is tilt-driven and
+        # identical regardless of how the stored pixels are rotated
+        assert abs(n5 - n6) < 1.0 and abs(e5 - e6) < 1.0
+
+        # And it lies cross-track on the correct side of the flight axis
+        h = math.radians(heading)
+        cross = -math.sin(h) * n5 + math.cos(h) * e5  # +ve = plane right
+        assert cross * side_sign > 100.0  # 22.5 deg at 1000m AGL: ~414m
+
+
+def _write_shifted_frames(out_dir, shift_xy, size=(1800, 2400), seed=5):
+    """Two JPEG 'frames' of one texture, the second shifted by shift_xy.
+
+    The texture uses blurred blobs large enough to survive the service's
+    ORIENTATION_DOWNSCALE before feature matching.
+    """
+    import os as _os
+    _os.makedirs(str(out_dir), exist_ok=True)
+    rng = np.random.default_rng(seed)
+    h, w = size
+    dx, dy = shift_xy
+    margin = max(abs(dx), abs(dy)) + 50
+    canvas = rng.integers(0, 255, (h + 2 * margin, w + 2 * margin), dtype=np.uint8)
+    canvas = cv2.GaussianBlur(canvas, (0, 0), 5.0)
+    canvas = cv2.normalize(canvas, None, 0, 255, cv2.NORM_MINMAX).astype(np.uint8)
+    oy, ox = margin, margin
+    a = canvas[oy:oy + h, ox:ox + w]
+    b = canvas[oy + dy:oy + dy + h, ox + dx:ox + dx + w]
+    pa = str(out_dir) + _os.sep + '0_000_00_000.jpg'
+    pb = str(out_dir) + _os.sep + '0_000_00_001.jpg'
+    cv2.imwrite(pa, a)
+    cv2.imwrite(pb, b)
+    return pa, pb
+
+
+def test_pair_orientation_sample_recovers_known_rotation(tmp_path):
+    """Content shifted 'up' while GPS says 'moving north' => north-up frames."""
+    # Frame b crops a region 300px higher on the shared texture: the camera
+    # moved 'up' in image terms between the frames.
+    pa, pb = _write_shifted_frames(tmp_path, (0, -300))
+
+    # Camera moved up in image; GPS bearing says due north
+    result = WaldoMetadataService._pair_orientation_sample(pa, pb, 0.0)
+    assert result is not None
+    image_up, inliers = result
+    assert inliers >= 20
+    # image-up should be ~north (0 deg)
+    assert min(image_up, 360.0 - image_up) < 6.0
+
+    # Same imagery, but GPS says the motion was due east: the image's top
+    # must then be pointing west (270)
+    result = WaldoMetadataService._pair_orientation_sample(pa, pb, 90.0)
+    assert result is not None
+    assert abs(result[0] - 90.0) < 6.0
+
+
+def test_measure_image_up_bearing_aggregates_pairs(tmp_path):
+    """Full-group measurement over several synthetic pairs."""
+    service = WaldoMetadataService()
+    records = []
+    lat = 41.0
+    for i in range(4):
+        pa, pb = _write_shifted_frames(tmp_path / f'p{i}', (0, -280 - 10 * i), seed=i)
+        # GPS: successive frames move north by ~200m
+        records.append(WaldoImageRecord(path=pa, name=f'0_000_00_{2*i:03d}.jpg',
+                                        cam_idx=0, lat=lat, lon=-122.0))
+        lat += 0.0018
+        records.append(WaldoImageRecord(path=pb, name=f'0_000_00_{2*i+1:03d}.jpg',
+                                        cam_idx=0, lat=lat, lon=-122.0))
+        lat += 0.0018
+
+    measured = service.measure_image_up_bearing(records, cam_idx=0)
+    assert measured is not None
+    assert min(measured, 360.0 - measured) < 8.0
+
+
+def test_measure_image_up_bearing_rejects_unmatchable(tmp_path):
+    """Unrelated noise frames must fail closed (fall back to the model)."""
+    service = WaldoMetadataService()
+    rng = np.random.default_rng(9)
+    records = []
+    lat = 41.0
+    for i in range(5):
+        p = str(tmp_path / f'0_000_00_{i:03d}.jpg')
+        cv2.imwrite(p, rng.integers(0, 255, (400, 500), dtype=np.uint8))
+        records.append(WaldoImageRecord(path=p, name=f'0_000_00_{i:03d}.jpg',
+                                        cam_idx=0, lat=lat, lon=-122.0))
+        lat += 0.0018
+
+    assert service.measure_image_up_bearing(records, cam_idx=0) is None
+
+
+def test_tile_shadow_axis_recovers_streak_direction(tmp_path):
+    """Synthetic parallel dark streaks at a known angle are measured mod 180."""
+    rng = np.random.default_rng(3)
+    img = rng.integers(140, 220, (2400, 3200), dtype=np.uint8)
+    # Streaks at 30 deg CW from image-up: direction vector (sin30, -cos30).
+    # Placed densely enough that the method's central crop still sees plenty.
+    for i in range(280):
+        x0 = int(rng.integers(200, 3000))
+        y0 = int(rng.integers(200, 2200))
+        x1 = int(x0 + math.sin(math.radians(30.0)) * 160)
+        y1 = int(y0 - math.cos(math.radians(30.0)) * 160)
+        cv2.line(img, (x0, y0), (x1, y1), 10, 6)
+    p = str(tmp_path / 'streaks.jpg')
+    cv2.imwrite(p, img)
+
+    result = WaldoMetadataService._tile_shadow_axis(p)
+    assert result is not None
+    axis, count = result
+    assert count >= 40
+    assert min(abs(axis - 30.0), abs(axis - 210.0), 180.0 - abs(axis - 30.0)) < 5.0
+
+
+def test_pick_orientation_candidate_uses_coarse_half_plane():
+    # Shadow points 100 deg (world); axis measured at 100 deg CW from up
+    # => candidates 0 and 180. A coarse hint of 41 picks north.
+    picked = WaldoMetadataService._pick_orientation_candidate(100.0, 100.0, 41.0)
+    assert picked == 0.0
+    # A coarse hint near the opposite half picks the flipped candidate
+    picked = WaldoMetadataService._pick_orientation_candidate(100.0, 100.0, 200.0)
+    assert picked == 180.0
+    # Exactly at the 90-degree tie: refuse to guess
+    assert WaldoMetadataService._pick_orientation_candidate(100.0, 100.0, 90.0) is None
