@@ -648,10 +648,6 @@ class CalTopoExportController(TranslationMixin):
 
             # Every bail-out below used to be a silent `return False`, so a run
             # that stopped here left no trace at all. Say which gate closed.
-            self.logger.info(
-                f"CalTopo browser export: prepared {len(markers)} marker(s) and "
-                f"{len(coverage_polygons)} polygon(s); opening login dialog"
-            )
 
             # Deliberately not auth_dialog.exec(). A modal loop exits on any
             # hide of the dialog, and embedding a QWebEngineView causes one;
@@ -699,11 +695,6 @@ class CalTopoExportController(TranslationMixin):
                     self.tr("No CalTopo session cookies were captured. Please log in and try again.")
                 )
                 return False
-
-            self.logger.info(
-                f"CalTopo browser export: authenticated for map {selected_map_id} with "
-                f"{len(captured_cookies)} cookie(s); starting export"
-            )
 
             # Hand the captured session to the HTTP client used for the export.
             self.caltopo_service.save_session(captured_cookies)
@@ -1589,14 +1580,12 @@ class CalTopoExportController(TranslationMixin):
         export_thread.canceled.connect(on_cancelled)
         progress_dialog.cancel_requested.connect(export_thread.cancel)
 
-        self.logger.info("CalTopo export: starting worker and showing progress dialog")
         export_thread.start()
         progress_dialog.exec()
 
         if export_thread.isRunning():
             export_thread.wait()
 
-        self.logger.info(f"CalTopo export: finished (success={self._export_result})")
         return self._export_result
 
     def _report_export_summary(self, summary):

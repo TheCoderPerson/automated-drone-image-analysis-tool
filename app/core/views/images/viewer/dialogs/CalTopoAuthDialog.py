@@ -47,25 +47,16 @@ class CalTopoWebEnginePage(QWebEnginePage):
             lineNumber: Line number where message originated
             sourceID: Source file identifier
         """
-        level_names = {
-            QWebEnginePage.JavaScriptConsoleMessageLevel.InfoMessageLevel: "INFO",
-            QWebEnginePage.JavaScriptConsoleMessageLevel.WarningMessageLevel: "WARNING",
-            QWebEnginePage.JavaScriptConsoleMessageLevel.ErrorMessageLevel: "ERROR"
-        }
-        level_str = level_names.get(level, "LOG")
+        # Only errors are worth recording. CalTopo's own page emits a steady
+        # stream of info/warning chatter (deprecated Google Maps APIs, resize
+        # observer notices) that buries anything useful.
+        if level != QWebEnginePage.JavaScriptConsoleMessageLevel.ErrorMessageLevel:
+            return
 
-        # Surface page-side failures. With this silenced, a JavaScript error in
-        # the CalTopo page left no trace anywhere, which made diagnosing the
-        # login/export path far harder than it needed to be. Errors are logged
-        # at warning level so they survive the packaged build's WARNING floor.
-        output = f"[JS {level_str}] {message}"
+        output = f"[JS ERROR] {message}"
         if sourceID and lineNumber:
             output += f" ({sourceID}:{lineNumber})"
-
-        if level == QWebEnginePage.JavaScriptConsoleMessageLevel.ErrorMessageLevel:
-            self.logger.warning(output)
-        else:
-            self.logger.debug(output)
+        self.logger.warning(output)
 
         # Also call callback if provided (for UI display)
         if self.log_callback:
@@ -497,8 +488,6 @@ class CalTopoAuthDialog(TranslationMixin, QDialog):
             )
             return
 
-        self.logger.info(f"CalTopo login: capturing session for map {self.map_id}")
-
         # Disable button and show progress
         self.manual_done_button.setEnabled(False)
         self.manual_done_button.setText(self.tr("Starting export..."))
@@ -738,10 +727,6 @@ class CalTopoAuthDialog(TranslationMixin, QDialog):
                 logger.warning(
                     f"CalTopo login: skipped {skipped_encrypted} encrypted cookie value(s)"
                 )
-            logger.info(
-                f"CalTopo login: read {len(cookies)} persisted cookie(s) "
-                f"{sorted(c['name'] for c in cookies.values())} from the profile store"
-            )
         except (OSError, sqlite3.Error) as e:
             logger.warning(f"CalTopo login: could not read the cookie store: {e}")
         finally:
@@ -762,20 +747,15 @@ class CalTopoAuthDialog(TranslationMixin, QDialog):
 
         cookie_list = list(all_cookies.values())
 
-        names = sorted(cookie['name'] for cookie in cookie_list)
-        self.logger.warning(
-            f"CalTopo login: captured {len(cookie_list)} cookie(s) {names} "
-            f"({len(disk_cookies)} from disk, {len(self._cookies_from_store)} from the store, "
-            f"{len(self._cookies_from_js)} from JS) for map {self.map_id}"
-        )
-
         # Require the actual session cookie. Any other cookie makes the list
         # non-empty while authenticating as nobody, which previously sailed
         # through this gate and produced a run of silent 401s.
         if not any(cookie['name'] == self.SESSION_COOKIE_NAME for cookie in cookie_list):
             self.logger.warning(
-                f"CalTopo login: no '{self.SESSION_COOKIE_NAME}' cookie was captured; "
-                f"the session is not usable"
+                f"CalTopo login: no '{self.SESSION_COOKIE_NAME}' cookie was captured, so the "
+                f"session is not usable. Got {sorted(c['name'] for c in cookie_list)} "
+                f"({len(disk_cookies)} from disk, {len(self._cookies_from_store)} from the "
+                f"store, {len(self._cookies_from_js)} from JS)."
             )
             QMessageBox.warning(
                 self,
@@ -808,8 +788,6 @@ class CalTopoAuthDialog(TranslationMixin, QDialog):
                 "(usually no map ID). The dialog stays open so you can navigate to a map."
             )
             self._reset_button()
-        else:
-            self.logger.info("CalTopo login: session accepted, closing the login dialog")
 
     def _reset_button(self):
         """
