@@ -314,24 +314,42 @@ def test_pair_orientation_sample_recovers_known_rotation(tmp_path):
     assert abs(result[0] - 90.0) < 6.0
 
 
-def test_measure_image_up_bearing_aggregates_pairs(tmp_path):
-    """Full-group measurement over several synthetic pairs."""
-    service = WaldoMetadataService()
+def _motion_records(tmp_path, heading_deg):
+    """Synthetic north-up frames moving north, with the given model heading."""
     records = []
     lat = 41.0
-    for i in range(4):
+    for i in range(5):
         pa, pb = _write_shifted_frames(tmp_path / f'p{i}', (0, -280 - 10 * i), seed=i)
         # GPS: successive frames move north by ~200m
         records.append(WaldoImageRecord(path=pa, name=f'0_000_00_{2*i:03d}.jpg',
-                                        cam_idx=0, lat=lat, lon=-122.0))
+                                        cam_idx=0, lat=lat, lon=-122.0,
+                                        heading_deg=heading_deg))
         lat += 0.0018
         records.append(WaldoImageRecord(path=pb, name=f'0_000_00_{2*i+1:03d}.jpg',
-                                        cam_idx=0, lat=lat, lon=-122.0))
+                                        cam_idx=0, lat=lat, lon=-122.0,
+                                        heading_deg=heading_deg))
         lat += 0.0018
+    return records
+
+
+def test_measurement_overrides_model_only_on_clear_contradiction(tmp_path):
+    """North-up frames with a model saying 'south-up' trip the override."""
+    service = WaldoMetadataService()
+    # heading 0 -> model image-top = 180; measurement reads ~0 -> gap ~180
+    records = _motion_records(tmp_path, heading_deg=0.0)
 
     measured = service.measure_image_up_bearing(records, cam_idx=0)
     assert measured is not None
     assert min(measured, 360.0 - measured) < 8.0
+
+
+def test_measurement_agreeing_with_model_defers_to_it(tmp_path):
+    """When measurement and model roughly agree, the model is stamped."""
+    service = WaldoMetadataService()
+    # heading 180 -> model image-top = 0; measurement reads ~0 -> gap ~0
+    records = _motion_records(tmp_path, heading_deg=180.0)
+
+    assert service.measure_image_up_bearing(records, cam_idx=0) is None
 
 
 def test_measure_image_up_bearing_rejects_unmatchable(tmp_path):
@@ -348,37 +366,3 @@ def test_measure_image_up_bearing_rejects_unmatchable(tmp_path):
         lat += 0.0018
 
     assert service.measure_image_up_bearing(records, cam_idx=0) is None
-
-
-def test_tile_shadow_axis_recovers_streak_direction(tmp_path):
-    """Synthetic parallel dark streaks at a known angle are measured mod 180."""
-    rng = np.random.default_rng(3)
-    img = rng.integers(140, 220, (2400, 3200), dtype=np.uint8)
-    # Streaks at 30 deg CW from image-up: direction vector (sin30, -cos30).
-    # Placed densely enough that the method's central crop still sees plenty.
-    for i in range(280):
-        x0 = int(rng.integers(200, 3000))
-        y0 = int(rng.integers(200, 2200))
-        x1 = int(x0 + math.sin(math.radians(30.0)) * 160)
-        y1 = int(y0 - math.cos(math.radians(30.0)) * 160)
-        cv2.line(img, (x0, y0), (x1, y1), 10, 6)
-    p = str(tmp_path / 'streaks.jpg')
-    cv2.imwrite(p, img)
-
-    result = WaldoMetadataService._tile_shadow_axis(p)
-    assert result is not None
-    axis, count = result
-    assert count >= 40
-    assert min(abs(axis - 30.0), abs(axis - 210.0), 180.0 - abs(axis - 30.0)) < 5.0
-
-
-def test_pick_orientation_candidate_uses_coarse_half_plane():
-    # Shadow points 100 deg (world); axis measured at 100 deg CW from up
-    # => candidates 0 and 180. A coarse hint of 41 picks north.
-    picked = WaldoMetadataService._pick_orientation_candidate(100.0, 100.0, 41.0)
-    assert picked == 0.0
-    # A coarse hint near the opposite half picks the flipped candidate
-    picked = WaldoMetadataService._pick_orientation_candidate(100.0, 100.0, 200.0)
-    assert picked == 180.0
-    # Exactly at the 90-degree tie: refuse to guess
-    assert WaldoMetadataService._pick_orientation_candidate(100.0, 100.0, 90.0) is None

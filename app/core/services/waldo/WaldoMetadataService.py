@@ -42,12 +42,14 @@ from core.services.shadow.SolarPosition import (
 
 
 WALDO_NAMESPACE_URI = "http://adiat.io/ns/waldo/1.0/"
-# Version 6: GimbalYawDegree is the *measured* image-top bearing (from
-# inter-frame content motion vs GPS track) rather than the assumed
-# heading+180 mounting model, and GimbalRollDegree is expressed about the
-# FLIGHT axis (FlightYawDegree) rather than the gimbal-yaw axis. Consumers
-# key the roll-axis convention off this version.
-WALDO_PROCESSOR_VERSION = "6"
+# Version 7: GimbalRollDegree is expressed about the FLIGHT axis
+# (FlightYawDegree) rather than the gimbal-yaw axis (consumers key the
+# convention off version >= 6), and GimbalYawDegree comes from the mounting
+# model unless inter-frame motion measurement confidently CONTRADICTS it
+# (catches datasets whose post-flight software re-orients the frames).
+# Version 7 also retires v6's sun-shadow orientation measurement: on steep
+# terrain at low sun, slope shear and charred fallen logs mislead it.
+WALDO_PROCESSOR_VERSION = "7"
 
 DRONE_DJI_NS = "http://www.dji.com/drone-dji/1.0/"
 
@@ -59,29 +61,19 @@ OUTWARD_ROLL_DEG = 22.5
 # Orientation-measurement tunables. Field imagery showed the mounting-model
 # yaw assumption off by ~41 degrees (post-flight software had normalized the
 # frames north-up), so orientation is measured from the imagery itself.
-#
-# Two complementary measurements:
-# - Sun-shadow axis: capture time + GPS give the exact solar azimuth, and the
-#   dominant dark-streak direction in the frame gives where that shadow lies
-#   in image coordinates. Precise (a few degrees) but ambiguous by 180.
-# - Inter-frame motion vs GPS track: feature matching between consecutive
-#   frames. Coarse on tilted fixed-wing imagery (tens of degrees of scatter)
-#   but unambiguous - exactly what is needed to pick the shadow's half-plane.
-ORIENTATION_SAMPLE_PAIRS = 8       # consecutive-image pairs sampled per camera
-ORIENTATION_MIN_PAIRS = 3          # accept a measurement only with this many good pairs
-ORIENTATION_MAX_SPREAD_DEG = 12.0  # ...agreeing to within this circular std-dev
+# The measurement: inter-frame content motion vs the GPS track (feature
+# matching between consecutive frames). It carries tens-of-degrees of noise
+# on tilted fixed-wing imagery over relief, so it never fine-tunes the
+# model - it only OVERRIDES the model when it confidently disagrees by more
+# than the override threshold (e.g. frames normalized north-up by post-flight
+# software read ~180 deg away from the model; measurement noise never does).
+ORIENTATION_SAMPLE_PAIRS = 16      # consecutive-image pairs sampled per camera
+ORIENTATION_MIN_PAIRS = 4          # accept a measurement only with this many good pairs
+ORIENTATION_MAX_STDERR_DEG = 8.0   # confidence required of the circular mean
 ORIENTATION_MIN_BASELINE_M = 30.0  # pairs closer than this give unreliable bearings
 ORIENTATION_MIN_INLIERS = 20       # ORB/RANSAC inliers required per pair
 ORIENTATION_DOWNSCALE = 6          # feature matching runs at 1/N resolution
-SHADOW_SAMPLE_IMAGES = 7           # frames sampled per camera for the shadow axis
-SHADOW_MIN_STREAKS = 40            # dark elongated components needed per frame
-SHADOW_MIN_SUN_ELEV_DEG = 5.0      # below this the sun casts no usable shadows
-SHADOW_MIN_SAMPLES = 3             # accept the shadow route with this many frames
-# Terrain slope shears individual frames' shadows by up to ~20 deg, but the
-# shear direction is random across a flight, so the per-frame samples are
-# gated on the standard error of their circular mean rather than raw spread.
-SHADOW_MAX_SPREAD_DEG = 30.0       # raw-spread sanity cap (systematic problem)
-SHADOW_MAX_STDERR_DEG = 6.0        # confidence required of the aggregated mean
+ORIENTATION_OVERRIDE_DEG = 60.0    # measured-vs-model gap that trips the override
 
 # Filename prefix → cam index. 0_* = left, 1_* = right.
 _WALDO_PREFIX_RE = re.compile(r'^(?P<cam>[01])_')
@@ -325,101 +317,17 @@ class WaldoMetadataService:
             [s[0] for s in samples], [s[1] for s in samples])
         return mean_deg, spread_deg, len(samples)
 
-    @staticmethod
-    def _tile_shadow_axis(path: str) -> Optional[Tuple[float, int]]:
-        """Dominant dark-streak axis of a frame, degrees CW from image-up mod 180.
-
-        Standing trees and snags cast long thin shadows; their common
-        direction is the solar shadow direction in image coordinates. Uses
-        the elongation-filtered dark connected components of a downscaled
-        central crop.
-
-        Returns:
-            (axis_deg_mod_180, streak_count), or None when the frame has too
-            few usable streaks (overcast, water, uniform terrain).
-        """
-        try:
-            img = cv2.imdecode(np.fromfile(path, dtype=np.uint8), cv2.IMREAD_GRAYSCALE)
-            if img is None:
-                return None
-            h, w = img.shape
-            crop = img[h // 4:3 * h // 4:2, w // 4:3 * w // 4:2]
-            dark = (crop < np.percentile(crop, 8)).astype(np.uint8)
-            dark = cv2.morphologyEx(dark, cv2.MORPH_OPEN, np.ones((2, 2), np.uint8))
-            n, labels, stats, _ = cv2.connectedComponentsWithStats(dark, 8)
-            angles, weights = [], []
-            for i in range(1, n):
-                if stats[i, cv2.CC_STAT_AREA] < 60:
-                    continue
-                ys, xs = np.where(labels == i)
-                xs = xs - xs.mean()
-                ys = ys - ys.mean()
-                cov = np.cov(np.stack([xs, ys]))
-                evals, evecs = np.linalg.eigh(cov)
-                if evals[1] / max(evals[0], 1e-6) < 6:
-                    continue  # keep only long, thin components
-                v = evecs[:, 1]
-                angles.append(math.degrees(math.atan2(v[0], -v[1])) % 180)
-                weights.append(float(stats[i, cv2.CC_STAT_AREA]))
-            if len(angles) < SHADOW_MIN_STREAKS:
-                return None
-            # Circular stats on doubled angles (axes are 180-periodic)
-            doubled = np.radians(np.asarray(angles) * 2.0)
-            wgt = np.asarray(weights)
-            mean2 = math.atan2(float((wgt * np.sin(doubled)).sum()),
-                               float((wgt * np.cos(doubled)).sum()))
-            return (math.degrees(mean2) / 2.0) % 180, len(angles)
-        except Exception:
-            return None
-
-    @staticmethod
-    def _resolve_shadow_world_azimuth(record: "WaldoImageRecord") -> Optional[float]:
-        """Compass direction shadows point at this record's time/place, or None."""
-        try:
-            exif = MetaDataHelper.get_exif_data_piexif(record.path)
-            try:
-                xmp = MetaDataHelper.get_xmp_data(record.path, parse=True)
-            except Exception:
-                xmp = None
-            utc, _source = resolve_capture_utc(exif, xmp, lat=record.lat, lon=record.lon)
-            elev, az = get_solar_position(record.lat, record.lon, utc)
-        except (SolarTimeUnresolvable, Exception):
-            return None
-        if elev is None or elev < SHADOW_MIN_SUN_ELEV_DEG:
-            return None
-        return (az + 180.0) % 360.0
-
-    @staticmethod
-    def _pick_orientation_candidate(shadow_world_deg: float, axis_deg: float,
-                                    disambiguator_deg: float) -> Optional[float]:
-        """Resolve the shadow axis' 180-degree ambiguity.
-
-        The two image-up candidates implied by a shadow axis differ by exactly
-        180 degrees; the coarse disambiguator (inter-frame motion, or the
-        mounting model) only needs to be within 90 degrees of the truth to
-        pick correctly.
-        """
-        c1 = (shadow_world_deg - axis_deg) % 360.0
-        c2 = (c1 + 180.0) % 360.0
-
-        def circ_diff(a, b):
-            return abs((a - b + 180.0) % 360.0 - 180.0)
-
-        d1, d2 = circ_diff(c1, disambiguator_deg), circ_diff(c2, disambiguator_deg)
-        if abs(d1 - d2) < 1.0:
-            return None  # right at the 90-degree tie: cannot disambiguate
-        return c1 if d1 < d2 else c2
-
     def measure_image_up_bearing(self, records: List["WaldoImageRecord"],
                                  cam_idx: int) -> Optional[float]:
-        """Measure the stored-image-top compass bearing for one camera group.
+        """Return a measured image-top bearing ONLY when it refutes the model.
 
-        Primary route: solar-shadow axis per sampled frame (precise to a few
-        degrees), disambiguated by the coarse inter-frame-motion bearing (or
-        the mounting model when motion is unavailable). Secondary route: the
-        motion bearing alone, when it is tight enough on its own. Returns
-        None when neither route yields a confident answer (the caller falls
-        back to the mounting model).
+        The inter-frame-motion measurement is too noisy on tilted fixed-wing
+        imagery over relief to fine-tune the mounting model, but a dataset
+        whose frames were re-oriented by post-flight software reads far away
+        from the model (typically ~180 deg) - far beyond measurement noise.
+        So: measure, and return the measurement only when it is confident
+        AND disagrees with the model by more than ORIENTATION_OVERRIDE_DEG.
+        Returns None otherwise (caller stamps the mounting model).
         """
         group = [r for r in records
                  if r.cam_idx == cam_idx and r.lat is not None and r.lon is not None]
@@ -428,65 +336,36 @@ class WaldoMetadataService:
             return None
 
         motion = self._pair_motion_bearing(group)
-
-        # Disambiguator for the shadow axis: motion measurement when present,
-        # else the mounting-model prediction
-        if motion is not None:
-            disambiguator = motion[0]
-        else:
-            headings = [r.heading_deg for r in group if r.heading_deg is not None]
-            if headings:
-                mean_heading, _ = self._circular_stats(headings, [1.0] * len(headings))
-                disambiguator = (mean_heading + 180.0) % 360.0
-            else:
-                disambiguator = None
-
-        shadow_samples: List[Tuple[float, float]] = []
-        if disambiguator is not None:
-            step = max(1, len(group) // SHADOW_SAMPLE_IMAGES)
-            for record in group[::step][:SHADOW_SAMPLE_IMAGES]:
-                shadow_world = self._resolve_shadow_world_azimuth(record)
-                if shadow_world is None:
-                    continue
-                axis = self._tile_shadow_axis(record.path)
-                if axis is None:
-                    continue
-                candidate = self._pick_orientation_candidate(
-                    shadow_world, axis[0], disambiguator)
-                if candidate is not None:
-                    shadow_samples.append((candidate, float(axis[1])))
-
-        if len(shadow_samples) >= SHADOW_MIN_SAMPLES:
-            mean_deg, spread_deg = self._circular_stats(
-                [s[0] for s in shadow_samples], [s[1] for s in shadow_samples])
-            stderr_deg = spread_deg / math.sqrt(len(shadow_samples))
-            if spread_deg <= SHADOW_MAX_SPREAD_DEG and stderr_deg <= SHADOW_MAX_STDERR_DEG:
-                self.logger.info(
-                    f"WALDO cam {cam_idx}: measured image-top bearing {mean_deg:.1f} deg "
-                    f"from sun shadows ({len(shadow_samples)} frames, "
-                    f"spread {spread_deg:.1f} deg, stderr {stderr_deg:.1f} deg)"
-                )
-                return mean_deg
-            self.logger.warning(
-                f"WALDO cam {cam_idx}: shadow orientation samples disagree "
-                f"(spread {spread_deg:.1f} deg, stderr {stderr_deg:.1f} deg); "
-                f"trying inter-frame motion"
+        if motion is None:
+            return None
+        mean_deg, spread_deg, count = motion
+        stderr_deg = spread_deg / math.sqrt(count)
+        if count < ORIENTATION_MIN_PAIRS or stderr_deg > ORIENTATION_MAX_STDERR_DEG:
+            self.logger.info(
+                f"WALDO cam {cam_idx}: orientation measurement inconclusive "
+                f"({count} pairs, stderr {stderr_deg:.1f} deg); using the mounting model"
             )
+            return None
 
-        if motion is not None:
-            mean_deg, spread_deg, count = motion
-            if count >= ORIENTATION_MIN_PAIRS and spread_deg <= ORIENTATION_MAX_SPREAD_DEG:
-                self.logger.info(
-                    f"WALDO cam {cam_idx}: measured image-top bearing {mean_deg:.1f} deg "
-                    f"from inter-frame motion ({count} pairs, spread {spread_deg:.1f} deg)"
-                )
-                return mean_deg
-            self.logger.warning(
-                f"WALDO cam {cam_idx}: orientation could not be measured confidently "
-                f"(motion spread {spread_deg:.1f} deg over {count} pairs); "
-                f"falling back to the mounting model"
+        headings = [r.heading_deg for r in group if r.heading_deg is not None]
+        if not headings:
+            return None
+        mean_heading, _ = self._circular_stats(headings, [1.0] * len(headings))
+        model_deg = (mean_heading + 180.0) % 360.0
+        gap = abs((mean_deg - model_deg + 180.0) % 360.0 - 180.0)
+        if gap <= ORIENTATION_OVERRIDE_DEG:
+            self.logger.info(
+                f"WALDO cam {cam_idx}: measured orientation {mean_deg:.1f} deg agrees "
+                f"with the mounting model {model_deg:.1f} deg (gap {gap:.1f} deg); "
+                f"stamping the model"
             )
-        return None
+            return None
+        self.logger.warning(
+            f"WALDO cam {cam_idx}: measured orientation {mean_deg:.1f} deg "
+            f"({count} pairs, stderr {stderr_deg:.1f} deg) contradicts the mounting "
+            f"model {model_deg:.1f} deg (gap {gap:.1f} deg); stamping the measurement"
+        )
+        return mean_deg
 
     def compute_relative_altitude_m(
         self, lat: float, lon: float, gps_alt_ellipsoidal_m: float
