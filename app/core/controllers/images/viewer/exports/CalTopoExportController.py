@@ -6,6 +6,9 @@ of flagged AOIs to CalTopo maps.
 """
 
 import os
+from pathlib import Path
+
+import cv2
 
 from PySide6.QtWidgets import QApplication, QMessageBox
 from PySide6.QtCore import QThread, QEventLoop, Signal
@@ -13,6 +16,7 @@ from core.services.export.CalTopoService import CalTopoService
 from core.services.export.CalTopoAPIService import CalTopoAPIService
 from core.services.export.CalTopoCredentialHelper import CalTopoCredentialHelper
 from core.services.export.CalTopoPublishers import CalTopoApiPublisher, CalTopoBrowserPublisher
+from core.services.export.AOIThumbnailService import AOIThumbnailService
 from core.views.images.viewer.dialogs.CalTopoAuthDialog import CalTopoAuthDialog
 from core.views.images.viewer.dialogs.CalTopoCredentialDialog import CalTopoCredentialDialog
 from core.views.images.viewer.dialogs.CalTopoAPIMapDialog import CalTopoAPIMapDialog
@@ -20,6 +24,7 @@ from core.views.images.viewer.dialogs.ExportProgressDialog import ExportProgress
 from core.services.LoggerService import LoggerService
 from core.services.image.ImageService import ImageService
 from core.services.image.AOIService import AOIService
+from core.services.image.AOICompositeService import AOICompositeService
 from core.services.image.CoverageExtentService import CoverageExtentService
 from helpers.LocationInfo import LocationInfo
 from helpers.MetaDataHelper import MetaDataHelper
@@ -82,7 +87,8 @@ class CalTopoDataPreparationThread(QThread):
     canceled = Signal()
 
     def __init__(self, controller, images, flagged_aois, include_flagged_aois,
-                 include_locations, include_images_without_flagged_aois, include_coverage_area, include_images):
+                 include_locations, include_images_without_flagged_aois, include_coverage_area, include_images,
+                 aoi_photo_mode='full'):
         """
         Initialize the data preparation thread.
 
@@ -95,6 +101,7 @@ class CalTopoDataPreparationThread(QThread):
             include_images_without_flagged_aois: Whether to include images without flagged AOIs in location export
             include_coverage_area: Whether to include coverage area
             include_images: Whether to include images
+            aoi_photo_mode: Photo(s) to attach to flagged AOI markers ('full', 'thumbnail', or 'both')
         """
         super().__init__()
         self.controller = controller
@@ -105,6 +112,7 @@ class CalTopoDataPreparationThread(QThread):
         self.include_images_without_flagged_aois = include_images_without_flagged_aois
         self.include_coverage_area = include_coverage_area
         self.include_images = include_images
+        self.aoi_photo_mode = aoi_photo_mode
         self._cancelled = False
 
     def cancel(self):
@@ -141,7 +149,8 @@ class CalTopoDataPreparationThread(QThread):
                     return
                 self.progressUpdated.emit(0, 100, "Preparing flagged AOI markers...")
                 markers.extend(self.controller._prepare_markers(
-                    self.images, self.flagged_aois, include_images=self.include_images
+                    self.images, self.flagged_aois, include_images=self.include_images,
+                    aoi_photo_mode=self.aoi_photo_mode
                 ))
 
             if self.include_locations and not self.is_cancelled():
@@ -207,7 +216,7 @@ class CalTopoExportThread(QThread):
     def __init__(self, publisher, controller, images, flagged_aois,
                  include_flagged_aois, include_locations,
                  include_images_without_flagged_aois, include_coverage_area, include_images,
-                 markers=None, polygons=None):
+                 aoi_photo_mode='full', markers=None, polygons=None):
         """
         Initialize the CalTopo export thread.
 
@@ -221,6 +230,7 @@ class CalTopoExportThread(QThread):
             include_images_without_flagged_aois: Whether to include images without flagged AOIs in location export
             include_coverage_area: Whether to include coverage area
             include_images: Whether to include images
+            aoi_photo_mode: Photo(s) to attach to flagged AOI markers ('full', 'thumbnail', or 'both')
             markers: Pre-prepared markers; prepared in-thread when None.
             polygons: Pre-prepared polygons; prepared in-thread when None.
         """
@@ -234,6 +244,7 @@ class CalTopoExportThread(QThread):
         self.include_images_without_flagged_aois = include_images_without_flagged_aois
         self.include_coverage_area = include_coverage_area
         self.include_images = include_images
+        self.aoi_photo_mode = aoi_photo_mode
         self.markers = markers
         self.polygons = polygons
         self._cancelled = False
@@ -285,7 +296,8 @@ class CalTopoExportThread(QThread):
                 return None, None
             self.progressUpdated.emit(0, 100, "Preparing flagged AOI markers...")
             markers.extend(self.controller._prepare_markers(
-                self.images, self.flagged_aois, include_images=self.include_images
+                self.images, self.flagged_aois, include_images=self.include_images,
+                aoi_photo_mode=self.aoi_photo_mode
             ))
 
         if self.include_locations and not self.is_cancelled():
@@ -361,19 +373,27 @@ class CalTopoExportThread(QThread):
                 continue
             marker_success += 1
 
-            has_photo = marker.get('image_path') and os.path.exists(marker.get('image_path', ''))
-            if not (has_photo and marker_id):
+            if not marker_id:
                 continue
 
-            photos_total += 1
-            self.progressUpdated.emit(
-                progress,
-                100,
-                f"Uploading photo {photos_total}: {os.path.basename(marker['image_path'])}..."
-            )
-            photo_ok, _ = self.publisher.upload_photo(marker, marker_id)
-            if photo_ok:
-                photos_uploaded += 1
+            # A marker can carry several photos (e.g. close-up plus overview);
+            # _get_marker_photos also handles fallbacks for missing files
+            for photo in self.controller._get_marker_photos(marker):
+                if self.is_cancelled():
+                    self.canceled.emit()
+                    return
+
+                photos_total += 1
+                self.progressUpdated.emit(
+                    progress,
+                    100,
+                    f"Uploading photo {photos_total}: {os.path.basename(photo['path'])}..."
+                )
+                photo_ok, _ = self.publisher.upload_photo(
+                    marker, marker_id, photo_path=photo['path'], title=photo['title']
+                )
+                if photo_ok:
+                    photos_uploaded += 1
 
         for index, polygon in enumerate(polygons, start=1):
             if self.is_cancelled():
@@ -427,6 +447,10 @@ class CalTopoExportController(TranslationMixin):
         self.caltopo_api_service = CalTopoAPIService(logger=self.logger)  # API-based service
         self.credential_helper = CalTopoCredentialHelper()
         self._account_thread = None
+        # Created lazily during marker preparation; generate the per-export AOI
+        # photos (zoomed crops and multi-zoom composites) into a temp dir
+        self.aoi_thumbnail_service = None
+        self.aoi_composite_service = None
 
     def export_to_caltopo(
             self,
@@ -436,7 +460,8 @@ class CalTopoExportController(TranslationMixin):
             include_locations=False,
             include_images_without_flagged_aois=True,
             include_coverage_area=False,
-            include_images=True):
+            include_images=True,
+            aoi_photo_mode='full'):
         """
         Export data to CalTopo.
 
@@ -448,6 +473,9 @@ class CalTopoExportController(TranslationMixin):
             include_images_without_flagged_aois (bool): Include images without flagged AOIs in location export
             include_coverage_area (bool): Include coverage area as polygons
             include_images (bool): Upload photos to CalTopo markers
+            aoi_photo_mode (str): Photo(s) to attach to flagged AOI markers:
+                'full' (multi-zoom composite, as in the PDF report),
+                'thumbnail' (zoomed AOI crop), or 'both'
 
         Returns:
             bool: True if export was successful, False otherwise
@@ -509,7 +537,8 @@ class CalTopoExportController(TranslationMixin):
 
             prep_thread = CalTopoDataPreparationThread(
                 self, images, flagged_aois, include_flagged_aois,
-                include_locations, include_images_without_flagged_aois, include_coverage_area, include_images
+                include_locations, include_images_without_flagged_aois, include_coverage_area, include_images,
+                aoi_photo_mode=aoi_photo_mode
             )
             prep_thread.progressUpdated.connect(on_prep_progress)
             prep_thread.finished.connect(on_prep_finished)
@@ -686,6 +715,7 @@ class CalTopoExportController(TranslationMixin):
                 images, flagged_aois,
                 include_flagged_aois, include_locations,
                 include_images_without_flagged_aois, include_coverage_area, include_images,
+                aoi_photo_mode=aoi_photo_mode,
                 markers=markers, polygons=coverage_polygons
             )
 
@@ -699,6 +729,9 @@ class CalTopoExportController(TranslationMixin):
                 ).format(error=str(e))
             )
             return False
+        finally:
+            # Generated AOI photos live in a temp dir; drop them once the export ends
+            self._cleanup_aoi_thumbnails()
 
     def _is_offline_only(self) -> bool:
         """Return whether OfflineOnly is enabled on the parent settings service."""
@@ -709,18 +742,25 @@ class CalTopoExportController(TranslationMixin):
             pass
         return False
 
-    def _prepare_markers(self, images, flagged_aois, include_images=True):
+    def _prepare_markers(self, images, flagged_aois, include_images=True, aoi_photo_mode='full'):
         """Prepare marker data from flagged AOIs.
 
         Args:
             images: List of image data dictionaries
             flagged_aois: Dictionary mapping image indices to sets of flagged AOI indices
-            include_images (bool): Whether to include image_path for photo uploads
+            include_images (bool): Whether to include photos for upload
+            aoi_photo_mode (str): Which photo(s) to attach to each AOI marker:
+                'full' (multi-zoom composite, as in the PDF report),
+                'thumbnail' (zoomed AOI crop), or 'both'
 
         Returns:
             list: List of marker dictionaries with 'lat', 'lon', 'title', 'description'
         """
         markers = []
+
+        if include_images:
+            # The mode decides what gets generated below; record it for diagnosis
+            self.logger.info(f"CalTopo AOI photo mode: {aoi_photo_mode}")
 
         for img_idx, aoi_indices in flagged_aois.items():
             if img_idx >= len(images):
@@ -780,6 +820,12 @@ class CalTopoExportController(TranslationMixin):
 
             except Exception:
                 continue
+
+            # Composites reuse this image's already-loaded pixels; build the
+            # shared per-image context once, not per AOI
+            composite_context = None
+            if include_images and aoi_photo_mode in ('full', 'both'):
+                composite_context = self._build_composite_context(image, image_path, img_array, bearing)
 
             # Get AOI data
             aois = image.get('areas_of_interest', [])
@@ -868,11 +914,23 @@ class CalTopoExportController(TranslationMixin):
                     'description': description,
                     'rgb': marker_rgb,  # RGB tuple (R, G, B) or None
                 }
-                # Only include image_path if photos should be uploaded
+                # Only include photos if they should be uploaded
                 if include_images:
+                    # Keep the plain image path as the last-resort fallback; the
+                    # generated photo(s) for the selected mode go in 'photos'
                     marker['image_path'] = image_path
+                    photos = self._build_aoi_photos(
+                        image_path, image_name, aoi, aoi_idx, aoi_photo_mode,
+                        composite_context=composite_context
+                    )
+                    if photos:
+                        marker['photos'] = photos
 
                 markers.append(marker)
+
+            # Free the rotated-image cache for this image before moving to the next
+            if composite_context is not None and self.aoi_composite_service is not None:
+                self.aoi_composite_service.clear_cache_for(composite_context['cache_key'])
 
         return markers
 
@@ -1019,6 +1077,190 @@ class CalTopoExportController(TranslationMixin):
 
         return polygons
 
+    def _build_composite_context(self, image, image_path, img_array, bearing):
+        """Prepare the per-image inputs needed to build multi-zoom composites.
+
+        Args:
+            image (dict): Image data dictionary
+            image_path (str): Path used to load img_array
+            img_array: Image array already loaded for this image (RGB)
+            bearing: Drone bearing in degrees
+
+        Returns:
+            dict: Context with 'img_array_bgr', 'bearing', 'identifier_color',
+                  and 'cache_key' keys, or None if it could not be prepared
+        """
+        try:
+            # Match the PDF report: use the original image pixels when available
+            source_path = image.get('original_path', image_path) if 'original_path' in image else image_path
+            if source_path == image_path:
+                source_array = img_array
+            else:
+                source_array = ImageService(source_path, image.get('mask_path', '')).img_array
+
+            # Same identifier color the PDF uses for the AOI circle
+            identifier_color = (255, 255, 0)
+            if hasattr(self.parent, 'settings') and isinstance(self.parent.settings, dict):
+                identifier_color = self.parent.settings.get('identifier_color', identifier_color)
+
+            return {
+                'img_array_bgr': cv2.cvtColor(source_array, cv2.COLOR_RGB2BGR),
+                'bearing': bearing,
+                'identifier_color': identifier_color,
+                'cache_key': source_path,
+            }
+        except Exception as e:
+            self.logger.error(f"Error preparing composite source for {image_path}: {e}")
+            return None
+
+    def _build_composite_photo(self, image_path, image_name, aoi, aoi_idx, composite_context):
+        """Generate the multi-zoom composite photo (same layout as the PDF report) for an AOI.
+
+        Args:
+            image_path (str): Path to the source image
+            image_name (str): Display name of the source image
+            aoi (dict): AOI dictionary
+            aoi_idx (int): Index of the AOI within the image
+            composite_context (dict): Context from _build_composite_context, or None
+
+        Returns:
+            str: Path to the generated composite image, or None if it could not be created
+        """
+        if composite_context is None:
+            self.logger.warning(
+                f"No composite source available for {image_name} - AOI {aoi_idx + 1}; "
+                "the plain image will be used instead"
+            )
+            return None
+
+        try:
+            if self.aoi_composite_service is None:
+                self.aoi_composite_service = AOICompositeService(logger=self.logger)
+            if self.aoi_thumbnail_service is None:
+                self.aoi_thumbnail_service = AOIThumbnailService(logger=self.logger)
+
+            composite = self.aoi_composite_service.create_composite(
+                composite_context['img_array_bgr'],
+                aoi,
+                composite_context['bearing'],
+                composite_context['identifier_color'],
+                cache_key=composite_context['cache_key']
+            )
+            if composite is None:
+                return None
+
+            return self.aoi_thumbnail_service.save_composite(
+                composite,
+                output_name=f"{Path(image_path).stem}_AOI{aoi_idx + 1}_overview"
+            )
+        except Exception as e:
+            self.logger.error(f"Error generating composite for {image_name} - AOI {aoi_idx + 1}: {e}")
+            return None
+
+    def _build_aoi_photos(self, image_path, image_name, aoi, aoi_idx, aoi_photo_mode, composite_context=None):
+        """Build the list of photos to upload for a flagged AOI marker.
+
+        Args:
+            image_path (str): Path to the source image
+            image_name (str): Display name of the source image
+            aoi (dict): AOI dictionary
+            aoi_idx (int): Index of the AOI within the image
+            aoi_photo_mode (str): 'full' (multi-zoom composite, as in the PDF report),
+                'thumbnail' (zoomed AOI crop), or 'both'
+            composite_context (dict, optional): Per-image context from
+                _build_composite_context; required to build composites
+
+        Returns:
+            list: List of dictionaries with 'path' and 'title' keys
+        """
+        photos = []
+
+        if not image_path:
+            return photos
+
+        if aoi_photo_mode in ('thumbnail', 'both'):
+            try:
+                if self.aoi_thumbnail_service is None:
+                    self.aoi_thumbnail_service = AOIThumbnailService(logger=self.logger)
+
+                thumbnail_path = self.aoi_thumbnail_service.generate_thumbnail(
+                    image_path,
+                    aoi,
+                    output_name=f"{Path(image_path).stem}_AOI{aoi_idx + 1}_closeup"
+                )
+                if thumbnail_path:
+                    photos.append({
+                        'path': thumbnail_path,
+                        'title': f"{image_name} - AOI {aoi_idx + 1} (close-up)"
+                    })
+                else:
+                    self.logger.warning(f"Could not generate AOI thumbnail for {image_name} - AOI {aoi_idx + 1}")
+            except Exception as e:
+                self.logger.error(f"Error generating AOI thumbnail for {image_name} - AOI {aoi_idx + 1}: {e}")
+
+        if aoi_photo_mode in ('full', 'both'):
+            composite_path = self._build_composite_photo(image_path, image_name, aoi, aoi_idx, composite_context)
+            if composite_path:
+                photos.append({
+                    'path': composite_path,
+                    'title': f"{image_name} - AOI {aoi_idx + 1} (overview)"
+                })
+            else:
+                # Fall back to the plain full image so the marker still gets a photo
+                photos.append({'path': image_path, 'title': image_name})
+
+        # Last-resort fallback: never leave the marker photo-less when photos were requested
+        if not photos:
+            photos.append({'path': image_path, 'title': image_name})
+
+        return photos
+
+    def _get_marker_photos(self, marker):
+        """Return the photos that should be uploaded for a marker.
+
+        Supports markers that carry a 'photos' list as well as legacy markers that
+        only carry a single 'image_path'.
+
+        Args:
+            marker (dict): Marker dictionary
+
+        Returns:
+            list: List of dictionaries with 'path' and 'title' keys
+        """
+        photos = []
+        missing = []
+        for photo in marker.get('photos') or []:
+            path = photo.get('path')
+            if path and os.path.exists(path):
+                photos.append({'path': path, 'title': photo.get('title') or os.path.basename(path)})
+            elif path:
+                missing.append(path)
+
+        # A prepared photo that vanished before upload is a bug we need to hear about
+        for path in missing:
+            self.logger.warning(f"Prepared CalTopo photo is missing on disk, skipping: {path}")
+
+        if not photos:
+            image_path = marker.get('image_path')
+            if image_path and os.path.exists(image_path):
+                if missing:
+                    self.logger.warning(
+                        f"Marker '{marker.get('title', '')}': all prepared photos missing; "
+                        "falling back to the original image"
+                    )
+                photos.append({'path': image_path, 'title': marker.get('title') or os.path.basename(image_path)})
+
+        return photos
+
+    def _cleanup_aoi_thumbnails(self):
+        """Remove any temporary AOI photos generated for this export and free caches."""
+        if self.aoi_thumbnail_service is not None:
+            self.aoi_thumbnail_service.cleanup()
+            self.aoi_thumbnail_service = None
+        if self.aoi_composite_service is not None:
+            self.aoi_composite_service.clear_cache()
+            self.aoi_composite_service = None
+
     def logout_from_caltopo(self):
         """Log out from CalTopo by clearing session."""
         self.caltopo_service.clear_session()
@@ -1029,7 +1271,8 @@ class CalTopoExportController(TranslationMixin):
         )
 
     def export_to_caltopo_via_api(self, images, flagged_aois, include_flagged_aois=True,
-                                  include_locations=False, include_images_without_flagged_aois=True, include_coverage_area=False, include_images=True):
+                                  include_locations=False, include_images_without_flagged_aois=True, include_coverage_area=False, include_images=True,
+                                  aoi_photo_mode='full'):
         """
         Export data to CalTopo using the official Team API.
 
@@ -1044,6 +1287,9 @@ class CalTopoExportController(TranslationMixin):
             include_images_without_flagged_aois (bool): Include images without flagged AOIs in location export
             include_coverage_area (bool): Include coverage area as polygons
             include_images (bool): Upload photos to CalTopo markers
+            aoi_photo_mode (str): Photo(s) to attach to flagged AOI markers:
+                'full' (multi-zoom composite, as in the PDF report),
+                'thumbnail' (zoomed AOI crop), or 'both'
 
         Returns:
             bool: True if export was successful, False otherwise
@@ -1124,7 +1370,8 @@ class CalTopoExportController(TranslationMixin):
                     self.caltopo_api_service, map_id, map_team_id, credential_id, credential_secret
                 ),
                 images, flagged_aois, include_flagged_aois, include_locations,
-                include_images_without_flagged_aois, include_coverage_area, include_images
+                include_images_without_flagged_aois, include_coverage_area, include_images,
+                aoi_photo_mode=aoi_photo_mode
             )
 
         except Exception as e:
@@ -1137,6 +1384,9 @@ class CalTopoExportController(TranslationMixin):
                 ).format(error=str(e))
             )
             return False
+        finally:
+            # Generated AOI photos live in a temp dir; drop them once the export ends
+            self._cleanup_aoi_thumbnails()
 
     def _prompt_for_credentials(self, existing_credentials=None):
         """Show the credential dialog and persist whatever the user enters.
@@ -1262,7 +1512,7 @@ class CalTopoExportController(TranslationMixin):
 
     def _run_export(self, publisher, images, flagged_aois, include_flagged_aois, include_locations,
                     include_images_without_flagged_aois, include_coverage_area, include_images,
-                    markers=None, polygons=None):
+                    aoi_photo_mode='full', markers=None, polygons=None):
         """Publish to CalTopo on a worker thread behind a progress dialog.
 
         Shared by both authentication modes: only the publisher differs.
@@ -1276,6 +1526,7 @@ class CalTopoExportController(TranslationMixin):
             include_images_without_flagged_aois: Whether to include images without flagged AOIs
             include_coverage_area: Whether to include coverage area
             include_images: Whether to include images
+            aoi_photo_mode: Photo(s) to attach to flagged AOI markers ('full', 'thumbnail', or 'both')
             markers: Pre-prepared markers, when the caller already built them.
             polygons: Pre-prepared polygons, when the caller already built them.
 
@@ -1300,6 +1551,7 @@ class CalTopoExportController(TranslationMixin):
             include_images_without_flagged_aois,
             include_coverage_area,
             include_images,
+            aoi_photo_mode=aoi_photo_mode,
             markers=markers,
             polygons=polygons
         )

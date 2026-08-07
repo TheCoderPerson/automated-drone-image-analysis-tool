@@ -55,20 +55,24 @@ class CalTopoApiPublisher:
             self.map_id, self.team_id, self.credential_id, self.credential_secret, polygon
         )
 
-    def upload_photo(self, marker, marker_id):
+    def upload_photo(self, marker, marker_id, photo_path=None, title=None):
         """Attach a photo to a marker.
 
         Args:
-            marker (dict): Marker data carrying 'image_path'.
+            marker (dict): Marker data; 'image_path' is the fallback photo.
             marker_id (str): Marker the photo belongs to.
+            photo_path (str, optional): Specific photo file to upload; falls back
+                to the marker's 'image_path' when omitted.
+            title (str, optional): Title for this photo; falls back to the
+                marker title.
 
         Returns:
             tuple: (success: bool, media_object_id: str or None)
         """
         return self.api_service.upload_photo_via_api(
             self.map_id, self.team_id, self.credential_id, self.credential_secret,
-            marker['image_path'], marker['lat'], marker['lon'],
-            title=marker.get('title'),
+            photo_path or marker['image_path'], marker['lat'], marker['lon'],
+            title=title or marker.get('title'),
             description=marker.get('description', ''),
             marker_id=marker_id
         )
@@ -110,19 +114,23 @@ class CalTopoBrowserPublisher:
         """
         return self.caltopo_service.add_shape_to_map(self.map_id, polygon)
 
-    def upload_photo(self, marker, marker_id):
+    def upload_photo(self, marker, marker_id, photo_path=None, title=None):
         """Attach a photo to a marker.
 
         Args:
-            marker (dict): Marker data carrying 'image_path'.
+            marker (dict): Marker data; 'image_path' is the fallback photo.
             marker_id (str): Marker the photo belongs to.
+            photo_path (str, optional): Specific photo file to upload; falls back
+                to the marker's 'image_path' when omitted.
+            title (str, optional): Title for this photo; falls back to the
+                marker title.
 
         Returns:
             tuple: (success: bool, media_object_id: str or None)
         """
         return self.caltopo_service.upload_photo_for_marker(
-            self.map_id, marker_id, marker['image_path'],
+            self.map_id, marker_id, photo_path or marker['image_path'],
             marker['lat'], marker['lon'],
-            title=marker.get('title'),
+            title=title or marker.get('title'),
             description=marker.get('description', '')
         )

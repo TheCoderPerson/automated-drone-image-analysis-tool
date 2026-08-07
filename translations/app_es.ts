@@ -1977,14 +1977,14 @@ Compruebe:
 <context>
     <name>CalTopoExportController</name>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="459"/>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1055"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="487"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1301"/>
         <source>Offline Mode Enabled</source>
         <translation>Modo sin conexión habilitado</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="461"/>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1057"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="489"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1303"/>
         <source>Offline Only is turned on in Preferences:
 
 • Map tiles will not be retrieved.
@@ -1999,39 +1999,39 @@ Turn off Offline Only to export to CalTopo.</source>
 Desactive Solo sin conexión para exportar a CalTopo.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="472"/>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1068"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="500"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1314"/>
         <source>Nothing Selected</source>
         <translation>Nada seleccionado</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="474"/>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1070"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="502"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1316"/>
         <source>Select at least one data type (flagged AOIs, drone/image locations, or coverage area) to export.</source>
         <translation>Seleccione al menos un tipo de datos (AOI marcados, ubicaciones de dron/imagen o área de cobertura) para exportar.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="482"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="510"/>
         <source>Preparing Export Data</source>
         <translation>Preparando datos de exportación</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="485"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="513"/>
         <source>Preparing data for export...</source>
         <translation>Preparando datos para exportación...</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="486"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="514"/>
         <source>Processing images and AOIs...</source>
         <translation>Procesando imágenes y AOI...</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="530"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="559"/>
         <source>Preparation Error</source>
         <translation>Error de preparación</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="532"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="561"/>
         <source>An error occurred while preparing export data:
 
 {error}</source>
@@ -2040,29 +2040,29 @@ Desactive Solo sin conexión para exportar a CalTopo.</translation>
 {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="541"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="570"/>
         <source>flagged AOIs</source>
         <translation>AOI marcados</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="543"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="572"/>
         <source>image locations</source>
         <translation>ubicaciones de imágenes</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="545"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="574"/>
         <source>coverage area</source>
         <translation>área de cobertura</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="549"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="578"/>
         <source>No flagged AOIs, geotagged image locations, or coverage areas are available.
 Flag some AOIs with the &apos;F&apos; key or ensure your images have GPS metadata.</source>
         <translation>No hay AOI marcados, ubicaciones de imágenes geoetiquetadas ni áreas de cobertura disponibles.
 Marque algunos AOI con la tecla &apos;F&apos; o asegúrese de que sus imágenes tengan metadatos GPS.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="555"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="584"/>
         <source>Found {count} flagged AOI(s), but could not extract GPS coordinates.
 
 This usually means:
@@ -2079,14 +2079,14 @@ Esto normalmente significa:
 Asegúrese de que sus imágenes tengan coordenadas GPS incrustadas.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="563"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="592"/>
         <source>No geotagged drone/image locations were found.
 Ensure your images contain GPS metadata and try again.</source>
         <translation>No se encontraron ubicaciones geoetiquetadas del dron/imagen.
 Asegúrese de que sus imágenes contengan metadatos GPS e inténtelo de nuevo.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="568"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="597"/>
         <source>No coverage area polygons could be calculated.
 
 This usually means:
@@ -2105,23 +2105,23 @@ Esto normalmente significa:
 Asegúrese de que sus imágenes tengan coordenadas GPS y sean tomas nadir.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="577"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="606"/>
         <source>No {types} are available to export.</source>
         <translation>No hay {types} disponibles para exportar.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="582"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="611"/>
         <source>Nothing to Export</source>
         <translation>Nada para exportar</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="607"/>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="654"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="636"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="683"/>
         <source>No Map Selected</source>
         <translation>Ningún mapa seleccionado</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="609"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="638"/>
         <source>Please navigate to a CalTopo map before clicking &apos;I&apos;m Logged In&apos;.
 
 The map URL should look like:
@@ -2132,7 +2132,7 @@ La URL del mapa debería verse así:
 https://caltopo.com/map.html#...&amp;id=ABC123</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="656"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="685"/>
         <source>No CalTopo map was selected, so there was nothing to export to.
 
 Open your map in the CalTopo window before clicking &apos;I&apos;m Logged In - Export Data&apos;.</source>
@@ -2141,7 +2141,7 @@ Open your map in the CalTopo window before clicking &apos;I&apos;m Logged In - E
 Abra su mapa en la ventana de CalTopo antes de hacer clic en &apos;He iniciado sesión - Exportar datos&apos;.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1366"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1618"/>
         <source>Nothing could be exported to CalTopo.
 
 The reason was written to the log (adiat_logs.txt) and the console.</source>
@@ -2150,12 +2150,12 @@ The reason was written to the log (adiat_logs.txt) and the console.</source>
 El motivo se registró en el archivo de registro (adiat_logs.txt) y en la consola.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1375"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1627"/>
         <source>Photos uploaded: {uploaded} of {total}.</source>
         <translation>Fotos subidas: {uploaded} de {total}.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1383"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1635"/>
         <source>Successfully exported all {total} item(s) to CalTopo.
 
 The items should now be visible on your map.</source>
@@ -2164,7 +2164,7 @@ The items should now be visible on your map.</source>
 Los elementos ya deberían aparecer en su mapa.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1392"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1644"/>
         <source>Exported {created} of {total} item(s) to CalTopo.{photos}
 
 Details for anything that failed were written to the log (adiat_logs.txt) and the console.</source>
@@ -2173,30 +2173,30 @@ Details for anything that failed were written to the log (adiat_logs.txt) and th
 Los detalles de lo que falló se registraron en el archivo de registro (adiat_logs.txt) y en la consola.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1381"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1633"/>
         <source>Export Successful</source>
         <translation>Exportación exitosa</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1390"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1642"/>
         <source>Partial Success</source>
         <translation>Éxito parcial</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1364"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1616"/>
         <source>Export Failed</source>
         <translation>Exportación fallida</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="696"/>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1134"/>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1324"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="726"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1381"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1576"/>
         <source>Export Error</source>
         <translation>Error de exportación</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="698"/>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1326"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="728"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1578"/>
         <source>An error occurred during CalTopo export:
 
 {error}</source>
@@ -2205,7 +2205,7 @@ Los detalles de lo que falló se registraron en el archivo de registro (adiat_lo
 {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1000"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1058"/>
         <source>Coverage area: {sqkm:.3f} km² ({acres:.2f} acres)
 Area in square meters: {sqm:.0f} m²
 Number of corners: {count}</source>
@@ -2214,42 +2214,42 @@ Number of corners: {count}</source>
 Número de esquinas: {count}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1287"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1538"/>
         <source>Exporting to CalTopo</source>
         <translation>Exportando a CalTopo</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1027"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1269"/>
         <source>Logged Out</source>
         <translation>Sesión cerrada</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1028"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1270"/>
         <source>Successfully logged out from CalTopo.</source>
         <translation>Sesión cerrada correctamente en CalTopo.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1179"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1429"/>
         <source>Loading CalTopo Maps</source>
         <translation>Cargando mapas de CalTopo</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1182"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1432"/>
         <source>Connecting to CalTopo...</source>
         <translation>Conectando a CalTopo...</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1183"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1433"/>
         <source>Fetching account data and maps...</source>
         <translation>Obteniendo datos de la cuenta y mapas...</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1238"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1488"/>
         <source>Connection Error</source>
         <translation>Error de conexión</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1240"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1490"/>
         <source>An error occurred while connecting to CalTopo API:
 
 {error}</source>
@@ -2258,18 +2258,18 @@ Número de esquinas: {count}</translation>
 {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="669"/>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1243"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="698"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1493"/>
         <source>Authentication Failed</source>
         <translation>Error de autenticación</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="670"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="699"/>
         <source>No CalTopo session cookies were captured. Please log in and try again.</source>
         <translation>No se capturaron cookies de sesión de CalTopo. Inicie sesión e inténtelo de nuevo.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1136"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1383"/>
         <source>An error occurred during CalTopo API export:
 
 {error}</source>
@@ -2278,7 +2278,7 @@ Número de esquinas: {count}</translation>
 {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1245"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1495"/>
         <source>CalTopo did not accept these credentials.
 
 The reason was written to the log (adiat_logs.txt) and the console.
@@ -2291,12 +2291,12 @@ El motivo se registró en el archivo de registro (adiat_logs.txt) y en la consol
 ¿Desea volver a introducir su ID de equipo, ID de credencial y secreto de credencial?</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1290"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1541"/>
         <source>Exporting to CalTopo...</source>
         <translation>Exportando a CalTopo...</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1291"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1542"/>
         <source>Preparing data and exporting...</source>
         <translation>Preparando datos y exportando...</translation>
     </message>
@@ -9595,12 +9595,39 @@ DETECTOR DE PERSONAS CON IA: Modelo de aprendizaje profundo para detección prec
         <translation>Subir fotos a los marcadores de CalTopo (solo CalTopo)</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/MapExportDialog.py" line="150"/>
+        <location filename="../app/core/views/images/viewer/dialogs/MapExportDialog.py" line="135"/>
+        <source>Photo for flagged AOIs:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/views/images/viewer/dialogs/MapExportDialog.py" line="137"/>
+        <source>Large Image (with zoom insets)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/views/images/viewer/dialogs/MapExportDialog.py" line="138"/>
+        <source>AOI Thumbnail Only</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/views/images/viewer/dialogs/MapExportDialog.py" line="139"/>
+        <source>Both</source>
+        <translation type="unfinished">Ambos</translation>
+    </message>
+    <message>
+        <location filename="../app/core/views/images/viewer/dialogs/MapExportDialog.py" line="142"/>
+        <source>Large Image uploads the same multi-zoom composite used in the PDF report
+(full image with 3x and 6x insets). AOI Thumbnail uploads a zoomed crop
+centered on the detection. Both uploads each.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/views/images/viewer/dialogs/MapExportDialog.py" line="173"/>
         <source>Export</source>
         <translation>Exportar</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/MapExportDialog.py" line="154"/>
+        <location filename="../app/core/views/images/viewer/dialogs/MapExportDialog.py" line="177"/>
         <source>Cancel</source>
         <translation>Cancelar</translation>
     </message>
@@ -14461,114 +14488,114 @@ Register the downloaded Meta/WRI canopy tiles instead? (Your LANDFIRE files stay
 <context>
     <name>UnifiedMapExportController</name>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="438"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="439"/>
         <source>No Data Selected</source>
         <translation>Ningún dato seleccionado</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="439"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="440"/>
         <source>Please select at least one type of data to export.</source>
         <translation>Seleccione al menos un tipo de datos para exportar.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="468"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="470"/>
         <source>Select folder for POD coverage files</source>
         <translation>Seleccionar carpeta para los archivos de cobertura POD</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="476"/>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="583"/>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="860"/>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="895"/>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="940"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="478"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="585"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="865"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="903"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="948"/>
         <source>Export Error</source>
         <translation>Error de exportación</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="477"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="479"/>
         <source>An error occurred during export:
 {error}</source>
         <translation>Se produjo un error durante la exportación:
 {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="495"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="497"/>
         <source>Save Map Export</source>
         <translation>Guardar exportación de mapa</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="497"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="499"/>
         <source>KML files (*.kml);;KMZ files (*.kmz)</source>
         <translation>Archivos KML (*.kml);;Archivos KMZ (*.kmz)</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="584"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="586"/>
         <source>Failed to export to KML:
 {error}</source>
         <translation>Error al exportar a KML:
 {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="651"/>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="822"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="653"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="824"/>
         <source>POD Error</source>
         <translation>Error de POD</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="652"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="654"/>
         <source>Could not start the POD calculation:
 {error}</source>
         <translation>No se pudo iniciar el cálculo de POD:
 {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="702"/>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="714"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="704"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="716"/>
         <source>POD coverage complete</source>
         <translation>Cobertura POD completada</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="711"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="713"/>
         <source>POD coverage complete — {count} frame(s) used online elevation (outside local DEM)</source>
         <translation>Cobertura POD completada: {count} fotograma(s) usaron elevación en línea (fuera del DEM local)</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="719"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="721"/>
         <source>POD complete — {skipped} of {total} frames skipped</source>
         <translation>POD completado: {skipped} de {total} fotogramas omitidos</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="722"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="724"/>
         <source>({count} without elevation data)</source>
         <translation>({count} sin datos de elevación)</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="730"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="732"/>
         <source>(canopy data covered {pct}% of the searched area)</source>
         <translation>(los datos de dosel cubrieron el {pct}% del área buscada)</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="785"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="787"/>
         <source>Terrain and canopy aware probability-of-detection heatmap.</source>
         <translation>Mapa de calor de probabilidad de detección consciente del terreno y del dosel.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="789"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="791"/>
         <source>Mean POD over covered area: {pod}%</source>
         <translation>POD media sobre el área cubierta: {pod}%</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="792"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="794"/>
         <source>POD Coverage</source>
         <translation>Cobertura POD</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="800"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="802"/>
         <source>POD Overlay</source>
         <translation>Superposición POD</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="801"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="803"/>
         <source>The POD coverage was computed, but embedding it into the exported file failed:
 {error}
 
@@ -14579,37 +14606,37 @@ The POD GeoTIFF products were still written next to the export.</source>
 Los productos GeoTIFF de POD se escribieron igualmente junto a la exportación.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="814"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="816"/>
         <source>POD calculation cancelled</source>
         <translation>Cálculo de POD cancelado</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="823"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="825"/>
         <source>POD calculation failed:
 {error}</source>
         <translation>El cálculo de POD falló:
 {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="861"/>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="896"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="866"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="904"/>
         <source>Failed to export to CalTopo:
 {error}</source>
         <translation>Error al exportar a CalTopo:
 {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="912"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="920"/>
         <source>Map export completed successfully!</source>
         <translation>¡Exportación de mapa completada correctamente!</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="927"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="935"/>
         <source>Map export cancelled</source>
         <translation>Exportación de mapa cancelada</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="941"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="949"/>
         <source>Map export failed:
 {error}</source>
         <translation>Error en la exportación de mapa:

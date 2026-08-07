@@ -376,7 +376,9 @@ def test_export_thread_uses_publisher_for_markers_and_photos(app, mock_viewer):
     thread.run()
 
     publisher.add_marker.assert_called_once_with(markers[0])
-    publisher.upload_photo.assert_called_once_with(markers[0], 'marker-1')
+    publisher.upload_photo.assert_called_once_with(
+        markers[0], 'marker-1', photo_path=__file__, title='AOI 1'
+    )
     publisher.add_polygon.assert_called_once_with(polygons[0])
 
     assert summaries == [{
@@ -606,3 +608,297 @@ def test_caltopo_export_via_api_retries_after_new_credentials(
     mock_prompt.assert_called_once()
     # Second attempt used the corrected credentials.
     assert mock_fetch.call_args_list[1][0] == ('TEAM2', 'CRED2', 'TkVXU0VDUkVU')
+
+
+# ---------------------------------------------------------------------------
+# AOI photo modes: which photo(s) a flagged-AOI marker carries to CalTopo
+# ---------------------------------------------------------------------------
+
+
+@pytest.fixture
+def caltopo_controller(mock_viewer):
+    """Create a CalTopoExportController with its external services stubbed out."""
+    module = 'core.controllers.images.viewer.exports.CalTopoExportController'
+    with patch(f'{module}.CalTopoService'), \
+            patch(f'{module}.CalTopoAPIService'), \
+            patch(f'{module}.CalTopoCredentialHelper'):
+        return CalTopoExportController(mock_viewer, logger=MagicMock())
+
+
+@pytest.fixture
+def aoi_source_image(tmp_path):
+    """Create a real image file that AOI thumbnails can be generated from."""
+    from PIL import Image
+    path = tmp_path / "IMG_0001.jpg"
+    Image.new('RGB', (800, 600), (20, 20, 20)).save(path)
+    return str(path)
+
+
+def test_build_aoi_photos_full_without_context_falls_back(caltopo_controller, aoi_source_image):
+    """Full mode without a composite context falls back to the plain image."""
+    aoi = {'center': (400, 300), 'radius': 20}
+
+    photos = caltopo_controller._build_aoi_photos(aoi_source_image, 'IMG_0001.jpg', aoi, 0, 'full')
+
+    assert [photo['path'] for photo in photos] == [aoi_source_image]
+    assert caltopo_controller.aoi_thumbnail_service is None
+
+
+def test_build_aoi_photos_full_with_context_builds_composite(caltopo_controller, aoi_source_image):
+    """Full mode with a composite context attaches the multi-zoom composite."""
+    import os
+    import numpy as np
+    aoi = {'center': (400, 300), 'radius': 20}
+    image = {'path': aoi_source_image, 'mask_path': ''}
+    img_array = np.zeros((600, 800, 3), dtype=np.uint8)
+
+    context = caltopo_controller._build_composite_context(image, aoi_source_image, img_array, 0)
+    assert context is not None
+
+    photos = caltopo_controller._build_aoi_photos(
+        aoi_source_image, 'IMG_0001.jpg', aoi, 0, 'full', composite_context=context
+    )
+
+    assert len(photos) == 1
+    assert photos[0]['path'] != aoi_source_image
+    assert os.path.exists(photos[0]['path'])
+    assert 'overview' in os.path.basename(photos[0]['path'])
+    assert 'overview' in photos[0]['title']
+
+    caltopo_controller._cleanup_aoi_thumbnails()
+
+
+def test_build_aoi_photos_thumbnail_only(caltopo_controller, aoi_source_image):
+    """Thumbnail mode attaches only the zoomed AOI crop."""
+    import os
+    aoi = {'center': (400, 300), 'radius': 20}
+
+    photos = caltopo_controller._build_aoi_photos(aoi_source_image, 'IMG_0001.jpg', aoi, 1, 'thumbnail')
+
+    assert len(photos) == 1
+    assert photos[0]['path'] != aoi_source_image
+    assert os.path.exists(photos[0]['path'])
+    assert 'AOI2' in os.path.basename(photos[0]['path'])
+    assert 'close-up' in photos[0]['title']
+
+    caltopo_controller._cleanup_aoi_thumbnails()
+
+
+def test_build_aoi_photos_both(caltopo_controller, aoi_source_image):
+    """Both mode attaches the AOI crop first, then the large image (fallback without context)."""
+    aoi = {'center': (400, 300), 'radius': 20}
+
+    photos = caltopo_controller._build_aoi_photos(aoi_source_image, 'IMG_0001.jpg', aoi, 0, 'both')
+
+    assert len(photos) == 2
+    assert photos[0]['path'] != aoi_source_image
+    assert photos[1]['path'] == aoi_source_image
+
+    caltopo_controller._cleanup_aoi_thumbnails()
+
+
+def test_build_aoi_photos_both_with_context(caltopo_controller, aoi_source_image):
+    """Both mode with a composite context attaches the crop and the composite."""
+    import os
+    import numpy as np
+    aoi = {'center': (400, 300), 'radius': 20}
+    image = {'path': aoi_source_image, 'mask_path': ''}
+    img_array = np.zeros((600, 800, 3), dtype=np.uint8)
+
+    context = caltopo_controller._build_composite_context(image, aoi_source_image, img_array, 0)
+    photos = caltopo_controller._build_aoi_photos(
+        aoi_source_image, 'IMG_0001.jpg', aoi, 0, 'both', composite_context=context
+    )
+
+    assert len(photos) == 2
+    assert 'close-up' in photos[0]['title']
+    assert 'overview' in photos[1]['title']
+    assert all(photo['path'] != aoi_source_image for photo in photos)
+    assert all(os.path.exists(photo['path']) for photo in photos)
+
+    caltopo_controller._cleanup_aoi_thumbnails()
+
+
+def test_build_aoi_photos_falls_back_to_full_image(caltopo_controller, aoi_source_image):
+    """A failed thumbnail falls back to the full image so the photo isn't lost."""
+    aoi = {'center': (5000, 5000), 'radius': 20}  # Outside the image bounds
+
+    photos = caltopo_controller._build_aoi_photos(aoi_source_image, 'IMG_0001.jpg', aoi, 0, 'thumbnail')
+
+    assert [photo['path'] for photo in photos] == [aoi_source_image]
+
+    caltopo_controller._cleanup_aoi_thumbnails()
+
+
+def _patched_prepare_markers(controller, images, flagged_aois, **kwargs):
+    """Run _prepare_markers with EXIF/GPS lookups stubbed out."""
+    import numpy as np
+    module = 'core.controllers.images.viewer.exports.CalTopoExportController'
+
+    with patch(f'{module}.MetaDataHelper.get_exif_data_piexif', return_value={}), \
+            patch(f'{module}.LocationInfo.get_gps', return_value={'latitude': 39.5, 'longitude': -105.2}), \
+            patch(f'{module}.ImageService') as mock_image_service, \
+            patch(f'{module}.AOIService') as mock_aoi_service:
+        mock_image_service.return_value.img_array = np.zeros((600, 800, 3), dtype=np.uint8)
+        mock_image_service.return_value.get_camera_yaw.return_value = 0
+        mock_image_service.return_value.get_average_gsd.return_value = 1.0
+        mock_aoi_service.return_value.calculate_gps_with_custom_altitude.return_value = (39.5001, -105.2001)
+        mock_aoi_service.return_value.get_cached_or_representative_color.return_value = None
+        return controller._prepare_markers(images, flagged_aois, **kwargs)
+
+
+def test_prepare_markers_attaches_aoi_thumbnail(caltopo_controller, mock_viewer, aoi_source_image):
+    """Thumbnail mode attaches the zoomed crop to the marker instead of the full image."""
+    import os
+    mock_viewer.messages = {}
+    mock_viewer.custom_agl_altitude_ft = None
+    images = [{
+        'path': aoi_source_image,
+        'name': 'IMG_0001.jpg',
+        'areas_of_interest': [{'center': (400, 300), 'radius': 20}],
+        'hidden': False
+    }]
+
+    markers = _patched_prepare_markers(
+        caltopo_controller, images, {0: {0}}, include_images=True, aoi_photo_mode='thumbnail'
+    )
+
+    assert len(markers) == 1
+    photos = markers[0]['photos']
+    assert len(photos) == 1
+    assert photos[0]['path'] != aoi_source_image
+    assert os.path.exists(photos[0]['path'])
+    # image_path falls back to the durable image on disk, not the temp photo
+    assert markers[0]['image_path'] == aoi_source_image
+
+    caltopo_controller._cleanup_aoi_thumbnails()
+
+
+def test_prepare_markers_default_mode_uses_composite(caltopo_controller, mock_viewer, aoi_source_image):
+    """The default photo mode attaches the multi-zoom composite (same image as the PDF)."""
+    import os
+    mock_viewer.messages = {}
+    mock_viewer.custom_agl_altitude_ft = None
+    images = [{
+        'path': aoi_source_image,
+        'name': 'IMG_0001.jpg',
+        'areas_of_interest': [{'center': (400, 300), 'radius': 20}],
+        'hidden': False
+    }]
+
+    markers = _patched_prepare_markers(caltopo_controller, images, {0: {0}}, include_images=True)
+
+    photos = markers[0]['photos']
+    assert len(photos) == 1
+    assert photos[0]['path'] != aoi_source_image
+    assert os.path.exists(photos[0]['path'])
+    assert 'overview' in os.path.basename(photos[0]['path'])
+    assert markers[0]['image_path'] == aoi_source_image
+
+    caltopo_controller._cleanup_aoi_thumbnails()
+
+
+def test_prepare_markers_both_mode_attaches_two_photos(caltopo_controller, mock_viewer, aoi_source_image):
+    """Both mode attaches the close-up crop and the composite to the marker."""
+    import os
+    mock_viewer.messages = {}
+    mock_viewer.custom_agl_altitude_ft = None
+    images = [{
+        'path': aoi_source_image,
+        'name': 'IMG_0001.jpg',
+        'areas_of_interest': [{'center': (400, 300), 'radius': 20}],
+        'hidden': False
+    }]
+
+    markers = _patched_prepare_markers(
+        caltopo_controller, images, {0: {0}}, include_images=True, aoi_photo_mode='both'
+    )
+
+    photos = markers[0]['photos']
+    assert len(photos) == 2
+    assert 'close-up' in photos[0]['title']
+    assert 'overview' in photos[1]['title']
+    assert all(os.path.exists(photo['path']) for photo in photos)
+
+    caltopo_controller._cleanup_aoi_thumbnails()
+
+
+def test_prepare_markers_without_images_has_no_photos(caltopo_controller, mock_viewer, aoi_source_image):
+    """No photos are attached when image uploads are disabled."""
+    mock_viewer.messages = {}
+    mock_viewer.custom_agl_altitude_ft = None
+    images = [{
+        'path': aoi_source_image,
+        'name': 'IMG_0001.jpg',
+        'areas_of_interest': [{'center': (400, 300), 'radius': 20}],
+        'hidden': False
+    }]
+
+    markers = _patched_prepare_markers(
+        caltopo_controller, images, {0: {0}}, include_images=False, aoi_photo_mode='thumbnail'
+    )
+
+    assert len(markers) == 1
+    assert 'photos' not in markers[0]
+    assert 'image_path' not in markers[0]
+
+
+def test_get_marker_photos_from_photos_list(caltopo_controller, aoi_source_image):
+    """Markers carrying a photos list return those photos, skipping missing files."""
+    marker = {
+        'title': 'IMG_0001.jpg - AOI 1',
+        'photos': [
+            {'path': aoi_source_image, 'title': 'close-up'},
+            {'path': '/does/not/exist.jpg', 'title': 'missing'},
+        ]
+    }
+
+    photos = caltopo_controller._get_marker_photos(marker)
+
+    assert [photo['path'] for photo in photos] == [aoi_source_image]
+    assert photos[0]['title'] == 'close-up'
+
+
+def test_get_marker_photos_legacy_image_path(caltopo_controller, aoi_source_image):
+    """Markers with only an image_path still return that photo."""
+    marker = {'title': 'IMG_0001.jpg', 'image_path': aoi_source_image}
+
+    photos = caltopo_controller._get_marker_photos(marker)
+
+    assert [photo['path'] for photo in photos] == [aoi_source_image]
+
+
+def test_get_marker_photos_none(caltopo_controller):
+    """Markers without photos return an empty list."""
+    assert caltopo_controller._get_marker_photos({'title': 'no photo'}) == []
+
+
+def test_get_marker_photos_warns_per_missing_photo(caltopo_controller, aoi_source_image):
+    """Each prepared photo that is missing on disk is logged, even when others survive."""
+    marker = {
+        'title': 'IMG - AOI 1',
+        'photos': [
+            {'path': '/gone/closeup.jpg', 'title': 'close-up'},
+            {'path': aoi_source_image, 'title': 'overview'},
+        ],
+        'image_path': aoi_source_image,
+    }
+
+    photos = caltopo_controller._get_marker_photos(marker)
+
+    assert [photo['title'] for photo in photos] == ['overview']
+    warning_messages = [str(call) for call in caltopo_controller.logger.warning.call_args_list]
+    assert any('closeup.jpg' in message for message in warning_messages)
+
+
+def test_cleanup_aoi_thumbnails_removes_generated_files(caltopo_controller, aoi_source_image):
+    """Cleanup removes the generated thumbnails and resets the service."""
+    import os
+    aoi = {'center': (400, 300), 'radius': 20}
+    photos = caltopo_controller._build_aoi_photos(aoi_source_image, 'IMG_0001.jpg', aoi, 0, 'thumbnail')
+    thumbnail_path = photos[0]['path']
+
+    caltopo_controller._cleanup_aoi_thumbnails()
+
+    assert not os.path.exists(thumbnail_path)
+    assert caltopo_controller.aoi_thumbnail_service is None
