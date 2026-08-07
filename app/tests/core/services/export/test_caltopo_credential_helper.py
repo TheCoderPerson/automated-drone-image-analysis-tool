@@ -11,9 +11,17 @@ from core.services.export.CalTopoCredentialHelper import CalTopoCredentialHelper
 
 
 @pytest.fixture
-def credential_helper():
-    """Fixture providing a CalTopoCredentialHelper instance."""
-    return CalTopoCredentialHelper()
+def credential_helper(tmp_path):
+    """Fixture providing a CalTopoCredentialHelper isolated from the real registry.
+
+    The helper normally stores credentials in the user's registry/preferences;
+    tests must never overwrite the user's real CalTopo credentials, so the
+    settings backend is redirected to a temporary INI file.
+    """
+    helper = CalTopoCredentialHelper()
+    helper.settings = QSettings(str(tmp_path / "caltopo_api_test.ini"), QSettings.Format.IniFormat)
+    yield helper
+    helper.settings.clear()
 
 
 @pytest.fixture

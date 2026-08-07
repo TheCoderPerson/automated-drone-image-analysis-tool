@@ -547,18 +547,23 @@ class CalTopoExportController:
                 prep_dialog.update_progress(current, total, message)
                 QApplication.processEvents()
 
+            prep_state = {'done': False}
+
             def on_prep_finished(markers_result, polygons_result):
                 nonlocal markers, coverage_polygons
                 markers = markers_result
                 coverage_polygons = polygons_result
+                prep_state['done'] = True
                 prep_dialog.accept()
 
             def on_prep_error(error_message):
                 nonlocal prep_error
                 prep_error = error_message
+                prep_state['done'] = True
                 prep_dialog.reject()
 
             def on_prep_cancelled():
+                prep_state['done'] = True
                 prep_dialog.reject()
 
             prep_thread = CalTopoDataPreparationThread(
@@ -575,7 +580,10 @@ class CalTopoExportController:
             prep_thread.start()
             prep_dialog.show()
             QApplication.processEvents()
-            prep_dialog.exec()
+            # Guard against the thread finishing before exec() starts, which would
+            # leave the dialog waiting forever for an accept() that already happened
+            if not prep_state['done']:
+                prep_dialog.exec()
 
             prep_thread.wait()
 
@@ -1924,6 +1932,109 @@ class CalTopoExportController:
             "Successfully logged out from CalTopo."
         )
 
+    def _get_authenticated_account_data(self):
+        """Get service-account credentials (prompting if needed) and fetch account data.
+
+        Prompts for the Team ID / Credential ID / Credential Secret when none are
+        stored, fetches the account's map list in a background thread, and when
+        authentication fails offers to re-enter the credentials instead of leaving
+        the user stuck with bad stored values.
+
+        Returns:
+            tuple: (team_id, credential_id, credential_secret, account_data), or
+                   None if the user cancelled or authentication failed
+        """
+        while True:
+            if not self.credential_helper.has_credentials():
+                credential_dialog = CalTopoCredentialDialog(self.parent)
+                if credential_dialog.exec() != CalTopoCredentialDialog.Accepted:
+                    return None
+                credentials = credential_dialog.get_credentials()
+                if not credentials:
+                    return None
+                team_id, credential_id, credential_secret = credentials
+                self.credential_helper.save_credentials(team_id, credential_id, credential_secret)
+            else:
+                team_id, credential_id, credential_secret = self.credential_helper.get_credentials()
+
+            loading_dialog = ExportProgressDialog(
+                self.parent,
+                title="Loading CalTopo Maps",
+                total_items=100
+            )
+            loading_dialog.set_title("Connecting to CalTopo...")
+            loading_dialog.set_status("Fetching account data and maps...")
+
+            state = {'done': False, 'success': False, 'data': None, 'error': None}
+
+            def on_account_progress(current, total, message):
+                loading_dialog.update_progress(current, total, message)
+
+            def on_account_finished(success, data):
+                state['done'] = True
+                state['success'] = success
+                state['data'] = data
+                loading_dialog.accept()
+
+            def on_account_error(error_message):
+                state['done'] = True
+                state['error'] = error_message
+                loading_dialog.reject()
+
+            account_thread = CalTopoAccountDataThread(
+                self.caltopo_api_service, team_id, credential_id, credential_secret
+            )
+            account_thread.progressUpdated.connect(on_account_progress)
+            account_thread.finished.connect(on_account_finished)
+            account_thread.errorOccurred.connect(on_account_error)
+
+            # Cancel closes the dialog right away; the thread's late result is ignored
+            loading_dialog.cancel_requested.connect(loading_dialog.reject)
+
+            # Keep a reference so a cancelled thread is not garbage collected mid-run
+            self._account_thread = account_thread
+
+            account_thread.start()
+            loading_dialog.show()
+            QApplication.processEvents()
+            # The request can fail fast enough that accept()/reject() already fired
+            # during processEvents; exec() would then block forever
+            if not state['done']:
+                loading_dialog.exec()
+
+            if not state['done']:
+                # User cancelled while the request was still in flight
+                return None
+
+            account_thread.wait(2000)
+
+            if state['error']:
+                QMessageBox.critical(
+                    self.parent,
+                    "Connection Error",
+                    f"An error occurred while connecting to CalTopo API:\n\n{state['error']}"
+                )
+                return None
+
+            if state['success'] and state['data']:
+                return team_id, credential_id, credential_secret, state['data']
+
+            # Authentication failed - the stored credentials are probably wrong,
+            # so offer to re-enter them rather than dead-ending
+            answer = QMessageBox.question(
+                self.parent,
+                "Authentication Failed",
+                "Failed to authenticate with the CalTopo API using the stored service "
+                "account credentials.\n\n"
+                "Would you like to re-enter your Team ID, Credential ID, and "
+                "Credential Secret?",
+                QMessageBox.Yes | QMessageBox.No,
+                QMessageBox.Yes
+            )
+            if answer != QMessageBox.Yes:
+                return None
+            self.credential_helper.clear_credentials()
+
     def export_to_caltopo_via_api(self, images, flagged_aois, include_flagged_aois=True,
                                   include_locations=False, include_images_without_flagged_aois=True,
                                   include_coverage_area=False, include_images=True, aoi_photo_mode='full'):
@@ -1968,91 +2079,11 @@ class CalTopoExportController:
                 )
                 return False
 
-            # Step 1: Get or prompt for credentials (only if not stored)
-            if not self.credential_helper.has_credentials():
-                # No credentials stored, prompt for them
-                credential_dialog = CalTopoCredentialDialog(self.parent)
-                if credential_dialog.exec() != CalTopoCredentialDialog.Accepted:
-                    return False
-                credentials = credential_dialog.get_credentials()
-                if not credentials:
-                    return False
-                team_id, credential_id, credential_secret = credentials
-                self.credential_helper.save_credentials(team_id, credential_id, credential_secret)
-            else:
-                # Use stored credentials
-                team_id, credential_id, credential_secret = self.credential_helper.get_credentials()
-
-            # Step 2: Get account data and show map selection (in background thread)
-            loading_dialog = ExportProgressDialog(
-                self.parent,
-                title="Loading CalTopo Maps",
-                total_items=100
-            )
-            loading_dialog.set_title("Connecting to CalTopo...")
-            loading_dialog.set_status("Fetching account data and maps...")
-
-            account_data = None
-            account_success = False
-            account_error = None
-
-            def on_account_progress(current, total, message):
-                loading_dialog.update_progress(current, total, message)
-                QApplication.processEvents()
-
-            def on_account_finished(success, data):
-                nonlocal account_data, account_success
-                account_data = data
-                account_success = success
-                loading_dialog.accept()
-
-            def on_account_error(error_message):
-                nonlocal account_error
-                account_error = error_message
-                loading_dialog.reject()
-
-            account_thread = CalTopoAccountDataThread(
-                self.caltopo_api_service, team_id, credential_id, credential_secret
-            )
-            account_thread.progressUpdated.connect(on_account_progress)
-            account_thread.finished.connect(on_account_finished)
-            account_thread.errorOccurred.connect(on_account_error)
-
-            account_thread.start()
-            loading_dialog.show()
-            QApplication.processEvents()
-            loading_dialog.exec()
-
-            account_thread.wait()
-
-            if account_error:
-                QMessageBox.critical(
-                    self.parent,
-                    "Connection Error",
-                    f"An error occurred while connecting to CalTopo API:\n\n{account_error}"
-                )
+            # Steps 1-2: Credentials (with re-entry on failure) and account data
+            auth_result = self._get_authenticated_account_data()
+            if auth_result is None:
                 return False
-
-            if not account_success or not account_data:
-                QMessageBox.critical(
-                    self.parent,
-                    "Authentication Failed",
-                    "Failed to authenticate with CalTopo API.\n\n"
-                    "Please check your credentials and try again."
-                )
-                return False
-
-            # Debug: Log account data structure
-            # self.logger.info(f"Account data keys: {list(account_data.keys()) if account_data else 'None'}")
-            if account_data:
-                state = account_data.get('state', {})
-                features = state.get('features', []) if isinstance(state, dict) else []
-                # self.logger.info(f"Found {len(features)} features in account data")
-                if not features:
-                    # Try alternative structure
-                    # features_alt = account_data.get('features', [])
-                    # self.logger.info(f"Alternative structure has {len(features_alt)} features")
-                    pass
+            team_id, credential_id, credential_secret, account_data = auth_result
 
             # Show map selection dialog (pass credential helper and API service for update functionality)
             map_dialog = CalTopoAPIMapDialog(
@@ -2149,7 +2180,10 @@ class CalTopoExportController:
             progress_dialog.update_progress(current, total, message)
             QApplication.processEvents()
 
+        export_state = {'done': False}
+
         def on_finished(success, success_count, total_count):
+            export_state['done'] = True
             progress_dialog.accept()
             self._export_result = success
 
@@ -2177,6 +2211,7 @@ class CalTopoExportController:
                 )
 
         def on_error(error_message):
+            export_state['done'] = True
             progress_dialog.reject()
             self._export_result = False
             self.logger.error(f"CalTopo API export error: {error_message}")
@@ -2187,6 +2222,7 @@ class CalTopoExportController:
             )
 
         def on_cancelled():
+            export_state['done'] = True
             progress_dialog.reject()
             self._export_result = False
 
@@ -2201,8 +2237,11 @@ class CalTopoExportController:
         # Start the thread
         export_thread.start()
 
-        # Show progress dialog and block until it's closed
-        progress_dialog.exec()
+        # Show progress dialog and block until it's closed (unless the thread
+        # already finished, in which case exec() would wait forever)
+        QApplication.processEvents()
+        if not export_state['done']:
+            progress_dialog.exec()
 
         # Wait for thread to finish if it's still running
         if export_thread.isRunning():
