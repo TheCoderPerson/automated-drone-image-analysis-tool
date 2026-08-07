@@ -96,21 +96,25 @@ class CalTopoAuthDialog(TranslationMixin, QDialog):
     # using it.
     _shared_profile = None
 
-    # CalTopo's SESSION cookie is HttpOnly, so document.cookie never exposes it
-    # and cookieAdded is the only way to see it - but that fires once, when the
-    # cookie is first set. A second export in the same run would otherwise
-    # capture only the non-HttpOnly cookies and authenticate as nobody, so the
-    # store is accumulated at class level alongside the profile that owns it.
+    # cookieAdded fires once, when a cookie is set. A second export in the same
+    # run builds a new dialog, which would otherwise start with an empty view of
+    # a session captured by the first one, so this accumulates at class level
+    # alongside the profile that owns it.
     _cookies_from_store = {}
 
     # Name of the cookie that actually carries the CalTopo session.
     SESSION_COOKIE_NAME = "SESSION"
 
     # Snapshot of the persisted cookies, taken once before the profile opens.
-    # Chromium holds the store with no file sharing whatsoever - copy, plain
-    # read, sqlite read-only and even a full-sharing Win32 CreateFileW all fail
-    # with a sharing violation while a profile is live - so this is the only
-    # window in which it can be read.
+    #
+    # cookieAdded reports cookies as they are SET - including HttpOnly ones, so
+    # a sign-in performed in this window is captured normally. What it never
+    # reports is a cookie RESTORED from a previous run (measured: 0 of 35, and
+    # loadAllCookies() adds nothing), which is exactly the state a returning
+    # user is in. Reading the store covers that, and it has to happen here:
+    # while a profile is live Chromium holds the file with no sharing at all -
+    # copy, plain read, sqlite read-only and a full-sharing Win32 CreateFileW
+    # all fail with a sharing violation.
     _disk_cookies = {}
 
     @classmethod
@@ -652,12 +656,11 @@ class CalTopoAuthDialog(TranslationMixin, QDialog):
 
         This is the equivalent of Android's CookieManager.getCookie(url), which
         the reference implementation relies on. Qt has no getter:
-        QWebEngineCookieStore announces cookies only as they are *set*, never
-        reports HttpOnly ones, and loadAllCookies() delivers nothing for
-        cookies restored from disk (measured: 0 of 35 on a real profile).
-        CalTopo's SESSION cookie is HttpOnly, so document.cookie cannot see it
-        either - which left a returning, already-logged-in user holding nothing
-        but analytics cookies.
+        QWebEngineCookieStore announces cookies only as they are *set*, and
+        loadAllCookies() delivers nothing for cookies restored from disk
+        (measured: 0 of 35 on a real profile). CalTopo's SESSION cookie is also
+        HttpOnly, so document.cookie cannot see it - which left a returning,
+        already-logged-in user holding nothing but analytics cookies.
 
         MUST be called before a QWebEngineProfile opens this directory: while
         one is live the file cannot be opened by any means.
@@ -779,11 +782,8 @@ class CalTopoAuthDialog(TranslationMixin, QDialog):
                 self.tr("Authentication Failed"),
                 self.tr(
                     "Could not read your CalTopo session.\n\n"
-                    "If you have just signed in for the first time, close this window "
-                    "and start the export again - the new session can only be read once "
-                    "the CalTopo browser has released it.\n\n"
-                    "Otherwise, make sure you are signed in to CalTopo and have opened "
-                    "your map, then click 'I'm Logged In - Export Data' again."
+                    "Make sure you are signed in to CalTopo in this window and have "
+                    "opened your map, then click 'I'm Logged In - Export Data' again."
                 )
             )
             self._reset_button()

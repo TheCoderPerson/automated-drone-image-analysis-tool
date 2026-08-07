@@ -1674,70 +1674,70 @@ Controlla le tue credenziali e riprova.</translation>
 <context>
     <name>CalTopoAuthDialog</name>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/CalTopoAuthDialog.py" line="160"/>
+        <location filename="../app/core/views/images/viewer/dialogs/CalTopoAuthDialog.py" line="164"/>
         <source>CalTopo Login &amp; Map Selection</source>
         <translation>Accesso CalTopo &amp; Selezione Mappa</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/CalTopoAuthDialog.py" line="245"/>
+        <location filename="../app/core/views/images/viewer/dialogs/CalTopoAuthDialog.py" line="249"/>
         <source>Current map: Not selected</source>
         <translation>Mappa corrente: Non selezionata</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/CalTopoAuthDialog.py" line="249"/>
+        <location filename="../app/core/views/images/viewer/dialogs/CalTopoAuthDialog.py" line="253"/>
         <source>(Login → Navigate to your map → Click &apos;I&apos;m Logged In&apos;)</source>
         <translation>(Accedi → Naviga verso la tua mappa → Clicca &apos;Sono connesso&apos;)</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/CalTopoAuthDialog.py" line="263"/>
+        <location filename="../app/core/views/images/viewer/dialogs/CalTopoAuthDialog.py" line="267"/>
         <location filename="../app/core/views/images/viewer/dialogs/CalTopoAuthDialog.py" line="821"/>
         <source>I&apos;m Logged In - Export Data</source>
         <translation>Sono connesso - Esporta Dati</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/CalTopoAuthDialog.py" line="265"/>
+        <location filename="../app/core/views/images/viewer/dialogs/CalTopoAuthDialog.py" line="269"/>
         <source>Click this after logging in and navigating to your map</source>
         <translation>Clicca qui dopo aver effettuato l&apos;accesso e aver navigato verso la tua mappa</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/CalTopoAuthDialog.py" line="268"/>
+        <location filename="../app/core/views/images/viewer/dialogs/CalTopoAuthDialog.py" line="272"/>
         <source>Cancel</source>
         <translation>Annulla</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/CalTopoAuthDialog.py" line="374"/>
+        <location filename="../app/core/views/images/viewer/dialogs/CalTopoAuthDialog.py" line="378"/>
         <source>Initialization Error</source>
         <translation>Errore di Inizializzazione</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/CalTopoAuthDialog.py" line="375"/>
+        <location filename="../app/core/views/images/viewer/dialogs/CalTopoAuthDialog.py" line="379"/>
         <source>Failed to initialize CalTopo browser:
 {error}</source>
         <translation>Impossibile inizializzare il browser CalTopo:
 {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/CalTopoAuthDialog.py" line="419"/>
+        <location filename="../app/core/views/images/viewer/dialogs/CalTopoAuthDialog.py" line="423"/>
         <source>Failed to Load</source>
         <translation>Caricamento Fallito</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/CalTopoAuthDialog.py" line="421"/>
+        <location filename="../app/core/views/images/viewer/dialogs/CalTopoAuthDialog.py" line="425"/>
         <source>Failed to load CalTopo. Please check your internet connection and try again.</source>
         <translation>Impossibile caricare CalTopo. Controlla la tua connessione internet e riprova.</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/CalTopoAuthDialog.py" line="452"/>
+        <location filename="../app/core/views/images/viewer/dialogs/CalTopoAuthDialog.py" line="456"/>
         <source>Current map: {map_id}</source>
         <translation>Mappa corrente: {map_id}</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/CalTopoAuthDialog.py" line="480"/>
+        <location filename="../app/core/views/images/viewer/dialogs/CalTopoAuthDialog.py" line="484"/>
         <source>No Map Selected</source>
         <translation>Nessuna Mappa Selezionata</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/CalTopoAuthDialog.py" line="482"/>
+        <location filename="../app/core/views/images/viewer/dialogs/CalTopoAuthDialog.py" line="486"/>
         <source>Please navigate to a CalTopo map before capturing the session.
 
 The map URL should contain a map ID (e.g., /m/ABC123 or #id=ABC123).</source>
@@ -1746,43 +1746,39 @@ The map URL should contain a map ID (e.g., /m/ABC123 or #id=ABC123).</source>
 L&apos;URL della mappa deve contenere un ID mappa (es., /m/ABC123 o #id=ABC123).</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/CalTopoAuthDialog.py" line="491"/>
+        <location filename="../app/core/views/images/viewer/dialogs/CalTopoAuthDialog.py" line="495"/>
         <source>Browser Not Ready</source>
         <translation>Browser non pronto</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/CalTopoAuthDialog.py" line="492"/>
+        <location filename="../app/core/views/images/viewer/dialogs/CalTopoAuthDialog.py" line="496"/>
         <source>The CalTopo browser is still loading. Please wait a moment and try again.</source>
         <translation>Il browser CalTopo è ancora in fase di caricamento. Attendi un momento e riprova.</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/CalTopoAuthDialog.py" line="500"/>
+        <location filename="../app/core/views/images/viewer/dialogs/CalTopoAuthDialog.py" line="504"/>
         <source>Starting export...</source>
         <translation>Inizio esportazione...</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/CalTopoAuthDialog.py" line="518"/>
-        <location filename="../app/core/views/images/viewer/dialogs/CalTopoAuthDialog.py" line="779"/>
+        <location filename="../app/core/views/images/viewer/dialogs/CalTopoAuthDialog.py" line="522"/>
+        <location filename="../app/core/views/images/viewer/dialogs/CalTopoAuthDialog.py" line="782"/>
         <source>Authentication Failed</source>
         <translation>Autenticazione Fallita</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/CalTopoAuthDialog.py" line="519"/>
+        <location filename="../app/core/views/images/viewer/dialogs/CalTopoAuthDialog.py" line="523"/>
         <source>Browser not initialized. Please try again.</source>
         <translation>Browser non inizializzato. Riprova.</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/CalTopoAuthDialog.py" line="781"/>
+        <location filename="../app/core/views/images/viewer/dialogs/CalTopoAuthDialog.py" line="784"/>
         <source>Could not read your CalTopo session.
 
-If you have just signed in for the first time, close this window and start the export again - the new session can only be read once the CalTopo browser has released it.
-
-Otherwise, make sure you are signed in to CalTopo and have opened your map, then click &apos;I&apos;m Logged In - Export Data&apos; again.</source>
+Make sure you are signed in to CalTopo in this window and have opened your map, then click &apos;I&apos;m Logged In - Export Data&apos; again.</source>
         <translation>Impossibile leggere la sessione CalTopo.
 
-Se hai appena effettuato l&apos;accesso per la prima volta, chiudi questa finestra e riavvia l&apos;esportazione: la nuova sessione può essere letta solo dopo che il browser CalTopo l&apos;ha rilasciata.
-
-Altrimenti, assicurati di aver effettuato l&apos;accesso a CalTopo e di aver aperto la mappa, quindi fai di nuovo clic su &apos;Sono connesso - Esporta Dati&apos;.</translation>
+Assicurati di aver effettuato l&apos;accesso a CalTopo in questa finestra e di aver aperto la mappa, quindi fai di nuovo clic su &apos;Sono connesso - Esporta Dati&apos;.</translation>
     </message>
 </context>
 <context>

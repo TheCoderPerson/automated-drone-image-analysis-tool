@@ -163,6 +163,33 @@ def test_caltopo_auth_dialog_disk_read_survives_a_missing_store(app, tmp_path):
     assert CalTopoAuthDialog._read_persisted_cookies("") == {}
 
 
+def test_caltopo_auth_dialog_captures_a_newly_set_httponly_cookie(app):
+    """A sign-in performed in this window must be captured.
+
+    cookieAdded DOES report HttpOnly cookies as they are set - verified against
+    a fresh profile visiting caltopo.com, which delivered the HttpOnly SESSION
+    cookie. Only cookies RESTORED from a previous run go unreported, which is
+    what the disk snapshot covers. A first login therefore needs no restart.
+    """
+    from PySide6.QtNetwork import QNetworkCookie
+
+    dialog = CalTopoAuthDialog.__new__(CalTopoAuthDialog)
+    CalTopoAuthDialog._cookies_from_store = {}
+    try:
+        cookie = QNetworkCookie(b"SESSION", b"freshly-set")
+        cookie.setDomain("caltopo.com")
+        cookie.setPath("/")
+        cookie.setHttpOnly(True)
+
+        dialog._on_cookie_added(cookie)
+
+        captured = CalTopoAuthDialog._cookies_from_store
+        assert [c['name'] for c in captured.values()] == ['SESSION']
+        assert list(captured.values())[0]['rest'] == {'HttpOnly': True}
+    finally:
+        CalTopoAuthDialog._cookies_from_store = {}
+
+
 def test_caltopo_auth_dialog_snapshots_cookies_before_opening_the_profile(app, tmp_path):
     """The store must be read before a profile locks it.
 
