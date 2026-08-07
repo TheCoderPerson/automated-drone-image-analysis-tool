@@ -8396,132 +8396,148 @@ Risoluzioni più basse = elaborazione più veloce ma possono perdere oggetti pic
         <translation>Risoluzione Elaborazione:</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="81"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="82"/>
         <source>Automated Drone Image Analysis Tool v{version} - Sponsored by TEXSAR</source>
         <translation>Strumento Automatico di Analisi Immagini Drone v{version} - Sponsorizzato da TEXSAR</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="592"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="594"/>
         <source>Please set the input and output directories.</source>
         <translation>Imposta le cartelle di input e output.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="599"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="601"/>
         <source>--- Starting image processing ---</source>
         <translation>--- Inizio elaborazione immagini ---</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="873"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="875"/>
         <source>--- Image Processing Completed ---</source>
         <translation>--- Elaborazione Immagini Completata ---</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="877"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="879"/>
         <source>{count} images with areas of interest identified</source>
         <translation>{count} immagini con aree di interesse identificate</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="883"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="885"/>
         <source>No areas of interest identified</source>
         <translation>Nessuna area di interesse identificata</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="967"/>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="1412"/>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="1435"/>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="1465"/>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="1481"/>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="1497"/>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="1513"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="969"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="1503"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="1526"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="1556"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="1572"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="1588"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="1604"/>
         <source>Error</source>
         <translation>Errore</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="1154"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="989"/>
+        <source>Open Recent Results</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="1033"/>
+        <source>(no results opened yet)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="1049"/>
+        <source>This results file no longer exists:
+{path}</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="1245"/>
         <source>The selected file is not a valid XML file: {path}</source>
         <translation>Il file selezionato non è un file XML valido: {path}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="1358"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="1449"/>
         <source>Error Loading Results</source>
         <translation>Errore Caricamento Risultati</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="1359"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="1450"/>
         <source>Failed to load results file:
 {error}</source>
         <translation>Impossibile caricare il file dei risultati:
 {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="1413"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="1504"/>
         <source>Failed to open Streaming Detector:
 {error}</source>
         <translation>Impossibile aprire il Rilevatore Streaming:
 {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="1436"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="1527"/>
         <source>Failed to open Flight Viewer:
 {error}</source>
         <translation>Impossibile aprire il Visore voli:
 {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="1466"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="1557"/>
         <source>Failed to open Search Coordinator:
 {error}</source>
         <translation>Impossibile aprire il Coordinatore di Ricerca:
 {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="1482"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="1573"/>
         <source>Failed to open Help documentation:
 {error}</source>
         <translation>Impossibile aprire la documentazione di Aiuto:
 {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="1498"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="1589"/>
         <source>Failed to open Community Help:
 {error}</source>
         <translation>Impossibile aprire l&apos;Aiuto della Community:
 {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="1514"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="1605"/>
         <source>Failed to open YouTube Channel:
 {error}</source>
         <translation>Impossibile aprire il canale YouTube:
 {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="1589"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="1680"/>
         <source> Open Search Coordinator</source>
         <translation> Apri Coordinatore di Ricerca</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="1591"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="1682"/>
         <source>Open the Search Coordinator to review every batch in this run.</source>
         <translation>Apri il Coordinatore di Ricerca per esaminare tutti i batch di questa esecuzione.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="1597"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="1688"/>
         <source>Open the Results Viewer to review detection results.</source>
         <translation>Apri il Visualizzatore Risultati per esaminare i risultati dei rilevamenti.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="1684"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="1775"/>
         <source>Invalid Value</source>
         <translation>Valore Non Valido</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="345"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="347"/>
         <source>Select AOI Highlight Color</source>
         <translation>Seleziona Colore Evidenziazione AOI</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="266"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="268"/>
         <source>Select the detection algorithm for your image analysis task:
 
 HSV COLOR RANGE: Detects brightly colored objects (clothing, vehicles, tents)
@@ -8598,98 +8614,98 @@ AI PERSON DETECTOR: modello di deep learning per il rilevamento accurato di pers
   • Limite: rileva solo persone, elaborazione più lenta</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="359"/>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="377"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="361"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="379"/>
         <source>Select Directory</source>
         <translation>Seleziona Cartella</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="394"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="396"/>
         <source>Select a Reference Image</source>
         <translation>Seleziona un&apos;Immagine di Riferimento</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="396"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="398"/>
         <source>Images (*.png *.jpg)</source>
         <translation>Immagini (*.png *.jpg)</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="444"/>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="476"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="446"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="478"/>
         <source>Value Adjusted</source>
         <translation>Valore Regolato</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="446"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="448"/>
         <source>Maximum area has been adjusted to {value} pixels to maintain valid range.
 (Minimum area must be less than maximum area)</source>
         <translation>L&apos;area massima è stata regolata a {value} pixel per mantenere un intervallo valido.
 (L&apos;area minima deve essere inferiore all&apos;area massima)</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="478"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="480"/>
         <source>Minimum area has been adjusted to {value} pixels to maintain valid range.
 (Maximum area must be greater than minimum area)</source>
         <translation>L&apos;area minima è stata regolata a {value} pixel per mantenere un intervallo valido.
 (L&apos;area massima deve essere maggiore dell&apos;area minima)</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="818"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="820"/>
         <source>Area of Interest Limit ({limit}) exceeded. Continue?</source>
         <translation>Limite Area di Interesse ({limit}) superato. Continuare?</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="821"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="823"/>
         <source>Area of Interest Limit Exceeded</source>
         <translation>Limite Area di Interesse Superato</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="874"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="876"/>
         <source>Image processing complete</source>
         <translation>Elaborazione immagini completata</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="977"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="1066"/>
         <source>Select File</source>
         <translation>Seleziona File</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="977"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="1066"/>
         <source>XML Files (*.xml);;All Files (*)</source>
         <translation>File XML (*.xml);;Tutti i File (*)</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="998"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="1087"/>
         <source>Select Results Folder</source>
         <translation>Seleziona Cartella Risultati</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="1031"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="1120"/>
         <source>Failed to scan folder: {error}</source>
         <translation>Impossibile scansionare la cartella: {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="1053"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="1142"/>
         <source>No Results Found</source>
         <translation>Nessun Risultato Trovato</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="1054"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="1143"/>
         <source>No ADIAT_DATA.XML files were found in the selected folder.</source>
         <translation>Nessun file ADIAT_DATA.XML trovato nella cartella selezionata.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="1071"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="1160"/>
         <source>Failed to display results: {error}</source>
         <translation>Impossibile visualizzare i risultati: {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="1082"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="1171"/>
         <source>Scan failed: {error}</source>
         <translation>Scansione fallita: {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="1125"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="1214"/>
         <source>Failed to open viewer: {error}</source>
         <translation>Impossibile aprire il visualizzatore: {error}</translation>
     </message>
@@ -9209,7 +9225,7 @@ Il Visualizzatore Risultati offre:
 Usa per rivedere, verificare ed esportare i risultati dell&apos;analisi.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="1595"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="1686"/>
         <location filename="../resources/views/images/MainWindow.ui" line="1018"/>
         <source> View Results</source>
         <translation> Visualizza Risultati</translation>
@@ -9459,7 +9475,7 @@ Fai domande, segnala problemi e suggerisci nuove funzionalità.</translation>
         <translation>Canale YouTube</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/MainWindow.py" line="795"/>
+        <location filename="../app/core/controllers/images/MainWindow.py" line="797"/>
         <source>Could not parse XML file. Check file paths in &quot;{file_name}&quot;</source>
         <translation>Impossibile analizzare il file XML. Controlla i percorsi dei file in &quot;{file_name}&quot;</translation>
     </message>
@@ -9817,22 +9833,32 @@ poi clicca di nuovo per posizionare il secondo punto.</translation>
         <translation>Analisi immagini</translation>
     </message>
     <message>
+        <location filename="../resources/views/SelectionDialog.ui" line="163"/>
+        <source>Open a completed analysis for review: scan a folder for results or reopen a recent one.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
         <location filename="../resources/views/SelectionDialog.ui" line="169"/>
+        <source>Review Results</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../resources/views/SelectionDialog.ui" line="252"/>
         <source>Stream Analysis</source>
         <translation>Analisi streaming</translation>
     </message>
     <message>
-        <location filename="../resources/views/SelectionDialog.ui" line="246"/>
+        <location filename="../resources/views/SelectionDialog.ui" line="329"/>
         <source>Pair with ADIAT Mobile drone controllers to receive their live camera feeds with detections.</source>
         <translation>Abbina i controller drone ADIAT Mobile per ricevere i loro flussi video live con rilevamenti.</translation>
     </message>
     <message>
-        <location filename="../resources/views/SelectionDialog.ui" line="163"/>
+        <location filename="../resources/views/SelectionDialog.ui" line="246"/>
         <source>RTMP, Video Files, HDMI Capture</source>
         <translation>RTMP, File Video, Acquisizione HDMI</translation>
     </message>
     <message>
-        <location filename="../resources/views/SelectionDialog.ui" line="252"/>
+        <location filename="../resources/views/SelectionDialog.ui" line="335"/>
         <source>Flight Viewer</source>
         <translation>Visore voli</translation>
     </message>
@@ -10056,14 +10082,14 @@ Contrassegna almeno una AOI oppure seleziona &apos;Includi immagini senza AOI co
 <context>
     <name>PathValidationController</name>
     <message>
-        <location filename="../app/core/controllers/images/viewer/path/PathValidationController.py" line="358"/>
+        <location filename="../app/core/controllers/images/viewer/path/PathValidationController.py" line="467"/>
         <source>
   ... and {count} more</source>
         <translation>
   ... e altri {count}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/path/PathValidationController.py" line="104"/>
+        <location filename="../app/core/controllers/images/viewer/path/PathValidationController.py" line="120"/>
         <source>{count} source image(s) not found at expected locations:
 
 {files}
@@ -10076,22 +10102,22 @@ Please select the folder containing the source images.</source>
 Seleziona la cartella contenente le immagini sorgente.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/path/PathValidationController.py" line="102"/>
+        <location filename="../app/core/controllers/images/viewer/path/PathValidationController.py" line="118"/>
         <source>Source Images Not Found</source>
         <translation>Immagini Sorgente Non Trovate</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/path/PathValidationController.py" line="108"/>
+        <location filename="../app/core/controllers/images/viewer/path/PathValidationController.py" line="124"/>
         <source>Select Source Images Folder</source>
         <translation>Seleziona Cartella Immagini Sorgente</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/path/PathValidationController.py" line="109"/>
+        <location filename="../app/core/controllers/images/viewer/path/PathValidationController.py" line="125"/>
         <source>Some Images Still Missing</source>
         <translation>Alcune Immagini Mancano Ancora</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/path/PathValidationController.py" line="138"/>
+        <location filename="../app/core/controllers/images/viewer/path/PathValidationController.py" line="154"/>
         <source>{count} detection mask(s) not found at expected locations:
 
 {files}
@@ -10104,12 +10130,12 @@ Please select the folder containing the mask files.</source>
 Seleziona la cartella contenente i file delle maschere.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/path/PathValidationController.py" line="136"/>
+        <location filename="../app/core/controllers/images/viewer/path/PathValidationController.py" line="152"/>
         <source>Detection Masks Not Found</source>
         <translation>Maschere di Rilevamento Non Trovate</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/path/PathValidationController.py" line="111"/>
+        <location filename="../app/core/controllers/images/viewer/path/PathValidationController.py" line="127"/>
         <source>Found {found} of {total} images.
 
 Still missing:
@@ -10120,7 +10146,7 @@ Ancora mancanti:
 {missing}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/path/PathValidationController.py" line="115"/>
+        <location filename="../app/core/controllers/images/viewer/path/PathValidationController.py" line="131"/>
         <source>None of the {total} missing images were found in that folder (including its subfolders).
 
 Expected to find files named:
@@ -10131,17 +10157,17 @@ Nomi dei file cercati:
 {missing}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/path/PathValidationController.py" line="142"/>
+        <location filename="../app/core/controllers/images/viewer/path/PathValidationController.py" line="158"/>
         <source>Select Masks Folder</source>
         <translation>Seleziona Cartella Maschere</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/path/PathValidationController.py" line="143"/>
+        <location filename="../app/core/controllers/images/viewer/path/PathValidationController.py" line="159"/>
         <source>Some Masks Still Missing</source>
         <translation>Alcune Maschere Mancano Ancora</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/path/PathValidationController.py" line="145"/>
+        <location filename="../app/core/controllers/images/viewer/path/PathValidationController.py" line="161"/>
         <source>Found {found} of {total} masks.
 
 Still missing:
@@ -10152,7 +10178,7 @@ Ancora mancanti:
 {missing}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/path/PathValidationController.py" line="149"/>
+        <location filename="../app/core/controllers/images/viewer/path/PathValidationController.py" line="165"/>
         <source>None of the {total} missing masks were found in that folder (including its subfolders).
 
 Expected to find files named:
@@ -10163,12 +10189,12 @@ Nomi dei file cercati:
 {missing}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/path/PathValidationController.py" line="264"/>
+        <location filename="../app/core/controllers/images/viewer/path/PathValidationController.py" line="373"/>
         <source>Choose Another Folder</source>
         <translation>Scegli Un&apos;Altra Cartella</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/path/PathValidationController.py" line="271"/>
+        <location filename="../app/core/controllers/images/viewer/path/PathValidationController.py" line="380"/>
         <source>Continue Anyway</source>
         <translation>Continua Comunque</translation>
     </message>

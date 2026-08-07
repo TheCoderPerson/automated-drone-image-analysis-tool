@@ -26,7 +26,7 @@ from helpers.PickleHelper import PickleHelper
 from core.views.images.MainWindow_ui import Ui_MainWindow
 from core.views.images.viewer.dialogs.ResultsFolderDialog import ResultsFolderDialog, ScanWorker, ScanProgressDialog
 from PySide6.QtWidgets import (QApplication, QMainWindow, QColorDialog, QFileDialog,
-                               QMessageBox, QSizePolicy, QAbstractButton, QCheckBox, QProgressDialog)
+                               QMessageBox, QSizePolicy, QAbstractButton, QCheckBox, QProgressDialog, QMenu)
 from PySide6.QtCore import QThread, Slot, QSize, Qt, QUrl
 from PySide6.QtGui import QColor, QFont, QIcon, QDesktopServices
 import qtawesome as qta
@@ -40,6 +40,7 @@ from helpers.FormatHelper import FormatHelper
 from helpers.TranslationMixin import TranslationMixin
 from helpers.ThemeHelper import apply_theme
 import os
+import json
 import xml.etree.ElementTree as ET
 os.environ['NUMPY_EXPERIMENTAL_DTYPE_API'] = '0'
 
@@ -115,6 +116,7 @@ class MainWindow(TranslationMixin, QMainWindow, Ui_MainWindow):
         self.actionLoadFile.triggered.connect(self._open_load_file)
         if hasattr(self, "actionLoadResultsFolder"):
             self.actionLoadResultsFolder.triggered.connect(self._open_load_results_folder)
+        self._setup_recent_results_menu()
         self.actionPreferences.triggered.connect(self._open_preferences)
         self.actionVideoParser.triggered.connect(self._open_video_parser)
 
@@ -968,6 +970,93 @@ class MainWindow(TranslationMixin, QMainWindow, Ui_MainWindow):
         msg.setStandardButtons(QMessageBox.Ok)
         msg.exec()
 
+    # Recently opened result XMLs, newest first, stored as a JSON list so the
+    # value survives QSettings type coercion across platforms
+    RECENT_RESULTS_SETTING = 'RecentResults'
+    RECENT_RESULTS_LIMIT = 10
+
+    def open_results_for_review(self):
+        """Entry point for the Review Results tile on the selection dialog.
+
+        Jumps straight to the results-folder scanner so a reviewer never has
+        to interact with the analysis setup screen.
+        """
+        self._open_load_results_folder()
+
+    def _setup_recent_results_menu(self):
+        """Insert the "Open Recent Results" submenu after the Load File action."""
+        try:
+            self.menuRecentResults = QMenu(self.tr("Open Recent Results"), self)
+            actions = self.menuFile.actions()
+            anchor = None
+            if self.actionLoadFile in actions:
+                idx = actions.index(self.actionLoadFile) + 1
+                anchor = actions[idx] if idx < len(actions) else None
+            if anchor is not None:
+                self.menuFile.insertMenu(anchor, self.menuRecentResults)
+            else:
+                self.menuFile.addMenu(self.menuRecentResults)
+            # Populate lazily so the list is current every time it opens
+            self.menuRecentResults.aboutToShow.connect(self._populate_recent_results_menu)
+        except Exception as e:
+            self.logger.error(f"Could not set up the recent results menu: {e}")
+
+    def _get_recent_results(self):
+        """Return the stored recent-results list (paths, newest first)."""
+        raw = self.settings_service.get_setting(self.RECENT_RESULTS_SETTING, '[]')
+        try:
+            paths = json.loads(raw) if isinstance(raw, str) else list(raw or [])
+        except (TypeError, ValueError):
+            paths = []
+        return [p for p in paths if isinstance(p, str) and p]
+
+    def _record_recent_result(self, xml_path):
+        """Remember a successfully opened result XML at the top of the list."""
+        try:
+            normalized = os.path.abspath(xml_path)
+            key = os.path.normcase(normalized)
+            recents = [
+                p for p in self._get_recent_results()
+                if os.path.normcase(os.path.abspath(p)) != key
+            ]
+            recents.insert(0, normalized)
+            del recents[self.RECENT_RESULTS_LIMIT:]
+            self.settings_service.set_setting(self.RECENT_RESULTS_SETTING, json.dumps(recents))
+        except Exception as e:
+            self.logger.error(f"Could not record recent result {xml_path}: {e}")
+
+    def _populate_recent_results_menu(self):
+        """Rebuild the recent-results submenu from settings."""
+        self.menuRecentResults.clear()
+        recents = self._get_recent_results()
+        if not recents:
+            placeholder = self.menuRecentResults.addAction(self.tr("(no results opened yet)"))
+            placeholder.setEnabled(False)
+            return
+        for path in recents:
+            # Every result file is named ADIAT_Data.xml, so the containing
+            # folder is the recognizable part
+            action = self.menuRecentResults.addAction(os.path.dirname(path) or path)
+            action.setToolTip(path)
+            action.setEnabled(os.path.exists(path))
+            action.triggered.connect(lambda checked=False, p=path: self._open_recent_result(p))
+
+    def _open_recent_result(self, path):
+        """Open a result XML from the recents menu, straight into review."""
+        try:
+            if not os.path.exists(path):
+                self._show_error(
+                    self.tr("This results file no longer exists:\n{path}").format(path=path)
+                )
+                return
+            self._process_xml_file(path)
+            # A Search Coordinator project is already opened by
+            # _process_xml_file; otherwise open the single-run Viewer.
+            if self._view_results_mode != 'coordinator':
+                self._viewResultsButton_clicked()
+        except Exception as e:
+            self.logger.error(f"Error opening recent result {path}: {e}")
+
     def _open_load_file(self):
         """
         Opens a file dialog to select a file to load.
@@ -1141,10 +1230,12 @@ class MainWindow(TranslationMixin, QMainWindow, Ui_MainWindow):
             if self._is_search_project_xml(full_path):
                 self._set_view_results_mode('coordinator', full_path)
                 self._set_ViewResultsButton(True)
+                self._record_recent_result(full_path)
                 self._open_coordinator(full_path)
                 return
             image_count = self._get_settings_from_xml(full_path)
             self._set_view_results_mode('results')
+            self._record_recent_result(full_path)
             if image_count > 0:
                 self._set_ViewResultsButton(True)
             self.AdvancedFeaturesWidget.setVisible(not self.algorithmWidget.is_thermal)

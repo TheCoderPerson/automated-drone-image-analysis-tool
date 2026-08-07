@@ -272,6 +272,15 @@ def main():
             except Exception:
                 # Re-raise so our global excepthook handles exit
                 raise
+        elif choice == 'results':
+            # Review mode: open MainWindow and go straight to the results
+            # opener, so a reviewer never touches the analysis setup screen
+            try:
+                app._main_window = MainWindow(qdarktheme)
+                app._main_window.show()
+                app._main_window.open_results_for_review()
+            except Exception:
+                raise
         elif choice == 'stream':
             _launch_stream_viewer()
         elif choice == 'flight':
