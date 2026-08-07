@@ -3,12 +3,62 @@ import os
 import pytest
 import importlib
 import platform
+import tempfile
 import time
 import traceback
+from PySide6.QtCore import QSettings, QStandardPaths
 from PySide6.QtWidgets import QApplication
 
 # Add the app directory to the Python path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'app')))
+
+
+# Throwaway location for any QSettings a test needs to write to.
+#
+# Services construct QSettings with the application's real organization and
+# application names (``QSettings("ADIAT", "CalTopoAPI")``, ...). On Windows
+# those resolve to HKCU\Software\ADIAT, so a test that *writes* settings edits
+# the developer's own configuration. The credential-helper suite did exactly
+# that: save_credentials() with fixture values overwrote real stored CalTopo
+# API credentials, leaving the app authenticating as XYZ789/cred_id_456 until
+# the user noticed and re-entered them by hand.
+#
+# There is no global escape hatch: QSettings.setDefaultFormat() does not apply
+# to the QSettings(organization, application) constructor, and setPath() has no
+# effect for NativeFormat on Windows. Isolation therefore has to be injected
+# per service (see the isolated_qsettings fixture below).
+QSETTINGS_TEST_DIR = tempfile.mkdtemp(prefix="adiat-test-qsettings-")
+
+# Redirect QStandardPaths (AppDataLocation, CacheLocation, ...) to Qt's test
+# locations. Without this, tests that build a QWebEngineProfile write into the
+# same on-disk profile the running application uses, and Chromium fails with
+# "Unable to create cache" because the directory is already locked - tests and
+# the app fight over one profile.
+QStandardPaths.setTestModeEnabled(True)
+
+
+@pytest.fixture
+def isolated_qsettings(request):
+    """An INI-backed QSettings under a temp directory, never the user's store.
+
+    Pass this into services that persist settings (for example
+    ``CalTopoCredentialHelper(settings=isolated_qsettings)``) so tests can
+    write freely without touching real configuration.
+
+    Returns:
+        QSettings: A per-test settings object rooted in QSETTINGS_TEST_DIR.
+    """
+    QSettings.setPath(QSettings.IniFormat, QSettings.UserScope, QSETTINGS_TEST_DIR)
+    settings = QSettings(
+        QSettings.IniFormat,
+        QSettings.UserScope,
+        "ADIAT-Tests",
+        request.node.name[:64],
+    )
+    yield settings
+    settings.clear()
+    settings.sync()
+
 
 # Lazy import to avoid dependency issues for streaming tests
 try:

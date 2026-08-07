@@ -657,7 +657,7 @@ Permissivo</translation>
         <translation>Impossibile calcolare il GPS</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/neighbor/AOINeighborTrackingController.py" line="174"/>
+        <location filename="../app/core/controllers/images/viewer/neighbor/AOINeighborTrackingController.py" line="175"/>
         <source>Unable to calculate GPS coordinates for this AOI.
 
 This may be due to missing image metadata (GPS, altitude, or camera info).</source>
@@ -917,7 +917,7 @@ Right-click to copy data to clipboard</source>
 Fai clic destro per copiare i dati negli appunti</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/aoi/AOIUIComponent.py" line="255"/>
+        <location filename="../app/core/controllers/images/viewer/aoi/AOIUIComponent.py" line="256"/>
         <source>
 
 Score Type: {type}
@@ -954,7 +954,7 @@ Click to edit comment</source>
 Clicca per modificare il commento</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/aoi/AOIUIComponent.py" line="410"/>
+        <location filename="../app/core/controllers/images/viewer/aoi/AOIUIComponent.py" line="411"/>
         <source>No comment yet.
 Click to add a comment for this AOI.
 
@@ -1030,7 +1030,7 @@ o azioni necessarie per questo rilevamento.</translation>
         <translation>ADIAT - Avviso Rilevamento Colore</translation>
     </message>
     <message>
-        <location filename="../app/core/services/AlertService.py" line="609"/>
+        <location filename="../app/core/services/AlertService.py" line="610"/>
         <source>Detected {count} object(s)
 Average confidence: {avg_confidence:.2f}
 Total area: {area:.0f} pixels
@@ -1050,7 +1050,7 @@ Dettagli:
 </translation>
     </message>
     <message>
-        <location filename="../app/core/services/AlertService.py" line="623"/>
+        <location filename="../app/core/services/AlertService.py" line="624"/>
         <source>  #{index}: ({x},{y}) {w}x{h} conf:{confidence:.2f}
 </source>
         <translation>  #{index}: ({x},{y}) {w}x{h} conf:{confidence:.2f}
@@ -1674,69 +1674,70 @@ Controlla le tue credenziali e riprova.</translation>
 <context>
     <name>CalTopoAuthDialog</name>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/CalTopoAuthDialog.py" line="96"/>
+        <location filename="../app/core/views/images/viewer/dialogs/CalTopoAuthDialog.py" line="160"/>
         <source>CalTopo Login &amp; Map Selection</source>
         <translation>Accesso CalTopo &amp; Selezione Mappa</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/CalTopoAuthDialog.py" line="173"/>
+        <location filename="../app/core/views/images/viewer/dialogs/CalTopoAuthDialog.py" line="245"/>
         <source>Current map: Not selected</source>
         <translation>Mappa corrente: Non selezionata</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/CalTopoAuthDialog.py" line="177"/>
+        <location filename="../app/core/views/images/viewer/dialogs/CalTopoAuthDialog.py" line="249"/>
         <source>(Login → Navigate to your map → Click &apos;I&apos;m Logged In&apos;)</source>
         <translation>(Accedi → Naviga verso la tua mappa → Clicca &apos;Sono connesso&apos;)</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/CalTopoAuthDialog.py" line="191"/>
+        <location filename="../app/core/views/images/viewer/dialogs/CalTopoAuthDialog.py" line="263"/>
+        <location filename="../app/core/views/images/viewer/dialogs/CalTopoAuthDialog.py" line="821"/>
         <source>I&apos;m Logged In - Export Data</source>
         <translation>Sono connesso - Esporta Dati</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/CalTopoAuthDialog.py" line="193"/>
+        <location filename="../app/core/views/images/viewer/dialogs/CalTopoAuthDialog.py" line="265"/>
         <source>Click this after logging in and navigating to your map</source>
         <translation>Clicca qui dopo aver effettuato l&apos;accesso e aver navigato verso la tua mappa</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/CalTopoAuthDialog.py" line="196"/>
+        <location filename="../app/core/views/images/viewer/dialogs/CalTopoAuthDialog.py" line="268"/>
         <source>Cancel</source>
         <translation>Annulla</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/CalTopoAuthDialog.py" line="264"/>
+        <location filename="../app/core/views/images/viewer/dialogs/CalTopoAuthDialog.py" line="374"/>
         <source>Initialization Error</source>
         <translation>Errore di Inizializzazione</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/CalTopoAuthDialog.py" line="265"/>
+        <location filename="../app/core/views/images/viewer/dialogs/CalTopoAuthDialog.py" line="375"/>
         <source>Failed to initialize CalTopo browser:
 {error}</source>
         <translation>Impossibile inizializzare il browser CalTopo:
 {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/CalTopoAuthDialog.py" line="308"/>
+        <location filename="../app/core/views/images/viewer/dialogs/CalTopoAuthDialog.py" line="419"/>
         <source>Failed to Load</source>
         <translation>Caricamento Fallito</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/CalTopoAuthDialog.py" line="310"/>
+        <location filename="../app/core/views/images/viewer/dialogs/CalTopoAuthDialog.py" line="421"/>
         <source>Failed to load CalTopo. Please check your internet connection and try again.</source>
         <translation>Impossibile caricare CalTopo. Controlla la tua connessione internet e riprova.</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/CalTopoAuthDialog.py" line="341"/>
+        <location filename="../app/core/views/images/viewer/dialogs/CalTopoAuthDialog.py" line="452"/>
         <source>Current map: {map_id}</source>
         <translation>Mappa corrente: {map_id}</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/CalTopoAuthDialog.py" line="358"/>
+        <location filename="../app/core/views/images/viewer/dialogs/CalTopoAuthDialog.py" line="480"/>
         <source>No Map Selected</source>
         <translation>Nessuna Mappa Selezionata</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/CalTopoAuthDialog.py" line="360"/>
+        <location filename="../app/core/views/images/viewer/dialogs/CalTopoAuthDialog.py" line="482"/>
         <source>Please navigate to a CalTopo map before capturing the session.
 
 The map URL should contain a map ID (e.g., /m/ABC123 or #id=ABC123).</source>
@@ -1745,47 +1746,43 @@ The map URL should contain a map ID (e.g., /m/ABC123 or #id=ABC123).</source>
 L&apos;URL della mappa deve contenere un ID mappa (es., /m/ABC123 o #id=ABC123).</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/CalTopoAuthDialog.py" line="369"/>
+        <location filename="../app/core/views/images/viewer/dialogs/CalTopoAuthDialog.py" line="491"/>
         <source>Browser Not Ready</source>
         <translation>Browser non pronto</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/CalTopoAuthDialog.py" line="370"/>
+        <location filename="../app/core/views/images/viewer/dialogs/CalTopoAuthDialog.py" line="492"/>
         <source>The CalTopo browser is still loading. Please wait a moment and try again.</source>
         <translation>Il browser CalTopo è ancora in fase di caricamento. Attendi un momento e riprova.</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/CalTopoAuthDialog.py" line="376"/>
+        <location filename="../app/core/views/images/viewer/dialogs/CalTopoAuthDialog.py" line="500"/>
         <source>Starting export...</source>
         <translation>Inizio esportazione...</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/CalTopoAuthDialog.py" line="394"/>
-        <location filename="../app/core/views/images/viewer/dialogs/CalTopoAuthDialog.py" line="557"/>
+        <location filename="../app/core/views/images/viewer/dialogs/CalTopoAuthDialog.py" line="518"/>
+        <location filename="../app/core/views/images/viewer/dialogs/CalTopoAuthDialog.py" line="779"/>
         <source>Authentication Failed</source>
         <translation>Autenticazione Fallita</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/CalTopoAuthDialog.py" line="395"/>
+        <location filename="../app/core/views/images/viewer/dialogs/CalTopoAuthDialog.py" line="519"/>
         <source>Browser not initialized. Please try again.</source>
         <translation>Browser non inizializzato. Riprova.</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/CalTopoAuthDialog.py" line="559"/>
-        <source>Could not capture session cookies. Please ensure you are logged in to CalTopo.
+        <location filename="../app/core/views/images/viewer/dialogs/CalTopoAuthDialog.py" line="781"/>
+        <source>Could not read your CalTopo session.
 
-Try:
-1. Make sure you&apos;re logged in
-2. Navigate to a map
-3. Wait a few seconds for cookies to be set
-4. Click &apos;I&apos;m Logged In&apos; again</source>
-        <translation>Impossibile acquisire i cookie della sessione. Assicurati di aver effettuato l&apos;accesso a CalTopo.
+If you have just signed in for the first time, close this window and start the export again - the new session can only be read once the CalTopo browser has released it.
 
-Prova:
-1. Assicurati di aver effettuato l&apos;accesso
-2. Naviga verso una mappa
-3. Attendi qualche secondo affinché i cookie vengano impostati
-4. Clicca di nuovo su &apos;Sono connesso&apos;</translation>
+Otherwise, make sure you are signed in to CalTopo and have opened your map, then click &apos;I&apos;m Logged In - Export Data&apos; again.</source>
+        <translation>Impossibile leggere la sessione CalTopo.
+
+Se hai appena effettuato l&apos;accesso per la prima volta, chiudi questa finestra e riavvia l&apos;esportazione: la nuova sessione può essere letta solo dopo che il browser CalTopo l&apos;ha rilasciata.
+
+Altrimenti, assicurati di aver effettuato l&apos;accesso a CalTopo e di aver aperto la mappa, quindi fai di nuovo clic su &apos;Sono connesso - Esporta Dati&apos;.</translation>
     </message>
 </context>
 <context>
@@ -1806,7 +1803,7 @@ Prova:
         <translation>Credenziali API Team CalTopo</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/CalTopoCredentialDialog.py" line="84"/>
+        <location filename="../app/core/views/images/viewer/dialogs/CalTopoCredentialDialog.py" line="85"/>
         <source>Enter your CalTopo Team API credentials.
 These can be found in the Team Admin page under Service Accounts.</source>
         <translation>Inserisci le tue credenziali API Team CalTopo.
@@ -1859,7 +1856,7 @@ Queste possono essere trovate nella pagina Team Admin sotto Service Accounts.</t
     </message>
     <message>
         <location filename="../app/core/views/images/viewer/dialogs/CalTopoCredentialDialog.py" line="146"/>
-        <location filename="../app/core/views/images/viewer/dialogs/CalTopoCredentialDialog.py" line="309"/>
+        <location filename="../app/core/views/images/viewer/dialogs/CalTopoCredentialDialog.py" line="344"/>
         <source>Test Credentials</source>
         <translation>Testa Credenziali</translation>
     </message>
@@ -1887,52 +1884,70 @@ Queste possono essere trovate nella pagina Team Admin sotto Service Accounts.</t
         <location filename="../app/core/views/images/viewer/dialogs/CalTopoCredentialDialog.py" line="226"/>
         <location filename="../app/core/views/images/viewer/dialogs/CalTopoCredentialDialog.py" line="230"/>
         <location filename="../app/core/views/images/viewer/dialogs/CalTopoCredentialDialog.py" line="234"/>
-        <location filename="../app/core/views/images/viewer/dialogs/CalTopoCredentialDialog.py" line="254"/>
-        <location filename="../app/core/views/images/viewer/dialogs/CalTopoCredentialDialog.py" line="258"/>
-        <location filename="../app/core/views/images/viewer/dialogs/CalTopoCredentialDialog.py" line="262"/>
+        <location filename="../app/core/views/images/viewer/dialogs/CalTopoCredentialDialog.py" line="286"/>
+        <location filename="../app/core/views/images/viewer/dialogs/CalTopoCredentialDialog.py" line="290"/>
+        <location filename="../app/core/views/images/viewer/dialogs/CalTopoCredentialDialog.py" line="294"/>
         <source>Invalid Input</source>
         <translation>Input Non Valido</translation>
     </message>
     <message>
         <location filename="../app/core/views/images/viewer/dialogs/CalTopoCredentialDialog.py" line="226"/>
-        <location filename="../app/core/views/images/viewer/dialogs/CalTopoCredentialDialog.py" line="254"/>
+        <location filename="../app/core/views/images/viewer/dialogs/CalTopoCredentialDialog.py" line="286"/>
         <source>Please enter a Team ID.</source>
         <translation>Inserisci un ID Team.</translation>
     </message>
     <message>
         <location filename="../app/core/views/images/viewer/dialogs/CalTopoCredentialDialog.py" line="230"/>
-        <location filename="../app/core/views/images/viewer/dialogs/CalTopoCredentialDialog.py" line="258"/>
+        <location filename="../app/core/views/images/viewer/dialogs/CalTopoCredentialDialog.py" line="290"/>
         <source>Please enter a Credential ID.</source>
         <translation>Inserisci un ID Credenziale.</translation>
     </message>
     <message>
         <location filename="../app/core/views/images/viewer/dialogs/CalTopoCredentialDialog.py" line="234"/>
-        <location filename="../app/core/views/images/viewer/dialogs/CalTopoCredentialDialog.py" line="262"/>
+        <location filename="../app/core/views/images/viewer/dialogs/CalTopoCredentialDialog.py" line="294"/>
         <source>Please enter a Credential Secret.</source>
         <translation>Inserisci un Segreto Credenziale.</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/CalTopoCredentialDialog.py" line="267"/>
+        <location filename="../app/core/views/images/viewer/dialogs/CalTopoCredentialDialog.py" line="261"/>
+        <source>Invalid Credential Secret</source>
+        <translation>Segreto credenziale non valido</translation>
+    </message>
+    <message>
+        <location filename="../app/core/views/images/viewer/dialogs/CalTopoCredentialDialog.py" line="263"/>
+        <source>The Credential Secret cannot be used to sign a CalTopo request.
+
+Copy it exactly as shown on the CalTopo Team Admin page under Service Accounts - it is a long base64 string, not the Credential ID or the Team ID.
+
+Details: {error}</source>
+        <translation>Il segreto credenziale non può essere usato per firmare una richiesta CalTopo.
+
+Copialo esattamente come mostrato nella pagina Team Admin di CalTopo, in Service Accounts: è una lunga stringa base64, non l&apos;ID credenziale né l&apos;ID team.
+
+Dettagli: {error}</translation>
+    </message>
+    <message>
+        <location filename="../app/core/views/images/viewer/dialogs/CalTopoCredentialDialog.py" line="302"/>
         <source>Testing...</source>
         <translation>Test in corso...</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/CalTopoCredentialDialog.py" line="282"/>
+        <location filename="../app/core/views/images/viewer/dialogs/CalTopoCredentialDialog.py" line="317"/>
         <source>Credentials Valid</source>
         <translation>Credenziali Valide</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/CalTopoCredentialDialog.py" line="283"/>
+        <location filename="../app/core/views/images/viewer/dialogs/CalTopoCredentialDialog.py" line="318"/>
         <source>The credentials are valid and successfully authenticated with CalTopo API.</source>
         <translation>Le credenziali sono valide e l&apos;autenticazione con l&apos;API CalTopo è riuscita.</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/CalTopoCredentialDialog.py" line="288"/>
+        <location filename="../app/core/views/images/viewer/dialogs/CalTopoCredentialDialog.py" line="323"/>
         <source>Credentials Invalid</source>
         <translation>Credenziali Non Valide</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/CalTopoCredentialDialog.py" line="289"/>
+        <location filename="../app/core/views/images/viewer/dialogs/CalTopoCredentialDialog.py" line="325"/>
         <source>The credentials failed to authenticate with CalTopo API.
 
 Please check:
@@ -1949,12 +1964,12 @@ Controlla:
 • Il tuo account di servizio ha i permessi richiesti</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/CalTopoCredentialDialog.py" line="301"/>
+        <location filename="../app/core/views/images/viewer/dialogs/CalTopoCredentialDialog.py" line="336"/>
         <source>Test Error</source>
         <translation>Errore Test</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/CalTopoCredentialDialog.py" line="302"/>
+        <location filename="../app/core/views/images/viewer/dialogs/CalTopoCredentialDialog.py" line="337"/>
         <source>An error occurred while testing credentials:
 
 {error}</source>
@@ -1966,14 +1981,14 @@ Controlla:
 <context>
     <name>CalTopoExportController</name>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="441"/>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1508"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="459"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1055"/>
         <source>Offline Mode Enabled</source>
         <translation>Modalità Offline Abilitata</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="443"/>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1510"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="461"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1057"/>
         <source>Offline Only is turned on in Preferences:
 
 • Map tiles will not be retrieved.
@@ -1988,39 +2003,39 @@ Turn off Offline Only to export to CalTopo.</source>
 Disattiva Solo Offline per esportare su CalTopo.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="454"/>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1521"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="472"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1068"/>
         <source>Nothing Selected</source>
         <translation>Nessuna Selezione</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="456"/>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1523"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="474"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1070"/>
         <source>Select at least one data type (flagged AOIs, drone/image locations, or coverage area) to export.</source>
         <translation>Seleziona almeno un tipo di dati (AOI contrassegnate, posizioni drone/immagini o area di copertura) da esportare.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="464"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="482"/>
         <source>Preparing Export Data</source>
         <translation>Preparazione Dati Esportazione</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="467"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="485"/>
         <source>Preparing data for export...</source>
         <translation>Preparazione dei dati per l&apos;esportazione...</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="468"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="486"/>
         <source>Processing images and AOIs...</source>
         <translation>Elaborazione immagini e AOI...</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="512"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="530"/>
         <source>Preparation Error</source>
         <translation>Errore di Preparazione</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="514"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="532"/>
         <source>An error occurred while preparing export data:
 
 {error}</source>
@@ -2029,29 +2044,29 @@ Disattiva Solo Offline per esportare su CalTopo.</translation>
 {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="523"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="541"/>
         <source>flagged AOIs</source>
         <translation>AOI contrassegnate</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="525"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="543"/>
         <source>image locations</source>
         <translation>posizioni immagini</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="527"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="545"/>
         <source>coverage area</source>
         <translation>area di copertura</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="531"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="549"/>
         <source>No flagged AOIs, geotagged image locations, or coverage areas are available.
 Flag some AOIs with the &apos;F&apos; key or ensure your images have GPS metadata.</source>
         <translation>Non sono disponibili AOI contrassegnate, posizioni di immagini georeferenziate o aree di copertura.
 Contrassegna alcune AOI con il tasto &apos;F&apos; o assicurati che le tue immagini abbiano metadati GPS.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="537"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="555"/>
         <source>Found {count} flagged AOI(s), but could not extract GPS coordinates.
 
 This usually means:
@@ -2068,14 +2083,14 @@ Questo di solito significa:
 Assicurati che le tue immagini abbiano le coordinate GPS incorporate.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="545"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="563"/>
         <source>No geotagged drone/image locations were found.
 Ensure your images contain GPS metadata and try again.</source>
         <translation>Non sono state trovate posizioni di droni/immagini georeferenziate.
 Assicurati che le tue immagini contengano metadati GPS e riprova.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="550"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="568"/>
         <source>No coverage area polygons could be calculated.
 
 This usually means:
@@ -2094,22 +2109,23 @@ Questo di solito significa:
 Assicurati che le tue immagini abbiano le coordinate GPS e siano scatti nadirali.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="559"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="577"/>
         <source>No {types} are available to export.</source>
         <translation>Nessun {types} disponibile per l&apos;esportazione.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="564"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="582"/>
         <source>Nothing to Export</source>
         <translation>Nulla da Esportare</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="585"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="607"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="654"/>
         <source>No Map Selected</source>
         <translation>Nessuna Mappa Selezionata</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="587"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="609"/>
         <source>Please navigate to a CalTopo map before clicking &apos;I&apos;m Logged In&apos;.
 
 The map URL should look like:
@@ -2120,75 +2136,71 @@ L&apos;URL della mappa dovrebbe essere simile a:
 https://caltopo.com/map.html#...&amp;id=ABC123</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="649"/>
-        <source>{count} marker(s)</source>
-        <translation>{count} marcatore/i</translation>
-    </message>
-    <message>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="653"/>
-        <source>{count} polygon(s)</source>
-        <translation>{count} poligono/i</translation>
-    </message>
-    <message>
         <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="656"/>
-        <source> and </source>
-        <translation> e </translation>
+        <source>No CalTopo map was selected, so there was nothing to export to.
+
+Open your map in the CalTopo window before clicking &apos;I&apos;m Logged In - Export Data&apos;.</source>
+        <translation>Nessuna mappa CalTopo selezionata, quindi non c&apos;era alcuna destinazione per l&apos;esportazione.
+
+Apri la mappa nella finestra CalTopo prima di fare clic su &apos;Sono connesso - Esporta Dati&apos;.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="661"/>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1717"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1366"/>
+        <source>Nothing could be exported to CalTopo.
+
+The reason was written to the log (adiat_logs.txt) and the console.</source>
+        <translation>Non è stato possibile esportare nulla su CalTopo.
+
+Il motivo è stato scritto nel registro (adiat_logs.txt) e nella console.</translation>
+    </message>
+    <message>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1375"/>
+        <source>Photos uploaded: {uploaded} of {total}.</source>
+        <translation>Foto caricate: {uploaded} di {total}.</translation>
+    </message>
+    <message>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1383"/>
+        <source>Successfully exported all {total} item(s) to CalTopo.
+
+The items should now be visible on your map.</source>
+        <translation>Esportati correttamente tutti i {total} elemento/i su CalTopo.
+
+Gli elementi dovrebbero ora essere visibili sulla mappa.</translation>
+    </message>
+    <message>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1392"/>
+        <source>Exported {created} of {total} item(s) to CalTopo.{photos}
+
+Details for anything that failed were written to the log (adiat_logs.txt) and the console.</source>
+        <translation>Esportati {created} di {total} elemento/i su CalTopo.{photos}
+
+I dettagli di eventuali errori sono stati scritti nel registro (adiat_logs.txt) e nella console.</translation>
+    </message>
+    <message>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1381"/>
         <source>Export Successful</source>
         <translation>Esportazione Riuscita</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="663"/>
-        <source>Successfully exported all {items} to CalTopo map {map_id}.
-
-The items should now be visible on your map.</source>
-        <translation>Esportati con successo tutti gli {items} sulla mappa CalTopo {map_id}.
-
-Gli elementi dovrebbero ora essere visibili sulla tua mappa.</translation>
-    </message>
-    <message>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="670"/>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1726"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1390"/>
         <source>Partial Success</source>
         <translation>Successo Parziale</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="672"/>
-        <source>Exported {success} of {total} item(s) ({items}) to CalTopo map {map_id}.
-
-{failed} item(s) failed. Check console for details.</source>
-        <translation>Esportati {success} di {total} elementi ({items}) sulla mappa CalTopo {map_id}.
-
-{failed} elementi falliti. Controlla la console per i dettagli.</translation>
-    </message>
-    <message>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="686"/>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1739"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1364"/>
         <source>Export Failed</source>
         <translation>Esportazione Fallita</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="688"/>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1741"/>
-        <source>Failed to export items to CalTopo.
-
-Please check the console output for error details.</source>
-        <translation>Impossibile esportare gli elementi su CalTopo.
-
-Controlla l&apos;output della console per i dettagli dell&apos;errore.</translation>
-    </message>
-    <message>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="698"/>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1647"/>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1752"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="696"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1134"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1324"/>
         <source>Export Error</source>
         <translation>Errore di Esportazione</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="700"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="698"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1326"/>
         <source>An error occurred during CalTopo export:
 
 {error}</source>
@@ -2197,7 +2209,7 @@ Controlla l&apos;output della console per i dettagli dell&apos;errore.</translat
 {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1002"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1000"/>
         <source>Coverage area: {sqkm:.3f} km² ({acres:.2f} acres)
 Area in square meters: {sqm:.0f} m²
 Number of corners: {count}</source>
@@ -2206,74 +2218,42 @@ Area in metri quadrati: {sqm:.0f} m²
 Numero di angoli: {count}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1046"/>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1330"/>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1678"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1287"/>
         <source>Exporting to CalTopo</source>
         <translation>Esportazione su CalTopo</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1049"/>
-        <source>Exporting markers to CalTopo...</source>
-        <translation>Esportazione marcatori su CalTopo...</translation>
-    </message>
-    <message>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1051"/>
-        <source>Preparing to export {count} marker(s)...</source>
-        <translation>Preparazione all&apos;esportazione di {count} marcatore/i...</translation>
-    </message>
-    <message>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1296"/>
-        <source>Export complete: {success} of {total} marker(s) exported</source>
-        <translation>Esportazione completata: {success} di {total} marcatore/i esportati</translation>
-    </message>
-    <message>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1333"/>
-        <source>Exporting polygons to CalTopo...</source>
-        <translation>Esportazione poligoni su CalTopo...</translation>
-    </message>
-    <message>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1335"/>
-        <source>Preparing to export {count} polygon(s)...</source>
-        <translation>Preparazione all&apos;esportazione di {count} poligono/i...</translation>
-    </message>
-    <message>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1462"/>
-        <source>Export complete: {success} of {total} polygon(s) exported</source>
-        <translation>Esportazione completata: {success} di {total} poligono/i esportati</translation>
-    </message>
-    <message>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1480"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1027"/>
         <source>Logged Out</source>
         <translation>Disconnesso</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1481"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1028"/>
         <source>Successfully logged out from CalTopo.</source>
         <translation>Disconnessione da CalTopo riuscita.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1546"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1179"/>
         <source>Loading CalTopo Maps</source>
         <translation>Caricamento Mappe CalTopo</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1549"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1182"/>
         <source>Connecting to CalTopo...</source>
         <translation>Connessione a CalTopo...</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1550"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1183"/>
         <source>Fetching account data and maps...</source>
         <translation>Recupero dati account e mappe...</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1588"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1238"/>
         <source>Connection Error</source>
         <translation>Errore di Connessione</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1590"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1240"/>
         <source>An error occurred while connecting to CalTopo API:
 
 {error}</source>
@@ -2282,22 +2262,18 @@ Numero di angoli: {count}</translation>
 {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1598"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="669"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1243"/>
         <source>Authentication Failed</source>
         <translation>Autenticazione Fallita</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1600"/>
-        <source>Failed to authenticate with CalTopo API.
-
-Please check your credentials and try again.</source>
-        <translation>Impossibile autenticare con l&apos;API CalTopo.
-
-Controlla le tue credenziali e riprova.</translation>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="670"/>
+        <source>No CalTopo session cookies were captured. Please log in and try again.</source>
+        <translation>Nessun cookie di sessione CalTopo acquisito. Effettua l&apos;accesso e riprova.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1649"/>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1754"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1136"/>
         <source>An error occurred during CalTopo API export:
 
 {error}</source>
@@ -2306,32 +2282,27 @@ Controlla le tue credenziali e riprova.</translation>
 {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1681"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1245"/>
+        <source>CalTopo did not accept these credentials.
+
+The reason was written to the log (adiat_logs.txt) and the console.
+
+Would you like to re-enter your Team ID, Credential ID and Credential Secret?</source>
+        <translation>CalTopo non ha accettato queste credenziali.
+
+Il motivo è stato scritto nel registro (adiat_logs.txt) e nella console.
+
+Vuoi reinserire ID team, ID credenziale e segreto credenziale?</translation>
+    </message>
+    <message>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1290"/>
         <source>Exporting to CalTopo...</source>
         <translation>Esportazione su CalTopo...</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1682"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1291"/>
         <source>Preparing data and exporting...</source>
         <translation>Preparazione dati ed esportazione...</translation>
-    </message>
-    <message>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1719"/>
-        <source>Successfully exported all {total} item(s) to CalTopo map.
-
-The items should now be visible on your map.</source>
-        <translation>Esportati con successo tutti i {total} elementi sulla mappa CalTopo.
-
-Gli elementi dovrebbero ora essere visibili sulla tua mappa.</translation>
-    </message>
-    <message>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1728"/>
-        <source>Exported {success} of {total} item(s) to CalTopo map.
-
-{failed} item(s) failed. Check console for details.</source>
-        <translation>Esportati {success} di {total} elementi sulla mappa CalTopo.
-
-{failed} elementi falliti. Controlla la console per i dettagli.</translation>
     </message>
 </context>
 <context>
@@ -2347,7 +2318,7 @@ Gli elementi dovrebbero ora essere visibili sulla tua mappa.</translation>
         <translation>Seleziona Metodo di Esportazione CalTopo</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/CalTopoMethodDialog.py" line="60"/>
+        <location filename="../app/core/views/images/viewer/dialogs/CalTopoMethodDialog.py" line="61"/>
         <source>Choose how you want to authenticate with CalTopo:</source>
         <translation>Scegli come vuoi autenticarti con CalTopo:</translation>
     </message>
@@ -2362,7 +2333,7 @@ Gli elementi dovrebbero ora essere visibili sulla tua mappa.</translation>
         <translation>API (Consigliato per Account Team CalTopo)</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/CalTopoMethodDialog.py" line="74"/>
+        <location filename="../app/core/views/images/viewer/dialogs/CalTopoMethodDialog.py" line="75"/>
         <source>Use CalTopo Team API with service account credentials.
 Best for Teams accounts with service accounts configured.</source>
         <translation>Usa l&apos;API Team CalTopo con le credenziali dell&apos;account di servizio.
@@ -2374,14 +2345,14 @@ Ideale per gli account Team con account di servizio configurati.</translation>
         <translation>Accesso tramite Browser</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/CalTopoMethodDialog.py" line="80"/>
+        <location filename="../app/core/views/images/viewer/dialogs/CalTopoMethodDialog.py" line="81"/>
         <source>Use browser-based authentication.
 Log in through an embedded browser window.</source>
         <translation>Usa l&apos;autenticazione basata su browser.
 Accedi tramite una finestra del browser integrata.</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/CalTopoMethodDialog.py" line="95"/>
+        <location filename="../app/core/views/images/viewer/dialogs/CalTopoMethodDialog.py" line="96"/>
         <source>API method requires Team ID and Credential Secret from your
 CalTopo Team Admin page. Browser method uses your regular login.</source>
         <translation>Il metodo API richiede l&apos;ID Team e il Segreto Credenziale dalla tua
@@ -2411,7 +2382,7 @@ pagina Admin Team CalTopo. Il metodo Browser utilizza il tuo normale accesso.</t
         <translation>Abilita Voto Temporale (riduce lo sfarfallio)</translation>
     </message>
     <message>
-        <location filename="../app/core/views/streaming/components/CleanupTab.py" line="37"/>
+        <location filename="../app/core/views/streaming/components/CleanupTab.py" line="38"/>
         <source>Smooths detections across frames using temporal consistency.
 Detections must appear in N out of M consecutive frames to be confirmed.
 Significantly reduces flickering false positives.
@@ -2427,7 +2398,7 @@ Consigliato: ON in tutti i casi d&apos;uso (predefinito).</translation>
         <translation>Frame Finestra (M):</translation>
     </message>
     <message>
-        <location filename="../app/core/views/streaming/components/CleanupTab.py" line="52"/>
+        <location filename="../app/core/views/streaming/components/CleanupTab.py" line="53"/>
         <source>Size of temporal voting window (2-30 frames).
 Detections must appear in N out of M consecutive frames.
 Larger values = longer memory, more stable, slower response to new objects.
@@ -2445,7 +2416,7 @@ Consigliato: 5 per 30 fps (finestra ~167 ms), 7 per 60 fps.</translation>
         <translation>Soglia (N su M):</translation>
     </message>
     <message>
-        <location filename="../app/core/views/streaming/components/CleanupTab.py" line="65"/>
+        <location filename="../app/core/views/streaming/components/CleanupTab.py" line="66"/>
         <source>Number of frames within window where detection must appear (N of M).
 Higher values = more stringent, filters transient false positives.
 Lower values = more lenient, faster response to new objects.
@@ -2468,7 +2439,7 @@ Consigliato: 3 su 5 (rilevamento nel 60% dei frame).</translation>
         <translation>Abilita Filtro Rapporto d&apos;Aspetto</translation>
     </message>
     <message>
-        <location filename="../app/core/views/streaming/components/CleanupTab.py" line="84"/>
+        <location filename="../app/core/views/streaming/components/CleanupTab.py" line="85"/>
         <source>Filter out very thin or stretched detections based on width/height.
 Useful for removing wires, long shadows, or other non-object shapes.
 Most users can leave this OFF unless you see many long skinny false detections.</source>
@@ -2482,7 +2453,7 @@ La maggior parte degli utenti può lasciarlo OFF, a meno di rilevare molti falsi
         <translation>Rapporto Min:</translation>
     </message>
     <message>
-        <location filename="../app/core/views/streaming/components/CleanupTab.py" line="99"/>
+        <location filename="../app/core/views/streaming/components/CleanupTab.py" line="100"/>
         <source>Minimum width/height ratio to keep (0.1-10.0).
 Lower values = allow taller, thinner detections.
 Higher values = require detections to be more square.
@@ -2498,7 +2469,7 @@ Esempio: 0,2 = rifiuta se l&apos;altezza è più di 5x la larghezza.</translatio
         <translation>Rapporto Max:</translation>
     </message>
     <message>
-        <location filename="../app/core/views/streaming/components/CleanupTab.py" line="112"/>
+        <location filename="../app/core/views/streaming/components/CleanupTab.py" line="113"/>
         <source>Maximum width/height ratio to keep (0.1-20.0).
 Lower values = reject very wide, thin detections.
 Higher values = allow wider objects such as vehicles or long equipment.</source>
@@ -2517,7 +2488,7 @@ Valori più alti = consente oggetti più larghi come veicoli o attrezzature lung
         <translation>Abilita Clustering Rilevamenti</translation>
     </message>
     <message>
-        <location filename="../app/core/views/streaming/components/CleanupTab.py" line="127"/>
+        <location filename="../app/core/views/streaming/components/CleanupTab.py" line="128"/>
         <source>Optionally merge nearby detections into a single, larger detection.
 Useful when one object appears as many small adjacent detections.
 Most users can leave this OFF unless objects look fragmented.</source>
@@ -2531,7 +2502,7 @@ La maggior parte degli utenti può lasciarlo OFF, a meno che gli oggetti non app
         <translation>Distanza Clustering (px):</translation>
     </message>
     <message>
-        <location filename="../app/core/views/streaming/components/CleanupTab.py" line="141"/>
+        <location filename="../app/core/views/streaming/components/CleanupTab.py" line="142"/>
         <source>Maximum distance between detection centers to merge them (0-500 pixels).
 Lower values = only merge very close detections.
 Higher values = merge detections that are farther apart (may over-merge).</source>
@@ -2543,8 +2514,8 @@ Valori più alti = unisce rilevamenti più distanti (può unire troppo).</transl
 <context>
     <name>ClickableColorSwatch</name>
     <message>
-        <location filename="../app/algorithms/images/ColorRange/views/ColorRowWizardWidget.py" line="64"/>
         <location filename="../app/algorithms/images/ColorRange/views/ColorRowWidget.py" line="55"/>
+        <location filename="../app/algorithms/images/ColorRange/views/ColorRowWizardWidget.py" line="64"/>
         <location filename="../app/algorithms/Shared/views/HSVColorRowWidget.py" line="83"/>
         <source>RGB: ({r}, {g}, {b})
 Click to change color</source>
@@ -4286,7 +4257,7 @@ Fai clic sulle immagini per spostarle nella sezione Selezionate in alto.</transl
         <translation>Ancora nessun revisore</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="311"/>
+        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="312"/>
         <source>Batch review status and assignments. Load reviewer XMLs to update progress. Double-click a batch to open its results in the Viewer.</source>
         <translation>Stato e assegnazioni della revisione batch. Carica gli XML dei revisori per aggiornare l&apos;avanzamento. Fai doppio clic su un batch per aprire i risultati nel Visualizzatore.</translation>
     </message>
@@ -4371,7 +4342,7 @@ Fai clic sulle immagini per spostarle nella sezione Selezionate in alto.</transl
         <translation>Seleziona i File XML Batch Iniziali</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="402"/>
+        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="403"/>
         <source>You can select multiple ADIAT_Data.xml files from different folders.
 
 Tips:
@@ -4498,7 +4469,7 @@ Suggerimenti:
         <translation>Aggiungi Altri File XML Batch</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="539"/>
+        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="540"/>
         <source>Select additional ADIAT_Data.xml batch files to add to this search.
 
 Tips:
@@ -4520,7 +4491,7 @@ Suggerimenti:
         <translation>Seleziona i File ADIAT_Data.xml Batch da Aggiungere (Tieni premuto Ctrl per selezionarne più di uno)</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="578"/>
+        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="579"/>
         <source>Successfully added {count} batch(es) to the project!
 Total batches: {total}</source>
         <translation>Aggiunti con successo {count} batch al progetto!
@@ -4532,7 +4503,7 @@ Batch totali: {total}</translation>
         <translation>Nessun Batch Aggiunto</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="590"/>
+        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="591"/>
         <source>No batches were added. Check that the XML files are valid ADIAT_Data.xml files.</source>
         <translation>Nessun batch aggiunto. Controlla che i file XML siano file ADIAT_Data.xml validi.</translation>
     </message>
@@ -4853,27 +4824,27 @@ non valida</translation>
 <context>
     <name>ExportProgressDialog</name>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/ExportProgressDialog.py" line="58"/>
+        <location filename="../app/core/views/images/viewer/dialogs/ExportProgressDialog.py" line="65"/>
         <source>Processing...</source>
         <translation>Elaborazione in corso...</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/ExportProgressDialog.py" line="72"/>
+        <location filename="../app/core/views/images/viewer/dialogs/ExportProgressDialog.py" line="79"/>
         <source>Starting...</source>
         <translation>Avvio in corso...</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/ExportProgressDialog.py" line="76"/>
+        <location filename="../app/core/views/images/viewer/dialogs/ExportProgressDialog.py" line="83"/>
         <source>Cancel</source>
         <translation>Annulla</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/ExportProgressDialog.py" line="103"/>
+        <location filename="../app/core/views/images/viewer/dialogs/ExportProgressDialog.py" line="135"/>
         <source>Cancelling...</source>
         <translation>Annullamento in corso...</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/ExportProgressDialog.py" line="104"/>
+        <location filename="../app/core/views/images/viewer/dialogs/ExportProgressDialog.py" line="136"/>
         <source>Cancellation requested...</source>
         <translation>Annullamento richiesto...</translation>
     </message>
@@ -5677,7 +5648,7 @@ Questo scarica l&apos;altezza chioma Meta/WRI (1 m) e la imposta come origine da
         <translation>Sovrapposizione POD</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="138"/>
+        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="139"/>
         <source>Run a map export with the POD option to generate this overlay</source>
         <translation>Esegui un&apos;esportazione mappa con l&apos;opzione POD per generare questa sovrapposizione</translation>
     </message>
@@ -5712,7 +5683,7 @@ Questo scarica l&apos;altezza chioma Meta/WRI (1 m) e la imposta come origine da
         <translation>Calcola POD</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="170"/>
+        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="171"/>
         <source>Compute the terrain-aware probability-of-detection heatmap for this mission (may take several minutes)</source>
         <translation>Calcola la heatmap della probabilità di rilevamento con analisi del terreno per questa missione (può richiedere diversi minuti)</translation>
     </message>
@@ -5747,7 +5718,7 @@ Questo scarica l&apos;altezza chioma Meta/WRI (1 m) e la imposta come origine da
         <translation>Problema di Caricamento Tasselli Mappa</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="383"/>
+        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="384"/>
         <source>{error}
 
 The map will continue to work with cached tiles where available.</source>
@@ -5817,7 +5788,7 @@ La mappa continuerà a funzionare con i tasselli memorizzati nella cache, ove di
         <translation>Benchmark Completato</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/guidePages/GeneralSettingsPage.py" line="160"/>
+        <location filename="../app/core/controllers/images/guidePages/GeneralSettingsPage.py" line="161"/>
         <source>Detected {count} CPU core(s).
 
 Recommended number of processes: {recommended}
@@ -8068,7 +8039,7 @@ Valori più bassi = rilevamento più sensibile.</translation>
         <translation>Espansione per Soglia</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/images/MRMap/controllers/MRMapController.py" line="49"/>
+        <location filename="../app/algorithms/images/MRMap/controllers/MRMapController.py" line="50"/>
         <source>When enabled, expand each AOI to also include pixels with histogram bin-counts
 below (threshold + {0}). Pixels inside the cluster rectangle are added unconditionally;
 pixels outside are added if they are connected through other qualifying pixels.</source>
@@ -8082,7 +8053,7 @@ quelli esterni vengono aggiunti se collegati tramite altri pixel idonei.</transl
         <translation>Espansione per Tonalità</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/images/MRMap/controllers/MRMapController.py" line="58"/>
+        <location filename="../app/algorithms/images/MRMap/controllers/MRMapController.py" line="59"/>
         <source>When enabled, expand each AOI through neighbors whose hue is within +/- {0}
 (OpenCV units) of the mean hue of the original detected pixels.
 Pixels with saturation below {1}% or value below {2}% are excluded.</source>
@@ -8161,7 +8132,7 @@ Aggressivo</translation>
         <translation>Espansione per Soglia</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/images/MRMap/controllers/MRMapWizardController.py" line="68"/>
+        <location filename="../app/algorithms/images/MRMap/controllers/MRMapWizardController.py" line="69"/>
         <source>When enabled, expand each AOI to also include pixels with histogram bin-counts
 below (threshold + {0}). Pixels inside the cluster rectangle are added unconditionally;
 pixels outside are added if they are connected through other qualifying pixels.</source>
@@ -8175,7 +8146,7 @@ quelli esterni vengono aggiunti se collegati tramite altri pixel idonei.</transl
         <translation>Espansione per Tonalità</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/images/MRMap/controllers/MRMapWizardController.py" line="77"/>
+        <location filename="../app/algorithms/images/MRMap/controllers/MRMapWizardController.py" line="78"/>
         <source>When enabled, expand each AOI through neighbors whose hue is within +/- {0}
 (OpenCV units) of the mean hue of the original detected pixels.
 Pixels with saturation below {1}% or value below {2}% are excluded.</source>
@@ -9603,7 +9574,7 @@ Fai domande, segnala problemi e suggerisci nuove funzionalità.</translation>
         <translation>Heatmap di copertura POD (con analisi del terreno)</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/MapExportDialog.py" line="106"/>
+        <location filename="../app/core/views/images/viewer/dialogs/MapExportDialog.py" line="107"/>
         <source>Compute a terrain and canopy aware probability-of-detection raster for the whole mission (all non-hidden images, independent of the selections above). KML exports embed the heatmap in the KML/KMZ as an image overlay; the GeoTIFF products (coverage_pod.tif, coverage_looks.tif, coverage_gaps.geojson, stats.json) are also written — the GeoTIFF can be imported into CalTopo Map Sheets. May take several minutes.</source>
         <translation>Calcola un raster di probabilità di rilevamento consapevole di terreno e chioma per l&apos;intera missione (tutte le immagini non nascoste, indipendente dalle selezioni sopra). Le esportazioni KML incorporano la mappa di calore nel KML/KMZ come sovrapposizione immagine; vengono scritti anche i prodotti GeoTIFF (coverage_pod.tif, coverage_looks.tif, coverage_gaps.geojson, stats.json); il GeoTIFF può essere importato in CalTopo Map Sheets. Può richiedere diversi minuti.</translation>
     </message>
@@ -9945,7 +9916,7 @@ poi clicca di nuovo per posizionare il secondo punto.</translation>
         <translation>Nessuna Immagine da Esportare</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/PDFExportController.py" line="152"/>
+        <location filename="../app/core/controllers/images/viewer/exports/PDFExportController.py" line="153"/>
         <source>There are no images available to include in the PDF report.
 
 All images may be hidden or there are no images in the dataset.</source>
@@ -9954,7 +9925,7 @@ All images may be hidden or there are no images in the dataset.</source>
 Tutte le immagini potrebbero essere nascoste oppure non ci sono immagini nel dataset.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/PDFExportController.py" line="161"/>
+        <location filename="../app/core/controllers/images/viewer/exports/PDFExportController.py" line="162"/>
         <source>There are no images with flagged AOIs to include in the PDF report.
 
 Please flag at least one AOI, or check &apos;Include images without flagged AOIs&apos; to include all images in the report.</source>
@@ -10051,7 +10022,7 @@ Contrassegna almeno una AOI oppure seleziona &apos;Includi immagini senza AOI co
         <translation>Includi immagini senza AOI contrassegnate</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/PDFExportDialog.py" line="61"/>
+        <location filename="../app/core/views/images/viewer/dialogs/PDFExportDialog.py" line="62"/>
         <source>When checked, all images will be included in the PDF report, even if they don&apos;t have any flagged AOIs. When unchecked, only images with flagged AOIs will be included.</source>
         <translation>Quando selezionato, tutte le immagini saranno incluse nel report PDF, anche se non hanno AOI contrassegnate. Quando deselezionato, verranno incluse solo le immagini con AOI contrassegnate.</translation>
     </message>
@@ -10096,7 +10067,7 @@ Contrassegna almeno una AOI oppure seleziona &apos;Includi immagini senza AOI co
   ... e altri {count}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/path/PathValidationController.py" line="103"/>
+        <location filename="../app/core/controllers/images/viewer/path/PathValidationController.py" line="104"/>
         <source>{count} source image(s) not found at expected locations:
 
 {files}
@@ -10124,7 +10095,7 @@ Seleziona la cartella contenente le immagini sorgente.</translation>
         <translation>Alcune Immagini Mancano Ancora</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/path/PathValidationController.py" line="137"/>
+        <location filename="../app/core/controllers/images/viewer/path/PathValidationController.py" line="138"/>
         <source>{count} detection mask(s) not found at expected locations:
 
 {files}
@@ -10142,7 +10113,7 @@ Seleziona la cartella contenente i file delle maschere.</translation>
         <translation>Maschere di Rilevamento Non Trovate</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/path/PathValidationController.py" line="110"/>
+        <location filename="../app/core/controllers/images/viewer/path/PathValidationController.py" line="111"/>
         <source>Found {found} of {total} images.
 
 Still missing:
@@ -10153,7 +10124,7 @@ Ancora mancanti:
 {missing}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/path/PathValidationController.py" line="114"/>
+        <location filename="../app/core/controllers/images/viewer/path/PathValidationController.py" line="115"/>
         <source>None of the {total} missing images were found in that folder (including its subfolders).
 
 Expected to find files named:
@@ -10174,7 +10145,7 @@ Nomi dei file cercati:
         <translation>Alcune Maschere Mancano Ancora</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/path/PathValidationController.py" line="144"/>
+        <location filename="../app/core/controllers/images/viewer/path/PathValidationController.py" line="145"/>
         <source>Found {found} of {total} masks.
 
 Still missing:
@@ -10185,7 +10156,7 @@ Ancora mancanti:
 {missing}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/path/PathValidationController.py" line="148"/>
+        <location filename="../app/core/controllers/images/viewer/path/PathValidationController.py" line="149"/>
         <source>None of the {total} missing masks were found in that folder (including its subfolders).
 
 Expected to find files named:
@@ -10419,7 +10390,7 @@ Le modifiche si applicano immediatamente a tutte le finestre.</translation>
     </message>
     <message>
         <location filename="../app/core/controllers/Preferences.py" line="142"/>
-        <location filename="../app/core/controllers/Preferences.py" line="377"/>
+        <location filename="../app/core/controllers/Preferences.py" line="378"/>
         <source>3DEP is inactive until both paths are set — the AWS Terrain Tiles baseline is used. Use Download tiles… or Browse.</source>
         <translation>3DEP è inattivo finché non vengono impostati entrambi i percorsi: viene usata la base AWS Terrain Tiles. Usa Scarica tile… o Sfoglia.</translation>
     </message>
@@ -10455,7 +10426,7 @@ Le modifiche si applicano immediatamente a tutte le finestre.</translation>
         <translation>{version}_{date}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/Preferences.py" line="383"/>
+        <location filename="../app/core/controllers/Preferences.py" line="384"/>
         <source>The registered 3DEP files no longer exist on disk — the AWS Terrain Tiles baseline is used. Re-download or fix the paths.</source>
         <translation>I file 3DEP registrati non esistono più sul disco: viene usata la base AWS Terrain Tiles. Scarica di nuovo o correggi i percorsi.</translation>
     </message>
@@ -10476,7 +10447,7 @@ Le modifiche si applicano immediatamente a tutte le finestre.</translation>
         <translation>Seleziona cartella tile 3DEP</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/Preferences.py" line="456"/>
+        <location filename="../app/core/controllers/Preferences.py" line="457"/>
         <source>The registered canopy files no longer exist on disk — canopy is disabled. Re-download or fix the paths.</source>
         <translation>I file della chioma registrati non esistono più sul disco: la chioma è disattivata. Scarica di nuovo o correggi i percorsi.</translation>
     </message>
@@ -10530,7 +10501,7 @@ Le modifiche si applicano immediatamente a tutte le finestre.</translation>
         <translation>Cancella Cache Terreno</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/Preferences.py" line="603"/>
+        <location filename="../app/core/controllers/Preferences.py" line="604"/>
         <source>Are you sure you want to clear all cached terrain elevation data?
 
 This will require re-downloading tiles when terrain elevation is used.</source>
@@ -10601,12 +10572,12 @@ Ciò richiederà il nuovo download dei tasselli quando verrà utilizzata l&apos;
     </message>
     <message>
         <location filename="../app/core/controllers/Preferences.py" line="226"/>
-        <location filename="../app/core/controllers/Preferences.py" line="450"/>
+        <location filename="../app/core/controllers/Preferences.py" line="451"/>
         <source>Canopy is disabled until both paths are set — use Download tiles… or Browse.</source>
         <translation>La chioma è disabilitata finché entrambi i percorsi non sono impostati — usa Scarica tile… o Sfoglia.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/Preferences.py" line="237"/>
+        <location filename="../app/core/controllers/Preferences.py" line="238"/>
         <source>Download DEM and/or canopy tiles for an area of interest and register them here. Note: the canopy download uses Meta/WRI data and registers it as the canopy source.</source>
         <translation>Scarica le tile DEM e/o chioma per un&apos;area di interesse e registrale qui. Nota: il download della chioma usa dati Meta/WRI e li registra come origine dati chioma.</translation>
     </message>
@@ -11616,7 +11587,7 @@ Valori più alti = unisce rilevamenti più distanti (può unire troppo).</transl
         <translation>Avviso Nome File</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/guidePages/ReviewOrNewPage.py" line="127"/>
+        <location filename="../app/core/controllers/images/guidePages/ReviewOrNewPage.py" line="128"/>
         <source>The selected file does not appear to be an ADIAT_Data.xml result or an ADIAT_Search project file.
 
 Do you want to continue with this file?</source>
@@ -11638,7 +11609,7 @@ Vuoi continuare con questo file?</translation>
         <translation>Tracciamento Revisione</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/ReviewerNameDialog.py" line="50"/>
+        <location filename="../app/core/views/images/viewer/dialogs/ReviewerNameDialog.py" line="51"/>
         <source>Enter your name to track your review activity.
 This helps coordinate reviews across multiple reviewers.</source>
         <translation>Inserisci il tuo nome per tracciare la tua attività di revisione.
@@ -11665,7 +11636,7 @@ Questo aiuta a coordinare le revisioni tra più revisori.</translation>
         <translation>Ricorda il mio nome</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/ReviewerNameDialog.py" line="73"/>
+        <location filename="../app/core/views/images/viewer/dialogs/ReviewerNameDialog.py" line="74"/>
         <source>Save your name for future review sessions.
 You can change it later in Preferences or by clicking the reviewer name in the viewer.</source>
         <translation>Salva il tuo nome per future sessioni di revisione.
@@ -14511,9 +14482,9 @@ Registrare invece le tile chioma Meta/WRI scaricate? (I file LANDFIRE restano su
     <message>
         <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="476"/>
         <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="583"/>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="855"/>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="889"/>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="934"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="860"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="895"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="940"/>
         <source>Export Error</source>
         <translation>Errore di Esportazione</translation>
     </message>
@@ -14561,7 +14532,7 @@ Registrare invece le tile chioma Meta/WRI scaricate? (I file LANDFIRE restano su
         <translation>Copertura POD completata</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="710"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="711"/>
         <source>POD coverage complete — {count} frame(s) used online elevation (outside local DEM)</source>
         <translation>Copertura POD completata: {count} fotogramma/i hanno usato l&apos;elevazione online (fuori dal DEM locale)</translation>
     </message>
@@ -14576,17 +14547,17 @@ Registrare invece le tile chioma Meta/WRI scaricate? (I file LANDFIRE restano su
         <translation>({count} senza dati di elevazione)</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="729"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="730"/>
         <source>(canopy data covered {pct}% of the searched area)</source>
         <translation>(i dati sulla chioma coprivano il {pct}% dell&apos;area cercata)</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="784"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="785"/>
         <source>Terrain and canopy aware probability-of-detection heatmap.</source>
         <translation>Mappa di calore della probabilità di rilevamento consapevole di terreno e chioma.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="788"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="789"/>
         <source>Mean POD over covered area: {pod}%</source>
         <translation>POD media sull&apos;area coperta: {pod}%</translation>
     </message>
@@ -14624,25 +14595,25 @@ I prodotti GeoTIFF POD sono stati comunque scritti accanto all&apos;esportazione
 {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="856"/>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="890"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="861"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="896"/>
         <source>Failed to export to CalTopo:
 {error}</source>
         <translation>Impossibile esportare su CalTopo:
 {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="906"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="912"/>
         <source>Map export completed successfully!</source>
         <translation>Esportazione mappa completata con successo!</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="921"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="927"/>
         <source>Map export cancelled</source>
         <translation>Esportazione mappa annullata</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="935"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="941"/>
         <source>Map export failed:
 {error}</source>
         <translation>Esportazione mappa non riuscita:
@@ -14836,7 +14807,7 @@ I prodotti GeoTIFF POD sono stati comunque scritti accanto all&apos;esportazione
         <translation>Chiudi questa finestra di upscale</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/UpscaleDialog.py" line="301"/>
+        <location filename="../app/core/views/images/viewer/dialogs/UpscaleDialog.py" line="302"/>
         <source>Resolution: {width} × {height} pixels | Original: {orig_w} × {orig_h} pixels | Upscale: {level}x | Use mouse wheel to zoom, right-click to pan</source>
         <translation>Risoluzione: {width} × {height} pixel | Originale: {orig_w} × {orig_h} pixel | Upscale: {level}x | Usa la rotella del mouse per lo zoom, tasto destro per spostare</translation>
     </message>
@@ -14865,7 +14836,7 @@ I prodotti GeoTIFF POD sono stati comunque scritti accanto all&apos;esportazione
         <translation>Upscale Massimo Raggiunto</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/UpscaleDialog.py" line="398"/>
+        <location filename="../app/core/views/images/viewer/dialogs/UpscaleDialog.py" line="399"/>
         <source>Maximum upscale level of {level}x has been reached.
 Further upscaling is not allowed to prevent memory issues.</source>
         <translation>È stato raggiunto il livello massimo di upscale di {level}x.
@@ -14877,7 +14848,7 @@ Ulteriori upscaling non sono consentiti per prevenire problemi di memoria.</tran
         <translation>Immagine Troppo Grande</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/UpscaleDialog.py" line="414"/>
+        <location filename="../app/core/views/images/viewer/dialogs/UpscaleDialog.py" line="415"/>
         <source>Upscaling would result in an image of {width}×{height} pixels.
 Maximum allowed dimension is {max_dim} pixels.
 
@@ -14893,7 +14864,7 @@ Prova a ingrandire una zona più piccola prima di effettuare l&apos;upscale.</tr
         <translation>Immagine Troppo Piccola</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/UpscaleDialog.py" line="427"/>
+        <location filename="../app/core/views/images/viewer/dialogs/UpscaleDialog.py" line="428"/>
         <source>Visible portion is too small ({width}×{height} pixels).
 Please zoom in to a larger area before upscaling.</source>
         <translation>La porzione visibile è troppo piccola ({width}×{height} pixel).
@@ -14908,7 +14879,7 @@ Per favore ingrandisci un&apos;area più grande prima di effettuare l&apos;upsca
 {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/UpscaleDialog.py" line="486"/>
+        <location filename="../app/core/views/images/viewer/dialogs/UpscaleDialog.py" line="487"/>
         <source>Upscaling image with AI enhancement...
 From {width}×{height} to {new_width}×{new_height} pixels
 This may take a few seconds.</source>
@@ -14940,7 +14911,7 @@ Potrebbe richiedere alcuni secondi.</translation>
         <translation>Metodo Non Disponibile</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/UpscaleDialog.py" line="604"/>
+        <location filename="../app/core/views/images/viewer/dialogs/UpscaleDialog.py" line="605"/>
         <source>Real-ESRGAN is not yet implemented.
 Falling back to Lanczos interpolation.</source>
         <translation>Real-ESRGAN non è ancora implementato.
@@ -15253,7 +15224,7 @@ Usa per confrontare l&apos;immagine originale con i risultati del rilevamento.</
         <translation>Mostra Overlay</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1249"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1270"/>
         <location filename="../resources/views/images/viewer/Viewer.ui" line="225"/>
         <source>Toggle Gallery Mode (G)
 Shows all AOIs from all images in a grid view</source>
@@ -15271,7 +15242,7 @@ Mostra tutte le AOI di tutte le immagini in una vista a griglia</translation>
         <translation>Mostra AOI</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1270"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1290"/>
         <location filename="../resources/views/images/viewer/Viewer.ui" line="328"/>
         <source>Open Histogram</source>
         <translation>Apri Istogramma</translation>
@@ -15319,7 +15290,7 @@ Mostra tutte le AOI di tutte le immagini in una vista a griglia</translation>
         <translation>ruler.png</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1989"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="2009"/>
         <location filename="../resources/views/images/viewer/Viewer.ui" line="427"/>
         <source>Person Size Reference (Ctrl+P)</source>
         <translation>Riferimento dimensioni persona (Ctrl+P)</translation>
@@ -15523,7 +15494,7 @@ L&apos;ordinamento aiuta a dare priorità alla revisione di oggetti più grandi 
         <translation>Apri</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="131"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="132"/>
         <source>Automated Drone Image Analysis Tool v{version} - Sponsored by TEXSAR</source>
         <translation>Strumento Automatico di Analisi Immagini Drone v{version} - Sponsorizzato da TEXSAR</translation>
     </message>
@@ -15548,7 +15519,7 @@ L&apos;ordinamento aiuta a dare priorità alla revisione di oggetti più grandi 
         <translation>Caricamento Risultati Non Riuscito</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="179"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="180"/>
         <source>Cannot load results without valid image and mask locations.
 
 The viewer will now close.</source>
@@ -15568,7 +15539,7 @@ Il visualizzatore verrà chiuso.</translation>
     </message>
     <message>
         <location filename="../app/core/controllers/images/viewer/Viewer.py" line="214"/>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1463"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1483"/>
         <source>Skip Hidden ({count}) </source>
         <translation>Salta Nascoste ({count}) </translation>
     </message>
@@ -15578,7 +15549,7 @@ Il visualizzatore verrà chiuso.</translation>
         <translation>Caricamento risultati rilevamenti da {n} immagini...</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="284"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="285"/>
         <source>Image metadata and information.
 Click on GPS Coordinates to copy, share, or open in mapping applications.</source>
         <translation>Metadati e informazioni dell&apos;immagine.
@@ -15595,22 +15566,22 @@ Clicca su Coordinate GPS per copiare, condividere o aprire in applicazioni di ma
         <translation>Preparazione miniature...</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="648"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="668"/>
         <source>No Dataset</source>
         <translation>Nessun Dataset</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="649"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="669"/>
         <source>No dataset is currently loaded.</source>
         <translation>Nessun dataset è attualmente caricato.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="656"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="676"/>
         <source>Generate Cache</source>
         <translation>Genera Cache</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="657"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="678"/>
         <source>This will regenerate thumbnail and color caches for all AOIs in this dataset.
 
 This may take a few minutes depending on the dataset size.
@@ -15623,39 +15594,39 @@ Questo potrebbe richiedere alcuni minuti a seconda della dimensione del dataset.
 Continuare?</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="671"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="691"/>
         <source>Initializing cache generation...</source>
         <translation>Inizializzazione generazione cache...</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="672"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="692"/>
         <source>Cancel</source>
         <translation>Annulla</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="677"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="697"/>
         <source>Generating Cache</source>
         <translation>Generazione Cache</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="714"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="734"/>
         <source>Error</source>
         <translation>Errore</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="715"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="735"/>
         <source>Failed to start cache generation:
 {error}</source>
         <translation>Impossibile avviare la generazione della cache:
 {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="733"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="753"/>
         <source>Cache Generated</source>
         <translation>Cache Generata</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="734"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="755"/>
         <source>Cache generation complete!
 
 Processed {images} images with {aois} AOIs.
@@ -15668,12 +15639,12 @@ Elaborate {images} immagini con {aois} AOI.
 Il visualizzatore ora caricherà miniature e colori molto più velocemente.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="766"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="786"/>
         <source>Cache Generation Error</source>
         <translation>Errore Generazione Cache</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="767"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="788"/>
         <source>An error occurred during cache generation:
 
 {error}</source>
@@ -15682,12 +15653,12 @@ Il visualizzatore ora caricherà miniature e colori molto più velocemente.</tra
 {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="962"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="982"/>
         <source>AOI Not Visible</source>
         <translation>AOI Non Visibile</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="963"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="984"/>
         <source>The AOI at the cursor position cannot be selected because it is currently hidden due to active filters.
 
 To select this AOI, please clear or adjust your filters.</source>
@@ -15696,12 +15667,12 @@ To select this AOI, please clear or adjust your filters.</source>
 Per selezionare questa AOI, cancella o regola i tuoi filtri.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1129"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1149"/>
         <source>Update Image Dimensions</source>
         <translation>Aggiorna Dimensioni Immagini</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1130"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1151"/>
         <source>This dataset is missing image dimensions needed for heatmap filtering ({count} images).
 
 Would you like to read dimensions from the image files and update the results file?</source>
@@ -15710,61 +15681,61 @@ Would you like to read dimensions from the image files and update the results fi
 Vuoi leggere le dimensioni dai file immagine e aggiornare il file dei risultati?</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1170"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1190"/>
         <source>Reading image dimensions ({done}/{total})...</source>
         <translation>Lettura dimensioni immagini ({done}/{total})...</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1261"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1281"/>
         <source>Show Pixels of Interest (H or Ctrl+I)</source>
         <translation>Mostra Pixel di Interesse (H o Ctrl+I)</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1276"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1296"/>
         <source>Toggle AOI Circles</source>
         <translation>Attiva/disattiva Cerchi AOI</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1283"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1303"/>
         <source>Toggle AOI Ruler</source>
         <translation>Mostra/nascondi righello AOI</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1649"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1669"/>
         <source>Missing Dependency</source>
         <translation>Dipendenza Mancante</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1650"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1671"/>
         <source>The qimage2ndarray module is required for the upscale feature.
 Please install it using: pip install qimage2ndarray</source>
         <translation>Il modulo qimage2ndarray è richiesto per la funzione di upscale.
 Installalo usando: pip install qimage2ndarray</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1660"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1680"/>
         <source>Upscale Error</source>
         <translation>Errore di Upscale</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1661"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1682"/>
         <source>An error occurred while opening the upscale dialog:
 {error}</source>
         <translation>Si è verificato un errore durante l&apos;apertura della finestra di upscale:
 {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1993"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="2013"/>
         <source>Person Size Reference is unavailable: no GSD for this image</source>
         <translation>Riferimento dimensioni persona non disponibile: nessun GSD per questa immagine</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="2090"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="2110"/>
         <source>Unknown Reviewer</source>
         <translation>Revisore Sconosciuto</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="2153"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="2173"/>
         <source>Loading gallery...</source>
         <translation>Caricamento galleria...</translation>
     </message>
@@ -15926,7 +15897,7 @@ Installalo usando: pip install qimage2ndarray</translation>
         <translation>Opzioni Esportazione ZIP</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/ZipExportDialog.py" line="25"/>
+        <location filename="../app/core/views/images/viewer/dialogs/ZipExportDialog.py" line="26"/>
         <source>Choose what to export:
 
 - Native: Original images, TIFF masks, and XML (paths made portable).
@@ -15952,7 +15923,7 @@ Installalo usando: pip install qimage2ndarray</translation>
         <translation>Includi immagini senza AOI contrassegnate</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/ZipExportDialog.py" line="52"/>
+        <location filename="../app/core/views/images/viewer/dialogs/ZipExportDialog.py" line="53"/>
         <source>When unchecked, only images with at least one flagged AOI will be exported.
 When checked, all images will be exported regardless of flagged AOI status.</source>
         <translation>Quando deselezionato, verranno esportate solo le immagini con almeno una AOI contrassegnata.

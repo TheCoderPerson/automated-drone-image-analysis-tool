@@ -7,6 +7,7 @@ service account credentials (Team ID, Credential ID, Credential Secret).
 
 import json
 import base64
+import binascii
 import hmac
 import time
 import uuid
@@ -14,6 +15,53 @@ import os
 import requests
 from typing import Dict, Optional, Tuple
 from urllib.parse import urlencode
+
+from core.services.LoggerService import LoggerService
+
+# CalTopo hands out the credential secret as base64. Some consoles/clients hand
+# it back in the URL-safe alphabet, so accept that too rather than failing on a
+# secret that is genuinely correct.
+_URLSAFE_TO_STANDARD = str.maketrans("-_", "+/")
+
+
+def decode_credential_secret(credential_secret: str) -> bytes:
+    """Decode a CalTopo credential secret into the raw HMAC key bytes.
+
+    Accepts the standard and URL-safe base64 alphabets, and restores padding
+    that was dropped when the value was copied. Decoding is strict about the
+    alphabet on purpose: ``base64.b64decode`` silently *discards* characters
+    outside the alphabet, which turns a wrong-field paste into a plausible but
+    useless key instead of a clear error.
+
+    Args:
+        credential_secret (str): Secret exactly as issued by CalTopo.
+
+    Returns:
+        bytes: The decoded HMAC key.
+
+    Raises:
+        ValueError: If the value cannot be a CalTopo credential secret. The
+            message is written for the user, not the developer, because it is
+            surfaced in the credential dialog.
+    """
+    if not credential_secret or not credential_secret.strip():
+        raise ValueError("The CalTopo credential secret is empty.")
+
+    text = credential_secret.strip()
+    padded = text + "=" * (-len(text) % 4)
+
+    for candidate in (padded, padded.translate(_URLSAFE_TO_STANDARD)):
+        try:
+            return base64.b64decode(candidate, validate=True)
+        except (binascii.Error, ValueError):
+            continue
+
+    raise ValueError(
+        f"The CalTopo credential secret is not valid base64 ({len(text)} characters). "
+        "Copy the Credential Secret exactly as shown on the CalTopo Team Admin "
+        "page under Service Accounts - it is a long base64 string, not the "
+        "Credential ID or the Team ID."
+    )
 
 
 class CalTopoAPIService:
@@ -27,13 +75,17 @@ class CalTopoAPIService:
     CALTOPO_BASE_URL = "https://caltopo.com"
     DEFAULT_TIMEOUT_MS = 2 * 60 * 1000  # 2 minutes
 
-    def __init__(self):
+    def __init__(self, logger=None):
         """
         Initialize the CalTopo API service.
 
         Sets up the service for making authenticated API requests to CalTopo.
+
+        Args:
+            logger: Optional LoggerService instance. Failures are logged rather
+                than swallowed so "check the console for details" is truthful.
         """
-        pass
+        self.logger = logger or LoggerService()
 
     def _sign_request(self, method: str, url: str, expires: int, payload_string: str, credential_secret: str) -> str:
         """Generate an HMAC signature for API request authentication.
@@ -47,9 +99,12 @@ class CalTopoAPIService:
 
         Returns:
             str: Base64-encoded signature
+
+        Raises:
+            ValueError: If credential_secret is not decodable base64.
         """
         message = f"{method} {url}\n{expires}\n{payload_string}"
-        secret = base64.b64decode(credential_secret)
+        secret = decode_credential_secret(credential_secret)
         signature = hmac.new(secret, message.encode(), "sha256").digest()
         return base64.b64encode(signature).decode()
 
@@ -71,7 +126,14 @@ class CalTopoAPIService:
         try:
             payload_string = json.dumps(payload) if payload else ""
             expires = int(time.time() * 1000) + self.DEFAULT_TIMEOUT_MS
-            signature = self._sign_request(method, endpoint, expires, payload_string, credential_secret)
+            try:
+                signature = self._sign_request(method, endpoint, expires, payload_string, credential_secret)
+            except ValueError as e:
+                # An undecodable secret fails here instantly, with no network
+                # call at all. Say so, or the caller reports a "connection"
+                # failure that never involved a connection.
+                self.logger.error(f"CalTopo API {method} {endpoint} not sent - {e}")
+                return False, None
 
             parameters = {
                 "id": credential_id,
@@ -112,10 +174,40 @@ class CalTopoAPIService:
                 except json.JSONDecodeError:
                     return True, None
             else:
+                self.logger.error(
+                    f"CalTopo API {method} {endpoint} failed: HTTP {response.status_code} "
+                    f"- {self._response_snippet(response)}"
+                )
                 return False, None
 
-        except Exception:
+        except requests.RequestException as e:
+            self.logger.error(f"CalTopo API {method} {endpoint} failed: {type(e).__name__}: {e}")
             return False, None
+        except Exception as e:
+            self.logger.error(f"CalTopo API {method} {endpoint} failed: {type(e).__name__}: {e}")
+            return False, None
+
+    @staticmethod
+    def _response_snippet(response, limit: int = 500) -> str:
+        """Return a short, safe excerpt of a response body for logging.
+
+        The request URL is deliberately never logged: it carries the credential
+        id and signature as query parameters.
+
+        Args:
+            response: The requests Response object.
+            limit (int): Maximum number of characters to include.
+
+        Returns:
+            str: Body excerpt, or a placeholder when the body is unreadable.
+        """
+        try:
+            body = str(response.text or "").strip()
+        except Exception:
+            return "<response body unavailable>"
+        if not body:
+            return "<empty response body>"
+        return body[:limit] + ("..." if len(body) > limit else "")
 
     def get_account_data(self, team_id: str, credential_id: str, credential_secret: str,
                          timestamp: int = 0) -> Tuple[bool, Optional[Dict]]:
@@ -133,6 +225,12 @@ class CalTopoAPIService:
         endpoint = f"/api/v1/acct/{team_id}/since/{timestamp}"
         success, result = self._api_request("GET", endpoint, credential_id, credential_secret)
         if success and result:
+            if not isinstance(result, dict):
+                self.logger.error(
+                    f"CalTopo API returned an unexpected account payload of type "
+                    f"{type(result).__name__} for team {team_id}; expected an object."
+                )
+                return False, None
             result['team_id'] = team_id  # Store team_id for later use
         return success, result
 
@@ -308,5 +406,6 @@ class CalTopoAPIService:
                 return True, result["id"]
             return False, None
 
-        except Exception:
+        except Exception as e:
+            self.logger.error(f"CalTopo photo upload failed for {photo_path}: {type(e).__name__}: {e}")
             return False, None
