@@ -3,6 +3,7 @@ import numpy as np
 import tempfile
 import os
 from algorithms.images.MRMap.services.MRMapService import MRMapService, Histogram, _percent_to_u8
+from algorithms import DetectionExpansion
 from algorithms.AlgorithmService import AnalysisResult
 
 
@@ -587,3 +588,179 @@ def test_bin_count_for_image_matches_bin_count():
 
     assert fast.shape == (60, 90)
     assert np.array_equal(fast, general)
+
+# ---------------------------------------------------------------------------
+# Windowed expansion equivalence: _apply_expansion must reproduce the old
+# full-frame implementation exactly, including window-regrowth and cap cases.
+# ---------------------------------------------------------------------------
+
+
+def _reference_apply_expansion(service, areas_of_interest, img_shape, expanded_bin_mask, hsv_img):
+    """The pre-windowing full-frame implementation, kept as the oracle."""
+    h, w = int(img_shape[0]), int(img_shape[1])
+    combined_mask = np.zeros((h, w), dtype=np.uint8)
+
+    for aoi in areas_of_interest:
+        original_pixels = aoi.get('detected_pixels') or []
+        if not original_pixels:
+            continue
+        coords = np.asarray(original_pixels, dtype=np.int32)
+        seed_mask = np.zeros((h, w), dtype=bool)
+        seed_mask[coords[:, 1], coords[:, 0]] = True
+
+        contour = aoi.get('contour') or []
+        if contour:
+            xs = [int(p[0]) for p in contour]
+            ys = [int(p[1]) for p in contour]
+            cluster_rect = [min(xs), min(ys), max(xs), max(ys)]
+        else:
+            cluster_rect = [int(coords[:, 0].min()), int(coords[:, 1].min()),
+                            int(coords[:, 0].max()), int(coords[:, 1].max())]
+
+        safety_cap = DetectionExpansion.compute_safety_cap(cluster_rect)
+
+        selected = seed_mask
+        if expanded_bin_mask is not None:
+            threshold_selected = DetectionExpansion.expand_threshold_mrmap(
+                expanded_bin_mask, cluster_rect, (h, w))
+            selected = seed_mask | threshold_selected
+
+        if hsv_img is not None and service.hue_expansion > 0:
+            seed_hues = hsv_img[coords[:, 1], coords[:, 0], 0]
+            mean_hue = DetectionExpansion.circular_mean_hue(seed_hues)
+            if mean_hue is not None:
+                hue_ok = DetectionExpansion.hue_distance_mask(
+                    hsv_img, mean_hue, service.hue_expansion,
+                    sat_floor=service.hue_expansion_sat_floor,
+                    val_floor=service.hue_expansion_val_floor)
+                flooded, cap_hit = DetectionExpansion.expand_hue_flood(selected, hue_ok, safety_cap)
+                if not cap_hit:
+                    selected = flooded
+
+        ys2, xs2 = np.where(selected)
+        if len(xs2) == 0:
+            continue
+        aoi['detected_pixels'] = np.stack([xs2, ys2], axis=1).tolist()
+        aoi['area'] = int(round(DetectionExpansion.convex_hull_area_from_mask(selected)))
+        combined_mask[selected] = 255
+
+    return areas_of_interest, combined_mask
+
+
+def _expansion_service(**overrides):
+    options = {'threshold': 4, 'segments': 1, 'window': 5, 'colorspace': 'HSV',
+               'threshold_expansion': 400, 'hue_expansion': 5,
+               'hue_expansion_sat_floor': 35, 'hue_expansion_val_floor': 20}
+    options.update(overrides)
+    return MRMapService((255, 255, 0), 1, 0, 15, True, options)
+
+
+def _aoi_from_pixels(pixels):
+    coords = np.asarray(pixels, dtype=np.int32)
+    xmin, ymin = int(coords[:, 0].min()), int(coords[:, 1].min())
+    xmax, ymax = int(coords[:, 0].max()), int(coords[:, 1].max())
+    return {
+        'center': (int(coords[:, 0].mean()), int(coords[:, 1].mean())),
+        'radius': 10,
+        'area': len(pixels),
+        'contour': [[xmin, ymin], [xmax, ymin], [xmax, ymax], [xmin, ymax]],
+        'detected_pixels': [list(p) for p in pixels],
+    }
+
+
+def _assert_expansion_equivalent(service, aois, shape, expanded_bin_mask, hsv_img):
+    import copy
+    actual_aois = copy.deepcopy(aois)
+    expected_aois = copy.deepcopy(aois)
+
+    actual, actual_mask = service._apply_expansion(actual_aois, shape, expanded_bin_mask, hsv_img)
+    expected, expected_mask = _reference_apply_expansion(
+        service, expected_aois, shape, expanded_bin_mask, hsv_img)
+
+    assert np.array_equal(actual_mask, expected_mask)
+    for got, want in zip(actual, expected):
+        assert sorted(map(tuple, got['detected_pixels'])) == sorted(map(tuple, want['detected_pixels']))
+        assert got['area'] == want['area']
+
+
+def test_windowed_expansion_matches_full_frame_locally():
+    """A flood contained near the AOI must match the old full-frame result."""
+    rng = np.random.default_rng(21)
+    hsv = np.zeros((500, 700, 3), dtype=np.uint8)
+    hsv[:, :, 0] = rng.integers(90, 140, (500, 700))  # background hues far from red
+    hsv[:, :, 1] = 200
+    hsv[:, :, 2] = 200
+    # A red-ish patch around the seed for the hue flood to grab
+    hsv[240:260, 340:365, 0] = 2
+    seeds = [(350, 250), (351, 250), (350, 251)]
+    aois = [_aoi_from_pixels(seeds)]
+
+    bin_mask = np.zeros((500, 700), dtype=bool)
+    bin_mask[245:255, 345:360] = True  # threshold expansion inside the rect area
+
+    service = _expansion_service()
+    _assert_expansion_equivalent(service, aois, hsv.shape, bin_mask, hsv)
+
+
+def test_windowed_expansion_follows_long_ribbon_across_windows():
+    """A hue-matching ribbon far longer than the initial window must be fully
+    followed - the window regrows until the flood is contained."""
+    hsv = np.zeros((400, 3000, 3), dtype=np.uint8)
+    hsv[:, :, 0] = 120
+    hsv[:, :, 1] = 200
+    hsv[:, :, 2] = 200
+    # Ribbon of seed-matching hue from x=100 to x=2900 at y=200
+    hsv[199:202, 100:2900, 0] = 3
+    seeds = [(150, 200), (151, 200)]
+    aois = [_aoi_from_pixels(seeds)]
+
+    service = _expansion_service()
+    _assert_expansion_equivalent(service, aois, hsv.shape, None, hsv)
+
+    # And the ribbon really was followed beyond the first window
+    xs = [p[0] for p in aois and service._apply_expansion(
+        [_aoi_from_pixels(seeds)], hsv.shape, None, hsv)[0][0]['detected_pixels']]
+    assert max(xs) >= 2890
+
+
+def test_windowed_expansion_cap_hit_matches_full_frame():
+    """A hue region larger than the safety cap must trigger the cap in both
+    implementations and keep the pre-hue selection."""
+    hsv = np.zeros((600, 900, 3), dtype=np.uint8)
+    hsv[:, :, 0] = 3       # the WHOLE image matches the seed hue
+    hsv[:, :, 1] = 200
+    hsv[:, :, 2] = 200
+    seeds = [(450, 300), (451, 300)]
+    aois = [_aoi_from_pixels(seeds)]
+
+    service = _expansion_service()
+    _assert_expansion_equivalent(service, aois, hsv.shape, None, hsv)
+
+
+def test_windowed_expansion_at_image_corner():
+    """Seeds at the frame corner: clamped windows must not distort results."""
+    hsv = np.zeros((300, 300, 3), dtype=np.uint8)
+    hsv[:, :, 0] = 120
+    hsv[:, :, 1] = 200
+    hsv[:, :, 2] = 200
+    hsv[0:8, 0:8, 0] = 3
+    seeds = [(1, 1), (2, 1)]
+    aois = [_aoi_from_pixels(seeds)]
+
+    service = _expansion_service()
+    _assert_expansion_equivalent(service, aois, hsv.shape, None, hsv)
+
+
+def test_windowed_threshold_expansion_connectivity_across_window_border():
+    """Phase-B threshold connectivity that extends past the initial window
+    must be followed via window regrowth."""
+    shape = (400, 2600)
+    bin_mask = np.zeros(shape, dtype=bool)
+    # Rect area with expanded-threshold pixels, connected to a long tail
+    bin_mask[195:206, 95:110] = True
+    bin_mask[199:202, 110:2500] = True
+    seeds = [(100, 200), (101, 200)]
+    aois = [_aoi_from_pixels(seeds)]
+
+    service = _expansion_service(hue_expansion=0)
+    _assert_expansion_equivalent(service, aois, shape, bin_mask, None)
