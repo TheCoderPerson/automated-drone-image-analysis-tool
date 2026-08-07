@@ -33,6 +33,7 @@ class SelectionDialog(QDialog, Ui_MediaSelector):
     wizardRequested = Signal()  # Signal emitted when image setup wizard should be shown
     streamWizardRequested = Signal()  # Signal emitted when streaming setup wizard should be shown
     flightViewerRequested = Signal()  # Signal emitted when Flight Viewer should be opened
+    reviewResultsRequested = Signal()  # Signal emitted when Review Results should be opened
 
     def __init__(self, theme: str):
         """Initialize the selection dialog.
@@ -62,6 +63,8 @@ class SelectionDialog(QDialog, Ui_MediaSelector):
 
         self.imageButton.clicked.connect(self._on_image_clicked)
         self.streamButton.clicked.connect(self._on_stream_clicked)
+        if hasattr(self, "resultsButton"):
+            self.resultsButton.clicked.connect(self._on_results_clicked)
         if hasattr(self, "flightButton"):
             if FeatureFlags.FLIGHT_VIEWER_ENABLED:
                 self.flightButton.clicked.connect(self._on_flight_clicked)
@@ -97,7 +100,10 @@ class SelectionDialog(QDialog, Ui_MediaSelector):
 
         self.flightWidget.setVisible(False)
 
-        for tile in (self.imageWidget, self.streamWidget):
+        remaining_tiles = [self.imageWidget, self.streamWidget]
+        if hasattr(self, "resultsWidget"):
+            remaining_tiles.insert(1, self.resultsWidget)
+        for tile in remaining_tiles:
             policy = tile.sizePolicy()
             policy.setHorizontalPolicy(QSizePolicy.Maximum)
             tile.setSizePolicy(policy)
@@ -152,6 +158,19 @@ class SelectionDialog(QDialog, Ui_MediaSelector):
             self.accept()
             self.streamWizardRequested.emit()
 
+    def _on_results_clicked(self) -> None:
+        """Handle click on the Review Results button.
+
+        Sets selection to "results", emits both selectionMade and the
+        dedicated reviewResultsRequested signal, and closes the dialog. The
+        review flow (results-folder scan / recents) is driven from
+        __main__.py via the signal handler.
+        """
+        self.selection = "results"
+        self.selectionMade.emit(self.selection)
+        self.accept()
+        self.reviewResultsRequested.emit()
+
     def _on_flight_clicked(self) -> None:
         """Handle click on the Flight Viewer button.
 
@@ -174,6 +193,9 @@ class SelectionDialog(QDialog, Ui_MediaSelector):
             self.imageButton.setIcon(IconHelper.create_icon("fa6s.image", theme))
             # Use a broadly available Material icon for streaming/video
             self.streamButton.setIcon(IconHelper.create_icon("fa6s.video", theme))
+            if hasattr(self, "resultsButton"):
+                # Folder-with-magnifier reads as "open results for review"
+                self.resultsButton.setIcon(IconHelper.create_icon("fa6s.folder-open", theme))
             if hasattr(self, "flightButton"):
                 # Drone icon for the WebRTC flight viewer
                 self.flightButton.setIcon(IconHelper.create_icon("mdi6.quadcopter", theme))

@@ -569,3 +569,94 @@ def test_load_single_result_not_routed_to_coordinator(main_window, tmp_path):
     open_coord.assert_not_called()
     assert main_window._view_results_mode == 'results'
     assert main_window.viewResultsButton.isEnabled()
+
+# --------------------------------------------------------------------------- #
+#  Recent results MRU: recorded on open, surfaced in the File menu             #
+# --------------------------------------------------------------------------- #
+
+
+class _FakeSettingsStore:
+    """In-memory settings so tests never write to the real registry."""
+
+    def __init__(self):
+        self.store = {}
+
+    def get_setting(self, name, default_value=None):
+        return self.store.get(name, default_value)
+
+    def set_setting(self, name, value):
+        self.store[name] = value
+
+
+def testRecentResultsRoundtripDedupeAndCap(main_window, tmp_path):
+    """Recording keeps newest first, dedupes by path, and caps the list."""
+    main_window.settings_service = _FakeSettingsStore()
+
+    paths = []
+    for i in range(12):
+        p = tmp_path / f"batch{i}" / "ADIAT_Data.xml"
+        p.parent.mkdir(parents=True)
+        p.write_text("<data/>")
+        paths.append(str(p))
+        main_window._record_recent_result(str(p))
+    # Re-opening an old one moves it back to the top instead of duplicating
+    main_window._record_recent_result(paths[5])
+
+    recents = main_window._get_recent_results()
+    assert recents[0] == os.path.abspath(paths[5])
+    assert len(recents) <= main_window.RECENT_RESULTS_LIMIT
+    assert len(set(os.path.normcase(p) for p in recents)) == len(recents)
+
+
+def testRecentResultsMenuPlaceholderWhenEmpty(main_window):
+    main_window.settings_service = _FakeSettingsStore()
+
+    main_window._populate_recent_results_menu()
+
+    actions = main_window.menuRecentResults.actions()
+    assert len(actions) == 1
+    assert not actions[0].isEnabled()
+
+
+def testRecentResultsMenuDisablesMissingFiles(main_window, tmp_path):
+    """Entries whose files vanished stay listed but cannot be clicked."""
+    import json as _json
+    main_window.settings_service = _FakeSettingsStore()
+    existing = tmp_path / "run1" / "ADIAT_Data.xml"
+    existing.parent.mkdir(parents=True)
+    existing.write_text("<data/>")
+    gone = str(tmp_path / "gone" / "ADIAT_Data.xml")
+    main_window.settings_service.store[main_window.RECENT_RESULTS_SETTING] = _json.dumps(
+        [str(existing), gone]
+    )
+
+    main_window._populate_recent_results_menu()
+
+    actions = main_window.menuRecentResults.actions()
+    assert len(actions) == 2
+    assert actions[0].isEnabled()
+    assert not actions[1].isEnabled()
+
+
+def testProcessXmlFileRecordsRecent(main_window, tmp_path):
+    """Opening a result XML lands it at the top of the recents list."""
+    main_window.settings_service = _FakeSettingsStore()
+    xml_path = tmp_path / "ADIAT_Data.xml"
+    xml_path.write_text("<data/>")
+
+    with patch.object(main_window, '_is_search_project_xml', return_value=False), \
+            patch.object(main_window, '_get_settings_from_xml', return_value=3), \
+            patch.object(main_window, '_set_view_results_mode'), \
+            patch.object(main_window, '_set_ViewResultsButton'):
+        main_window._process_xml_file(str(xml_path))
+
+    recents = main_window._get_recent_results()
+    assert recents
+    assert os.path.normcase(recents[0]) == os.path.normcase(os.path.abspath(str(xml_path)))
+
+
+def testOpenResultsForReviewRoutesToFolderScan(main_window):
+    """The Review Results tile entry point drives the folder scanner."""
+    with patch.object(main_window, '_open_load_results_folder') as mock_open:
+        main_window.open_results_for_review()
+    mock_open.assert_called_once()

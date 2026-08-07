@@ -49,10 +49,10 @@ def test_flight_viewer_button_hidden_when_feature_disabled(qtbot):
     # before the dialog is shown (isVisible() would be False either way).
     assert dialog.flightWidget.isHidden()
     assert dialog.streamWidget.isVisible() or not dialog.streamWidget.isHidden()
-    # Dialog shrinks below the three-button design width (600). The exact
-    # width is font/DPI-dependent (the heading label can set the floor), so
-    # assert the relationship rather than a pixel value.
-    assert dialog.width() < 600
+    # Dialog shrinks below the full design width (770). The exact width is
+    # font/DPI-dependent (the heading label can set the floor), so assert the
+    # relationship rather than a pixel value.
+    assert dialog.width() < 770
     # Height is unchanged from the .ui design (two rows are identical).
     assert dialog.height() == 290
 
@@ -66,8 +66,9 @@ def test_flight_viewer_button_shown_when_feature_enabled(qtbot):
         qtbot.addWidget(dialog)
 
     assert not dialog.flightWidget.isHidden()
-    # Three-button layout keeps its designed size.
-    assert dialog.width() == 600
+    # Full four-tile layout keeps its designed size (Image / Review Results /
+    # Stream / Flight Viewer).
+    assert dialog.width() == 770
 
 
 def test_flight_viewer_disabled_by_default():
@@ -78,3 +79,25 @@ def test_flight_viewer_disabled_by_default():
     has to be a deliberate edit here and in helpers/FeatureFlags.py.
     """
     assert selection_module.FeatureFlags.FLIGHT_VIEWER_ENABLED is False
+
+
+def test_review_results_tile_emits_selection(qtbot):
+    """The Review Results tile records the choice and signals __main__.
+
+    The dedicated signal fires after accept() so the handler constructs the
+    MainWindow with the dialog already dismissed, mirroring the flight tile.
+    """
+    with patch.object(selection_module, "UpdateController"),             patch.object(selection_module, "SettingsService"):
+        dialog = SelectionDialog("Dark")
+        qtbot.addWidget(dialog)
+
+    selections = []
+    requested = []
+    dialog.selectionMade.connect(selections.append)
+    dialog.reviewResultsRequested.connect(lambda: requested.append(True))
+
+    dialog.resultsButton.click()
+
+    assert dialog.selection == "results"
+    assert selections == ["results"]
+    assert requested == [True]

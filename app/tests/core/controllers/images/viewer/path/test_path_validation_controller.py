@@ -1,18 +1,42 @@
 """Unit tests for PathValidationController."""
 
+import json
 import os
 import pytest
 from unittest.mock import MagicMock, patch
 from PySide6.QtWidgets import QMessageBox
 
+import importlib
+
 from core.controllers.images.viewer.path.PathValidationController import (
     PathValidationController,
 )
 
+# The path package re-exports the class under the same name, so a plain
+# "import ... as path_module" would bind the class; resolve the real module.
+path_module = importlib.import_module(
+    "core.controllers.images.viewer.path.PathValidationController"
+)
+
+
+class _FakeSettings:
+    """In-memory SettingsService stand-in so tests never touch real QSettings."""
+
+    def __init__(self):
+        self.store = {}
+
+    def get_setting(self, name, default_value=None):
+        return self.store.get(name, default_value)
+
+    def set_setting(self, name, value):
+        self.store[name] = value
+
 
 @pytest.fixture
 def controller():
-    return PathValidationController(MagicMock())
+    with patch.object(path_module, 'SettingsService', side_effect=_FakeSettings):
+        instance = PathValidationController(MagicMock())
+    return instance
 
 
 def test_validate_no_missing_paths(controller, tmp_path):
@@ -321,3 +345,126 @@ def test_mask_recovery_repairs_mask_path_only(controller, tmp_path):
     assert image["path"] == str(img), "image path must be untouched"
     assert controller.parent.settings["input_dir"] == r"C:\old", \
         "mask recovery must not repoint the source image folder"
+
+# --------------------------------------------------------------------------- #
+#  Remembered recovery folders: batch 2..N must not re-prompt on this machine #
+# --------------------------------------------------------------------------- #
+
+
+def _remember(controller, *folders):
+    controller.settings_service.store[
+        PathValidationController.RECOVERY_FOLDERS_SETTING
+    ] = json.dumps(list(folders))
+
+
+def test_remembered_folder_auto_resolves_without_prompt(controller, tmp_path):
+    """A folder that fixed a previous batch fixes this one silently."""
+    flight = tmp_path / "copied" / "flight2"
+    flight.mkdir(parents=True)
+    (flight / "DJI_0042.JPG").write_text("fake")
+    _remember(controller, str(tmp_path / "copied"))
+
+    images = [{"path": r"C:\old\flight2\DJI_0042.JPG", "mask_path": ""}]
+
+    with patch.object(controller, "_prompt_for_source_folder") as mock_prompt:
+        result = controller.validate_and_fix_paths(images)
+
+    assert result is True
+    mock_prompt.assert_not_called()
+    assert images[0]["path"] == str(flight / "DJI_0042.JPG")
+
+
+def test_partial_auto_resolve_prompts_only_for_remainder(controller, tmp_path):
+    """Auto-relink applies what it finds; only the rest goes to the prompt."""
+    folder = tmp_path / "root"
+    folder.mkdir()
+    (folder / "found.jpg").write_text("fake")
+    _remember(controller, str(folder))
+
+    images = [
+        {"path": r"C:\old\found.jpg", "mask_path": ""},
+        {"path": r"C:\old\gone.jpg", "mask_path": ""},
+    ]
+
+    with patch.object(controller, "_prompt_for_source_folder", return_value=True) as mock_prompt:
+        result = controller.validate_and_fix_paths(images)
+
+    assert result is True
+    assert images[0]["path"] == str(folder / "found.jpg")
+    remaining = mock_prompt.call_args.args[0]
+    assert [item["filename"] for item in remaining] == ["gone.jpg"]
+
+
+def test_unplugged_remembered_folder_is_skipped_but_kept(controller, tmp_path):
+    """A disconnected drive is skipped for now but not forgotten."""
+    gone = r"E:\unplugged\flight"
+    _remember(controller, gone)
+
+    images = [{"path": r"C:\old\a.jpg", "mask_path": ""}]
+    with patch.object(controller, "_prompt_for_source_folder", return_value=True):
+        controller.validate_and_fix_paths(images)
+
+    stored = json.loads(
+        controller.settings_service.store[PathValidationController.RECOVERY_FOLDERS_SETTING]
+    )
+    assert gone in stored
+
+
+def test_remember_folder_stores_folder_and_parent(controller, tmp_path):
+    picked = tmp_path / "copied" / "flight1"
+    picked.mkdir(parents=True)
+
+    controller._remember_folder(str(picked))
+
+    stored = json.loads(
+        controller.settings_service.store[PathValidationController.RECOVERY_FOLDERS_SETTING]
+    )
+    # Picked folder first (most specific), then its parent for sibling batches
+    assert stored[0] == str(picked)
+    assert stored[1] == str(tmp_path / "copied")
+
+
+def test_remember_folder_dedupes_and_caps(controller, tmp_path):
+    for i in range(12):
+        folder = tmp_path / f"batch{i}" / "images"
+        folder.mkdir(parents=True)
+        controller._remember_folder(str(folder))
+    controller._remember_folder(str(tmp_path / "batch0" / "images"))  # re-pick
+
+    stored = json.loads(
+        controller.settings_service.store[PathValidationController.RECOVERY_FOLDERS_SETTING]
+    )
+    assert len(stored) <= PathValidationController.RECOVERY_FOLDERS_LIMIT
+    assert stored[0] == str(tmp_path / "batch0" / "images")
+    assert len(set(os.path.normcase(f) for f in stored)) == len(stored)
+
+
+def test_filesystem_roots_are_never_remembered(controller):
+    controller._remember_folder(os.path.abspath(os.sep))
+
+    stored = json.loads(
+        controller.settings_service.store.get(
+            PathValidationController.RECOVERY_FOLDERS_SETTING, "[]"
+        )
+    )
+    assert stored == []
+
+
+def test_successful_manual_recovery_remembers_the_folder(controller, tmp_path):
+    """The interactive flow records the picked folder for future batches."""
+    folder = tmp_path / "relinked"
+    folder.mkdir()
+    (folder / "img.jpg").write_text("fake")
+
+    image = {"path": r"C:\old\img.jpg", "mask_path": ""}
+
+    with patch(f"{_MODULE}.QMessageBox") as MockMsgBox, \
+            patch(f"{_MODULE}.QFileDialog") as MockFileDialog:
+        _mock_msgbox(MockMsgBox)
+        MockFileDialog.getExistingDirectory.return_value = str(folder)
+        assert controller.validate_and_fix_paths([image]) is True
+
+    stored = json.loads(
+        controller.settings_service.store[PathValidationController.RECOVERY_FOLDERS_SETTING]
+    )
+    assert str(folder) in stored

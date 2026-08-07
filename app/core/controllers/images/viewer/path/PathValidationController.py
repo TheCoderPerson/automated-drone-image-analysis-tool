@@ -6,9 +6,11 @@ and prompts users to locate missing files when paths are invalid.
 """
 
 import os
+import json
 from pathlib import Path
 from PySide6.QtWidgets import QMessageBox, QFileDialog
 from core.services.LoggerService import LoggerService
+from core.services.SettingsService import SettingsService
 from helpers.TranslationMixin import TranslationMixin
 from helpers.PathHelper import (
     cross_platform_basename,
@@ -24,6 +26,12 @@ class PathValidationController(TranslationMixin):
     Handles checking for missing files and prompting users to locate them.
     """
 
+    # Folders that fixed previous relinks, machine-wide, newest first. The
+    # parent of a picked folder is remembered too: sibling batch folders under
+    # one copied root then resolve without prompting at all.
+    RECOVERY_FOLDERS_SETTING = 'ImageRecoveryFolders'
+    RECOVERY_FOLDERS_LIMIT = 8
+
     def __init__(self, parent_viewer):
         """
         Initialize the path validation controller.
@@ -33,6 +41,7 @@ class PathValidationController(TranslationMixin):
         """
         self.parent = parent_viewer
         self.logger = LoggerService()
+        self.settings_service = SettingsService()
         # Set by _ask_retry_or_continue: whether the user chose to load with a
         # partial recovery rather than cancel.
         self._continued = False
@@ -72,6 +81,13 @@ class PathValidationController(TranslationMixin):
                     'image': image,
                     'filename': cross_platform_basename(mask_path)
                 })
+
+        # Folders that fixed earlier batches usually fix this one too; try
+        # them silently so batch 2..N never re-prompts on the same machine
+        if missing_images:
+            missing_images = self._resolve_from_remembered_folders(missing_images, 'path')
+        if missing_masks:
+            missing_masks = self._resolve_from_remembered_folders(missing_masks, 'mask_path')
 
         # Prompt for source images folder if any are missing
         if missing_images:
@@ -153,6 +169,96 @@ class PathValidationController(TranslationMixin):
             },
         )
 
+    @staticmethod
+    def _is_filesystem_root(folder):
+        """True for drive/filesystem roots, which are too big to index."""
+        normalized = os.path.abspath(folder)
+        return os.path.dirname(normalized) == normalized
+
+    def _load_remembered_raw(self):
+        """Read the stored recovery-folder list without existence filtering.
+
+        Unplugged drives must stay remembered, not be forgotten forever the
+        first time a validate runs while they are disconnected.
+        """
+        raw = self.settings_service.get_setting(self.RECOVERY_FOLDERS_SETTING, '[]')
+        try:
+            folders = json.loads(raw) if isinstance(raw, str) else list(raw or [])
+        except (TypeError, ValueError):
+            folders = []
+        return [f for f in folders if isinstance(f, str) and f]
+
+    def _remembered_folders(self):
+        """Recovery folders worth trying right now (existing, non-root)."""
+        return [
+            f for f in self._load_remembered_raw()
+            if os.path.isdir(f) and not self._is_filesystem_root(f)
+        ]
+
+    def _remember_folder(self, folder):
+        """Store a folder that just fixed a relink, plus its parent."""
+        try:
+            candidates = []
+            normalized = os.path.abspath(folder)
+            parent = os.path.dirname(normalized)
+            # Insert the parent first so the picked folder ends up on top
+            if parent != normalized and not self._is_filesystem_root(parent):
+                candidates.append(parent)
+            if not self._is_filesystem_root(normalized):
+                candidates.append(normalized)
+
+            stored = self._load_remembered_raw()
+            for cand in candidates:
+                key = os.path.normcase(cand)
+                stored = [f for f in stored if os.path.normcase(f) != key]
+                stored.insert(0, cand)
+            del stored[self.RECOVERY_FOLDERS_LIMIT:]
+            self.settings_service.set_setting(self.RECOVERY_FOLDERS_SETTING, json.dumps(stored))
+        except Exception as e:
+            self.logger.warning(f"Could not remember recovery folder {folder}: {e}")
+
+    def _resolve_from_remembered_folders(self, missing, path_key):
+        """Try previously successful folders before prompting the user.
+
+        Args:
+            missing (list): Dicts with 'image' and 'filename' keys.
+            path_key (str): Key on the image dict to repair ('path'/'mask_path').
+
+        Returns:
+            list: The subset of ``missing`` that is still unresolved.
+        """
+        remaining = list(missing)
+        for folder in self._remembered_folders():
+            if not remaining:
+                break
+            try:
+                index = index_folder_by_filename(folder)
+            except Exception as e:
+                self.logger.warning(f"Could not index remembered folder {folder}: {e}")
+                continue
+
+            resolved = {}
+            next_remaining = []
+            for item in remaining:
+                located = find_in_index(item['filename'], index)
+                if located:
+                    resolved[id(item)] = located
+                else:
+                    next_remaining.append(item)
+
+            if resolved:
+                # Point input_dir at the actual folder holding the files when
+                # they share one, not at the (possibly much broader) index root
+                parents = {os.path.dirname(p) for p in resolved.values()}
+                input_dir = parents.pop() if len(parents) == 1 else folder
+                self._apply_resolved(remaining, resolved, path_key, input_dir)
+                self.logger.info(
+                    f"Auto-relinked {len(resolved)} {path_key} entries via "
+                    f"remembered folder {folder}"
+                )
+            remaining = next_remaining
+        return remaining
+
     def _recover_missing_files(self, missing, path_key, labels):
         """Prompt for a replacement folder and relocate *missing* files in it.
 
@@ -211,6 +317,7 @@ class PathValidationController(TranslationMixin):
 
             if not still_missing:
                 self._apply_resolved(missing, resolved, path_key, folder)
+                self._remember_folder(folder)
                 self.logger.info(
                     f"Relocated {len(resolved)} {path_key} entries to {folder}"
                 )
@@ -219,6 +326,8 @@ class PathValidationController(TranslationMixin):
             # Apply whatever was found before asking, so "Continue Anyway"
             # keeps the partial recovery instead of discarding it.
             self._apply_resolved(missing, resolved, path_key, folder)
+            if resolved:
+                self._remember_folder(folder)
             self.logger.warning(
                 f"Relocated {len(resolved)} of {len(missing)} {path_key} entries "
                 f"in {folder}; {len(still_missing)} unresolved"
