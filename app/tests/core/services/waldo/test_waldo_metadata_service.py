@@ -1,5 +1,6 @@
 """Unit tests for WaldoMetadataService."""
 
+import importlib
 import math
 from datetime import datetime, timedelta
 
@@ -366,3 +367,85 @@ def test_measure_image_up_bearing_rejects_unmatchable(tmp_path):
         lat += 0.0018
 
     assert service.measure_image_up_bearing(records, cam_idx=0) is None
+
+
+# --------------------------------------------------------------------------
+# Capture-time audit
+# --------------------------------------------------------------------------
+
+def test_parse_offset_hours():
+    assert WaldoMetadataService._parse_offset_hours(b'-06:00') == -6.0
+    assert WaldoMetadataService._parse_offset_hours('+05:30') == 5.5
+    assert WaldoMetadataService._parse_offset_hours(None) is None
+    assert WaldoMetadataService._parse_offset_hours(b'garbage') is None
+
+
+def _audit_exif(dt_bytes, offset_bytes):
+    import piexif
+    return {
+        'Exif': {
+            piexif.ExifIFD.DateTimeOriginal: dt_bytes,
+            piexif.ExifIFD.OffsetTimeOriginal: offset_bytes,
+        },
+        'GPS': {},
+    }
+
+
+def test_audit_flags_timezone_longitude_mismatch(tmp_path, monkeypatch):
+    """A camera set to -06:00 at longitude -122.9 must be flagged."""
+    waldo_module = importlib.import_module('core.services.waldo.WaldoMetadataService')
+    p = str(tmp_path / '0_000_00_000.jpg')
+    open(p, 'wb').write(b'x')
+
+    monkeypatch.setattr(waldo_module.MetaDataHelper, 'get_exif_data_piexif',
+                        lambda path: _audit_exif(b'2026:07:25 09:00:00', b'-06:00'))
+    monkeypatch.setattr(waldo_module.LocationInfo, 'get_gps',
+                        lambda exif_data: {'latitude': 41.3, 'longitude': -122.9})
+
+    warnings = WaldoMetadataService().audit_capture_times([p])
+    assert any('timezone' in w for w in warnings)
+
+
+def test_audit_flags_capture_after_file_write(tmp_path, monkeypatch):
+    """A claimed capture hours after the file's mtime means the clock is ahead."""
+    import os as _os
+    waldo_module = importlib.import_module('core.services.waldo.WaldoMetadataService')
+    from datetime import datetime, timedelta, timezone as tz
+
+    p = str(tmp_path / '0_000_00_000.jpg')
+    open(p, 'wb').write(b'x')
+    # Claimed capture: 10 hours after the file's mtime
+    claimed_local = datetime.fromtimestamp(
+        _os.path.getmtime(p), tz=tz.utc) + timedelta(hours=10) - timedelta(hours=8)
+    dt_bytes = claimed_local.strftime('%Y:%m:%d %H:%M:%S').encode()
+
+    monkeypatch.setattr(waldo_module.MetaDataHelper, 'get_exif_data_piexif',
+                        lambda path: _audit_exif(dt_bytes, b'-08:00'))
+    monkeypatch.setattr(waldo_module.LocationInfo, 'get_gps',
+                        lambda exif_data: {'latitude': 41.3, 'longitude': -122.9})
+
+    warnings = WaldoMetadataService().audit_capture_times([p])
+    assert any('AFTER' in w for w in warnings)
+
+
+def test_audit_quiet_on_healthy_metadata(tmp_path, monkeypatch):
+    """Correct offset, past capture time, sun up: no warnings."""
+    import os as _os
+    waldo_module = importlib.import_module('core.services.waldo.WaldoMetadataService')
+    from datetime import datetime, timedelta, timezone as tz
+
+    p = str(tmp_path / '0_000_00_000.jpg')
+    open(p, 'wb').write(b'x')
+    # Claimed capture: two hours before the file was written, offset -08:00
+    claimed_local = datetime.fromtimestamp(
+        _os.path.getmtime(p), tz=tz.utc) - timedelta(hours=2) - timedelta(hours=8)
+    dt_bytes = claimed_local.strftime('%Y:%m:%d %H:%M:%S').encode()
+
+    monkeypatch.setattr(waldo_module.MetaDataHelper, 'get_exif_data_piexif',
+                        lambda path: _audit_exif(dt_bytes, b'-08:00'))
+    monkeypatch.setattr(waldo_module.LocationInfo, 'get_gps',
+                        lambda exif_data: {'latitude': 41.3, 'longitude': -122.9})
+    # Force the solar check to a sun-up answer so no daylight warning can fire
+    monkeypatch.setattr(waldo_module, 'get_solar_position', lambda lat, lon, utc: (30.0, 120.0))
+
+    assert WaldoMetadataService().audit_capture_times([p]) == []

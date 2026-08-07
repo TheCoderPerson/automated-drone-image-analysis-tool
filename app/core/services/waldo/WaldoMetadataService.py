@@ -112,6 +112,7 @@ class WaldoProcessResult:
     already_current: int = 0
     skipped: int = 0  # non-WALDO files
     errors: List[Tuple[str, str]] = field(default_factory=list)
+    warnings: List[str] = field(default_factory=list)
     cancelled: bool = False
 
 
@@ -367,6 +368,125 @@ class WaldoMetadataService:
         )
         return mean_deg
 
+    # ------------------------------------------------------------------
+    # Capture-time audit
+    # ------------------------------------------------------------------
+    #
+    # A field camera with a mis-set clock silently poisons every time-based
+    # computation (solar position, shadows) while looking perfectly healthy:
+    # a 12-hour AM/PM flip produces nearly the same solar ELEVATION, so
+    # nothing obvious breaks. These checks catch the detectable symptoms and
+    # warn the operator; they never modify the files.
+
+    AUDIT_SAMPLE_FILES = 3
+    AUDIT_TZ_TOLERANCE_H = 1.75     # |stamped offset - longitude/15| beyond this is suspect
+    AUDIT_MTIME_SLACK_S = 3600.0    # claimed capture this far after file-write is impossible
+    AUDIT_DAYLIGHT_BRIGHTNESS = 45  # mean pixel value that cannot be a night exposure
+
+    @staticmethod
+    def _parse_offset_hours(raw) -> Optional[float]:
+        """Parse an EXIF OffsetTime like '-06:00' into hours, or None."""
+        if raw is None:
+            return None
+        try:
+            text = raw.decode() if isinstance(raw, bytes) else str(raw)
+            m = re.match(r'^([+-])(\d{2}):(\d{2})$', text.strip())
+            if not m:
+                return None
+            sign = -1.0 if m.group(1) == '-' else 1.0
+            return sign * (int(m.group(2)) + int(m.group(3)) / 60.0)
+        except Exception:
+            return None
+
+    def audit_capture_times(self, paths: List[str]) -> List[str]:
+        """Sanity-check the capture-time metadata of a few WALDO images.
+
+        Checks:
+        - Timezone vs GPS longitude: the stamped OffsetTime should be within
+          ~AUDIT_TZ_TOLERANCE_H hours of longitude/15 (solar time; the margin
+          absorbs civil-timezone and DST skew). A camera set to the wrong
+          zone fails this deterministically.
+        - Impossible file times: a capture time later than the file's own
+          last-modified time means the clock runs ahead (mtime survives
+          Windows copies, so this works even on relocated datasets when the
+          post-flight files were written soon after the flight).
+        - Sun below the horizon at the claimed time while the imagery is
+          clearly daylight.
+
+        Returns:
+            Human-readable warning strings (empty when nothing is suspect).
+        """
+        warnings: List[str] = []
+        sampled = paths[:self.AUDIT_SAMPLE_FILES]
+        for path in sampled:
+            name = os.path.basename(path)
+            try:
+                exif = MetaDataHelper.get_exif_data_piexif(path)
+                exif_ifd = exif.get('Exif', {})
+                raw_dt = exif_ifd.get(piexif.ExifIFD.DateTimeOriginal)
+                offset_h = self._parse_offset_hours(
+                    exif_ifd.get(piexif.ExifIFD.OffsetTimeOriginal)
+                    or exif_ifd.get(piexif.ExifIFD.OffsetTime))
+                gps = LocationInfo.get_gps(exif_data=exif)
+                if raw_dt is None or gps is None:
+                    continue
+                local_dt = datetime.strptime(
+                    (raw_dt.decode() if isinstance(raw_dt, bytes) else str(raw_dt)).strip(),
+                    '%Y:%m:%d %H:%M:%S')
+
+                # 1. Timezone field vs longitude
+                if offset_h is not None:
+                    solar_offset = gps['longitude'] / 15.0
+                    if abs(offset_h - solar_offset) > self.AUDIT_TZ_TOLERANCE_H:
+                        warnings.append(
+                            f"{name}: camera timezone {offset_h:+.0f}h does not match its "
+                            f"GPS longitude (expects about {solar_offset:+.1f}h). The "
+                            f"camera clock settings are suspect; sun/shadow features "
+                            f"will be unreliable."
+                        )
+
+                # 2. Capture claimed after the file was written
+                if offset_h is not None:
+                    claimed_utc = local_dt.replace(tzinfo=timezone.utc) - timedelta(hours=offset_h)
+                    mtime_utc = datetime.fromtimestamp(os.path.getmtime(path), tz=timezone.utc)
+                    ahead_s = (claimed_utc - mtime_utc).total_seconds()
+                    if ahead_s > self.AUDIT_MTIME_SLACK_S:
+                        warnings.append(
+                            f"{name}: claimed capture time is {ahead_s / 3600.0:.1f}h AFTER "
+                            f"the file was last written - the camera clock runs ahead "
+                            f"(a 12-hour AM/PM error is the usual cause)."
+                        )
+
+                    # 3. Night-time claim on daylight imagery
+                    try:
+                        elev, _az = get_solar_position(
+                            gps['latitude'], gps['longitude'], claimed_utc)
+                    except Exception:
+                        elev = None
+                    if elev is not None and elev < -2.0:
+                        img = cv2.imdecode(np.fromfile(path, dtype=np.uint8),
+                                           cv2.IMREAD_GRAYSCALE)
+                        if img is not None:
+                            small = img[::8, ::8]
+                            if float(small.mean()) > self.AUDIT_DAYLIGHT_BRIGHTNESS:
+                                warnings.append(
+                                    f"{name}: the sun was below the horizon at the claimed "
+                                    f"capture time, but the image is clearly daylight - "
+                                    f"the camera clock is wrong."
+                                )
+            except Exception as e:
+                self.logger.warning(f"Capture-time audit failed for {name}: {e}")
+
+        # One warning per distinct message class is enough; drop duplicates
+        deduped: List[str] = []
+        seen_kinds = set()
+        for w in warnings:
+            kind = w.split(': ', 1)[1][:40]
+            if kind not in seen_kinds:
+                seen_kinds.add(kind)
+                deduped.append(w)
+        return deduped
+
     def compute_relative_altitude_m(
         self, lat: float, lon: float, gps_alt_ellipsoidal_m: float
     ) -> Tuple[float, float]:
@@ -607,6 +727,7 @@ class WaldoMetadataService:
         #    folder of 500+ images doesn't sit at 0% during this pass).
         emit(0, 0, "Reading image metadata...")
         records: List[WaldoImageRecord] = []
+        waldo_paths: List[str] = []
         n_paths = len(image_paths)
         for i, path in enumerate(image_paths):
             if cancel_cb():
@@ -618,11 +739,20 @@ class WaldoMetadataService:
             if cam_idx is None:
                 result.skipped += 1
                 continue
+            waldo_paths.append(path)
             if self.is_already_processed(path):
                 result.already_current += 1
                 continue
             rec = self._read_record(path, cam_idx)
             records.append(rec)
+
+        # Capture-time audit runs on every open (already-current files too):
+        # a mis-set camera clock stays wrong until the operator fixes it
+        if waldo_paths:
+            emit(0, 0, "Auditing capture-time metadata...")
+            result.warnings.extend(self.audit_capture_times(waldo_paths))
+            for warning in result.warnings:
+                self.logger.warning(f"WALDO time audit: {warning}")
 
         if not records:
             return result
