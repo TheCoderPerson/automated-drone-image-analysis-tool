@@ -646,16 +646,10 @@ def test_check_image_for_aoi_success(aoi_neighbor_service, sample_image):
     with patch.object(aoi_neighbor_service, 'get_image_coverage_info') as mock_coverage, \
             patch.object(aoi_neighbor_service, 'gps_to_pixel') as mock_gps2pixel, \
             patch.object(aoi_neighbor_service, 'is_point_in_image') as mock_in_image, \
-            patch.object(aoi_neighbor_service, 'extract_thumbnail') as mock_thumbnail:
+            patch.object(aoi_neighbor_service, 'extract_thumbnail') as mock_thumbnail, \
+            patch('core.services.image.AOINeighborService.ImageService') as MockImageService:
 
-        # Setup mocks
-        mock_service = MagicMock()
-        mock_service.img_array = np.zeros((1000, 1500, 3), dtype=np.uint8)
-
-        mock_coverage.return_value = {
-            'width': 1500, 'height': 1000,
-            'image_service': mock_service
-        }
+        mock_coverage.return_value = {'width': 1500, 'height': 1000}
         mock_gps2pixel.return_value = (750, 500)
         mock_in_image.return_value = True
         mock_thumbnail.return_value = np.zeros((200, 200, 3), dtype=np.uint8)
@@ -669,6 +663,29 @@ def test_check_image_for_aoi_success(aoi_neighbor_service, sample_image):
         assert result['pixel_x'] == 750
         assert result['pixel_y'] == 500
         assert result['is_current'] is False
+        # Coverage was tested metadata-only; the decode happened for the
+        # confirmed hit, at thumbnail time
+        mock_coverage.assert_called_once_with(sample_image, None, include_service=False)
+        MockImageService.assert_called_once()
+
+
+def test_check_image_rejected_candidate_never_decodes(aoi_neighbor_service, sample_image):
+    """A candidate that fails the bounds check must not have its pixels decoded."""
+    with patch.object(aoi_neighbor_service, 'get_image_coverage_info') as mock_coverage, \
+            patch.object(aoi_neighbor_service, 'gps_to_pixel') as mock_gps2pixel, \
+            patch.object(aoi_neighbor_service, 'is_point_in_image') as mock_in_image, \
+            patch('core.services.image.AOINeighborService.ImageService') as MockImageService:
+
+        mock_coverage.return_value = {'width': 1500, 'height': 1000}
+        mock_gps2pixel.return_value = (5000, 5000)
+        mock_in_image.return_value = False
+
+        result = aoi_neighbor_service._check_image_for_aoi(
+            sample_image, 0, 37.7749, -122.4194, thumbnail_radius=100
+        )
+
+        assert result is None
+        MockImageService.assert_not_called()
 
 
 def test_check_image_for_aoi_no_coverage(aoi_neighbor_service, sample_image):
@@ -736,3 +753,116 @@ def test_check_image_for_aoi_thumbnail_extraction_fails(aoi_neighbor_service, sa
         )
 
         assert result is None
+
+
+# ============================================================================
+# Test metadata caching (repeated searches must not re-read metadata per image)
+# ============================================================================
+
+def _patch_coverage_metadata(exif_calls):
+    """Patch the metadata stack behind get_image_coverage_info."""
+    module = 'core.services.image.AOINeighborService'
+
+    def counted_exif(path):
+        exif_calls.append(path)
+        return {}
+
+    mock_service = MagicMock()
+    mock_service.get_camera_yaw.return_value = 90.0
+    mock_service.get_camera_pitch.return_value = -90.0
+    mock_service.get_relative_altitude.return_value = 100.0
+    mock_service.get_camera_intrinsics.return_value = {
+        'focal_length_mm': 24.0,
+        'sensor_width_mm': 23.5,
+        'sensor_height_mm': 15.6
+    }
+    mock_service.img_array = np.zeros((1000, 1500, 3), dtype=np.uint8)
+
+    meta = patch(f'{module}.MetaDataHelper')
+    loc = patch(f'{module}.LocationInfo')
+    svc = patch(f'{module}.ImageService', return_value=mock_service)
+    return meta, loc, svc, counted_exif
+
+
+def test_coverage_info_is_cached_across_calls(aoi_neighbor_service, sample_image):
+    """The second lookup for the same image must not re-read its metadata."""
+    exif_calls = []
+    meta, loc, svc, counted_exif = _patch_coverage_metadata(exif_calls)
+    with meta as MockMeta, loc as MockLoc, svc:
+        MockMeta.get_exif_data_piexif.side_effect = counted_exif
+        MockLoc.get_gps.return_value = {'latitude': 37.7749, 'longitude': -122.4194}
+
+        first = aoi_neighbor_service.get_image_coverage_info(sample_image, include_service=False)
+        second = aoi_neighbor_service.get_image_coverage_info(sample_image, include_service=False)
+
+        assert first is not None
+        assert second is not None
+        assert len(exif_calls) == 1
+
+
+def test_cached_coverage_returns_a_mutation_safe_copy(aoi_neighbor_service, sample_image):
+    """Callers mutate coverage (terrain altitude adjustment); the cache must not see it."""
+    exif_calls = []
+    meta, loc, svc, counted_exif = _patch_coverage_metadata(exif_calls)
+    with meta as MockMeta, loc as MockLoc, svc:
+        MockMeta.get_exif_data_piexif.side_effect = counted_exif
+        MockLoc.get_gps.return_value = {'latitude': 37.7749, 'longitude': -122.4194}
+
+        first = aoi_neighbor_service.get_image_coverage_info(sample_image, include_service=False)
+        first['altitude'] = -1.0
+
+        second = aoi_neighbor_service.get_image_coverage_info(sample_image, include_service=False)
+        assert second['altitude'] == 100.0
+
+
+def test_coverage_cache_invalidated_by_alignment_change(aoi_neighbor_service, sample_image):
+    """A new FOV alignment (Align Image tool) must invalidate the cached coverage."""
+    exif_calls = []
+    meta, loc, svc, counted_exif = _patch_coverage_metadata(exif_calls)
+    with meta as MockMeta, loc as MockLoc, svc:
+        MockMeta.get_exif_data_piexif.side_effect = counted_exif
+        MockLoc.get_gps.return_value = {'latitude': 37.7749, 'longitude': -122.4194}
+
+        aoi_neighbor_service.get_image_coverage_info(sample_image, include_service=False)
+        sample_image['fov_alignment'] = {'corners': None}  # alignment changed
+        aoi_neighbor_service.get_image_coverage_info(sample_image, include_service=False)
+
+        assert len(exif_calls) == 2
+
+
+def test_negative_coverage_result_is_cached(aoi_neighbor_service, sample_image):
+    """GPS-less images are also remembered, not re-read every search."""
+    exif_calls = []
+    meta, loc, svc, counted_exif = _patch_coverage_metadata(exif_calls)
+    with meta as MockMeta, loc as MockLoc, svc:
+        MockMeta.get_exif_data_piexif.side_effect = counted_exif
+        MockLoc.get_gps.return_value = None
+
+        assert aoi_neighbor_service.get_image_coverage_info(sample_image, include_service=False) is None
+        assert aoi_neighbor_service.get_image_coverage_info(sample_image, include_service=False) is None
+        assert len(exif_calls) == 1
+
+
+def test_center_gps_is_cached(aoi_neighbor_service, sample_image):
+    """Center-GPS lookups are one EXIF read per image per session, not per search."""
+    module = 'core.services.image.AOINeighborService'
+    with patch(f'{module}.MetaDataHelper') as MockMeta,             patch(f'{module}.LocationInfo') as MockLoc:
+        MockMeta.get_exif_data_piexif.return_value = {}
+        MockLoc.get_gps.return_value = {'latitude': 1.0, 'longitude': 2.0}
+
+        first = aoi_neighbor_service._get_image_center_gps(sample_image)
+        second = aoi_neighbor_service._get_image_center_gps(sample_image)
+
+        assert first == (1.0, 2.0)
+        assert second == (1.0, 2.0)
+        MockMeta.get_exif_data_piexif.assert_called_once()
+
+
+def test_get_image_dimensions_reads_header_only(aoi_neighbor_service, tmp_path):
+    """Dimensions come from the file header, matching the stored (unrotated) size."""
+    from PIL import Image as PILImage
+    path = tmp_path / 'header_test.jpg'
+    PILImage.new('RGB', (640, 480), (10, 10, 10)).save(path)
+
+    assert aoi_neighbor_service._get_image_dimensions(str(path)) == (640, 480)
+    assert aoi_neighbor_service._get_image_dimensions(str(tmp_path / 'missing.jpg')) is None

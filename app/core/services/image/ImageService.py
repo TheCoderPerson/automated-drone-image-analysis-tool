@@ -23,7 +23,7 @@ class ImageService:
     """Service to calculate various drone and image attributes based on metadata."""
 
     def __init__(self, path, mask_path=None, img_array=None, calculated_bearing=None,
-                 exif_data=None, xmp_data=None):
+                 exif_data=None, xmp_data=None, defer_load=False):
         """
         Initializes the ImageService by extracting Exif and XMP metadata.
 
@@ -38,6 +38,10 @@ class ImageService:
             xmp_data (dict, optional): Pre-read XMP data. Skips the (ExifTool) XMP read when
                                        given — used by bulk callers (e.g. the POD pass) to
                                        avoid launching one ExifTool process per image.
+            defer_load (bool, optional): When True (and no img_array is given), pixel data
+                                         is not read from disk until img_array is first
+                                         accessed. Metadata-only callers use this to avoid
+                                         decoding images whose pixels they may never need.
         """
         self.exif_data = exif_data if exif_data is not None else MetaDataHelper.get_exif_data_piexif(path)
         self.xmp_data = xmp_data if xmp_data is not None else MetaDataHelper.get_xmp_data_merged(path)
@@ -46,14 +50,31 @@ class ImageService:
         self.mask_path = mask_path
         self.calculated_bearing = calculated_bearing
 
-        # Use pre-loaded array if provided, otherwise load from disk
+        # Use pre-loaded array if provided, otherwise load from disk (now,
+        # or lazily on first img_array access when defer_load is set)
+        self._img_array = None
         if img_array is not None:
-            self.img_array = img_array
-        else:
-            img = cv2.imdecode(np.fromfile(self.path, dtype=np.uint8), cv2.IMREAD_UNCHANGED)
-            if img is None:
-                raise ValueError(f"Could not load image: {self.path}")
-            self.img_array = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+            self._img_array = img_array
+        elif not defer_load:
+            self._img_array = self._load_img_array()
+
+    def _load_img_array(self):
+        """Read and decode the image from disk as an RGB array."""
+        img = cv2.imdecode(np.fromfile(self.path, dtype=np.uint8), cv2.IMREAD_UNCHANGED)
+        if img is None:
+            raise ValueError(f"Could not load image: {self.path}")
+        return cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+
+    @property
+    def img_array(self):
+        """Pixel data (RGB). Loaded lazily when defer_load was requested."""
+        if self._img_array is None:
+            self._img_array = self._load_img_array()
+        return self._img_array
+
+    @img_array.setter
+    def img_array(self, value):
+        self._img_array = value
 
     def get_relative_altitude(self, distance_unit='m'):
         """

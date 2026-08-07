@@ -425,3 +425,59 @@ def test_get_thermal_data_with_mask():
             os.unlink(tmp_path)
         if os.path.exists(mask_path):
             os.unlink(mask_path)
+
+
+def test_image_service_defer_load_skips_decode_until_access():
+    """defer_load must not read pixels at construction, only on first access."""
+    with tempfile.NamedTemporaryFile(suffix='.jpg', delete=False) as tmp_file:
+        test_img = np.zeros((100, 100, 3), dtype=np.uint8)
+        cv2.imwrite(tmp_file.name, test_img)
+        tmp_path = tmp_file.name
+
+    try:
+        service = ImageService(tmp_path, defer_load=True)
+        assert service._img_array is None  # nothing decoded at construction
+
+        loaded = service.img_array  # first access triggers the decode
+        assert loaded.shape == (100, 100, 3)
+        assert service._img_array is not None  # and the result is kept
+    finally:
+        if os.path.exists(tmp_path):
+            os.unlink(tmp_path)
+
+
+def test_image_service_defer_load_decodes_only_once():
+    """Repeated img_array access must reuse the first decode."""
+    with tempfile.NamedTemporaryFile(suffix='.jpg', delete=False) as tmp_file:
+        test_img = np.zeros((100, 100, 3), dtype=np.uint8)
+        cv2.imwrite(tmp_file.name, test_img)
+        tmp_path = tmp_file.name
+
+    try:
+        service = ImageService(tmp_path, defer_load=True)
+        with patch.object(ImageService, '_load_img_array',
+                          wraps=service._load_img_array) as mock_load:
+            first = service.img_array
+            second = service.img_array
+        assert first is second
+        assert mock_load.call_count == 1
+    finally:
+        if os.path.exists(tmp_path):
+            os.unlink(tmp_path)
+
+
+def test_image_service_img_array_assignment_still_works():
+    """Code that swaps in a processed array must keep working with the property."""
+    with tempfile.NamedTemporaryFile(suffix='.jpg', delete=False) as tmp_file:
+        test_img = np.zeros((100, 100, 3), dtype=np.uint8)
+        cv2.imwrite(tmp_file.name, test_img)
+        tmp_path = tmp_file.name
+
+    try:
+        service = ImageService(tmp_path, defer_load=True)
+        replacement = np.ones((10, 10, 3), dtype=np.uint8)
+        service.img_array = replacement
+        assert service.img_array is replacement
+    finally:
+        if os.path.exists(tmp_path):
+            os.unlink(tmp_path)

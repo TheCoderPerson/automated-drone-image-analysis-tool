@@ -199,13 +199,19 @@ class AOINeighborTrackingController(TranslationMixin, QObject):
             aoi_radius = aoi_data.get('radius', 50)
             thumbnail_radius = max(100, aoi_radius * 2)
 
+            # Search the full flight, not just the AOI-bearing subset from the
+            # XML: an image that produced no detections of its own can still
+            # show this AOI. Viewer.source_images already holds every capture
+            # from the original flight folder.
+            search_images, search_idx = self._build_search_scope(current_image, current_image_idx)
+
             # Create worker and thread
             self._cancelled = False
             self._thread = QThread()
             self._worker = NeighborSearchWorker(
                 neighbor_service=self.neighbor_service,
-                images=self.parent.images,
-                current_image_idx=current_image_idx,
+                images=search_images,
+                current_image_idx=search_idx,
                 aoi_gps=aoi_gps,
                 agl_override_m=agl_override_m,
                 thumbnail_radius=thumbnail_radius
@@ -232,6 +238,31 @@ class AOINeighborTrackingController(TranslationMixin, QObject):
                     error=str(e)
                 )
             )
+
+    def _build_search_scope(self, current_image, current_image_idx):
+        """Choose the image list to search and locate the current image in it.
+
+        Returns the viewer's full-flight ``source_images`` when available so
+        the search also covers captures that produced no detections of their
+        own; otherwise falls back to the AOI subset. The current image is
+        matched by path because indices differ between the two lists.
+
+        Args:
+            current_image (dict): Viewer image the tracked AOI belongs to
+            current_image_idx (int): Index of that image in the viewer's list
+
+        Returns:
+            tuple: (images list to search, index of current_image within it)
+        """
+        current_path = current_image.get('path')
+        source_images = getattr(self.parent, 'source_images', None)
+        if source_images and current_path:
+            for idx, img in enumerate(source_images):
+                if img.get('path') == current_path:
+                    return source_images, idx
+        # Legacy viewers without source_images, or the current image is
+        # missing from the source folder listing: search the AOI subset
+        return self.parent.images, current_image_idx
 
     def _on_progress(self, message):
         """Handle progress updates from the worker.
@@ -422,6 +453,13 @@ class AOINeighborTrackingController(TranslationMixin, QObject):
             # Store results for later use when zooming
             self._neighbor_results = results
 
+            # Label results from captures outside the viewer's result set so a
+            # reviewer understands why clicking them cannot navigate
+            viewer_paths = {img.get('path') for img in self.parent.images}
+            for result in results:
+                if result.get('image_path') not in viewer_paths:
+                    result['image_name'] = result.get('image_name', '') + self.tr(" (no detections)")
+
             # Close existing dialog if open
             if self._gallery_dialog:
                 self._gallery_dialog.close()
@@ -456,15 +494,37 @@ class AOINeighborTrackingController(TranslationMixin, QObject):
             if hasattr(self, '_neighbor_results') and self._neighbor_results:
                 result = next((r for r in self._neighbor_results if r['image_idx'] == image_idx), None)
 
+            # Result indices refer to the searched full-flight list; the viewer
+            # navigates its own AOI-subset list, so map back by path.
+            viewer_idx = None
+            result_path = result.get('image_path') if result else None
+            if result_path:
+                viewer_idx = next(
+                    (i for i, img in enumerate(self.parent.images) if img.get('path') == result_path),
+                    None
+                )
+            elif 0 <= image_idx < len(self.parent.images):
+                # No result payload: treat the index as a viewer index (legacy)
+                viewer_idx = image_idx
+
+            if viewer_idx is None:
+                # A capture with no detections isn't in the viewer's list; the
+                # gallery thumbnail is all there is to show for it (same
+                # convention as source-only markers on the GPS map)
+                self.logger.info(
+                    f"Neighbor result {result_path} is not in the result set (no detections); not navigating"
+                )
+                return
+
             pixel_x = result.get('pixel_x') if result else None
             pixel_y = result.get('pixel_y') if result else None
 
             # Check if we need to load a new image
-            needs_load = (self.parent.current_image != image_idx)
+            needs_load = (self.parent.current_image != viewer_idx)
 
             if needs_load and pixel_x is not None and pixel_y is not None:
                 # Set up zoom-after-load using viewChanged signal pattern
-                self.parent.current_image = image_idx
+                self.parent.current_image = viewer_idx
 
                 zoom_handler = None
                 zoom_executed = False
@@ -535,7 +595,7 @@ class AOINeighborTrackingController(TranslationMixin, QObject):
             else:
                 # Simple navigation without zoom, or same image
                 if needs_load:
-                    self.parent.current_image = image_idx
+                    self.parent.current_image = viewer_idx
                     self.parent._load_image()
 
                 # If same image, still zoom to location
