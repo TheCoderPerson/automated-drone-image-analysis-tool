@@ -11,6 +11,7 @@ import math
 import numpy as np
 import cv2
 from pathlib import Path
+from PIL import Image
 from helpers.MetaDataHelper import MetaDataHelper
 from helpers.LocationInfo import LocationInfo
 from helpers.GeodesicHelper import GeodesicHelper
@@ -26,31 +27,90 @@ class AOINeighborService:
     def __init__(self):
         """Initialize the AOINeighborService."""
         self.logger = LoggerService()
+        # Image metadata does not change on disk during a session, so repeated
+        # searches (and the radius estimate) reuse it instead of re-reading
+        # EXIF/XMP for every image on every Z press. Keyed per method below.
+        self._center_gps_cache = {}
+        self._coverage_meta_cache = {}
 
-    def get_image_coverage_info(self, image, agl_override_m=None):
+    @staticmethod
+    def _get_image_dimensions(path):
+        """Read image dimensions from the file header without decoding pixels.
+
+        PIL reads only the header on open. The result matches
+        cv2.imdecode(IMREAD_UNCHANGED) — the loader ImageService uses —
+        because neither applies EXIF orientation.
+
+        Args:
+            path (str): Image file path
+
+        Returns:
+            tuple or None: (width, height), or None if the header can't be read
+        """
+        try:
+            with Image.open(path) as img:
+                return img.size
+        except Exception:
+            return None
+
+    def _make_deferred_service(self, image, exif_data=None):
+        """Create an ImageService that reads metadata now but pixels lazily."""
+        return ImageService(
+            image['path'],
+            image.get('mask_path', ''),
+            calculated_bearing=image.get('bearing'),
+            exif_data=exif_data,
+            defer_load=True
+        )
+
+    def get_image_coverage_info(self, image, agl_override_m=None, include_service=True):
         """
         Get the coverage information for an image including its corner GPS coordinates.
+
+        Metadata-only and cached: no pixel decode happens here. The returned
+        dict is a copy, so callers may mutate it (e.g. terrain-adjusted
+        altitude) without corrupting the cache.
 
         Args:
             image (dict): Image metadata dict with 'path' key
             agl_override_m (float, optional): Manual AGL altitude override in meters
+            include_service (bool): Attach a lazily-loading ImageService under
+                'image_service'. Callers that only test coverage can pass False
+                and skip the metadata reads its construction performs.
 
         Returns:
-            dict or None: Coverage info with center GPS, corners, dimensions, orientation
+            dict or None: Coverage info with center GPS, dimensions, orientation
         """
         try:
-            image_service = ImageService(
-                image['path'],
-                image.get('mask_path', ''),
-                calculated_bearing=image.get('bearing')
-            )
+            cache_key = (image['path'], agl_override_m, image.get('bearing'))
+            cached = self._coverage_meta_cache.get(cache_key)
+            # The FOV alignment can change mid-session (Align Image tool), so a
+            # cache entry is only valid while the refinement it saw is current
+            if cached is not None and cached['refinement_source'] == image.get('fov_alignment'):
+                if cached['meta'] is None:
+                    return None
+                info = dict(cached['meta'])
+                if include_service:
+                    info['image_service'] = self._make_deferred_service(image)
+                return info
+
+            def remember(meta):
+                self._coverage_meta_cache[cache_key] = {
+                    'refinement_source': image.get('fov_alignment'),
+                    'meta': meta
+                }
+                return meta
 
             # Get EXIF data and GPS
             exif_data = MetaDataHelper.get_exif_data_piexif(image['path'])
             gps_coords = LocationInfo.get_gps(exif_data=exif_data)
             if not gps_coords:
-                return None
+                return remember(None)
             lat0, lon0 = gps_coords['latitude'], gps_coords['longitude']
+
+            # Metadata reads only — pixels are not loaded unless the PIL
+            # header fallback below needs them
+            image_service = self._make_deferred_service(image, exif_data=exif_data)
 
             # Get camera orientation
             yaw = image_service.get_camera_yaw() or 0.0
@@ -73,17 +133,21 @@ class AOINeighborService:
                 altitude = image_service.get_relative_altitude('m') or 0
 
             if altitude <= 0 and not has_refinement:
-                return None
+                return remember(None)
 
-            # Get image dimensions
-            img_array = image_service.img_array
-            height, width = img_array.shape[:2]
+            # Get image dimensions from the header; fall back to a decode for
+            # formats PIL cannot header-read
+            dims = self._get_image_dimensions(image['path'])
+            if dims is not None:
+                width, height = dims
+            else:
+                height, width = image_service.img_array.shape[:2]
 
             # Get camera intrinsics
             intrinsics = image_service.get_camera_intrinsics()
             if intrinsics is None:
                 if not has_refinement:
-                    return None
+                    return remember(None)
                 focal_mm = sensor_w_mm = sensor_h_mm = None
             else:
                 focal_mm = intrinsics['focal_length_mm']
@@ -94,7 +158,7 @@ class AOINeighborService:
             tilt_angle = 90 + pitch
             tilt_angle = max(0, min(90, tilt_angle))
 
-            return {
+            meta = remember({
                 'center_lat': lat0,
                 'center_lon': lon0,
                 'yaw': yaw,
@@ -107,8 +171,12 @@ class AOINeighborService:
                 'sensor_w_mm': sensor_w_mm,
                 'sensor_h_mm': sensor_h_mm,
                 'fov_alignment': refinement if has_refinement else None,
-                'image_service': image_service
-            }
+            })
+
+            info = dict(meta)
+            if include_service:
+                info['image_service'] = image_service
+            return info
 
         except Exception as e:
             self.logger.error(f"AOINeighborService: Failed to get image coverage info - {e}")
@@ -260,14 +328,19 @@ class AOINeighborService:
         Returns:
             tuple or None: (latitude, longitude) or None if not available
         """
+        path = image.get('path')
+        if path in self._center_gps_cache:
+            return self._center_gps_cache[path]
+        center = None
         try:
-            exif_data = MetaDataHelper.get_exif_data_piexif(image['path'])
+            exif_data = MetaDataHelper.get_exif_data_piexif(path)
             gps_coords = LocationInfo.get_gps(exif_data=exif_data)
             if gps_coords:
-                return (gps_coords['latitude'], gps_coords['longitude'])
+                center = (gps_coords['latitude'], gps_coords['longitude'])
         except Exception:
             pass
-        return None
+        self._center_gps_cache[path] = center
+        return center
 
     def _estimate_max_coverage_radius(self, images, agl_override_m=None):
         """
@@ -288,7 +361,7 @@ class AOINeighborService:
 
         for i in range(sample_count):
             try:
-                coverage_info = self.get_image_coverage_info(images[i], agl_override_m)
+                coverage_info = self.get_image_coverage_info(images[i], agl_override_m, include_service=False)
                 if coverage_info:
                     # Calculate diagonal coverage distance using GSD
                     gsd_service = GSDService(
@@ -443,8 +516,9 @@ class AOINeighborService:
             dict or None: Thumbnail info if AOI is visible, None otherwise
         """
         try:
-            # Get coverage info for this image
-            coverage_info = self.get_image_coverage_info(image, agl_override_m)
+            # Coverage is metadata-only here; most candidates are rejected by
+            # the bounds check below without their pixels ever being decoded
+            coverage_info = self.get_image_coverage_info(image, agl_override_m, include_service=False)
             if not coverage_info:
                 return None
 
@@ -464,8 +538,12 @@ class AOINeighborService:
             ):
                 return None
 
-            # Extract thumbnail
-            image_service = coverage_info['image_service']
+            # Confirmed hit: decode the image now, only for the thumbnail
+            image_service = ImageService(
+                image['path'],
+                image.get('mask_path', ''),
+                calculated_bearing=image.get('bearing')
+            )
             thumbnail = self.extract_thumbnail(
                 image_service, pixel_x, pixel_y, thumbnail_radius
             )
