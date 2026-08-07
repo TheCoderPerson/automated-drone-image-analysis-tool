@@ -331,3 +331,564 @@ def test_caltopo_export_via_api_credentials_cancelled(mock_cred_dialog, app, moc
         )
 
         assert result is False
+
+
+@pytest.fixture
+def caltopo_controller(mock_viewer):
+    """Create a CalTopoExportController with its external services stubbed out."""
+    module = 'core.controllers.images.viewer.exports.CalTopoExportController'
+    with patch(f'{module}.CalTopoService'), \
+            patch(f'{module}.CalTopoAPIService'), \
+            patch(f'{module}.CalTopoCredentialHelper'):
+        return CalTopoExportController(mock_viewer, logger=MagicMock())
+
+
+@pytest.fixture
+def aoi_source_image(tmp_path):
+    """Create a real image file that AOI thumbnails can be generated from."""
+    from PIL import Image
+    path = tmp_path / "IMG_0001.jpg"
+    Image.new('RGB', (800, 600), (20, 20, 20)).save(path)
+    return str(path)
+
+
+def test_build_aoi_photos_full_without_context_falls_back(caltopo_controller, aoi_source_image):
+    """Full mode without a composite context falls back to the plain image."""
+    aoi = {'center': (400, 300), 'radius': 20}
+
+    photos = caltopo_controller._build_aoi_photos(aoi_source_image, 'IMG_0001.jpg', aoi, 0, 'full')
+
+    assert [photo['path'] for photo in photos] == [aoi_source_image]
+    assert caltopo_controller.aoi_thumbnail_service is None
+
+
+def test_build_aoi_photos_full_with_context_builds_composite(caltopo_controller, aoi_source_image):
+    """Full mode with a composite context attaches the multi-zoom composite."""
+    import os
+    import numpy as np
+    aoi = {'center': (400, 300), 'radius': 20}
+    image = {'path': aoi_source_image, 'mask_path': ''}
+    img_array = np.zeros((600, 800, 3), dtype=np.uint8)
+
+    context = caltopo_controller._build_composite_context(image, aoi_source_image, img_array, 0)
+    assert context is not None
+
+    photos = caltopo_controller._build_aoi_photos(
+        aoi_source_image, 'IMG_0001.jpg', aoi, 0, 'full', composite_context=context
+    )
+
+    assert len(photos) == 1
+    assert photos[0]['path'] != aoi_source_image
+    assert os.path.exists(photos[0]['path'])
+    assert 'overview' in os.path.basename(photos[0]['path'])
+    assert 'overview' in photos[0]['title']
+
+    caltopo_controller._cleanup_aoi_thumbnails()
+
+
+def test_build_aoi_photos_thumbnail_only(caltopo_controller, aoi_source_image):
+    """Thumbnail mode attaches only the zoomed AOI crop."""
+    import os
+    aoi = {'center': (400, 300), 'radius': 20}
+
+    photos = caltopo_controller._build_aoi_photos(aoi_source_image, 'IMG_0001.jpg', aoi, 1, 'thumbnail')
+
+    assert len(photos) == 1
+    assert photos[0]['path'] != aoi_source_image
+    assert os.path.exists(photos[0]['path'])
+    assert 'AOI2' in os.path.basename(photos[0]['path'])
+    assert 'close-up' in photos[0]['title']
+
+    caltopo_controller._cleanup_aoi_thumbnails()
+
+
+def test_build_aoi_photos_both(caltopo_controller, aoi_source_image):
+    """Both mode attaches the AOI crop first, then the large image (fallback without context)."""
+    aoi = {'center': (400, 300), 'radius': 20}
+
+    photos = caltopo_controller._build_aoi_photos(aoi_source_image, 'IMG_0001.jpg', aoi, 0, 'both')
+
+    assert len(photos) == 2
+    assert photos[0]['path'] != aoi_source_image
+    assert photos[1]['path'] == aoi_source_image
+
+    caltopo_controller._cleanup_aoi_thumbnails()
+
+
+def test_build_aoi_photos_both_with_context(caltopo_controller, aoi_source_image):
+    """Both mode with a composite context attaches the crop and the composite."""
+    import os
+    import numpy as np
+    aoi = {'center': (400, 300), 'radius': 20}
+    image = {'path': aoi_source_image, 'mask_path': ''}
+    img_array = np.zeros((600, 800, 3), dtype=np.uint8)
+
+    context = caltopo_controller._build_composite_context(image, aoi_source_image, img_array, 0)
+    photos = caltopo_controller._build_aoi_photos(
+        aoi_source_image, 'IMG_0001.jpg', aoi, 0, 'both', composite_context=context
+    )
+
+    assert len(photos) == 2
+    assert 'close-up' in photos[0]['title']
+    assert 'overview' in photos[1]['title']
+    assert all(photo['path'] != aoi_source_image for photo in photos)
+    assert all(os.path.exists(photo['path']) for photo in photos)
+
+    caltopo_controller._cleanup_aoi_thumbnails()
+
+
+def test_build_aoi_photos_falls_back_to_full_image(caltopo_controller, aoi_source_image):
+    """A failed thumbnail falls back to the full image so the photo isn't lost."""
+    aoi = {'center': (5000, 5000), 'radius': 20}  # Outside the image bounds
+
+    photos = caltopo_controller._build_aoi_photos(aoi_source_image, 'IMG_0001.jpg', aoi, 0, 'thumbnail')
+
+    assert [photo['path'] for photo in photos] == [aoi_source_image]
+
+    caltopo_controller._cleanup_aoi_thumbnails()
+
+
+def _patched_prepare_markers(controller, images, flagged_aois, **kwargs):
+    """Run _prepare_markers with EXIF/GPS lookups stubbed out."""
+    import numpy as np
+    module = 'core.controllers.images.viewer.exports.CalTopoExportController'
+
+    with patch(f'{module}.MetaDataHelper.get_exif_data_piexif', return_value={}), \
+            patch(f'{module}.LocationInfo.get_gps', return_value={'latitude': 39.5, 'longitude': -105.2}), \
+            patch(f'{module}.ImageService') as mock_image_service, \
+            patch(f'{module}.AOIService') as mock_aoi_service:
+        mock_image_service.return_value.img_array = np.zeros((600, 800, 3), dtype=np.uint8)
+        mock_image_service.return_value.get_camera_yaw.return_value = 0
+        mock_image_service.return_value.get_average_gsd.return_value = 1.0
+        mock_aoi_service.return_value.calculate_gps_with_custom_altitude.return_value = (39.5001, -105.2001)
+        mock_aoi_service.return_value.get_aoi_representative_color.return_value = None
+        return controller._prepare_markers(images, flagged_aois, **kwargs)
+
+
+def test_prepare_markers_attaches_aoi_thumbnail(caltopo_controller, mock_viewer, aoi_source_image):
+    """Thumbnail mode attaches the zoomed crop to the marker instead of the full image."""
+    import os
+    mock_viewer.messages = {}
+    mock_viewer.custom_agl_altitude_ft = None
+    images = [{
+        'path': aoi_source_image,
+        'name': 'IMG_0001.jpg',
+        'areas_of_interest': [{'center': (400, 300), 'radius': 20}],
+        'hidden': False
+    }]
+
+    markers = _patched_prepare_markers(
+        caltopo_controller, images, {0: {0}}, include_images=True, aoi_photo_mode='thumbnail'
+    )
+
+    assert len(markers) == 1
+    photos = markers[0]['photos']
+    assert len(photos) == 1
+    assert photos[0]['path'] != aoi_source_image
+    assert os.path.exists(photos[0]['path'])
+    # image_path falls back to the durable image on disk, not the temp photo
+    assert markers[0]['image_path'] == aoi_source_image
+
+    caltopo_controller._cleanup_aoi_thumbnails()
+
+
+def test_prepare_markers_default_mode_uses_composite(caltopo_controller, mock_viewer, aoi_source_image):
+    """The default photo mode attaches the multi-zoom composite (same image as the PDF)."""
+    import os
+    mock_viewer.messages = {}
+    mock_viewer.custom_agl_altitude_ft = None
+    images = [{
+        'path': aoi_source_image,
+        'name': 'IMG_0001.jpg',
+        'areas_of_interest': [{'center': (400, 300), 'radius': 20}],
+        'hidden': False
+    }]
+
+    markers = _patched_prepare_markers(caltopo_controller, images, {0: {0}}, include_images=True)
+
+    photos = markers[0]['photos']
+    assert len(photos) == 1
+    assert photos[0]['path'] != aoi_source_image
+    assert os.path.exists(photos[0]['path'])
+    assert 'overview' in os.path.basename(photos[0]['path'])
+    assert markers[0]['image_path'] == aoi_source_image
+
+    caltopo_controller._cleanup_aoi_thumbnails()
+
+
+def test_prepare_markers_both_mode_attaches_two_photos(caltopo_controller, mock_viewer, aoi_source_image):
+    """Both mode attaches the close-up crop and the composite to the marker."""
+    import os
+    mock_viewer.messages = {}
+    mock_viewer.custom_agl_altitude_ft = None
+    images = [{
+        'path': aoi_source_image,
+        'name': 'IMG_0001.jpg',
+        'areas_of_interest': [{'center': (400, 300), 'radius': 20}],
+        'hidden': False
+    }]
+
+    markers = _patched_prepare_markers(
+        caltopo_controller, images, {0: {0}}, include_images=True, aoi_photo_mode='both'
+    )
+
+    photos = markers[0]['photos']
+    assert len(photos) == 2
+    assert 'close-up' in photos[0]['title']
+    assert 'overview' in photos[1]['title']
+    assert all(os.path.exists(photo['path']) for photo in photos)
+
+    caltopo_controller._cleanup_aoi_thumbnails()
+
+
+def test_prepare_markers_without_images_has_no_photos(caltopo_controller, mock_viewer, aoi_source_image):
+    """No photos are attached when image uploads are disabled."""
+    mock_viewer.messages = {}
+    mock_viewer.custom_agl_altitude_ft = None
+    images = [{
+        'path': aoi_source_image,
+        'name': 'IMG_0001.jpg',
+        'areas_of_interest': [{'center': (400, 300), 'radius': 20}],
+        'hidden': False
+    }]
+
+    markers = _patched_prepare_markers(
+        caltopo_controller, images, {0: {0}}, include_images=False, aoi_photo_mode='thumbnail'
+    )
+
+    assert len(markers) == 1
+    assert 'photos' not in markers[0]
+    assert 'image_path' not in markers[0]
+
+
+def test_get_marker_photos_from_photos_list(caltopo_controller, aoi_source_image):
+    """Markers carrying a photos list return those photos, skipping missing files."""
+    marker = {
+        'title': 'IMG_0001.jpg - AOI 1',
+        'photos': [
+            {'path': aoi_source_image, 'title': 'close-up'},
+            {'path': '/does/not/exist.jpg', 'title': 'missing'},
+        ]
+    }
+
+    photos = caltopo_controller._get_marker_photos(marker)
+
+    assert [photo['path'] for photo in photos] == [aoi_source_image]
+    assert photos[0]['title'] == 'close-up'
+
+
+def test_get_marker_photos_legacy_image_path(caltopo_controller, aoi_source_image):
+    """Markers with only an image_path still return that photo."""
+    marker = {'title': 'IMG_0001.jpg', 'image_path': aoi_source_image}
+
+    photos = caltopo_controller._get_marker_photos(marker)
+
+    assert [photo['path'] for photo in photos] == [aoi_source_image]
+
+
+def test_get_marker_photos_none(caltopo_controller):
+    """Markers without photos return an empty list."""
+    assert caltopo_controller._get_marker_photos({'title': 'no photo'}) == []
+
+
+def test_cleanup_aoi_thumbnails_removes_generated_files(caltopo_controller, aoi_source_image):
+    """Cleanup removes the generated thumbnails and resets the service."""
+    import os
+    aoi = {'center': (400, 300), 'radius': 20}
+    photos = caltopo_controller._build_aoi_photos(aoi_source_image, 'IMG_0001.jpg', aoi, 0, 'thumbnail')
+    thumbnail_path = photos[0]['path']
+
+    caltopo_controller._cleanup_aoi_thumbnails()
+
+    assert not os.path.exists(thumbnail_path)
+    assert caltopo_controller.aoi_thumbnail_service is None
+
+
+def test_prepare_markers_cancelled_immediately(caltopo_controller, mock_viewer, aoi_source_image):
+    """A cancel before any work returns immediately with no markers or photos."""
+    mock_viewer.messages = {}
+    mock_viewer.custom_agl_altitude_ft = None
+    images = [{
+        'path': aoi_source_image,
+        'name': 'IMG_0001.jpg',
+        'areas_of_interest': [{'center': (400, 300), 'radius': 20}],
+        'hidden': False
+    }]
+
+    markers = _patched_prepare_markers(
+        caltopo_controller, images, {0: {0}}, include_images=True, cancel_check=lambda: True
+    )
+
+    assert markers == []
+    # No photo services were spun up because no AOI was processed
+    assert caltopo_controller.aoi_thumbnail_service is None
+
+
+def test_prepare_markers_cancel_mid_run_returns_partial(caltopo_controller, mock_viewer, aoi_source_image):
+    """Cancelling mid-run stops before the next AOI and returns the markers built so far."""
+    mock_viewer.messages = {}
+    mock_viewer.custom_agl_altitude_ft = None
+    images = [{
+        'path': aoi_source_image,
+        'name': 'IMG_0001.jpg',
+        'areas_of_interest': [
+            {'center': (400, 300), 'radius': 20},
+            {'center': (200, 200), 'radius': 20},
+        ],
+        'hidden': False
+    }]
+
+    # Cancel as soon as the first AOI has been reported via the progress callback
+    state = {'aois_seen': 0}
+
+    def progress_callback(current, total, message):
+        state['aois_seen'] = current
+
+    def cancel_check():
+        return state['aois_seen'] >= 1
+
+    markers = _patched_prepare_markers(
+        caltopo_controller, images, {0: [0, 1]}, include_images=False,
+        cancel_check=cancel_check, progress_callback=progress_callback
+    )
+
+    assert len(markers) == 1
+
+    caltopo_controller._cleanup_aoi_thumbnails()
+
+
+def test_prepare_markers_reports_progress(caltopo_controller, mock_viewer, aoi_source_image):
+    """The progress callback is invoked once per AOI with a running count."""
+    mock_viewer.messages = {}
+    mock_viewer.custom_agl_altitude_ft = None
+    images = [{
+        'path': aoi_source_image,
+        'name': 'IMG_0001.jpg',
+        'areas_of_interest': [
+            {'center': (400, 300), 'radius': 20},
+            {'center': (200, 200), 'radius': 20},
+        ],
+        'hidden': False
+    }]
+
+    calls = []
+    _patched_prepare_markers(
+        caltopo_controller, images, {0: [0, 1]}, include_images=False,
+        progress_callback=lambda current, total, message: calls.append((current, total))
+    )
+
+    assert calls == [(1, 2), (2, 2)]
+
+
+def test_prepare_location_markers_cancelled_immediately(caltopo_controller, mock_viewer, aoi_source_image):
+    """A cancelled location prep returns immediately with no markers."""
+    images = [{'path': aoi_source_image, 'name': 'IMG_0001.jpg', 'hidden': False}]
+
+    markers = caltopo_controller._prepare_location_markers(images, cancel_check=lambda: True)
+
+    assert markers == []
+
+
+def test_prepare_coverage_polygons_forwards_cancel_check(caltopo_controller, mock_viewer, aoi_source_image):
+    """The cancel check and progress callback are forwarded to the coverage service."""
+    module = 'core.controllers.images.viewer.exports.CalTopoExportController'
+    mock_viewer.custom_agl_altitude_ft = None
+    images = [{'path': aoi_source_image, 'name': 'IMG_0001.jpg', 'hidden': False}]
+
+    def cancel_check():
+        return False
+
+    def progress_callback(current, total, message):
+        pass
+
+    with patch(f'{module}.CoverageExtentService') as mock_service:
+        mock_service.return_value.calculate_coverage_extents.return_value = {'polygons': []}
+        caltopo_controller._prepare_coverage_polygons(
+            images, cancel_check=cancel_check, progress_callback=progress_callback
+        )
+
+    mock_service.return_value.calculate_coverage_extents.assert_called_once_with(
+        images, progress_callback=progress_callback, cancel_check=cancel_check
+    )
+
+
+class _FakeCalTopoPage:
+    """Simulates QWebEnginePage.runJavaScript for the browser export flow.
+
+    Calls without a callback are the fired export scripts (recorded); calls with
+    a callback are result polls, answered from a scripted list.
+    """
+
+    def __init__(self, poll_results):
+        self.fired_scripts = []
+        self.poll_results = list(poll_results)
+
+    def runJavaScript(self, code, callback=None):
+        if callback is None:
+            self.fired_scripts.append(code)
+        elif self.poll_results:
+            callback(self.poll_results.pop(0))
+        else:
+            callback(None)
+
+
+class _FakeCalTopoWebView:
+    """Wraps _FakeCalTopoPage with the page() and title() accessors the controller expects."""
+
+    def __init__(self, poll_results, titles=None):
+        self._page = _FakeCalTopoPage(poll_results)
+        self._titles = list(titles) if titles else []
+        self._last_title = ''
+
+    def page(self):
+        return self._page
+
+    def title(self):
+        if self._titles:
+            self._last_title = self._titles.pop(0)
+        return self._last_title
+
+
+def _run_marker_js_export(controller, markers, poll_results):
+    """Drive _export_markers_via_javascript with a fake page and scripted polls."""
+    module = 'core.controllers.images.viewer.exports.CalTopoExportController'
+    view = _FakeCalTopoWebView(poll_results)
+    with patch(f'{module}.ExportProgressDialog') as mock_dialog:
+        mock_dialog.return_value.is_cancelled.return_value = False
+        success_count, cancelled = controller._export_markers_via_javascript(view, 'MAPID', markers)
+    return success_count, cancelled, view
+
+
+def test_export_markers_via_javascript_waits_for_photo_confirmation(app, caltopo_controller, aoi_source_image):
+    """The export polls until the page confirms the marker and its photos uploaded."""
+    markers = [{
+        'lat': 39.5, 'lon': -105.2, 'title': 'IMG - AOI 1', 'description': 'desc',
+        'photos': [{'path': aoi_source_image, 'title': 'overview'},
+                   {'path': aoi_source_image, 'title': 'close-up'}],
+        'image_path': aoi_source_image,
+    }]
+
+    # First poll: still running; second poll: done with both photos confirmed
+    success_count, cancelled, view = _run_marker_js_export(
+        caltopo_controller, markers, [None, 'success:MARKER-1:photos:2/2']
+    )
+
+    assert success_count == 1
+    assert cancelled is False
+    # The script reports into a per-marker window variable that gets polled
+    fired = view.page().fired_scripts[0]
+    assert '__adiatResult_m1' in fired
+    assert 'photosUploaded' in fired
+
+
+def test_export_markers_via_javascript_partial_photos_warns(app, caltopo_controller, aoi_source_image):
+    """A marker whose photos partially failed still counts, but logs a warning."""
+    markers = [{
+        'lat': 39.5, 'lon': -105.2, 'title': 'IMG - AOI 1', 'description': 'desc',
+        'photos': [{'path': aoi_source_image, 'title': 'overview'},
+                   {'path': aoi_source_image, 'title': 'close-up'}],
+        'image_path': aoi_source_image,
+    }]
+
+    success_count, cancelled, _ = _run_marker_js_export(
+        caltopo_controller, markers, ['success:MARKER-1:photos:1/2']
+    )
+
+    assert success_count == 1
+    assert caltopo_controller.logger.warning.called
+
+
+def test_export_markers_via_javascript_timeout_assumes_success(app, caltopo_controller, aoi_source_image):
+    """No confirmation counts as assumed success with a warning (uploads finish during the wait)."""
+    caltopo_controller.JS_BASE_TIMEOUT_S = 0.3
+    caltopo_controller.JS_PER_PHOTO_TIMEOUT_S = 0
+    markers = [{
+        'lat': 39.5, 'lon': -105.2, 'title': 'IMG - AOI 1', 'description': 'desc',
+        'photos': [{'path': aoi_source_image, 'title': 'overview'}],
+        'image_path': aoi_source_image,
+    }]
+
+    success_count, cancelled, _ = _run_marker_js_export(caltopo_controller, markers, [])
+
+    assert success_count == 1
+    assert cancelled is False
+    assert caltopo_controller.logger.warning.called
+
+
+def test_export_polygons_via_javascript_success(app, caltopo_controller):
+    """Polygon export succeeds when the page confirms the shape was posted."""
+    module = 'core.controllers.images.viewer.exports.CalTopoExportController'
+    polygons = [{
+        'coordinates': [(39.5, -105.2), (39.6, -105.2), (39.6, -105.1)],
+        'title': 'Coverage', 'description': 'area'
+    }]
+
+    view = _FakeCalTopoWebView(['success:SHAPE-1'])
+    with patch(f'{module}.ExportProgressDialog') as mock_dialog:
+        mock_dialog.return_value.is_cancelled.return_value = False
+        success_count, cancelled = caltopo_controller._export_polygons_via_javascript(view, 'MAPID', polygons)
+
+    assert success_count == 1
+    assert cancelled is False
+    assert '__adiatResult_p1' in view.page().fired_scripts[0]
+
+
+def test_export_markers_via_javascript_title_channel(app, caltopo_controller, aoi_source_image):
+    """The document.title channel delivers results even when JS callbacks never fire."""
+    module = 'core.controllers.images.viewer.exports.CalTopoExportController'
+    caltopo_controller.JS_POLL_INTERVAL_S = 0.001
+    markers = [{
+        'lat': 39.5, 'lon': -105.2, 'title': 'IMG - AOI 1', 'description': 'desc',
+        'photos': [{'path': aoi_source_image, 'title': 'overview'}],
+        'image_path': aoi_source_image,
+    }]
+
+    # Polls never answer (empty poll results simulate undelivered callbacks);
+    # the title progresses from started to the final result
+    view = _FakeCalTopoWebView(
+        poll_results=[],
+        titles=['CalTopo', 'ADIAT:m1:started', 'ADIAT:m1:success:MARKER-9:photos:1/1']
+    )
+    with patch(f'{module}.ExportProgressDialog') as mock_dialog:
+        mock_dialog.return_value.is_cancelled.return_value = False
+        success_count, cancelled = caltopo_controller._export_markers_via_javascript(view, 'MAPID', markers)
+
+    assert success_count == 1
+    assert cancelled is False
+
+
+def test_export_markers_warns_when_prepared_photos_missing(app, caltopo_controller, aoi_source_image):
+    """Markers whose prepared photo files vanished log a clear warning per photo."""
+    module = 'core.controllers.images.viewer.exports.CalTopoExportController'
+    markers = [{
+        'lat': 39.5, 'lon': -105.2, 'title': 'IMG - AOI 1', 'description': 'desc',
+        'photos': [{'path': '/gone/overview.jpg', 'title': 'overview'}],
+        'image_path': '/gone/original.jpg',
+    }]
+
+    view = _FakeCalTopoWebView(poll_results=['success:MARKER-1:photos:0/0'])
+    with patch(f'{module}.ExportProgressDialog') as mock_dialog:
+        mock_dialog.return_value.is_cancelled.return_value = False
+        success_count, cancelled = caltopo_controller._export_markers_via_javascript(view, 'MAPID', markers)
+
+    assert success_count == 1
+    warning_messages = [str(call) for call in caltopo_controller.logger.warning.call_args_list]
+    assert any('missing on disk' in message for message in warning_messages)
+
+
+def test_get_marker_photos_warns_per_missing_photo(caltopo_controller, aoi_source_image):
+    """Each prepared photo that is missing on disk is logged, even when others survive."""
+    marker = {
+        'title': 'IMG - AOI 1',
+        'photos': [
+            {'path': '/gone/closeup.jpg', 'title': 'close-up'},
+            {'path': aoi_source_image, 'title': 'overview'},
+        ],
+        'image_path': aoi_source_image,
+    }
+
+    photos = caltopo_controller._get_marker_photos(marker)
+
+    assert [photo['title'] for photo in photos] == ['overview']
+    warning_messages = [str(call) for call in caltopo_controller.logger.warning.call_args_list]
+    assert any('closeup.jpg' in message for message in warning_messages)
