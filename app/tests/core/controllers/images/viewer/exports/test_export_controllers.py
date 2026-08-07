@@ -12,7 +12,11 @@ from core.controllers.images.viewer.exports.PDFExportController import PDFExport
 from core.controllers.images.viewer.exports.ZipExportController import ZipExportController
 from core.controllers.images.viewer.exports.UnifiedMapExportController import UnifiedMapExportController
 from core.controllers.images.viewer.exports.CoverageExtentExportController import CoverageExtentExportController
-from core.controllers.images.viewer.exports.CalTopoExportController import CalTopoExportController
+from core.controllers.images.viewer.exports.CalTopoExportController import (
+    CalTopoExportController,
+    CalTopoExportThread,
+)
+from core.services.export.CalTopoPublishers import CalTopoApiPublisher, CalTopoBrowserPublisher
 
 
 @pytest.fixture(scope='session')
@@ -173,7 +177,7 @@ def test_caltopo_export_via_api_success(mock_api_service, mock_map_dialog, mock_
 
     # Mock the account data thread and export thread
     with patch('core.controllers.images.viewer.exports.CalTopoExportController.CalTopoAccountDataThread') as mock_account_thread_class, \
-            patch('core.controllers.images.viewer.exports.CalTopoExportController.CalTopoAPIExportThread') as mock_export_thread_class, \
+            patch('core.controllers.images.viewer.exports.CalTopoExportController.CalTopoExportThread') as mock_export_thread_class, \
             patch('core.controllers.images.viewer.exports.CalTopoExportController.ExportProgressDialog') as mock_progress_dialog_class, \
             patch('core.controllers.images.viewer.exports.CalTopoExportController.QMessageBox') as mock_msgbox:
 
@@ -334,6 +338,284 @@ def test_caltopo_export_via_api_credentials_cancelled(mock_cred_dialog, app, moc
 
 
 @pytest.fixture
+def stub_progress_dialog():
+    """Patch ExportProgressDialog with a non-cancelled stub.
+
+    A bare MagicMock returns a truthy is_cancelled(), which would abort the
+    export loop before it did anything and let assertions pass for the wrong
+    reason.
+    """
+    target = 'core.controllers.images.viewer.exports.CalTopoExportController.ExportProgressDialog'
+    with patch(target) as mock_dialog_cls:
+        mock_dialog_cls.return_value.is_cancelled.return_value = False
+        yield mock_dialog_cls
+
+
+def test_export_thread_uses_publisher_for_markers_and_photos(app, mock_viewer):
+    """The worker drives whatever publisher it is given, photos included."""
+    controller = CalTopoExportController(mock_viewer)
+
+    publisher = MagicMock()
+    publisher.add_marker.return_value = (True, 'marker-1')
+    publisher.upload_photo.return_value = (True, 'media-1')
+    publisher.add_polygon.return_value = (True, 'shape-1')
+
+    markers = [{'lat': 1.0, 'lon': 2.0, 'title': 'AOI 1', 'description': 'd',
+                'image_path': __file__}]
+    polygons = [{'coordinates': [(1.0, 2.0), (1.0, 3.0), (2.0, 3.0)],
+                 'title': 'Coverage', 'description': 'd'}]
+
+    thread = CalTopoExportThread(
+        publisher, controller, [], {},
+        True, False, True, True, True,
+        markers=markers, polygons=polygons
+    )
+
+    summaries = []
+    thread.finished.connect(summaries.append)
+    thread.run()
+
+    publisher.add_marker.assert_called_once_with(markers[0])
+    publisher.upload_photo.assert_called_once_with(
+        markers[0], 'marker-1', photo_path=__file__, title='AOI 1'
+    )
+    publisher.add_polygon.assert_called_once_with(polygons[0])
+
+    assert summaries == [{
+        'success': True,
+        'objects_created': 2,
+        'objects_total': 2,
+        'photos_uploaded': 1,
+        'photos_total': 1,
+    }]
+
+
+def test_export_thread_reports_photo_failure_without_losing_the_marker(app, mock_viewer):
+    """A failed photo must not be reported as a failed marker, or as success."""
+    controller = CalTopoExportController(mock_viewer)
+
+    publisher = MagicMock()
+    publisher.add_marker.return_value = (True, 'marker-1')
+    publisher.upload_photo.return_value = (False, None)
+
+    markers = [{'lat': 1.0, 'lon': 2.0, 'title': 'AOI 1', 'description': 'd',
+                'image_path': __file__}]
+
+    thread = CalTopoExportThread(
+        publisher, controller, [], {},
+        True, False, True, False, True,
+        markers=markers, polygons=[]
+    )
+
+    summaries = []
+    thread.finished.connect(summaries.append)
+    thread.run()
+
+    summary = summaries[0]
+    assert summary['objects_created'] == 1      # the marker did land
+    assert summary['photos_total'] == 1
+    assert summary['photos_uploaded'] == 0      # and the photo did not
+
+
+def test_export_thread_skips_photo_when_marker_fails(app, mock_viewer):
+    """No marker id means nothing to attach a photo to."""
+    controller = CalTopoExportController(mock_viewer)
+
+    publisher = MagicMock()
+    publisher.add_marker.return_value = (False, None)
+
+    markers = [{'lat': 1.0, 'lon': 2.0, 'title': 'AOI 1', 'description': 'd',
+                'image_path': __file__}]
+
+    thread = CalTopoExportThread(
+        publisher, controller, [], {},
+        True, False, True, False, True,
+        markers=markers, polygons=[]
+    )
+
+    summaries = []
+    thread.finished.connect(summaries.append)
+    thread.run()
+
+    publisher.upload_photo.assert_not_called()
+    assert summaries[0]['success'] is False
+    assert summaries[0]['photos_total'] == 0
+
+
+def test_export_thread_uses_prepared_data_without_repreparing(app, mock_viewer):
+    """Data prepared before the login prompt is reused, not rebuilt."""
+    controller = CalTopoExportController(mock_viewer)
+
+    publisher = MagicMock()
+    publisher.add_marker.return_value = (True, 'm1')
+
+    markers = [{'lat': 1.0, 'lon': 2.0, 'title': 'AOI 1', 'description': 'd'}]
+
+    thread = CalTopoExportThread(
+        publisher, controller, [], {},
+        True, True, True, True, True,
+        markers=markers, polygons=[]
+    )
+
+    with patch.object(controller, '_prepare_markers') as prepare_markers, \
+         patch.object(controller, '_prepare_coverage_polygons') as prepare_polygons:
+        thread.run()
+
+    prepare_markers.assert_not_called()
+    prepare_polygons.assert_not_called()
+    publisher.add_marker.assert_called_once()
+
+
+def test_browser_publisher_delegates_to_the_session_client(app):
+    """The browser publisher writes over HTTP, not through the page."""
+    service = MagicMock()
+    service.add_marker_to_map.return_value = (True, 'm1')
+    service.add_shape_to_map.return_value = (True, 's1')
+    service.upload_photo_for_marker.return_value = (True, 'media1')
+
+    publisher = CalTopoBrowserPublisher(service, 'MAP1')
+    marker = {'lat': 1.0, 'lon': 2.0, 'title': 'AOI 1', 'description': 'd',
+              'image_path': 'photo.jpg'}
+
+    assert publisher.add_marker(marker) == (True, 'm1')
+    service.add_marker_to_map.assert_called_once_with('MAP1', marker)
+
+    assert publisher.upload_photo(marker, 'm1') == (True, 'media1')
+    service.upload_photo_for_marker.assert_called_once_with(
+        'MAP1', 'm1', 'photo.jpg', 1.0, 2.0, title='AOI 1', description='d'
+    )
+
+
+def test_api_publisher_passes_credentials_through(app):
+    """The API publisher keeps the credential plumbing out of the worker."""
+    api_service = MagicMock()
+    api_service.add_marker_via_api.return_value = (True, 'm1')
+
+    publisher = CalTopoApiPublisher(api_service, 'MAP1', 'TEAM', 'CRED', 'SECRET')
+    marker = {'lat': 1.0, 'lon': 2.0, 'title': 'AOI 1'}
+
+    assert publisher.add_marker(marker) == (True, 'm1')
+    api_service.add_marker_via_api.assert_called_once_with(
+        'MAP1', 'TEAM', 'CRED', 'SECRET', marker
+    )
+
+
+def test_browser_export_publishes_over_http_not_javascript(app, mock_viewer):
+    """The browser path must hand the captured session to the HTTP client.
+
+    The export used to run fetch() inside the page, which meant megabyte photo
+    payloads were interpolated into script source and completion could only be
+    observed through an unreliable callback. The dialog is now a login surface
+    only.
+    """
+    controller = CalTopoExportController(mock_viewer)
+
+    assert not hasattr(controller, '_export_markers_via_javascript')
+    assert not hasattr(controller, '_export_polygons_via_javascript')
+    assert not hasattr(controller, '_await_js_result')
+
+
+@patch('core.controllers.images.viewer.exports.CalTopoExportController.QMessageBox')
+@patch('core.controllers.images.viewer.exports.CalTopoExportController.CalTopoCredentialDialog')
+def test_offer_credential_retry_declined(mock_cred_dialog, mock_messagebox, app, mock_viewer):
+    """Declining the retry offer ends the export without reprompting."""
+    mock_messagebox.question.return_value = mock_messagebox.No
+
+    controller = CalTopoExportController(mock_viewer)
+
+    assert controller._offer_credential_retry(None, ('T', 'C', 'S')) is None
+    mock_cred_dialog.assert_not_called()
+
+
+@patch('core.controllers.images.viewer.exports.CalTopoExportController.QMessageBox')
+@patch('core.controllers.images.viewer.exports.CalTopoExportController.CalTopoCredentialDialog')
+def test_offer_credential_retry_reprompts_prefilled(mock_cred_dialog, mock_messagebox, app, mock_viewer):
+    """Accepting reopens the credential dialog pre-filled with what was rejected."""
+    mock_messagebox.question.return_value = mock_messagebox.Yes
+
+    mock_cred_instance = MagicMock()
+    mock_cred_instance.exec.return_value = mock_cred_dialog.Accepted
+    mock_cred_instance.get_credentials.return_value = ('TEAM', 'CRED', 'U0VDUkVU')
+    mock_cred_dialog.return_value = mock_cred_instance
+
+    controller = CalTopoExportController(mock_viewer)
+
+    with patch.object(controller.credential_helper, 'save_credentials') as mock_save:
+        retried = controller._offer_credential_retry(None, ('OLD_T', 'OLD_C', 'OLD_S'))
+
+    assert retried == ('TEAM', 'CRED', 'U0VDUkVU')
+
+    assert mock_cred_dialog.call_args.kwargs['existing_credentials'] == ('OLD_T', 'OLD_C', 'OLD_S')
+    mock_save.assert_called_once_with('TEAM', 'CRED', 'U0VDUkVU')
+
+
+@patch('core.controllers.images.viewer.exports.CalTopoExportController.QMessageBox')
+def test_caltopo_export_via_api_rejected_credentials_are_not_a_dead_end(mock_messagebox, app, mock_viewer):
+    """Stored-but-rejected credentials must lead back to the credential prompt.
+
+    Previously has_credentials() alone gated the prompt, so a secret CalTopo
+    refused could never be corrected: the only "Update Credentials" button
+    lives behind a successful authentication.
+    """
+    mock_viewer.settings_service = MagicMock()
+    mock_viewer.settings_service.get_bool_setting.return_value = False
+    mock_messagebox.question.return_value = mock_messagebox.No
+
+    controller = CalTopoExportController(mock_viewer)
+
+    with patch.object(controller.credential_helper, 'has_credentials', return_value=True), \
+         patch.object(controller.credential_helper, 'get_credentials',
+                      return_value=('TEAM', 'CRED', 'U0VDUkVU')), \
+         patch.object(controller, '_fetch_account_data',
+                      return_value=(False, None, None)) as mock_fetch:
+        result = controller.export_to_caltopo_via_api([], {}, include_flagged_aois=True)
+
+    assert result is False
+    mock_fetch.assert_called_once()
+    # The user was offered a way out, rather than shown a terminal error.
+    mock_messagebox.question.assert_called_once()
+
+
+@patch('core.controllers.images.viewer.exports.CalTopoExportController.CalTopoAPIMapDialog')
+@patch('core.controllers.images.viewer.exports.CalTopoExportController.QMessageBox')
+def test_caltopo_export_via_api_retries_after_new_credentials(
+        mock_messagebox, mock_map_dialog, app, mock_viewer):
+    """New credentials are retried in the same run, without restarting the export."""
+    mock_viewer.settings_service = MagicMock()
+    mock_viewer.settings_service.get_bool_setting.return_value = False
+    mock_messagebox.question.return_value = mock_messagebox.Yes
+
+    # User cancels at map selection, so the run stops right after a good auth.
+    mock_map_instance = MagicMock()
+    mock_map_instance.exec.return_value = 0
+    mock_map_dialog.return_value = mock_map_instance
+
+    controller = CalTopoExportController(mock_viewer)
+
+    attempts = [(False, None, None), (True, {'team_id': 'TEAM', 'state': {}}, None)]
+
+    with patch.object(controller.credential_helper, 'has_credentials', return_value=True), \
+         patch.object(controller.credential_helper, 'get_credentials',
+                      return_value=('TEAM', 'CRED', 'U0VDUkVU')), \
+         patch.object(controller, '_offer_credential_retry',
+                      return_value=('TEAM2', 'CRED2', 'TkVXU0VDUkVU')) as mock_prompt, \
+         patch.object(controller, '_fetch_account_data',
+                      side_effect=attempts) as mock_fetch:
+        result = controller.export_to_caltopo_via_api([], {}, include_flagged_aois=True)
+
+    assert result is False  # cancelled at map selection
+    assert mock_fetch.call_count == 2
+    mock_prompt.assert_called_once()
+    # Second attempt used the corrected credentials.
+    assert mock_fetch.call_args_list[1][0] == ('TEAM2', 'CRED2', 'TkVXU0VDUkVU')
+
+
+# ---------------------------------------------------------------------------
+# AOI photo modes: which photo(s) a flagged-AOI marker carries to CalTopo
+# ---------------------------------------------------------------------------
+
+
+@pytest.fixture
 def caltopo_controller(mock_viewer):
     """Create a CalTopoExportController with its external services stubbed out."""
     module = 'core.controllers.images.viewer.exports.CalTopoExportController'
@@ -461,7 +743,7 @@ def _patched_prepare_markers(controller, images, flagged_aois, **kwargs):
         mock_image_service.return_value.get_camera_yaw.return_value = 0
         mock_image_service.return_value.get_average_gsd.return_value = 1.0
         mock_aoi_service.return_value.calculate_gps_with_custom_altitude.return_value = (39.5001, -105.2001)
-        mock_aoi_service.return_value.get_aoi_representative_color.return_value = None
+        mock_aoi_service.return_value.get_cached_or_representative_color.return_value = None
         return controller._prepare_markers(images, flagged_aois, **kwargs)
 
 
@@ -591,291 +873,6 @@ def test_get_marker_photos_none(caltopo_controller):
     assert caltopo_controller._get_marker_photos({'title': 'no photo'}) == []
 
 
-def test_cleanup_aoi_thumbnails_removes_generated_files(caltopo_controller, aoi_source_image):
-    """Cleanup removes the generated thumbnails and resets the service."""
-    import os
-    aoi = {'center': (400, 300), 'radius': 20}
-    photos = caltopo_controller._build_aoi_photos(aoi_source_image, 'IMG_0001.jpg', aoi, 0, 'thumbnail')
-    thumbnail_path = photos[0]['path']
-
-    caltopo_controller._cleanup_aoi_thumbnails()
-
-    assert not os.path.exists(thumbnail_path)
-    assert caltopo_controller.aoi_thumbnail_service is None
-
-
-def test_prepare_markers_cancelled_immediately(caltopo_controller, mock_viewer, aoi_source_image):
-    """A cancel before any work returns immediately with no markers or photos."""
-    mock_viewer.messages = {}
-    mock_viewer.custom_agl_altitude_ft = None
-    images = [{
-        'path': aoi_source_image,
-        'name': 'IMG_0001.jpg',
-        'areas_of_interest': [{'center': (400, 300), 'radius': 20}],
-        'hidden': False
-    }]
-
-    markers = _patched_prepare_markers(
-        caltopo_controller, images, {0: {0}}, include_images=True, cancel_check=lambda: True
-    )
-
-    assert markers == []
-    # No photo services were spun up because no AOI was processed
-    assert caltopo_controller.aoi_thumbnail_service is None
-
-
-def test_prepare_markers_cancel_mid_run_returns_partial(caltopo_controller, mock_viewer, aoi_source_image):
-    """Cancelling mid-run stops before the next AOI and returns the markers built so far."""
-    mock_viewer.messages = {}
-    mock_viewer.custom_agl_altitude_ft = None
-    images = [{
-        'path': aoi_source_image,
-        'name': 'IMG_0001.jpg',
-        'areas_of_interest': [
-            {'center': (400, 300), 'radius': 20},
-            {'center': (200, 200), 'radius': 20},
-        ],
-        'hidden': False
-    }]
-
-    # Cancel as soon as the first AOI has been reported via the progress callback
-    state = {'aois_seen': 0}
-
-    def progress_callback(current, total, message):
-        state['aois_seen'] = current
-
-    def cancel_check():
-        return state['aois_seen'] >= 1
-
-    markers = _patched_prepare_markers(
-        caltopo_controller, images, {0: [0, 1]}, include_images=False,
-        cancel_check=cancel_check, progress_callback=progress_callback
-    )
-
-    assert len(markers) == 1
-
-    caltopo_controller._cleanup_aoi_thumbnails()
-
-
-def test_prepare_markers_reports_progress(caltopo_controller, mock_viewer, aoi_source_image):
-    """The progress callback is invoked once per AOI with a running count."""
-    mock_viewer.messages = {}
-    mock_viewer.custom_agl_altitude_ft = None
-    images = [{
-        'path': aoi_source_image,
-        'name': 'IMG_0001.jpg',
-        'areas_of_interest': [
-            {'center': (400, 300), 'radius': 20},
-            {'center': (200, 200), 'radius': 20},
-        ],
-        'hidden': False
-    }]
-
-    calls = []
-    _patched_prepare_markers(
-        caltopo_controller, images, {0: [0, 1]}, include_images=False,
-        progress_callback=lambda current, total, message: calls.append((current, total))
-    )
-
-    assert calls == [(1, 2), (2, 2)]
-
-
-def test_prepare_location_markers_cancelled_immediately(caltopo_controller, mock_viewer, aoi_source_image):
-    """A cancelled location prep returns immediately with no markers."""
-    images = [{'path': aoi_source_image, 'name': 'IMG_0001.jpg', 'hidden': False}]
-
-    markers = caltopo_controller._prepare_location_markers(images, cancel_check=lambda: True)
-
-    assert markers == []
-
-
-def test_prepare_coverage_polygons_forwards_cancel_check(caltopo_controller, mock_viewer, aoi_source_image):
-    """The cancel check and progress callback are forwarded to the coverage service."""
-    module = 'core.controllers.images.viewer.exports.CalTopoExportController'
-    mock_viewer.custom_agl_altitude_ft = None
-    images = [{'path': aoi_source_image, 'name': 'IMG_0001.jpg', 'hidden': False}]
-
-    def cancel_check():
-        return False
-
-    def progress_callback(current, total, message):
-        pass
-
-    with patch(f'{module}.CoverageExtentService') as mock_service:
-        mock_service.return_value.calculate_coverage_extents.return_value = {'polygons': []}
-        caltopo_controller._prepare_coverage_polygons(
-            images, cancel_check=cancel_check, progress_callback=progress_callback
-        )
-
-    mock_service.return_value.calculate_coverage_extents.assert_called_once_with(
-        images, progress_callback=progress_callback, cancel_check=cancel_check
-    )
-
-
-class _FakeCalTopoPage:
-    """Simulates QWebEnginePage.runJavaScript for the browser export flow.
-
-    Calls without a callback are the fired export scripts (recorded); calls with
-    a callback are result polls, answered from a scripted list.
-    """
-
-    def __init__(self, poll_results):
-        self.fired_scripts = []
-        self.poll_results = list(poll_results)
-
-    def runJavaScript(self, code, callback=None):
-        if callback is None:
-            self.fired_scripts.append(code)
-        elif self.poll_results:
-            callback(self.poll_results.pop(0))
-        else:
-            callback(None)
-
-
-class _FakeCalTopoWebView:
-    """Wraps _FakeCalTopoPage with the page() and title() accessors the controller expects."""
-
-    def __init__(self, poll_results, titles=None):
-        self._page = _FakeCalTopoPage(poll_results)
-        self._titles = list(titles) if titles else []
-        self._last_title = ''
-
-    def page(self):
-        return self._page
-
-    def title(self):
-        if self._titles:
-            self._last_title = self._titles.pop(0)
-        return self._last_title
-
-
-def _run_marker_js_export(controller, markers, poll_results):
-    """Drive _export_markers_via_javascript with a fake page and scripted polls."""
-    module = 'core.controllers.images.viewer.exports.CalTopoExportController'
-    view = _FakeCalTopoWebView(poll_results)
-    with patch(f'{module}.ExportProgressDialog') as mock_dialog:
-        mock_dialog.return_value.is_cancelled.return_value = False
-        success_count, cancelled = controller._export_markers_via_javascript(view, 'MAPID', markers)
-    return success_count, cancelled, view
-
-
-def test_export_markers_via_javascript_waits_for_photo_confirmation(app, caltopo_controller, aoi_source_image):
-    """The export polls until the page confirms the marker and its photos uploaded."""
-    markers = [{
-        'lat': 39.5, 'lon': -105.2, 'title': 'IMG - AOI 1', 'description': 'desc',
-        'photos': [{'path': aoi_source_image, 'title': 'overview'},
-                   {'path': aoi_source_image, 'title': 'close-up'}],
-        'image_path': aoi_source_image,
-    }]
-
-    # First poll: still running; second poll: done with both photos confirmed
-    success_count, cancelled, view = _run_marker_js_export(
-        caltopo_controller, markers, [None, 'success:MARKER-1:photos:2/2']
-    )
-
-    assert success_count == 1
-    assert cancelled is False
-    # The script reports into a per-marker window variable that gets polled
-    fired = view.page().fired_scripts[0]
-    assert '__adiatResult_m1' in fired
-    assert 'photosUploaded' in fired
-
-
-def test_export_markers_via_javascript_partial_photos_warns(app, caltopo_controller, aoi_source_image):
-    """A marker whose photos partially failed still counts, but logs a warning."""
-    markers = [{
-        'lat': 39.5, 'lon': -105.2, 'title': 'IMG - AOI 1', 'description': 'desc',
-        'photos': [{'path': aoi_source_image, 'title': 'overview'},
-                   {'path': aoi_source_image, 'title': 'close-up'}],
-        'image_path': aoi_source_image,
-    }]
-
-    success_count, cancelled, _ = _run_marker_js_export(
-        caltopo_controller, markers, ['success:MARKER-1:photos:1/2']
-    )
-
-    assert success_count == 1
-    assert caltopo_controller.logger.warning.called
-
-
-def test_export_markers_via_javascript_timeout_assumes_success(app, caltopo_controller, aoi_source_image):
-    """No confirmation counts as assumed success with a warning (uploads finish during the wait)."""
-    caltopo_controller.JS_BASE_TIMEOUT_S = 0.3
-    caltopo_controller.JS_PER_PHOTO_TIMEOUT_S = 0
-    markers = [{
-        'lat': 39.5, 'lon': -105.2, 'title': 'IMG - AOI 1', 'description': 'desc',
-        'photos': [{'path': aoi_source_image, 'title': 'overview'}],
-        'image_path': aoi_source_image,
-    }]
-
-    success_count, cancelled, _ = _run_marker_js_export(caltopo_controller, markers, [])
-
-    assert success_count == 1
-    assert cancelled is False
-    assert caltopo_controller.logger.warning.called
-
-
-def test_export_polygons_via_javascript_success(app, caltopo_controller):
-    """Polygon export succeeds when the page confirms the shape was posted."""
-    module = 'core.controllers.images.viewer.exports.CalTopoExportController'
-    polygons = [{
-        'coordinates': [(39.5, -105.2), (39.6, -105.2), (39.6, -105.1)],
-        'title': 'Coverage', 'description': 'area'
-    }]
-
-    view = _FakeCalTopoWebView(['success:SHAPE-1'])
-    with patch(f'{module}.ExportProgressDialog') as mock_dialog:
-        mock_dialog.return_value.is_cancelled.return_value = False
-        success_count, cancelled = caltopo_controller._export_polygons_via_javascript(view, 'MAPID', polygons)
-
-    assert success_count == 1
-    assert cancelled is False
-    assert '__adiatResult_p1' in view.page().fired_scripts[0]
-
-
-def test_export_markers_via_javascript_title_channel(app, caltopo_controller, aoi_source_image):
-    """The document.title channel delivers results even when JS callbacks never fire."""
-    module = 'core.controllers.images.viewer.exports.CalTopoExportController'
-    caltopo_controller.JS_POLL_INTERVAL_S = 0.001
-    markers = [{
-        'lat': 39.5, 'lon': -105.2, 'title': 'IMG - AOI 1', 'description': 'desc',
-        'photos': [{'path': aoi_source_image, 'title': 'overview'}],
-        'image_path': aoi_source_image,
-    }]
-
-    # Polls never answer (empty poll results simulate undelivered callbacks);
-    # the title progresses from started to the final result
-    view = _FakeCalTopoWebView(
-        poll_results=[],
-        titles=['CalTopo', 'ADIAT:m1:started', 'ADIAT:m1:success:MARKER-9:photos:1/1']
-    )
-    with patch(f'{module}.ExportProgressDialog') as mock_dialog:
-        mock_dialog.return_value.is_cancelled.return_value = False
-        success_count, cancelled = caltopo_controller._export_markers_via_javascript(view, 'MAPID', markers)
-
-    assert success_count == 1
-    assert cancelled is False
-
-
-def test_export_markers_warns_when_prepared_photos_missing(app, caltopo_controller, aoi_source_image):
-    """Markers whose prepared photo files vanished log a clear warning per photo."""
-    module = 'core.controllers.images.viewer.exports.CalTopoExportController'
-    markers = [{
-        'lat': 39.5, 'lon': -105.2, 'title': 'IMG - AOI 1', 'description': 'desc',
-        'photos': [{'path': '/gone/overview.jpg', 'title': 'overview'}],
-        'image_path': '/gone/original.jpg',
-    }]
-
-    view = _FakeCalTopoWebView(poll_results=['success:MARKER-1:photos:0/0'])
-    with patch(f'{module}.ExportProgressDialog') as mock_dialog:
-        mock_dialog.return_value.is_cancelled.return_value = False
-        success_count, cancelled = caltopo_controller._export_markers_via_javascript(view, 'MAPID', markers)
-
-    assert success_count == 1
-    warning_messages = [str(call) for call in caltopo_controller.logger.warning.call_args_list]
-    assert any('missing on disk' in message for message in warning_messages)
-
-
 def test_get_marker_photos_warns_per_missing_photo(caltopo_controller, aoi_source_image):
     """Each prepared photo that is missing on disk is logged, even when others survive."""
     marker = {
@@ -892,3 +889,16 @@ def test_get_marker_photos_warns_per_missing_photo(caltopo_controller, aoi_sourc
     assert [photo['title'] for photo in photos] == ['overview']
     warning_messages = [str(call) for call in caltopo_controller.logger.warning.call_args_list]
     assert any('closeup.jpg' in message for message in warning_messages)
+
+
+def test_cleanup_aoi_thumbnails_removes_generated_files(caltopo_controller, aoi_source_image):
+    """Cleanup removes the generated thumbnails and resets the service."""
+    import os
+    aoi = {'center': (400, 300), 'radius': 20}
+    photos = caltopo_controller._build_aoi_photos(aoi_source_image, 'IMG_0001.jpg', aoi, 0, 'thumbnail')
+    thumbnail_path = photos[0]['path']
+
+    caltopo_controller._cleanup_aoi_thumbnails()
+
+    assert not os.path.exists(thumbnail_path)
+    assert caltopo_controller.aoi_thumbnail_service is None

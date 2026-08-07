@@ -842,7 +842,7 @@ class UnifiedMapExportController(TranslationMixin):
             caltopo_controller = CalTopoExportController(self.parent, self.logger)
 
             # Export markers and polygons based on selections
-            caltopo_controller.export_to_caltopo(
+            exported = caltopo_controller.export_to_caltopo(
                 self.parent.images,
                 self.parent.aoi_controller.flagged_aois,
                 include_flagged_aois=include_flagged_aois,
@@ -852,6 +852,11 @@ class UnifiedMapExportController(TranslationMixin):
                 include_images=include_images,
                 aoi_photo_mode=aoi_photo_mode
             )
+            # Discarding this made every failed export indistinguishable from a
+            # successful one at this level.
+            if not exported:
+                self.logger.warning("CalTopo browser export did not complete")
+            return exported
 
         except Exception as e:
             self.logger.error(f"Error exporting to CalTopo: {str(e)}")
@@ -860,6 +865,7 @@ class UnifiedMapExportController(TranslationMixin):
                 self.tr("Export Error"),
                 self.tr("Failed to export to CalTopo:\n{error}").format(error=str(e))
             )
+            return False
 
     def _export_to_caltopo_via_api(self, include_locations, include_images_without_flagged_aois, include_flagged_aois,
                                    include_coverage, include_images=True, aoi_photo_mode='full'):
