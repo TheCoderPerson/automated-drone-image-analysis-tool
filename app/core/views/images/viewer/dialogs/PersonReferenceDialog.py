@@ -54,6 +54,14 @@ SETTING_SHOW_SHADOWS = 'PersonReferenceShowShadows'
 SETTING_USE_TERRAIN = 'PersonReferenceUseTerrain'
 DEFAULT_OVERLAY_COLOR = '#00ff00'  # bright green
 
+# On-screen span below which the reference person is effectively invisible
+# and the viewer auto-zooms to it. High-altitude fixed-wing imagery (e.g.
+# WALDO tiles at ~1500m AGL / ~13cm/px) renders a person only ~15 image px
+# tall, which fit zoom reduces to 2-3 screen px.
+MIN_LEGIBLE_SCREEN_PX = 28
+# After auto-zoom the viewport spans about this many person-heights.
+AUTO_ZOOM_VIEW_SPAN = 10
+
 # Reference size classes: key, label, standing height (inches), weight (lb).
 SIZE_CLASSES = [
     ("large_adult", "Large adult",           6 * 12 + 2,  220),
@@ -425,6 +433,59 @@ class PersonReferenceDialog(TranslationMixin, QDialog):
             ))
         else:
             self._show_status(None)
+            self._ensure_reference_visible()
+
+    def _reference_bounds_scene(self):
+        """United scene-space bounding rect of the visible silhouettes, or None.
+
+        The shadow is deliberately excluded: a low sun casts a shadow many
+        person-lengths long, and framing it would zoom the person itself back
+        out to illegibility.
+        """
+        bounds = None
+        for item in self.pose_items.values():
+            if item is None or not item.isVisible():
+                continue
+            rect = item.path().boundingRect()
+            if rect.isNull() or rect.isEmpty():
+                continue
+            bounds = rect if bounds is None else bounds.united(rect)
+        return bounds
+
+    def _ensure_reference_visible(self):
+        """Zoom the viewer to the reference person when it is sub-visible.
+
+        Drone imagery renders a person tens to hundreds of screen pixels
+        tall, but high-altitude fixed-wing imagery renders one a couple of
+        screen pixels tall at fit zoom, which reads as the tool doing nothing
+        at all. When the projected silhouette would be illegible on screen,
+        frame it in the viewer instead. Runs only on image load, so it never
+        fights manual zooming afterwards.
+        """
+        viewer = self.image_viewer
+        if self.camera is None or viewer is None:
+            return
+        bounds = self._reference_bounds_scene()
+        if bounds is None:
+            return
+        try:
+            on_screen = viewer.mapFromScene(bounds).boundingRect()
+            screen_span = max(on_screen.width(), on_screen.height())
+            if screen_span >= MIN_LEGIBLE_SCREEN_PX:
+                return
+            span = max(bounds.width(), bounds.height()) * AUTO_ZOOM_VIEW_SPAN
+            # Floor keeps a degenerate sub-pixel person from zooming absurdly
+            span = max(span, 80.0)
+            target = QRectF(0.0, 0.0, span, span)
+            target.moveCenter(bounds.center())
+            viewer.zoomToRect(target)
+        except Exception:
+            # Zooming is a convenience; never let it break the overlay
+            return
+        self._show_status(self.tr(
+            "Zoomed to the reference person: at this altitude a person spans "
+            "only a few pixels."
+        ))
 
     def update_for_image(self, image_service, image_path, agl_override_m=None):
         """Rebuild the camera/sun for a newly selected image (called by Viewer)."""
