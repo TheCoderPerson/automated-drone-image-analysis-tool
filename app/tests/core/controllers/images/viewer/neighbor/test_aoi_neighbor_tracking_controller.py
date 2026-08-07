@@ -273,3 +273,92 @@ class TestWorker:
         worker.run()
 
         assert errors == ["boom"]
+
+
+# --------------------------------------------------------------------------- #
+#  Full-flight search scope (Z must not be blind to detection-less images)    #
+# --------------------------------------------------------------------------- #
+
+class TestFullFlightSearchScope:
+    """The search must cover the whole flight, not just the AOI-bearing subset.
+
+    The result XML only carries images that produced detections, so handing
+    ``parent.images`` to the neighbor search silently skipped every capture
+    with no AOIs of its own -- exactly the images a reviewer wants Z to check.
+    """
+
+    def test_search_scope_prefers_source_images(self, controller, viewer, tmp_path):
+        viewer.source_images = [
+            {'path': str(tmp_path / 'DJI_0000.JPG'), 'name': 'DJI_0000.JPG', 'has_aoi': False},
+            {'path': viewer.images[0]['path'], 'name': 'DJI_0001.JPG', 'has_aoi': True},
+            {'path': str(tmp_path / 'DJI_0001_5.JPG'), 'name': 'DJI_0001_5.JPG', 'has_aoi': False},
+            {'path': viewer.images[1]['path'], 'name': 'DJI_0002.JPG', 'has_aoi': True},
+        ]
+
+        images, idx = controller._build_search_scope(viewer.images[0], 0)
+
+        assert images is viewer.source_images
+        assert idx == 1  # located by path, not by viewer index
+
+    def test_search_scope_falls_back_without_source_images(self, controller, viewer):
+        images, idx = controller._build_search_scope(viewer.images[1], 1)
+
+        assert images is viewer.images
+        assert idx == 1
+
+    def test_search_scope_falls_back_when_current_image_missing(self, controller, viewer, tmp_path):
+        viewer.source_images = [
+            {'path': str(tmp_path / 'OTHER.JPG'), 'name': 'OTHER.JPG', 'has_aoi': False},
+        ]
+
+        images, idx = controller._build_search_scope(viewer.images[0], 0)
+
+        assert images is viewer.images
+        assert idx == 0
+
+
+class TestGalleryClickMapsToViewerIndex:
+    """Result indices live in full-flight space; navigation lives in viewer space."""
+
+    def test_click_navigates_by_path_not_search_index(self, controller, viewer):
+        # Full-flight index 3 corresponds to the viewer's image 1
+        controller._neighbor_results = [
+            {'image_idx': 3, 'image_path': viewer.images[1]['path'],
+             'image_name': 'DJI_0002.JPG', 'pixel_x': None, 'pixel_y': None},
+        ]
+        viewer._load_image = MagicMock()
+
+        controller._on_gallery_image_clicked(3)
+
+        assert viewer.current_image == 1
+        viewer._load_image.assert_called_once()
+
+    def test_click_on_detection_less_capture_does_not_navigate(self, controller, viewer, tmp_path):
+        controller._neighbor_results = [
+            {'image_idx': 2, 'image_path': str(tmp_path / 'NO_AOI.JPG'),
+             'image_name': 'NO_AOI.JPG', 'pixel_x': 10, 'pixel_y': 10},
+        ]
+        viewer._load_image = MagicMock()
+        before = viewer.current_image
+
+        controller._on_gallery_image_clicked(2)
+
+        assert viewer.current_image == before
+        viewer._load_image.assert_not_called()
+
+    def test_detection_less_results_are_labeled_in_the_gallery(self, controller, viewer,
+                                                               monkeypatch, tmp_path):
+        import core.views.images.viewer.dialogs.AOINeighborGalleryDialog as gallery_module
+        monkeypatch.setattr(gallery_module, 'AOINeighborGalleryDialog', MagicMock())
+
+        results = [
+            {'image_idx': 1, 'image_path': viewer.images[0]['path'],
+             'image_name': 'DJI_0001.JPG', 'thumbnail': None, 'pixel_x': 0, 'pixel_y': 0},
+            {'image_idx': 5, 'image_path': str(tmp_path / 'NO_AOI.JPG'),
+             'image_name': 'NO_AOI.JPG', 'thumbnail': None, 'pixel_x': 0, 'pixel_y': 0},
+        ]
+
+        controller._show_gallery_dialog(results)
+
+        assert results[0]['image_name'] == 'DJI_0001.JPG'
+        assert 'no detections' in results[1]['image_name']
