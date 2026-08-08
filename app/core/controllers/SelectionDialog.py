@@ -63,13 +63,11 @@ class SelectionDialog(QDialog, Ui_MediaSelector):
 
         self.imageButton.clicked.connect(self._on_image_clicked)
         self.streamButton.clicked.connect(self._on_stream_clicked)
-        if hasattr(self, "resultsButton"):
+        if hasattr(self, "resultsButton") and FeatureFlags.REVIEW_RESULTS_ENABLED:
             self.resultsButton.clicked.connect(self._on_results_clicked)
-        if hasattr(self, "flightButton"):
-            if FeatureFlags.FLIGHT_VIEWER_ENABLED:
-                self.flightButton.clicked.connect(self._on_flight_clicked)
-            else:
-                self._hide_flight_viewer_tile()
+        if hasattr(self, "flightButton") and FeatureFlags.FLIGHT_VIEWER_ENABLED:
+            self.flightButton.clicked.connect(self._on_flight_clicked)
+        self._hide_deferred_tiles()
 
         self._apply_icons(theme)
 
@@ -81,39 +79,58 @@ class SelectionDialog(QDialog, Ui_MediaSelector):
         self.update_controller = UpdateController(self, settings_service=self.settings_service)
         self.update_controller.schedule_startup_check()
 
-    def _hide_flight_viewer_tile(self) -> None:
-        """Remove the Flight Viewer tile and tighten the dialog around the
-        two remaining options.
+    def _tile_columns(self):
+        """Return the dialog's tile columns as ``(widget, enabled)`` pairs.
 
-        Flight Viewer is deferred to a later release. Hiding just the button
-        leaves its Expanding column claiming a third of the width; hiding the
-        whole ``flightWidget`` column removes it. The two remaining tiles are
-        then switched from Expanding to fixed and wrapped in stretches so they
-        stay grouped and centered under the heading rather than spreading to
-        the edges (the heading label can be wider than the two tiles and would
-        otherwise drive them apart). Finally the dialog shrinks to its natural
-        two-tile width.
+        Order matches the .ui layout. ``enabled`` is the release switch for
+        that tile; Images and Streaming always ship. Missing attributes are
+        tolerated so a stale generated UI module cannot break startup.
+        """
+        return [
+            (getattr(self, "imageWidget", None), True),
+            (getattr(self, "resultsWidget", None), FeatureFlags.REVIEW_RESULTS_ENABLED),
+            (getattr(self, "streamWidget", None), True),
+            (getattr(self, "flightWidget", None), FeatureFlags.FLIGHT_VIEWER_ENABLED),
+        ]
+
+    def _hide_deferred_tiles(self) -> None:
+        """Remove the tiles whose features are held back from this release and
+        tighten the dialog around the options that remain.
+
+        Hiding just a button leaves its Expanding column claiming its share of
+        the width; hiding the whole column widget removes it. The surviving
+        tiles are then switched from Expanding to Maximum and wrapped in a
+        single pair of stretches so they stay grouped and centered under the
+        heading rather than spreading to the edges (the heading label can be
+        wider than the tiles and would otherwise drive them apart). Finally the
+        dialog shrinks to its natural width for the tiles that are left.
         """
         from PySide6.QtWidgets import QSizePolicy
 
-        designed_height = self.height()  # keep the .ui height (two rows unchanged)
+        columns = self._tile_columns()
+        hidden = [w for w, enabled in columns if w is not None and not enabled]
+        if not hidden:
+            return
 
-        self.flightWidget.setVisible(False)
+        designed_height = self.height()  # keep the .ui height (rows are unchanged)
 
-        remaining_tiles = [self.imageWidget, self.streamWidget]
-        if hasattr(self, "resultsWidget"):
-            remaining_tiles.insert(1, self.resultsWidget)
-        for tile in remaining_tiles:
+        for tile in hidden:
+            tile.setVisible(False)
+
+        for tile, enabled in columns:
+            if tile is None or not enabled:
+                continue
             policy = tile.sizePolicy()
             policy.setHorizontalPolicy(QSizePolicy.Maximum)
             tile.setSizePolicy(policy)
 
-        # Center the pair: [stretch] image  stream [stretch].
+        # Center what is left: [stretch] tile ... tile [stretch]. Inserted once,
+        # however many columns were hidden.
         self.horizontalLayout_2.insertStretch(0, 1)
         self.horizontalLayout_2.addStretch(1)
 
-        # Shrink to the natural two-tile width; adjustSize also grows the
-        # height, so restore the designed height afterward.
+        # Shrink to the natural width for the remaining tiles; adjustSize also
+        # grows the height, so restore the designed height afterward.
         self.adjustSize()
         self.resize(self.width(), designed_height)
 

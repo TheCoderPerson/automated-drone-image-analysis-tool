@@ -13,3 +13,15 @@ code stays in the tree so releasing later only means flipping the flag.
 # matching assertion in
 # app/tests/core/controllers/test_selection_dialog_controller.py).
 FLIGHT_VIEWER_ENABLED = False
+
+# Review Results (open a completed analysis straight into review, bypassing
+# the analysis setup screen). Held back from the current release build. When
+# False, the Selection dialog's Review Results tile is hidden and its click
+# handler is left unconnected, so the entry point is unreachable. The tile
+# stays in resources/views/SelectionDialog.ui and the handler, signal and
+# MainWindow.open_results_for_review() stay in the tree, so releasing later
+# is just flipping this back to True (and the matching assertion in
+# app/tests/core/controllers/test_selection_dialog_controller.py).
+# Note: File > Open Recent Results in the Images window is NOT gated by this
+# flag - it is a convenience over the pre-existing Load File flow.
+REVIEW_RESULTS_ENABLED = False
