@@ -743,3 +743,59 @@ def test_thermal_range_slider_wrap_updates(app):
 
     slider.set_selection_wrap(True)
     assert slider.selection_wrap()
+
+
+# ---------------------------------------------------------------------------
+# resetZoom vs. listeners that re-zoom on viewChanged (gallery zoom-to-AOI):
+# a zoom applied in response to the clear must not be stomped by the fit
+# ---------------------------------------------------------------------------
+
+def test_reset_zoom_honors_listener_rezoom(app, qtbot):
+    """Field bug: the second cross-image gallery click landed un-zoomed.
+    With a prior zoom in the stack, clearZoom emits viewChanged, the
+    gallery handler zooms to the AOI, and resetZoom's final fitInView then
+    stomped that view while the stack kept the zoom rect - view and stack
+    disagreed, defeating every stack-based re-check."""
+    viewer = _viewer_with_image(qtbot)
+    viewer.resize(400, 300)
+
+    # Simulate a previous image's zoom (the state before the second click).
+    viewer.zoomToArea((100, 100), 4)
+    assert viewer.zoomStack
+
+    # Simulate the gallery's transient handler: on the clear's emission,
+    # re-zoom to the newly clicked AOI once.
+    fired = []
+
+    def rezoom_once():
+        if not fired and not viewer.zoomStack:
+            fired.append(True)
+            viewer.zoomToArea((300, 200), 4)
+
+    viewer.viewChanged.connect(rezoom_once)
+    try:
+        viewer.resetZoom()
+    finally:
+        viewer.viewChanged.disconnect(rezoom_once)
+
+    assert fired  # the handler did run inside the reset
+    assert viewer.zoomStack  # the re-zoom is in the stack...
+    # ...and the VIEW shows it too (not the full-image fit).
+    visible = viewer.mapToScene(viewer.viewport().rect()).boundingRect()
+    scene = viewer.sceneRect()
+    assert visible.width() < scene.width() * 0.8, \
+        "resetZoom stomped a listener's re-zoom back to full fit"
+
+
+def test_reset_zoom_without_listener_still_fits(app, qtbot):
+    """Plain resetZoom (no listener interference) still fits the image."""
+    viewer = _viewer_with_image(qtbot)
+    viewer.resize(400, 300)
+    viewer.zoomToArea((100, 100), 4)
+    assert viewer.zoomStack
+
+    viewer.resetZoom()
+
+    assert viewer.zoomStack == []
+    visible = viewer.mapToScene(viewer.viewport().rect()).boundingRect()
+    assert visible.width() >= viewer.sceneRect().width() * 0.95

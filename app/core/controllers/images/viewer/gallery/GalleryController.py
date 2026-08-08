@@ -10,7 +10,7 @@ import math
 import numpy as np
 import os
 import traceback
-from PySide6.QtCore import QThread
+from PySide6.QtCore import QThread, QTimer
 from PySide6.QtWidgets import QProgressDialog, QApplication
 from PySide6.QtCore import Qt
 from core.services.LoggerService import LoggerService
@@ -50,6 +50,11 @@ class GalleryController:
             self.model.set_dataset_directory(parent_viewer.xml_path)
 
         self.ui_component = GalleryUIComponent(self)
+
+        # The most recent gallery AOI click; the deferred zoom re-assertion
+        # (_ensure_aoi_zoom) only acts for the newest click so a stale timer
+        # can never zoom to a superseded AOI.
+        self._pending_aoi_zoom = None
 
         # Filter and sort state (shared with AOI controller logic)
         self.sort_method = None
@@ -655,6 +660,7 @@ class GalleryController:
         """
         try:
             # self.logger.info(f"Gallery AOI clicked: Image {image_idx}, AOI {aoi_idx}")
+            self._pending_aoi_zoom = aoi_data
 
             # Stay in gallery mode - just load the image with the clicked AOI
             # 1. Load the parent image if it's not already loaded
@@ -787,9 +793,33 @@ class GalleryController:
                             connected_viewer.viewChanged.disconnect(zoom_handler)
                         except Exception:
                             pass
+
+                # Trailing guarantee: the in-load zoom can be missed (the
+                # recursion guard active on every viewChanged emission) or
+                # undone by layout/resize events that settle after the click
+                # (field report: the first click switched image but landed
+                # un-zoomed; only a second click - no load - zoomed). The
+                # wipe lands at unpredictable times relative to the click on
+                # real hardware, so the guarantee re-checks at several points
+                # across the settle window. Each check is a strict no-op
+                # unless this is still the newest click, the image still
+                # matches, and the view is sitting un-zoomed.
+                for delay_ms in (150, 600, 1600):
+                    QTimer.singleShot(
+                        delay_ms,
+                        lambda: self._ensure_aoi_zoom(image_idx, aoi_data))
             else:
                 # Same image - zoom immediately
                 self._zoom_to_aoi(aoi_data)
+
+            # Sync the single-image AOI selection: everything keyed to it
+            # (the GPS-map marker, the on-image overlay) never followed
+            # gallery clicks because only the gallery's own model selection
+            # was updated. select_aoi tolerates the sidebar list not being
+            # populated in gallery mode (visible_index -1 skips styling).
+            if hasattr(self.parent, 'aoi_controller'):
+                visible_index = self.parent.aoi_controller.aoi_index_to_visible_index.get(aoi_idx, -1)
+                self.parent.aoi_controller.select_aoi(aoi_idx, visible_index)
 
         except Exception as e:
             self.logger.error(f"Error handling AOI click: {e}")
@@ -848,6 +878,28 @@ class GalleryController:
         if aoi_info:
             image_idx, aoi_idx, aoi_data = aoi_info
             self.on_aoi_clicked(image_idx, aoi_idx, aoi_data)
+
+    def _ensure_aoi_zoom(self, image_idx, aoi_data):
+        """Deferred re-assertion of the zoom for a gallery AOI click.
+
+        Fires after the click's event cascade has settled. A no-op when the
+        click was superseded, the image changed again, or the view is
+        already zoomed (the in-load zoom survived, or the user zoomed).
+        """
+        if aoi_data is not self._pending_aoi_zoom:
+            return  # a newer click owns the zoom now
+        if self.parent.current_image != image_idx:
+            return  # the user navigated elsewhere in the meantime
+        main = getattr(self.parent, 'main_image', None)
+        if (main is None or getattr(main, '_is_destroyed', False)
+                or not main.hasImage()):
+            return
+        if getattr(main, 'zoomStack', None):
+            return  # already zoomed
+        # Logged so field sessions show when (and how late) the in-load
+        # zoom needed repair - evidence for chasing the underlying reset.
+        self.logger.info("Gallery: re-asserting AOI zoom after a late zoom reset")
+        self._zoom_to_aoi(aoi_data)
 
     def _zoom_to_aoi(self, aoi_data):
         """Zoom to an AOI in the image viewer and highlight it."""
