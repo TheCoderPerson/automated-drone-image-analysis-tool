@@ -407,7 +407,56 @@ def test_shadow_trace_reset_on_image_change(app, qtbot, isolated_settings,
     assert dialog._trace_override_utc is not None
 
     dialog.update_for_image(_camera_image_service(40.0), 'other-image.jpg')
+    dialog._apply_pending_image()  # flush the deferred rebuild
 
     assert dialog._trace_override_utc is None
     assert dialog.sun_time_source == 'gps'
     assert dialog.trace_shadow_button.text() == 'Trace shadow...'
+
+
+# ---------------------------------------------------------------------------
+# Image-change rebuilds defer so navigation (gallery zoom-to-AOI) wins
+# ---------------------------------------------------------------------------
+
+def test_image_change_rebuild_is_deferred(app, qtbot, isolated_settings):
+    """update_for_image queues the rebuild instead of running it inline."""
+    dialog, _viewer = _make_projected_dialog(qtbot, agl_m=40.0)
+    assert dialog.anchor_item is not None
+
+    dialog.update_for_image(_camera_image_service(40.0), 'other-image.jpg')
+
+    assert dialog._pending_image is not None    # queued, not applied
+    assert dialog.anchor_item is None           # old overlay cleared
+    assert dialog._image_change_timer.isActive()
+
+    dialog._apply_pending_image()
+    assert dialog._pending_image is None
+    assert dialog.anchor_item is not None       # rebuilt after the beat
+    assert dialog.image_path == 'other-image.jpg'
+
+
+def test_image_change_never_auto_zooms(app, qtbot, isolated_settings):
+    """A gallery AOI click zooms the new image to the AOI; the dialog's
+    legibility auto-zoom must not stomp it (field report). The auto-zoom
+    belongs to the FIRST open only - once the dialog is up, an image
+    change is the operator's own navigation and the view stays put."""
+    dialog, viewer = _make_projected_dialog(qtbot, agl_m=1500.0)
+    assert len(viewer.zoom_calls) == 1  # auto-zoomed once on open
+
+    dialog.update_for_image(_camera_image_service(1500.0), 'other-image.jpg')
+    dialog._apply_pending_image()
+
+    assert len(viewer.zoom_calls) == 1  # no second auto-zoom, ever
+
+
+def test_pending_image_change_dropped_on_close(app, qtbot, isolated_settings):
+    """A queued rebuild must not fire into a closed dialog."""
+    dialog, _viewer = _make_projected_dialog(qtbot, agl_m=40.0)
+    dialog.update_for_image(_camera_image_service(40.0), 'other-image.jpg')
+
+    dialog.close()
+
+    assert not dialog._image_change_timer.isActive()
+    assert dialog._pending_image is None
+    dialog._apply_pending_image()  # stray fire is a no-op
+    assert dialog.anchor_item is None

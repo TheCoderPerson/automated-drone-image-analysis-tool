@@ -22,7 +22,7 @@ import math
 import cv2
 import numpy as np
 
-from PySide6.QtCore import Qt, QRectF, QPointF
+from PySide6.QtCore import Qt, QRectF, QPointF, QTimer
 from PySide6.QtGui import QPen, QColor, QBrush, QPainterPath, QPolygonF
 from PySide6.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QWidget,
@@ -287,6 +287,14 @@ class PersonReferenceDialog(TranslationMixin, QDialog):
         self.pose_items = {}   # 'standing'|'recumbent'|'sitting' -> QGraphicsPathItem
         self.shadow_item = None
 
+        # Image-change rebuilds are deferred so in-flight navigation (e.g.
+        # a gallery AOI click that loads the image and then zooms to the
+        # AOI) lands before the person is placed - see update_for_image.
+        self._pending_image = None
+        self._image_change_timer = QTimer(self)
+        self._image_change_timer.setSingleShot(True)
+        self._image_change_timer.timeout.connect(self._apply_pending_image)
+
         self._setup_ui()
         self._connect_signals()
         self._apply_translations()
@@ -500,8 +508,15 @@ class PersonReferenceDialog(TranslationMixin, QDialog):
             self._position_adjusted = True
 
     # ---------------- image / camera / sun ----------------
-    def _load_image(self, image_service, image_path, agl_override_m):
-        """Build the camera model and sun position for an image, then render."""
+    def _load_image(self, image_service, image_path, agl_override_m,
+                    allow_auto_zoom=True):
+        """Build the camera model and sun position for an image, then render.
+
+        Args:
+            allow_auto_zoom: whether the legibility auto-zoom may run. It is
+                suppressed on image changes that land in an already-zoomed
+                view (the navigation's zoom must not be hijacked).
+        """
         self.image_path = image_path
         self.camera = CameraModel.from_image_service(image_service, agl_override_m)
         self._resolve_sun()
@@ -518,7 +533,8 @@ class PersonReferenceDialog(TranslationMixin, QDialog):
             ))
         else:
             self._show_status(None)
-            self._ensure_reference_visible()
+            if allow_auto_zoom:
+                self._ensure_reference_visible()
 
     def _reference_bounds_scene(self):
         """United scene-space bounding rect of the visible silhouettes, or None.
@@ -573,10 +589,36 @@ class PersonReferenceDialog(TranslationMixin, QDialog):
         ))
 
     def update_for_image(self, image_service, image_path, agl_override_m=None):
-        """Rebuild the camera/sun for a newly selected image (called by Viewer)."""
+        """Rebuild the camera/sun for a newly selected image (called by Viewer).
+
+        The rebuild is deferred one beat: an image change is often part of a
+        larger navigation - a gallery AOI click loads the image and then
+        zooms to the AOI through a transient viewChanged handler. Rebuilding
+        immediately would anchor the person at the pre-zoom view centre and
+        the legibility auto-zoom would stomp the AOI zoom (field report).
+        Waiting lets the navigation land; the person is then placed at the
+        final view centre (the AOI, for gallery clicks).
+        """
         self._reset_trace_state()
         self._clear_items()
-        self._load_image(image_service, image_path, agl_override_m)
+        self._pending_image = (image_service, image_path, agl_override_m)
+        self._image_change_timer.start(300)
+
+    def _apply_pending_image(self):
+        """Deferred tail of update_for_image.
+
+        The legibility auto-zoom is never run here: it exists so the tool
+        does not look inert on FIRST open, but once the dialog is up an
+        image change is part of the operator's own navigation (arrow keys,
+        gallery zoom-to-AOI) and the view must stay exactly where that
+        navigation put it. Recenter brings the person in on demand.
+        """
+        if self._pending_image is None:
+            return
+        image_service, image_path, agl_override_m = self._pending_image
+        self._pending_image = None
+        self._load_image(image_service, image_path, agl_override_m,
+                         allow_auto_zoom=False)
 
     def _resolve_sun(self):
         """Resolve the sun elevation/azimuth from the image capture metadata."""
@@ -1314,6 +1356,10 @@ class PersonReferenceDialog(TranslationMixin, QDialog):
 
     # ---------------- close ----------------
     def closeEvent(self, event):
+        # A pending image-change rebuild must not fire into a closed dialog
+        # (it would re-add overlay items that nothing would ever remove).
+        self._image_change_timer.stop()
+        self._pending_image = None
         self._reset_trace_state()
         self._clear_items()
         super().closeEvent(event)
