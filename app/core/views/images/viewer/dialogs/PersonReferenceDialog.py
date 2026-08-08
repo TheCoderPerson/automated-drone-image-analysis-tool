@@ -402,6 +402,8 @@ class PersonReferenceDialog(TranslationMixin, QDialog):
 
         button_row = QHBoxLayout()
         self.recenter_button = QPushButton(self.tr("Recenter"))
+        self.recenter_button.setToolTip(self.tr(
+            "Bring the reference person to the center of the current view"))
         self.close_button = QPushButton(self.tr("Close"))
         button_row.addWidget(self.recenter_button)
         button_row.addWidget(self.trace_shadow_button)
@@ -1075,9 +1077,31 @@ class PersonReferenceDialog(TranslationMixin, QDialog):
         self._render_all()
 
     def _recenter(self):
+        """Bring the reference person into the user's current view.
+
+        The user pans/zooms to the spot they are inspecting and hits
+        Recenter to pull the overlay there - not back to the full-image
+        default. (Initial placement on open still uses the nadir via
+        _default_anchor_scene.)
+        """
         if self.anchor_item is not None:
-            self.anchor_item.setPos(self._default_anchor_scene())
+            self.anchor_item.setPos(self._current_view_anchor_scene())
             self._render_all()
+
+    def _current_view_anchor_scene(self):
+        """Recenter target: the current viewport centre, clamped to the
+        image bounds; falls back to the default (nadir) placement when the
+        view centre cannot be determined."""
+        try:
+            point = self._viewport_center_scene()
+            x = float(point.x())
+            y = float(point.y())
+            if self.camera is not None:
+                x = min(max(x, 0.0), float(self.camera.width))
+                y = min(max(y, 0.0), float(self.camera.height))
+            return QPointF(x, y)
+        except Exception:
+            return self._default_anchor_scene()
 
     # ---------------- shadow trace ----------------
     def _on_trace_shadow_clicked(self):

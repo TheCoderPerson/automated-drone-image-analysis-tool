@@ -98,8 +98,10 @@ def test_is_near_nadir_gates_on_pitch(app, qtbot, isolated_settings):
     assert dialog._is_near_nadir() is False
 
 
-def test_recenter_returns_to_nadir(app, qtbot, isolated_settings):
-    """Recenter must snap back to the nadir, not the zoomed viewport centre."""
+def test_recenter_falls_back_to_nadir_without_a_view_center(app, qtbot,
+                                                            isolated_settings):
+    """When the viewport centre can't be determined at all, Recenter falls
+    back to the default nadir placement instead of breaking."""
     from core.services.CameraModel import CameraModel
     from core.views.images.viewer.dialogs.PersonReferenceDialog import (
         _AnchorHandle,
@@ -107,6 +109,8 @@ def test_recenter_returns_to_nadir(app, qtbot, isolated_settings):
 
     dialog = _make_dialog(qtbot)
     dialog.camera = CameraModel(50.0, -90.0, 0.0, 8.38, 13.2, 8.8, 5472, 3078)
+    dialog.image_viewer.mapToScene = None  # not callable -> raises
+    dialog.image_viewer.sceneRect = None   # fallback path raises too
     dialog.anchor_item = _AnchorHandle(dialog)
     dialog.anchor_item.setPos(10.0, 10.0)  # simulate an off-nadir position
 
@@ -114,6 +118,51 @@ def test_recenter_returns_to_nadir(app, qtbot, isolated_settings):
 
     assert dialog.anchor_item.pos().x() == pytest.approx(5472 / 2.0, abs=1.0)
     assert dialog.anchor_item.pos().y() == pytest.approx(3078 / 2.0, abs=1.0)
+
+
+def test_recenter_moves_to_current_view_center(app, qtbot, isolated_settings):
+    """Recenter pulls the person to where the user is currently looking
+    (field request: it used to jump back to the full-image default)."""
+    from types import SimpleNamespace as _NS
+    from core.services.CameraModel import CameraModel
+    from core.views.images.viewer.dialogs.PersonReferenceDialog import (
+        _AnchorHandle,
+    )
+
+    dialog = _make_dialog(qtbot)
+    dialog.camera = CameraModel(50.0, -90.0, 0.0, 8.38, 13.2, 8.8, 5472, 3078)
+    # Simulate a zoomed/panned viewer whose viewport centre is (1200, 800).
+    dialog.image_viewer.viewport = lambda: _NS(
+        rect=lambda: QtCore.QRect(0, 0, 400, 300))
+    dialog.image_viewer.mapToScene = lambda p: QtCore.QPointF(1200.0, 800.0)
+    dialog.anchor_item = _AnchorHandle(dialog)
+    dialog.anchor_item.setPos(10.0, 10.0)
+
+    dialog._recenter()
+
+    assert dialog.anchor_item.pos().x() == pytest.approx(1200.0)
+    assert dialog.anchor_item.pos().y() == pytest.approx(800.0)
+
+
+def test_recenter_clamps_to_image_bounds(app, qtbot, isolated_settings):
+    """A viewport centre outside the image cannot fling the person off-frame."""
+    from types import SimpleNamespace as _NS
+    from core.services.CameraModel import CameraModel
+    from core.views.images.viewer.dialogs.PersonReferenceDialog import (
+        _AnchorHandle,
+    )
+
+    dialog = _make_dialog(qtbot)
+    dialog.camera = CameraModel(50.0, -90.0, 0.0, 8.38, 13.2, 8.8, 5472, 3078)
+    dialog.image_viewer.viewport = lambda: _NS(
+        rect=lambda: QtCore.QRect(0, 0, 400, 300))
+    dialog.image_viewer.mapToScene = lambda p: QtCore.QPointF(-500.0, 99999.0)
+    dialog.anchor_item = _AnchorHandle(dialog)
+
+    dialog._recenter()
+
+    assert dialog.anchor_item.pos().x() == pytest.approx(0.0)
+    assert dialog.anchor_item.pos().y() == pytest.approx(3078.0)
 
 
 def test_persists_on_change(app, qtbot, isolated_settings):
