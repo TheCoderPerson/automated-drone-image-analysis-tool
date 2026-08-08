@@ -415,6 +415,78 @@ def test_shadow_trace_reset_on_image_change(app, qtbot, isolated_settings,
 
 
 # ---------------------------------------------------------------------------
+# Anchor placement avoids the selected AOI (radius + 40 px clearance)
+# ---------------------------------------------------------------------------
+
+def _viewer_with_selected_aoi(center, radius, aoi_index=0):
+    """Minimal parent-viewer stand-in exposing one selected AOI."""
+    return SimpleNamespace(
+        aoi_controller=SimpleNamespace(selected_aoi_index=aoi_index),
+        images=[{'areas_of_interest': [{'center': center, 'radius': radius}]}],
+        current_image=0,
+    )
+
+
+def _dialog_with_view_center(qtbot, view_center):
+    from types import SimpleNamespace as _NS
+    from core.services.CameraModel import CameraModel
+
+    dialog = _make_dialog(qtbot)
+    dialog.camera = CameraModel(50.0, -90.0, 0.0, 8.38, 13.2, 8.8, 5472, 3078)
+    dialog.image_viewer.viewport = lambda: _NS(
+        rect=lambda: QtCore.QRect(0, 0, 400, 300))
+    dialog.image_viewer.mapToScene = lambda p: QtCore.QPointF(*view_center)
+    return dialog
+
+
+def test_anchor_shifts_left_of_a_centered_aoi(app, qtbot, isolated_settings):
+    """View centred on the selected AOI: the person lands left of the AOI's
+    radius + 40 px, level with it, instead of on top of it."""
+    dialog = _dialog_with_view_center(qtbot, (1200.0, 800.0))
+    dialog._parent_viewer = _viewer_with_selected_aoi((1200, 800), 30)
+
+    point = dialog._default_anchor_scene()
+
+    assert point.x() == pytest.approx(1200.0 - (30 + 40))
+    assert point.y() == pytest.approx(800.0)
+
+
+def test_anchor_shifts_right_when_left_is_off_image(app, qtbot,
+                                                    isolated_settings):
+    """An AOI near the left edge pushes the person to its right instead."""
+    dialog = _dialog_with_view_center(qtbot, (50.0, 800.0))
+    dialog._parent_viewer = _viewer_with_selected_aoi((50, 800), 30)
+
+    point = dialog._default_anchor_scene()
+
+    assert point.x() == pytest.approx(50.0 + (30 + 40))
+    assert point.y() == pytest.approx(800.0)
+
+
+def test_anchor_unmoved_when_view_is_not_on_the_aoi(app, qtbot,
+                                                    isolated_settings):
+    """A view centred far from the selected AOI keeps its own centre."""
+    dialog = _dialog_with_view_center(qtbot, (2000.0, 1500.0))
+    dialog._parent_viewer = _viewer_with_selected_aoi((1200, 800), 30)
+
+    point = dialog._default_anchor_scene()
+
+    assert point.x() == pytest.approx(2000.0)
+    assert point.y() == pytest.approx(1500.0)
+
+
+def test_anchor_unmoved_without_a_selected_aoi(app, qtbot, isolated_settings):
+    dialog = _dialog_with_view_center(qtbot, (1200.0, 800.0))
+    dialog._parent_viewer = _viewer_with_selected_aoi((1200, 800), 30,
+                                                      aoi_index=-1)
+
+    point = dialog._default_anchor_scene()
+
+    assert point.x() == pytest.approx(1200.0)
+    assert point.y() == pytest.approx(800.0)
+
+
+# ---------------------------------------------------------------------------
 # Image-change rebuilds defer so navigation (gallery zoom-to-AOI) wins
 # ---------------------------------------------------------------------------
 

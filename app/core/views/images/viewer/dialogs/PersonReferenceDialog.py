@@ -91,6 +91,12 @@ RECUMBENT_THICKNESS_FRACTION = 0.12
 # and is projected instead.
 NADIR_PITCH_TOLERANCE_DEG = 15.0
 
+# Gap (image px) between the reference person's anchor and the edge of the
+# selected AOI: an anchor landing on the AOI is shifted aside by the AOI's
+# radius plus this clearance, so the overlay never covers the detection it
+# is being compared against.
+AOI_CLEARANCE_PX = 40.0
+
 
 def _build_recumbent_path(height_cm):
     """Top-down silhouette of a person lying flat.
@@ -1089,9 +1095,42 @@ class PersonReferenceDialog(TranslationMixin, QDialog):
             if self.camera is not None:
                 x = min(max(x, 0.0), float(self.camera.width))
                 y = min(max(y, 0.0), float(self.camera.height))
-            return QPointF(x, y)
+            return self._avoid_selected_aoi(QPointF(x, y))
         except Exception:
-            return self._nadir_anchor_scene()
+            return self._avoid_selected_aoi(self._nadir_anchor_scene())
+
+    def _avoid_selected_aoi(self, point):
+        """Nudge an anchor point off the currently selected AOI.
+
+        Clicking an AOI centres the view on it, so a view-centre placement
+        would sit the person exactly on top of the find. When the anchor
+        falls within the AOI's radius + AOI_CLEARANCE_PX, shift it level
+        with the AOI to its left; when that leaves the image, to its right.
+        """
+        try:
+            viewer = self._parent_viewer
+            aoi_index = viewer.aoi_controller.selected_aoi_index
+            if aoi_index is None or aoi_index < 0:
+                return point
+            image = viewer.images[viewer.current_image]
+            aoi = image['areas_of_interest'][aoi_index]
+            aoi_x = float(aoi['center'][0])
+            aoi_y = float(aoi['center'][1])
+            radius = float(aoi.get('radius', 0) or 0)
+        except Exception:
+            return point
+        clearance = radius + AOI_CLEARANCE_PX
+        dx = point.x() - aoi_x
+        dy = point.y() - aoi_y
+        if (dx * dx + dy * dy) > clearance * clearance:
+            return point  # anchor is not on the AOI - leave it alone
+        left_x = aoi_x - clearance
+        if left_x >= 0.0:
+            return QPointF(left_x, aoi_y)
+        right_x = aoi_x + clearance
+        if self.camera is not None:
+            right_x = min(right_x, float(self.camera.width))
+        return QPointF(right_x, aoi_y)
 
     def _nadir_anchor_scene(self):
         """Fallback placement: the ground point directly under the drone.
