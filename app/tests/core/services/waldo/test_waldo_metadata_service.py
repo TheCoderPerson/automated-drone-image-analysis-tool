@@ -179,6 +179,36 @@ def test_heading_cross_cam_fallback():
     assert cam1.heading_deg is not None  # filled from cam 0
 
 
+def test_heading_serpentine_lane_edges_use_one_sided_bearing():
+    """Lane-edge images must derive from their OWN lane, never inherit the
+    previous lane's heading across the turn gap.
+
+    Serpentine field flights showed the first image of each lane stamped
+    ~180 deg flipped: the >30 s turn starved the two-sided bearing pass and
+    the forward fill copied the opposite lane's heading.
+    """
+    t0 = datetime(2026, 1, 1, 12, 0, 0)
+    records = []
+    # Lane A: northbound, captures every 2 s.
+    for i in range(4):
+        records.append(_make_record(0, i, 37.000 + i * 0.001, -120.000,
+                                    t0 + timedelta(seconds=i * 2)))
+    # 90 s turn gap (beyond MAX_NEIGHBOR_DT_S), then lane B: SOUTHBOUND.
+    for i in range(4):
+        records.append(_make_record(0, 10 + i, 37.003 - i * 0.001, -120.002,
+                                    t0 + timedelta(seconds=90 + i * 2)))
+    svc = WaldoMetadataService(terrain_service=None)
+    svc.derive_headings(records)
+    lane_a = records[:4]
+    lane_b = records[4:]
+    for r in lane_a:
+        diff = min(abs(r.heading_deg), abs(360.0 - r.heading_deg))
+        assert diff < 5.0, f"lane A image {r.name} heading {r.heading_deg}"
+    for r in lane_b:
+        assert abs(r.heading_deg - 180.0) < 5.0, \
+            f"lane B image {r.name} heading {r.heading_deg} (flip regression)"
+
+
 # --------------------------------------------------------------------------
 # process_folder progress phasing
 # --------------------------------------------------------------------------

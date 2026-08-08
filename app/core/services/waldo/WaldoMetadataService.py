@@ -663,17 +663,35 @@ class WaldoMetadataService:
                 j += direction
             return None
 
-        # Pass 1: bearing(prev → next) for interior images.
+        # Pass 1: bearing(prev → next) for interior images; edge images (a
+        # lane start/end whose other neighbour sits beyond the turn window)
+        # use the one in-window side. One-sided bearings are noisier but a
+        # fill would copy the PREVIOUS lane's heading, which on a serpentine
+        # flight is ~180 deg wrong (observed on field data at lane starts).
         for i in range(n):
             prev_idx = neighbour_search(i, -1)
             next_idx = neighbour_search(i, +1)
             if prev_idx is not None and next_idx is not None:
-                group[i].heading_deg = LocationInfo.bearing(
+                heading = LocationInfo.bearing(
                     group[prev_idx].lat, group[prev_idx].lon,
                     group[next_idx].lat, group[next_idx].lon
                 )
+            elif prev_idx is not None:
+                heading = LocationInfo.bearing(
+                    group[prev_idx].lat, group[prev_idx].lon,
+                    group[i].lat, group[i].lon
+                )
+            elif next_idx is not None:
+                heading = LocationInfo.bearing(
+                    group[i].lat, group[i].lon,
+                    group[next_idx].lat, group[next_idx].lon
+                )
+            else:
+                continue
+            if not math.isnan(heading):
+                group[i].heading_deg = heading
 
-        # Pass 2: forward fill (first images inherit from the next valid).
+        # Pass 2: forward fill (stationary clusters inherit the last valid).
         last_seen: Optional[float] = None
         for r in group:
             if r.heading_deg is None and last_seen is not None:
