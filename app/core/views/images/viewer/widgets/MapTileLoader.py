@@ -48,6 +48,13 @@ class MapTileLoader(QObject):
         # Tile source type ('map' or 'satellite')
         self.tile_source = 'map'
 
+        # Per-source maximum tile zoom (matches AlignImageView): Esri World
+        # Imagery serves z20 (~0.15 m/px) across most SAR terrain, OSM tops
+        # out at z19. Above the source's limit the view keeps scaling but
+        # tiles stop sharpening.
+        self.MAX_ZOOM_SATELLITE = 20
+        self.MAX_ZOOM_MAP = 19
+
         # Error tracking
         self.error_count = 0
         self.max_errors_before_notify = 3
@@ -63,7 +70,7 @@ class MapTileLoader(QObject):
         Args:
             lat: Latitude in degrees
             lon: Longitude in degrees
-            zoom: Zoom level (0-19)
+            zoom: Zoom level (0 to the source's max, see max_zoom())
 
         Returns:
             tuple: (x_tile, y_tile) coordinates
@@ -116,6 +123,11 @@ class MapTileLoader(QObject):
             source: 'map' or 'satellite'
         """
         self.tile_source = source
+
+    def max_zoom(self):
+        """Maximum tile zoom the current source can serve."""
+        return (self.MAX_ZOOM_SATELLITE if self.tile_source == 'satellite'
+                else self.MAX_ZOOM_MAP)
 
     def set_offline_only(self, offline_only: bool):
         """Enable/disable offline-only mode (no new tile downloads)."""
@@ -265,8 +277,9 @@ class MapTileLoader(QObject):
         # Use minimum zoom to ensure all points fit
         zoom = min(zoom_x, zoom_y)
 
-        # Clamp to valid range (0-19) and leave some margin
-        return max(1, min(18, int(zoom) - 1))
+        # Clamp to the source's max and leave one level of margin for
+        # smooth fitting.
+        return max(1, min(self.max_zoom(), int(zoom) - 1))
 
     def _handle_tile_error(self, error_code, error_string, http_status):
         """

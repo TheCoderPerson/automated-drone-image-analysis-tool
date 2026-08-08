@@ -851,6 +851,11 @@ class GPSMapView(TranslationMixin, QGraphicsView):
                     pass
         self.tile_items = {}
 
+        # The new source may not serve the current zoom (satellite goes one
+        # level deeper than the street map) - step down before reloading.
+        if self.current_zoom > self.tile_loader.max_zoom():
+            self._change_tile_zoom_level(self.tile_loader.max_zoom())
+
         # Reload with new source
         self.load_visible_tiles()
 
@@ -1033,7 +1038,7 @@ class GPSMapView(TranslationMixin, QGraphicsView):
     def _check_tile_zoom_level(self):
         """Check if we need to change tile zoom level based on current scale."""
         if self.zoom_scale > 1.5:
-            target_zoom = min(18, self.current_zoom + 1)
+            target_zoom = min(self.tile_loader.max_zoom(), self.current_zoom + 1)
         elif self.zoom_scale < 0.67:
             target_zoom = max(1, self.current_zoom - 1)
         else:

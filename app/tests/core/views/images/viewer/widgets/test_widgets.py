@@ -743,3 +743,47 @@ def test_thermal_range_slider_wrap_updates(app):
 
     slider.set_selection_wrap(True)
     assert slider.selection_wrap()
+
+
+# ---------------------------------------------------------------------------
+# Map tile zoom limits (satellite detail; field report: sat imagery stopped
+# sharpening at z18 while the Align Image view reached z20)
+# ---------------------------------------------------------------------------
+
+def test_tile_loader_max_zoom_per_source(app):
+    loader = MapTileLoader()
+    assert loader.max_zoom() == loader.MAX_ZOOM_MAP  # default source is 'map'
+    loader.set_tile_source('satellite')
+    assert loader.max_zoom() == loader.MAX_ZOOM_SATELLITE
+    assert loader.MAX_ZOOM_SATELLITE == 20  # matches AlignImageView
+    assert loader.MAX_ZOOM_MAP == 19
+
+
+def test_zoom_for_bounds_caps_at_source_max(app):
+    loader = MapTileLoader()
+    # Tiny bounds on a big viewport -> huge computed zoom, must clamp.
+    args = (37.0440, 37.0441, -117.6320, -117.6319, 2000, 2000)
+    loader.set_tile_source('satellite')
+    assert loader.calculate_zoom_for_bounds(*args) == loader.MAX_ZOOM_SATELLITE
+    loader.set_tile_source('map')
+    assert loader.calculate_zoom_for_bounds(*args) == loader.MAX_ZOOM_MAP
+
+
+def test_view_zoom_step_honors_source_max(app):
+    view = GPSMapView()
+    view.tile_loader.set_tile_source('satellite')
+    view.zoom_scale = 2.0  # over the 1.5 step-in threshold
+    view.current_zoom = 19
+    view._check_tile_zoom_level()
+    assert view.current_zoom == 20
+    view.zoom_scale = 2.0  # _change_tile_zoom_level rescales the view
+    view._check_tile_zoom_level()
+    assert view.current_zoom == 20  # capped
+
+
+def test_switching_to_street_map_steps_down_from_z20(app):
+    view = GPSMapView()
+    view.tile_loader.set_tile_source('satellite')
+    view.current_zoom = 20
+    view.set_tile_source('map')
+    assert view.current_zoom == view.tile_loader.MAX_ZOOM_MAP
