@@ -586,6 +586,15 @@ class QtImageViewer(TranslationMixin, QGraphicsView):
         if self._is_destroyed:
             return
         self.clearZoom()
+        # clearZoom's viewChanged emission can prompt a listener to apply a
+        # new zoom immediately (the gallery's zoom-to-AOI handler does this
+        # while an image loads). Fitting the full image afterwards would
+        # stomp that view while the zoom stack still holds the listener's
+        # rect - view and stack would disagree, and stack-based checks
+        # would believe the view is zoomed when it shows the fit. Honour
+        # the listener's zoom instead.
+        if self.zoomStack:
+            return
         if self.hasImage():
             # Ensure widget has a valid size before fitting
             if self.width() <= 0 or self.height() <= 0:
