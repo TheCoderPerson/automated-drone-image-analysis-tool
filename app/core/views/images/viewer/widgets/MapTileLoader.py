@@ -8,9 +8,9 @@ import os
 import math
 import hashlib
 from pathlib import Path
-from PySide6.QtCore import QObject, Signal, QThread, QUrl, QTimer
+from PySide6.QtCore import QObject, Signal, QThread, QUrl, QTimer, Qt
 from PySide6.QtNetwork import QNetworkAccessManager, QNetworkRequest, QNetworkReply
-from PySide6.QtGui import QPixmap, QImage, QColor
+from PySide6.QtGui import QPixmap, QImage, QColor, qGray
 import tempfile
 
 
@@ -54,6 +54,28 @@ class MapTileLoader(QObject):
         # tiles stop sharpening.
         self.MAX_ZOOM_SATELLITE = 20
         self.MAX_ZOOM_MAP = 19
+
+        # Ancestor fallback: when a tile is missing (404 / network error) or
+        # is a "no imagery at this zoom" placeholder, serve an upscaled crop
+        # of the nearest usable ancestor tile instead, so zooming past the
+        # source's real coverage keeps showing the last good imagery rather
+        # than a wall of gray/placeholder tiles. This is how far up the
+        # pyramid we will climb (5 levels = a 32x upscale at worst).
+        self.MAX_FALLBACK_LEVELS = 5
+        # Placeholder detection: fraction of sampled pixels that must share
+        # one luminance bucket for a tile to count as a "no imagery"
+        # placeholder. Genuinely uniform imagery (open water) can trip this
+        # too, but its ancestor crop shows the same pixels, so a false
+        # positive is visually harmless.
+        self.PLACEHOLDER_UNIFORM_FRACTION = 0.90
+
+        # Pending fallback resolutions: (x, y, zoom, source) of an ancestor
+        # download -> list of (x, y, zoom) descendant tiles waiting on it.
+        self.fallback_waiters = {}
+        # Ancestor downloads that errored this session; the fallback walk
+        # climbs past them instead of re-requesting a dead tile forever.
+        # Cleared with the error counter so a recovered network gets retried.
+        self._fallback_failed = set()
 
         # Error tracking
         self.error_count = 0
@@ -149,10 +171,18 @@ class MapTileLoader(QObject):
             # Load from cache
             pixmap = QPixmap(str(cache_path))
             if not pixmap.isNull():
+                # A cached "no imagery at this zoom" placeholder is worth
+                # less than an upscaled crop of real imagery from a lower
+                # zoom - prefer the ancestor when one is usable.
+                if self._looks_unavailable(pixmap) and self._emit_fallback_tile(x_tile, y_tile, zoom):
+                    return
                 self.tile_loaded.emit(x_tile, y_tile, zoom, pixmap)
                 return
-        # If offline, don't attempt network and show placeholder/error
+        # If offline, don't attempt network: fall back to a cached ancestor
+        # crop when possible, gray placeholder otherwise.
         if self.offline_only:
+            if self._emit_fallback_tile(x_tile, y_tile, zoom):
+                return
             self.tile_error.emit("Offline mode: map tiles unavailable")
             pixmap = QPixmap(self.tile_size, self.tile_size)
             pixmap.fill(QColor(200, 200, 200))
@@ -223,7 +253,16 @@ class MapTileLoader(QObject):
             pixmap.loadFromData(data)
 
             if not pixmap.isNull():
-                self.tile_loaded.emit(x_tile, y_tile, zoom, pixmap)
+                # Some servers answer 200 with a "no imagery at this zoom"
+                # placeholder image; replace it with an upscaled ancestor
+                # crop when one is available (or arriving).
+                if self._looks_unavailable(pixmap) and self._emit_fallback_tile(x_tile, y_tile, zoom):
+                    pass
+                else:
+                    self.tile_loaded.emit(x_tile, y_tile, zoom, pixmap)
+            # Descendant tiles may be waiting on this download to build
+            # their fallback crops.
+            self._serve_fallback_waiters(x_tile, y_tile, zoom)
         else:
             # Handle error
             error_code = reply.error()
@@ -236,18 +275,150 @@ class MapTileLoader(QObject):
                 pixmap = QPixmap(str(cache_path))
                 if not pixmap.isNull():
                     self.tile_loaded.emit(x_tile, y_tile, zoom, pixmap)
+                    self._serve_fallback_waiters(x_tile, y_tile, zoom)
                     # Don't count as error if we have cache
                     return
+
+            # Remember the failure so fallback walks climb past this tile
+            # instead of re-requesting it in a loop while the network is down.
+            self._fallback_failed.add((x_tile, y_tile, zoom, self.tile_source))
 
             # Track errors and notify user if necessary
             self._handle_tile_error(error_code, error_string, http_status)
 
-            # Only show gray tile if no cache exists
-            pixmap = QPixmap(self.tile_size, self.tile_size)
-            pixmap.fill(QColor(200, 200, 200))
-            self.tile_loaded.emit(x_tile, y_tile, zoom, pixmap)
+            # Prefer an upscaled ancestor crop over a blank gray tile so the
+            # user keeps context of where they are in the imagery.
+            if not self._emit_fallback_tile(x_tile, y_tile, zoom):
+                pixmap = QPixmap(self.tile_size, self.tile_size)
+                pixmap.fill(QColor(200, 200, 200))
+                self.tile_loaded.emit(x_tile, y_tile, zoom, pixmap)
+
+            # Resolve any descendants waiting on this (failed) ancestor: their
+            # walk will now skip it and climb further up.
+            self._serve_fallback_waiters(x_tile, y_tile, zoom)
 
         reply.deleteLater()
+
+    def _looks_unavailable(self, pixmap):
+        """
+        Heuristic check for a "no imagery at this zoom" placeholder tile.
+
+        Real placeholder tiles (e.g. Esri's "Map data not yet available")
+        are a near-uniform background with at most a little text, so almost
+        every sampled pixel shares one luminance bucket. Sampling uses
+        FastTransformation (nearest pixel, no blending) so anti-aliased text
+        does not smear into the background statistics.
+
+        Args:
+            pixmap: The tile QPixmap to inspect.
+
+        Returns:
+            bool: True when the tile is uniform enough to be a placeholder.
+        """
+        if pixmap.isNull():
+            return True
+        image = pixmap.toImage().scaled(
+            24, 24,
+            Qt.AspectRatioMode.IgnoreAspectRatio,
+            Qt.TransformationMode.FastTransformation)
+        counts = [0] * 16
+        total = image.width() * image.height()
+        if total <= 0:
+            return True
+        for y in range(image.height()):
+            for x in range(image.width()):
+                gray = qGray(image.pixel(x, y))
+                counts[gray >> 4] += 1
+        # Merge adjacent buckets so sensor noise straddling a bucket edge
+        # doesn't hide a uniform tile.
+        best = max(counts[i] + counts[i + 1] for i in range(15))
+        return (best / total) >= self.PLACEHOLDER_UNIFORM_FRACTION
+
+    def _crop_from_ancestor(self, ancestor_pixmap, x_tile, y_tile, dz):
+        """
+        Cut the region of an ancestor tile covering (x_tile, y_tile) and
+        upscale it to a full tile.
+
+        Args:
+            ancestor_pixmap: Pixmap of the ancestor tile (dz levels up).
+            x_tile, y_tile: Tile coordinates of the descendant being served.
+            dz: Zoom level difference (>= 1).
+
+        Returns:
+            QPixmap: A tile_size x tile_size upscaled crop.
+        """
+        n = 1 << dz
+        sub = self.tile_size / n
+        sx = int((x_tile % n) * sub)
+        sy = int((y_tile % n) * sub)
+        side = max(1, int(sub))
+        region = ancestor_pixmap.copy(sx, sy, side, side)
+        return region.scaled(
+            self.tile_size, self.tile_size,
+            Qt.AspectRatioMode.IgnoreAspectRatio,
+            Qt.TransformationMode.SmoothTransformation)
+
+    def _emit_fallback_tile(self, x_tile, y_tile, zoom):
+        """
+        Serve (x_tile, y_tile, zoom) from the nearest usable ancestor tile.
+
+        Walks up the pyramid: a cached, non-placeholder ancestor is cropped
+        and emitted immediately. The first ancestor that is neither cached
+        nor known-failed is downloaded (when online) and the tile is queued
+        on it; the fallback then completes in on_tile_downloaded.
+
+        Returns:
+            bool: True when a crop was emitted or a download was scheduled;
+                False when every ancestor up to MAX_FALLBACK_LEVELS is
+                exhausted (caller should emit its own last-resort tile).
+        """
+        for dz in range(1, self.MAX_FALLBACK_LEVELS + 1):
+            ancestor_zoom = zoom - dz
+            if ancestor_zoom < 1:
+                break
+            ax = x_tile >> dz
+            ay = y_tile >> dz
+            cache_path = self.cache_dir / f"{self.tile_source}_{ancestor_zoom}_{ax}_{ay}.png"
+            if cache_path.exists():
+                pixmap = QPixmap(str(cache_path))
+                if not pixmap.isNull() and not self._looks_unavailable(pixmap):
+                    self.tile_loaded.emit(
+                        x_tile, y_tile, zoom,
+                        self._crop_from_ancestor(pixmap, x_tile, y_tile, dz))
+                    return True
+                continue  # cached but unusable - climb further
+            key = (ax, ay, ancestor_zoom, self.tile_source)
+            if self.offline_only or key in self._fallback_failed:
+                continue  # can't/shouldn't fetch this one - climb further
+            self.fallback_waiters.setdefault(key, []).append((x_tile, y_tile, zoom))
+            self.download_tile(ax, ay, ancestor_zoom)
+            return True
+        return False
+
+    def _serve_fallback_waiters(self, x_tile, y_tile, zoom):
+        """
+        Re-run the fallback walk for tiles queued on a finished download.
+
+        Called from on_tile_downloaded for both outcomes: on success the
+        walk finds the fresh cache entry and emits crops; on failure (or a
+        placeholder) it climbs past this ancestor. Waiters whose walk is
+        fully exhausted get their own cached tile back, or gray.
+        """
+        key = (x_tile, y_tile, zoom, self.tile_source)
+        waiters = self.fallback_waiters.pop(key, None)
+        if not waiters:
+            return
+        for wx, wy, wz in waiters:
+            if self._emit_fallback_tile(wx, wy, wz):
+                continue
+            # Exhausted: fall back to the tile's own cached content (the
+            # placeholder we suppressed earlier) or a gray tile.
+            own_cache = self.cache_dir / f"{self.tile_source}_{wz}_{wx}_{wy}.png"
+            pixmap = QPixmap(str(own_cache)) if own_cache.exists() else QPixmap()
+            if pixmap.isNull():
+                pixmap = QPixmap(self.tile_size, self.tile_size)
+                pixmap.fill(QColor(200, 200, 200))
+            self.tile_loaded.emit(wx, wy, wz, pixmap)
 
     def calculate_zoom_for_bounds(self, min_lat, max_lat, min_lon, max_lon, map_width, map_height):
         """
@@ -328,3 +499,6 @@ class MapTileLoader(QObject):
         """Reset the error count after a period of successful operations."""
         self.error_count = 0
         self.last_error_message = None
+        # A quiet 30s means the network may have recovered - let fallback
+        # walks retry ancestors that previously failed to download.
+        self._fallback_failed.clear()

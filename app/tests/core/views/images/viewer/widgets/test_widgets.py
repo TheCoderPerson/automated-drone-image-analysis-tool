@@ -787,3 +787,145 @@ def test_switching_to_street_map_steps_down_from_z20(app):
     view.current_zoom = 20
     view.set_tile_source('map')
     assert view.current_zoom == view.tile_loader.MAX_ZOOM_MAP
+
+
+# ---------------------------------------------------------------------------
+# Map tile ancestor fallback (missing / "no imagery" tiles keep showing the
+# last good zoom level's imagery instead of gray or placeholder tiles)
+# ---------------------------------------------------------------------------
+
+def _uniform_tile(color):
+    """A 256x256 single-color tile pixmap."""
+    pixmap = QPixmap(256, 256)
+    pixmap.fill(color)
+    return pixmap
+
+
+def _checker_tile(colors=None):
+    """A 256x256 tile with a 32px checkerboard - clearly real imagery."""
+    from PySide6.QtGui import QPainter, QColor
+    colors = colors or [QColor(30, 90, 30), QColor(200, 180, 120),
+                        QColor(60, 60, 160), QColor(240, 240, 240)]
+    pixmap = QPixmap(256, 256)
+    painter = QPainter(pixmap)
+    for row in range(8):
+        for col in range(8):
+            painter.fillRect(col * 32, row * 32, 32, 32,
+                             colors[(row + col) % len(colors)])
+    painter.end()
+    return pixmap
+
+
+def _quadrant_tile():
+    """A 256x256 tile with four distinct solid quadrants (TL/TR/BL/BR)."""
+    from PySide6.QtGui import QPainter, QColor
+    pixmap = QPixmap(256, 256)
+    painter = QPainter(pixmap)
+    painter.fillRect(0, 0, 128, 128, QColor(255, 0, 0))       # TL
+    painter.fillRect(128, 0, 128, 128, QColor(0, 255, 0))     # TR
+    painter.fillRect(0, 128, 128, 128, QColor(0, 0, 255))     # BL
+    painter.fillRect(128, 128, 128, 128, QColor(255, 255, 0))  # BR
+    painter.end()
+    return pixmap
+
+
+@pytest.fixture
+def fallback_loader(app, tmp_path):
+    """A MapTileLoader with an isolated cache dir and captured emissions."""
+    loader = MapTileLoader()
+    loader.cache_dir = tmp_path
+    loader.set_tile_source('satellite')
+    emitted = []
+    loader.tile_loaded.connect(lambda x, y, z, pm: emitted.append((x, y, z, pm)))
+    return loader, emitted, tmp_path
+
+
+def _cache(loader_dir, source, zoom, x, y, pixmap):
+    pixmap.save(str(loader_dir / f"{source}_{zoom}_{x}_{y}.png"))
+
+
+def test_placeholder_detection(app):
+    from PySide6.QtGui import QColor, QPainter
+    loader = MapTileLoader()
+    assert loader._looks_unavailable(_uniform_tile(QColor(230, 230, 230)))
+    # A placeholder with a little text is still near-uniform.
+    texty = _uniform_tile(QColor(255, 255, 255))
+    painter = QPainter(texty)
+    painter.setPen(QColor(140, 140, 140))
+    painter.drawText(60, 128, "Map data not yet available")
+    painter.end()
+    assert loader._looks_unavailable(texty)
+    # Real imagery is not.
+    assert not loader._looks_unavailable(_checker_tile())
+
+
+def test_crop_from_ancestor_picks_the_right_quadrant(app):
+    from PySide6.QtGui import qGray
+    loader = MapTileLoader()
+    parent = _quadrant_tile()
+    # Child tile at odd x, even y sits in the parent's top-right quadrant.
+    crop = loader._crop_from_ancestor(parent, 5, 4, 1)
+    assert crop.width() == 256 and crop.height() == 256
+    image = crop.toImage()
+    for px, py in ((10, 10), (128, 128), (245, 245)):
+        pixel = image.pixelColor(px, py)
+        assert pixel.green() > 200 and pixel.red() < 60, \
+            f"expected TR-quadrant green at {px},{py}, got {pixel.name()}"
+
+
+def test_cached_placeholder_replaced_by_parent_crop(fallback_loader):
+    from PySide6.QtGui import QColor
+    loader, emitted, cache = fallback_loader
+    _cache(cache, 'satellite', 20, 10, 10, _uniform_tile(QColor(235, 235, 235)))
+    _cache(cache, 'satellite', 19, 5, 5, _checker_tile())
+    loader.load_tile(10, 10, 20)
+    assert len(emitted) == 1
+    x, y, z, pixmap = emitted[0]
+    assert (x, y, z) == (10, 10, 20)
+    # The emitted tile is the upscaled checkerboard, not the placeholder.
+    assert not loader._looks_unavailable(pixmap)
+
+
+def test_offline_missing_tile_uses_cached_ancestor(fallback_loader):
+    loader, emitted, cache = fallback_loader
+    loader.set_offline_only(True)
+    # Grandparent (dz=2) is the nearest cached ancestor.
+    _cache(cache, 'satellite', 18, 2, 2, _checker_tile())
+    loader.load_tile(10, 10, 20)
+    assert len(emitted) == 1
+    assert not loader._looks_unavailable(emitted[0][3])
+
+
+def test_offline_with_no_ancestor_emits_gray(fallback_loader):
+    loader, emitted, cache = fallback_loader
+    loader.set_offline_only(True)
+    loader.load_tile(10, 10, 20)
+    assert len(emitted) == 1
+    pixel = emitted[0][3].toImage().pixelColor(5, 5)
+    assert (pixel.red(), pixel.green(), pixel.blue()) == (200, 200, 200)
+
+
+def test_waiters_resolve_from_freshly_cached_ancestor(fallback_loader):
+    """A queued descendant is served once its ancestor download lands."""
+    loader, emitted, cache = fallback_loader
+    loader.fallback_waiters[(5, 5, 19, 'satellite')] = [(10, 10, 20)]
+    _cache(cache, 'satellite', 19, 5, 5, _checker_tile())
+    loader._serve_fallback_waiters(5, 5, 19)
+    assert len(emitted) == 1
+    assert emitted[0][:3] == (10, 10, 20)
+    assert not loader._looks_unavailable(emitted[0][3])
+    assert loader.fallback_waiters == {}
+
+
+def test_waiters_climb_past_placeholder_ancestor(fallback_loader):
+    """When the awaited parent is itself a placeholder, the walk continues
+    to the grandparent instead of surfacing the placeholder."""
+    from PySide6.QtGui import QColor
+    loader, emitted, cache = fallback_loader
+    loader.set_offline_only(True)  # keep the walk from scheduling downloads
+    loader.fallback_waiters[(5, 5, 19, 'satellite')] = [(10, 10, 20)]
+    _cache(cache, 'satellite', 19, 5, 5, _uniform_tile(QColor(240, 240, 240)))
+    _cache(cache, 'satellite', 18, 2, 2, _checker_tile())
+    loader._serve_fallback_waiters(5, 5, 19)
+    assert len(emitted) == 1
+    assert not loader._looks_unavailable(emitted[0][3])
