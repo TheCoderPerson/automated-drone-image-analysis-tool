@@ -43,41 +43,11 @@ class Ui_MediaSelector(object):
         self.selectionWidget.setObjectName(u"selectionWidget")
         self.horizontalLayout_2 = QHBoxLayout(self.selectionWidget)
         self.horizontalLayout_2.setObjectName(u"horizontalLayout_2")
-        self.imageWidget = QWidget(self.selectionWidget)
-        self.imageWidget.setObjectName(u"imageWidget")
+        self.resultsWidget = QWidget(self.selectionWidget)
+        self.resultsWidget.setObjectName(u"resultsWidget")
         sizePolicy1 = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
         sizePolicy1.setHorizontalStretch(0)
         sizePolicy1.setVerticalStretch(0)
-        sizePolicy1.setHeightForWidth(self.imageWidget.sizePolicy().hasHeightForWidth())
-        self.imageWidget.setSizePolicy(sizePolicy1)
-        self.verticalLayout = QVBoxLayout(self.imageWidget)
-        self.verticalLayout.setObjectName(u"verticalLayout")
-        self.verticalSpacer_top = QSpacerItem(20, 40, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
-
-        self.verticalLayout.addItem(self.verticalSpacer_top)
-
-        self.imageButton = QToolButton(self.imageWidget)
-        self.imageButton.setObjectName(u"imageButton")
-        self.imageButton.setMinimumSize(QSize(150, 150))
-        self.imageButton.setMaximumSize(QSize(150, 150))
-        font1 = QFont()
-        font1.setPointSize(12)
-        self.imageButton.setFont(font1)
-        self.imageButton.setStyleSheet(u"QToolButton { border: 3px solid palette(mid); border-radius: 8px; }")
-        self.imageButton.setIconSize(QSize(100, 100))
-        self.imageButton.setToolButtonStyle(Qt.ToolButtonTextUnderIcon)
-
-        self.verticalLayout.addWidget(self.imageButton, 0, Qt.AlignHCenter)
-
-        self.verticalSpacer_bottom = QSpacerItem(20, 40, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
-
-        self.verticalLayout.addItem(self.verticalSpacer_bottom)
-
-
-        self.horizontalLayout_2.addWidget(self.imageWidget)
-
-        self.resultsWidget = QWidget(self.selectionWidget)
-        self.resultsWidget.setObjectName(u"resultsWidget")
         sizePolicy1.setHeightForWidth(self.resultsWidget.sizePolicy().hasHeightForWidth())
         self.resultsWidget.setSizePolicy(sizePolicy1)
         self.verticalLayout_5 = QVBoxLayout(self.resultsWidget)
@@ -90,6 +60,8 @@ class Ui_MediaSelector(object):
         self.resultsButton.setObjectName(u"resultsButton")
         self.resultsButton.setMinimumSize(QSize(150, 150))
         self.resultsButton.setMaximumSize(QSize(150, 150))
+        font1 = QFont()
+        font1.setPointSize(12)
         self.resultsButton.setFont(font1)
         self.resultsButton.setStyleSheet(u"QToolButton { border: 3px solid palette(mid); border-radius: 8px; }")
         self.resultsButton.setIconSize(QSize(100, 100))
@@ -103,6 +75,34 @@ class Ui_MediaSelector(object):
 
 
         self.horizontalLayout_2.addWidget(self.resultsWidget)
+
+        self.imageWidget = QWidget(self.selectionWidget)
+        self.imageWidget.setObjectName(u"imageWidget")
+        sizePolicy1.setHeightForWidth(self.imageWidget.sizePolicy().hasHeightForWidth())
+        self.imageWidget.setSizePolicy(sizePolicy1)
+        self.verticalLayout = QVBoxLayout(self.imageWidget)
+        self.verticalLayout.setObjectName(u"verticalLayout")
+        self.verticalSpacer_top = QSpacerItem(20, 40, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
+
+        self.verticalLayout.addItem(self.verticalSpacer_top)
+
+        self.imageButton = QToolButton(self.imageWidget)
+        self.imageButton.setObjectName(u"imageButton")
+        self.imageButton.setMinimumSize(QSize(150, 150))
+        self.imageButton.setMaximumSize(QSize(150, 150))
+        self.imageButton.setFont(font1)
+        self.imageButton.setStyleSheet(u"QToolButton { border: 3px solid palette(mid); border-radius: 8px; }")
+        self.imageButton.setIconSize(QSize(100, 100))
+        self.imageButton.setToolButtonStyle(Qt.ToolButtonTextUnderIcon)
+
+        self.verticalLayout.addWidget(self.imageButton, 0, Qt.AlignHCenter)
+
+        self.verticalSpacer_bottom = QSpacerItem(20, 40, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
+
+        self.verticalLayout.addItem(self.verticalSpacer_bottom)
+
+
+        self.horizontalLayout_2.addWidget(self.imageWidget)
 
         self.streamWidget = QWidget(self.selectionWidget)
         self.streamWidget.setObjectName(u"streamWidget")
@@ -172,11 +172,11 @@ class Ui_MediaSelector(object):
     def retranslateUi(self, MediaSelector):
         MediaSelector.setWindowTitle(QCoreApplication.translate("MediaSelector", u"Automated Drone Image Analysis Tool (ADIAT)", None))
         self.label.setText(QCoreApplication.translate("MediaSelector", u"What would you like to do?", None))
-        self.imageButton.setText(QCoreApplication.translate("MediaSelector", u"Image Analysis", None))
 #if QT_CONFIG(tooltip)
         self.resultsButton.setToolTip(QCoreApplication.translate("MediaSelector", u"Open a completed analysis for review: scan a folder for results or reopen a recent one.", None))
 #endif // QT_CONFIG(tooltip)
         self.resultsButton.setText(QCoreApplication.translate("MediaSelector", u"Review Results", None))
+        self.imageButton.setText(QCoreApplication.translate("MediaSelector", u"Image Analysis", None))
 #if QT_CONFIG(tooltip)
         self.streamButton.setToolTip(QCoreApplication.translate("MediaSelector", u"RTMP, Video Files, HDMI Capture", None))
 #endif // QT_CONFIG(tooltip)

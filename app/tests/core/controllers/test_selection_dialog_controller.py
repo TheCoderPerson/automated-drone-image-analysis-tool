@@ -32,6 +32,23 @@ def test_selection_dialog_runs_startup_update_check(qtbot):
     assert dialog.app_version == "2.1.0 Beta 1"
 
 
+def test_selection_buttons_ordered_review_first(qtbot):
+    """Review Results leads the launcher: reviewing a completed analysis is
+    the most common entry, so its button comes before Image Analysis and
+    Stream Analysis (field request)."""
+    with patch.object(selection_module, "UpdateController"), \
+            patch.object(selection_module, "SettingsService"):
+        dialog = SelectionDialog("Dark")
+        qtbot.addWidget(dialog)
+
+    layout = dialog.horizontalLayout_2
+    # The layout can also hold non-widget items (spacers); order only the
+    # actual selection panels.
+    widgets = [layout.itemAt(i).widget() for i in range(layout.count())]
+    order = [w.objectName() for w in widgets if w is not None]
+    assert order[:3] == ['resultsWidget', 'imageWidget', 'streamWidget']
+
+
 def test_flight_viewer_button_hidden_when_feature_disabled(qtbot):
     """Flight Viewer visibility is gated: when
     FeatureFlags.FLIGHT_VIEWER_ENABLED is False the Selection dialog must
