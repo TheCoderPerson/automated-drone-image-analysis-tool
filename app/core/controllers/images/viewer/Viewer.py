@@ -346,6 +346,30 @@ class Viewer(TranslationMixin, QMainWindow, Ui_Viewer):
         self._loading_dialog = None
         self.showMaximized()
 
+        # First-load view defaults: reviewers work the results as a gallery
+        # with the biggest detections first. Deferred one event-loop turn -
+        # entering gallery mode needs the just-shown window's real geometry.
+        QTimer.singleShot(0, self._apply_first_load_view_defaults)
+
+    def _apply_first_load_view_defaults(self):
+        """Open the results in gallery mode, sorted by pixel area (largest
+        first). Runs once, right after the viewer first becomes visible;
+        the user can switch mode and sort freely afterwards."""
+        try:
+            if hasattr(self, 'aoiSortComboBox'):
+                idx = self.aoiSortComboBox.findData('area_desc')
+                if idx >= 0:
+                    # Fires the combo's change handler, so the sidebar and
+                    # gallery sorts stay in lockstep exactly as on a manual
+                    # selection.
+                    self.aoiSortComboBox.setCurrentIndex(idx)
+            if (self.images and not self.gallery_mode
+                    and hasattr(self, 'galleryModeButton')):
+                # Simulate a real click so all mode-toggle signals fire.
+                self.galleryModeButton.click()
+        except Exception as e:
+            self.logger.error(f"First-load view defaults failed: {e}")
+
     def _initial_fit_image(self):
         if self.main_image is not None and not self.main_image._is_destroyed:
             # Ensure the widget is properly sized before resetting zoom
