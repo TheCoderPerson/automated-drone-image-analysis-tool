@@ -22,12 +22,13 @@ import math
 import cv2
 import numpy as np
 
-from PySide6.QtCore import Qt, QRectF, QPointF
+from PySide6.QtCore import Qt, QRectF, QPointF, QTimer
 from PySide6.QtGui import QPen, QColor, QBrush, QPainterPath, QPolygonF
 from PySide6.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QWidget,
     QGroupBox, QComboBox, QSpinBox, QFormLayout, QCheckBox, QGraphicsPathItem,
-    QGraphicsEllipseItem, QGraphicsItem, QColorDialog,
+    QGraphicsEllipseItem, QGraphicsItem, QGraphicsLineItem, QColorDialog,
+    QApplication,
 )
 
 from helpers.TranslationMixin import TranslationMixin
@@ -40,7 +41,9 @@ from core.services import PersonModel
 from core.services.shadow.PersonShadow import compute_shadow_ground_points
 from core.services.shadow.SolarPosition import (
     resolve_capture_utc, get_solar_position, SolarTimeUnresolvable,
+    timezone_name_for_position,
 )
+from core.services.shadow.ShadowTimeSolver import solve_time_for_shadow_azimuth
 
 # Persisted setting keys. The overlay is a recurring reference tool, so the
 # user's last choices (colour, size class, which poses/shadow/terrain are on)
@@ -87,6 +90,12 @@ RECUMBENT_THICKNESS_FRACTION = 0.12
 # the camera is oblique enough that the full 3D upright figure reads correctly
 # and is projected instead.
 NADIR_PITCH_TOLERANCE_DEG = 15.0
+
+# Gap (image px) between the reference person's anchor and the edge of the
+# selected AOI: an anchor landing on the AOI is shifted aside by the AOI's
+# radius plus this clearance, so the overlay never covers the detection it
+# is being compared against.
+AOI_CLEARANCE_PX = 40.0
 
 
 def _build_recumbent_path(height_cm):
@@ -259,6 +268,16 @@ class PersonReferenceDialog(TranslationMixin, QDialog):
         self.sun_error = None
         self.sun_time_source = None
 
+        # Shadow-trace state: the user can trace a real shadow on the image
+        # (base of the caster, then shadow tip) and the solved time of day
+        # overrides the - possibly wrong - camera clock for sun rendering.
+        self._capture_utc = None          # resolved capture moment (UTC)
+        self._trace_override_utc = None   # solved time from a traced shadow
+        self._trace_active = False
+        self._trace_connected = False     # click signal currently connected
+        self._trace_points = []           # image-pixel clicks, base first
+        self._trace_items = []            # scene items visualising the trace
+
         # DEM terrain state for the current image.
         self.terrain_service = None
         self.terrain_nadir_elev = None
@@ -273,6 +292,14 @@ class PersonReferenceDialog(TranslationMixin, QDialog):
         self.anchor_item = None
         self.pose_items = {}   # 'standing'|'recumbent'|'sitting' -> QGraphicsPathItem
         self.shadow_item = None
+
+        # Image-change rebuilds are deferred so in-flight navigation (e.g.
+        # a gallery AOI click that loads the image and then zooms to the
+        # AOI) lands before the person is placed - see update_for_image.
+        self._pending_image = None
+        self._image_change_timer = QTimer(self)
+        self._image_change_timer.setSingleShot(True)
+        self._image_change_timer.timeout.connect(self._apply_pending_image)
 
         self._setup_ui()
         self._connect_signals()
@@ -370,6 +397,15 @@ class PersonReferenceDialog(TranslationMixin, QDialog):
         self.adjust_clock_button = QPushButton(self.tr("Adjust camera clock..."))
         self.adjust_clock_button.setVisible(False)
 
+        # Trace a real shadow in the image to recover the true time of day
+        # (works even when the camera clock is wrong).
+        self.trace_shadow_button = QPushButton(self.tr("Trace shadow..."))
+        self.trace_shadow_button.setToolTip(self.tr(
+            "Derive the time of day from a real shadow: click the base of "
+            "an object casting a shadow (rock, tree, post), then the tip of "
+            "its shadow. The solved time drives the rendered shadows."))
+        self.trace_shadow_button.setEnabled(False)
+
         instructions = QLabel(self.tr(
             "Drag the white handle to position the reference person. "
             "Silhouettes are drawn at true ground scale for this image's "
@@ -380,8 +416,11 @@ class PersonReferenceDialog(TranslationMixin, QDialog):
 
         button_row = QHBoxLayout()
         self.recenter_button = QPushButton(self.tr("Recenter"))
+        self.recenter_button.setToolTip(self.tr(
+            "Bring the reference person to the center of the current view"))
         self.close_button = QPushButton(self.tr("Close"))
         button_row.addWidget(self.recenter_button)
+        button_row.addWidget(self.trace_shadow_button)
         button_row.addWidget(self.adjust_clock_button)
         button_row.addStretch()
         button_row.addWidget(self.close_button)
@@ -409,6 +448,7 @@ class PersonReferenceDialog(TranslationMixin, QDialog):
         self.color_button.clicked.connect(self._on_color_button_clicked)
         self.recenter_button.clicked.connect(self._recenter)
         self.adjust_clock_button.clicked.connect(self._on_adjust_clock)
+        self.trace_shadow_button.clicked.connect(self._on_trace_shadow_clicked)
         self.close_button.clicked.connect(self.close)
 
     def _is_waldo_image(self) -> bool:
@@ -474,8 +514,15 @@ class PersonReferenceDialog(TranslationMixin, QDialog):
             self._position_adjusted = True
 
     # ---------------- image / camera / sun ----------------
-    def _load_image(self, image_service, image_path, agl_override_m):
-        """Build the camera model and sun position for an image, then render."""
+    def _load_image(self, image_service, image_path, agl_override_m,
+                    allow_auto_zoom=True):
+        """Build the camera model and sun position for an image, then render.
+
+        Args:
+            allow_auto_zoom: whether the legibility auto-zoom may run. It is
+                suppressed on image changes that land in an already-zoomed
+                view (the navigation's zoom must not be hijacked).
+        """
         self.image_path = image_path
         self.camera = CameraModel.from_image_service(image_service, agl_override_m)
         self._resolve_sun()
@@ -492,7 +539,8 @@ class PersonReferenceDialog(TranslationMixin, QDialog):
             ))
         else:
             self._show_status(None)
-            self._ensure_reference_visible()
+            if allow_auto_zoom:
+                self._ensure_reference_visible()
 
     def _reference_bounds_scene(self):
         """United scene-space bounding rect of the visible silhouettes, or None.
@@ -547,9 +595,36 @@ class PersonReferenceDialog(TranslationMixin, QDialog):
         ))
 
     def update_for_image(self, image_service, image_path, agl_override_m=None):
-        """Rebuild the camera/sun for a newly selected image (called by Viewer)."""
+        """Rebuild the camera/sun for a newly selected image (called by Viewer).
+
+        The rebuild is deferred one beat: an image change is often part of a
+        larger navigation - a gallery AOI click loads the image and then
+        zooms to the AOI through a transient viewChanged handler. Rebuilding
+        immediately would anchor the person at the pre-zoom view centre and
+        the legibility auto-zoom would stomp the AOI zoom (field report).
+        Waiting lets the navigation land; the person is then placed at the
+        final view centre (the AOI, for gallery clicks).
+        """
+        self._reset_trace_state()
         self._clear_items()
-        self._load_image(image_service, image_path, agl_override_m)
+        self._pending_image = (image_service, image_path, agl_override_m)
+        self._image_change_timer.start(300)
+
+    def _apply_pending_image(self):
+        """Deferred tail of update_for_image.
+
+        The legibility auto-zoom is never run here: it exists so the tool
+        does not look inert on FIRST open, but once the dialog is up an
+        image change is part of the operator's own navigation (arrow keys,
+        gallery zoom-to-AOI) and the view must stay exactly where that
+        navigation put it. Recenter brings the person in on demand.
+        """
+        if self._pending_image is None:
+            return
+        image_service, image_path, agl_override_m = self._pending_image
+        self._pending_image = None
+        self._load_image(image_service, image_path, agl_override_m,
+                         allow_auto_zoom=False)
 
     def _resolve_sun(self):
         """Resolve the sun elevation/azimuth from the image capture metadata."""
@@ -557,6 +632,7 @@ class PersonReferenceDialog(TranslationMixin, QDialog):
         self.sun_az = None
         self.sun_error = None
         self.sun_time_source = None
+        self._capture_utc = None
         if not self.image_path:
             self.sun_error = self.tr("no image loaded")
             return
@@ -581,6 +657,11 @@ class PersonReferenceDialog(TranslationMixin, QDialog):
         except SolarTimeUnresolvable:
             self.sun_error = self.tr("capture time / timezone not in metadata")
             return
+        self._capture_utc = utc
+        # A time solved from a traced shadow beats the camera clock.
+        if self._trace_override_utc is not None:
+            utc = self._trace_override_utc
+            source = 'shadow_trace'
         self.sun_time_source = source
         try:
             elev, az = get_solar_position(self.drone_lat, self.drone_lon, utc)
@@ -593,6 +674,9 @@ class PersonReferenceDialog(TranslationMixin, QDialog):
     def _update_sun_label(self):
         """Refresh the sun-info line and enable/disable the shadow toggle."""
         self.adjust_clock_button.setVisible(self._is_waldo_image())
+        self.trace_shadow_button.setEnabled(
+            self.camera is not None and self.drone_lat is not None
+            and self._capture_utc is not None)
         if self.sun_elev is not None and self.sun_elev > 0:
             text = self.tr(
                 "Sun at capture: {elev:.0f}° above horizon, "
@@ -604,6 +688,9 @@ class PersonReferenceDialog(TranslationMixin, QDialog):
             elif self.sun_time_source == 'waldo_corrected':
                 text += " " + self.tr(
                     "Using repaired capture time (camera clock fault).")
+            elif self.sun_time_source == 'shadow_trace':
+                text += " " + self.tr(
+                    "Time of day derived from the traced shadow.")
             self.sun_label.setText(text)
             self.shadow_check.setEnabled(True)
         else:
@@ -993,13 +1080,64 @@ class PersonReferenceDialog(TranslationMixin, QDialog):
             return self.image_viewer.sceneRect().center()
 
     def _default_anchor_scene(self):
-        """Initial person placement: the ground point directly under the drone.
+        """Person placement for open and Recenter: the current view centre.
 
-        The nadir projects to a compact, upright silhouette, so the overlay
-        opens sensibly no matter how the image is zoomed when the tool is
-        triggered (previously it dropped the person at the zoomed viewport
-        centre, which lands off-nadir and looks like an elongated smear).
-        Falls back to the image centre, then the viewport centre.
+        Opening the tool must not yank the operator away from the area
+        they are inspecting (field report: opening while zoomed to an AOI
+        panned the view to the image centre) - the person appears where
+        they are already looking, clamped to the image bounds. Falls back
+        to the nadir placement when the view centre cannot be determined.
+        """
+        try:
+            point = self._viewport_center_scene()
+            x = float(point.x())
+            y = float(point.y())
+            if self.camera is not None:
+                x = min(max(x, 0.0), float(self.camera.width))
+                y = min(max(y, 0.0), float(self.camera.height))
+            return self._avoid_selected_aoi(QPointF(x, y))
+        except Exception:
+            return self._avoid_selected_aoi(self._nadir_anchor_scene())
+
+    def _avoid_selected_aoi(self, point):
+        """Nudge an anchor point off the currently selected AOI.
+
+        Clicking an AOI centres the view on it, so a view-centre placement
+        would sit the person exactly on top of the find. When the anchor
+        falls within the AOI's radius + AOI_CLEARANCE_PX, shift it level
+        with the AOI to its left; when that leaves the image, to its right.
+        """
+        try:
+            viewer = self._parent_viewer
+            aoi_index = viewer.aoi_controller.selected_aoi_index
+            if aoi_index is None or aoi_index < 0:
+                return point
+            image = viewer.images[viewer.current_image]
+            aoi = image['areas_of_interest'][aoi_index]
+            aoi_x = float(aoi['center'][0])
+            aoi_y = float(aoi['center'][1])
+            radius = float(aoi.get('radius', 0) or 0)
+        except Exception:
+            return point
+        clearance = radius + AOI_CLEARANCE_PX
+        dx = point.x() - aoi_x
+        dy = point.y() - aoi_y
+        if (dx * dx + dy * dy) > clearance * clearance:
+            return point  # anchor is not on the AOI - leave it alone
+        left_x = aoi_x - clearance
+        if left_x >= 0.0:
+            return QPointF(left_x, aoi_y)
+        right_x = aoi_x + clearance
+        if self.camera is not None:
+            right_x = min(right_x, float(self.camera.width))
+        return QPointF(right_x, aoi_y)
+
+    def _nadir_anchor_scene(self):
+        """Fallback placement: the ground point directly under the drone.
+
+        The nadir projects to a compact, upright silhouette, so the
+        overlay still opens sensibly when the view centre is unusable.
+        Falls back further to the image centre.
         """
         if self.camera is not None:
             nadir = self.camera.project(0.0, 0.0, self.camera.agl_m)
@@ -1009,7 +1147,7 @@ class PersonReferenceDialog(TranslationMixin, QDialog):
                         and 0.0 <= v <= self.camera.height):
                     return QPointF(u, v)
             return QPointF(self.camera.width / 2.0, self.camera.height / 2.0)
-        return self._viewport_center_scene()
+        return QPointF(0.0, 0.0)
 
     def _show_status(self, message):
         if message:
@@ -1038,11 +1176,229 @@ class PersonReferenceDialog(TranslationMixin, QDialog):
         self._render_all()
 
     def _recenter(self):
+        """Bring the reference person into the user's current view.
+
+        The user pans/zooms to the spot they are inspecting and hits
+        Recenter to pull the overlay there - the same placement rule the
+        tool uses when it opens.
+        """
         if self.anchor_item is not None:
             self.anchor_item.setPos(self._default_anchor_scene())
             self._render_all()
 
+    # ---------------- shadow trace ----------------
+    def _on_trace_shadow_clicked(self):
+        """Start/cancel a shadow trace, or clear an applied traced time."""
+        if self._trace_active:
+            self._end_trace(cancelled=True)
+            return
+        if self._trace_override_utc is not None:
+            self._reset_trace_state()
+            self._resolve_sun()
+            self._update_sun_label()
+            self._on_params_changed()
+            return
+        self._begin_trace()
+
+    def _begin_trace(self):
+        """Arm the two-click trace on the main image viewer."""
+        self._trace_points = []
+        self._clear_trace_items()
+        try:
+            self.image_viewer.leftMouseButtonPressed.connect(self._on_trace_click)
+        except Exception:
+            return
+        self._trace_connected = True
+        # The main image's left button normally starts a region zoom, which
+        # consumes the press before leftMouseButtonPressed is emitted -
+        # point-capture mode routes plain left clicks to the signal instead.
+        begin_capture = getattr(self.image_viewer, 'begin_point_capture', None)
+        if callable(begin_capture):
+            try:
+                begin_capture()
+            except Exception:
+                pass
+        self._trace_active = True
+        self.trace_shadow_button.setText(self.tr("Cancel trace"))
+        self._show_status(self.tr(
+            "Shadow trace: on the image, click the BASE of an object casting "
+            "a shadow (rock, tree, post), then click the TIP of its shadow."))
+
+    def _end_trace(self, cancelled=False):
+        """Disarm the trace clicks; optionally discard what was traced."""
+        self._trace_active = False
+        # Only disconnect when actually connected: a blind disconnect makes
+        # Qt print a RuntimeWarning on every image change.
+        if self._trace_connected:
+            self._trace_connected = False
+            try:
+                self.image_viewer.leftMouseButtonPressed.disconnect(self._on_trace_click)
+            except Exception:
+                pass
+        end_capture = getattr(self.image_viewer, 'end_point_capture', None)
+        if callable(end_capture):
+            try:
+                end_capture()
+            except Exception:
+                pass
+        if cancelled:
+            self._trace_points = []
+            self._clear_trace_items()
+            self.trace_shadow_button.setText(self.tr("Trace shadow..."))
+            self._show_status(None)
+
+    def _reset_trace_state(self):
+        """Drop the trace override and visuals (image change / clear / close)."""
+        self._end_trace(cancelled=True)
+        self._trace_override_utc = None
+        self.trace_shadow_button.setText(self.tr("Trace shadow..."))
+
+    def _on_trace_click(self, x, y, _viewer=None):
+        """Collect the two trace clicks: shadow base, then shadow tip."""
+        if not self._trace_active:
+            return
+        self._trace_points.append((float(x), float(y)))
+        self._add_trace_marker(float(x), float(y),
+                               first=len(self._trace_points) == 1)
+        if len(self._trace_points) < 2:
+            self._show_status(self.tr(
+                "Shadow trace: now click the TIP of the shadow."))
+            return
+        self._end_trace()
+        self._draw_trace_line()
+        self._solve_traced_shadow()
+
+    def _add_trace_marker(self, x, y, first):
+        """Drop a fixed-screen-size dot where the user clicked."""
+        scene = getattr(self.image_viewer, 'scene', None)
+        if scene is None:
+            return
+        radius = 5.0
+        item = QGraphicsEllipseItem(-radius, -radius, 2 * radius, 2 * radius)
+        item.setPos(QPointF(x, y))
+        color = QColor('#ff9800') if first else QColor('#ffc107')
+        item.setBrush(QBrush(color))
+        item.setPen(QPen(QColor(0, 0, 0), 1))
+        item.setZValue(1101)
+        item.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIgnoresTransformations, True)
+        scene.addItem(item)
+        self._trace_items.append(item)
+
+    def _draw_trace_line(self):
+        """Draw the traced base->tip line (kept visible for comparison with
+        the rendered shadow)."""
+        scene = getattr(self.image_viewer, 'scene', None)
+        if scene is None or len(self._trace_points) != 2:
+            return
+        (x1, y1), (x2, y2) = self._trace_points
+        line = QGraphicsLineItem(x1, y1, x2, y2)
+        pen = QPen(QColor('#ff9800'), 2, Qt.DashLine)
+        pen.setCosmetic(True)
+        line.setPen(pen)
+        line.setZValue(1100)
+        scene.addItem(line)
+        self._trace_items.append(line)
+
+    def _clear_trace_items(self):
+        """Remove the trace visuals from the scene."""
+        scene = getattr(self.image_viewer, 'scene', None)
+        for item in self._trace_items:
+            if scene is not None:
+                try:
+                    scene.removeItem(item)
+                except Exception:
+                    pass
+        self._trace_items = []
+
+    def _traced_shadow_azimuth(self):
+        """World azimuth of the traced shadow (base -> tip), or None.
+
+        Both clicks are cast onto the ground through the same CameraModel
+        used to render the person and its shadow, so the traced azimuth and
+        the rendered shadow live in the same frame - after applying the
+        solved time the rendered shadow lines up with the traced line.
+        """
+        if self.camera is None or len(self._trace_points) != 2:
+            return None
+        base = self.camera.pixel_to_ground(*self._trace_points[0])
+        tip = self.camera.pixel_to_ground(*self._trace_points[1])
+        if base is None or tip is None:
+            return None
+        d_north = tip[0] - base[0]
+        d_east = tip[1] - base[1]
+        if abs(d_north) < 1e-9 and abs(d_east) < 1e-9:
+            return None
+        return math.degrees(math.atan2(d_east, d_north)) % 360.0
+
+    def _format_local_time(self, utc_dt):
+        """Format a UTC moment as local wall time at the drone's position."""
+        try:
+            from zoneinfo import ZoneInfo
+            tz_name = timezone_name_for_position(self.drone_lat, self.drone_lon)
+            if tz_name:
+                return utc_dt.astimezone(ZoneInfo(tz_name)).strftime('%H:%M %Z')
+        except Exception:
+            pass
+        return utc_dt.strftime('%H:%M UTC')
+
+    def _solve_traced_shadow(self):
+        """Invert the traced shadow to a time of day and apply it."""
+        shadow_az = self._traced_shadow_azimuth()
+        if shadow_az is None:
+            self._reset_trace_state()
+            self._show_status(self.tr(
+                "Shadow trace: the traced points could not be projected to "
+                "the ground - try two points further apart."))
+            return
+        if self._capture_utc is None or self.drone_lat is None:
+            self._reset_trace_state()
+            self._show_status(self.tr(
+                "Shadow trace: the image is missing the capture date or GPS "
+                "position needed to solve the time."))
+            return
+        QApplication.setOverrideCursor(Qt.CursorShape.WaitCursor)
+        try:
+            solution = solve_time_for_shadow_azimuth(
+                self.drone_lat, self.drone_lon, self._capture_utc, shadow_az)
+        except Exception as e:
+            solution = None
+            self.logger.error(f"Shadow trace: solver failed - {e}")
+        finally:
+            QApplication.restoreOverrideCursor()
+        if solution is None:
+            self._reset_trace_state()
+            self._show_status(self.tr(
+                "Shadow trace: no daylight sun position matches that "
+                "direction on the capture date. Check the traced direction "
+                "(base first, then shadow tip)."))
+            return
+        self._trace_override_utc = solution.utc
+        self.trace_shadow_button.setText(self.tr("Clear traced time"))
+        message = self.tr(
+            "Time solved from the traced shadow: {time} "
+            "(sun azimuth {az:.0f}°, {elev:.0f}° above horizon)."
+        ).format(time=self._format_local_time(solution.utc),
+                 az=solution.sun_azimuth_deg,
+                 elev=solution.sun_elevation_deg)
+        if solution.direction_flipped:
+            message += " " + self.tr(
+                "The traced direction looked reversed and was interpreted "
+                "tip-to-base.")
+        if solution.ambiguous:
+            message += " " + self.tr(
+                "Note: another time of day matches this direction almost "
+                "as well.")
+        self._show_status(message)
+        self._resolve_sun()
+        self._update_sun_label()
+        self._on_params_changed()
+
     # ---------------- close ----------------
     def closeEvent(self, event):
+        # A pending image-change rebuild must not fire into a closed dialog
+        # (it would re-add overlay items that nothing would ever remove).
+        self._image_change_timer.stop()
+        self._pending_image = None
+        self._reset_trace_state()
         self._clear_items()
         super().closeEvent(event)

@@ -5463,72 +5463,72 @@ Wilt u doorgaan?</translation>
         <translation>Geen GPS-gegevens gevonden in afbeeldingen</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="190"/>
+        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="192"/>
         <source>POD overlay cleared — the elevation/canopy source changed. Recalculate to refresh it.</source>
         <translation>POD-overlay gewist — de hoogte-/bladerdakbron is gewijzigd. Herbereken om te vernieuwen.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="200"/>
+        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="202"/>
         <source>Downloading tiles is disabled in Offline Only mode</source>
         <translation>Tegels downloaden is uitgeschakeld in de modus alleen offline</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="231"/>
+        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="233"/>
         <source>Calculate POD Coverage?</source>
         <translation>POD-dekking berekenen?</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="233"/>
+        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="235"/>
         <source>Coverage data is ready. Calculate the probability-of-detection heatmap for this mission now? (May take several minutes.)</source>
         <translation>De dekkingsgegevens zijn gereed. Nu de detectiekans-heatmap voor deze missie berekenen? (Kan enkele minuten duren.)</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="293"/>
+        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="295"/>
         <source>Your local USGS 3DEP tiles only partially cover this mission.</source>
         <translation>Uw lokale USGS 3DEP-tegels dekken deze missie slechts gedeeltelijk.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="296"/>
+        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="298"/>
         <source>Your local USGS 3DEP tiles do not cover this mission.</source>
         <translation>Uw lokale USGS 3DEP-tegels dekken deze missie niet.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="298"/>
+        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="300"/>
         <source>Local Elevation Coverage</source>
         <translation>Dekking lokale hoogtegegevens</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="302"/>
+        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="304"/>
         <source>Frames outside the local tiles will use online AWS Terrain Tiles (~30 m) elevation instead. You can download 1 m tiles for this area first, or continue with the fallback.</source>
         <translation>Frames buiten de lokale tegels gebruiken in plaats daarvan online AWS Terrain Tiles-hoogte (~30 m). U kunt eerst 1 m-tegels voor dit gebied downloaden of doorgaan met de fallback.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="303"/>
+        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="305"/>
         <source>Download Tiles...</source>
         <translation>Tegels downloaden...</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="305"/>
+        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="307"/>
         <source>Continue</source>
         <translation>Doorgaan</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="334"/>
+        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="336"/>
         <source>POD calculation is unavailable</source>
         <translation>POD-berekening is niet beschikbaar</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="353"/>
+        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="355"/>
         <source>The tile downloader is unavailable</source>
         <translation>De tegeldownloader is niet beschikbaar</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="383"/>
+        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="385"/>
         <source>Download Canopy Data?</source>
         <translation>Kroongegevens downloaden?</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="389"/>
+        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="391"/>
         <source>No canopy-height data is configured for this mission.
 
 Download elevation and canopy tiles for this area now so the canopy overlay and terrain-aware detection coverage can use them?
@@ -5541,79 +5541,101 @@ Nu hoogte- en kroontegels voor dit gebied downloaden zodat de kroonoverlay en de
 Hiermee wordt Meta/WRI-kroonhoogte (1 m) gedownload en ingesteld als bron voor kroongegevens, waarbij een eventuele LANDFIRE-selectie wordt vervangen (LANDFIRE-tegels moeten handmatig worden toegevoegd).</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="579"/>
+        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="581"/>
         <source>Not covered — no looks</source>
         <translation>Niet gedekt — geen waarnemingen</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="580"/>
+        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="582"/>
         <source>Terrain occlusion</source>
         <translation>Terreinocclusie</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="581"/>
+        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="583"/>
         <source>Canopy</source>
         <translation>Boomkroon</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="582"/>
+        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="584"/>
         <source>Image resolution (GSD)</source>
         <translation>Beeldresolutie (GSD)</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="583"/>
+        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="585"/>
         <source>None</source>
         <translation>Geen</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="585"/>
+        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="587"/>
         <source>Unknown</source>
         <translation>Onbekend</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="765"/>
+        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="767"/>
         <source>Building canopy overlay...</source>
         <translation>Kroonoverlay wordt gemaakt...</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="791"/>
+        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="793"/>
         <source>No canopy data covers this area</source>
         <translation>Geen kroongegevens dekken dit gebied</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="851"/>
+        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="853"/>
         <source>POD: {pod}% (beta)   Looks: {looks}</source>
         <translation>POD: {pod}% (beta)   Waarnemingen: {looks}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="854"/>
+        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="856"/>
         <source>Limiting factor: {factor}</source>
         <translation>Beperkende factor: {factor}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="889"/>
-        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="902"/>
+        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="891"/>
+        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="904"/>
         <source>Image {n}</source>
         <translation>Afbeelding {n}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="890"/>
-        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="905"/>
+        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="892"/>
+        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="907"/>
         <source>View {name}</source>
         <translation>Weergave {name}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="862"/>
+        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="1276"/>
+        <source>Update AOI Location?</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="1280"/>
+        <source>Move this AOI to {lat:.6f}, {lon:.6f}?
+
+That is {dist:.1f} m from its previous position. The corrected location is saved with the results and used for exports.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="1289"/>
+        <source>AOI location updated</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="1299"/>
+        <source>AOI location reset to the computed estimate</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="864"/>
         <source>Find location in images</source>
         <translation>Locatie in afbeeldingen zoeken</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="909"/>
+        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="911"/>
         <source>{name} (no flagged AOIs)</source>
         <translation>{name} (geen gemarkeerde AOI&apos;s)</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="1044"/>
+        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="1046"/>
         <source>GPS coordinate not in any images</source>
         <translation>GPS-coördinaat in geen enkele afbeelding</translation>
     </message>
@@ -5621,113 +5643,113 @@ Hiermee wordt Meta/WRI-kroonhoogte (1 m) gedownload en ingesteld als bron voor k
 <context>
     <name>GPSMapDialog</name>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="54"/>
+        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="60"/>
         <source>GPS Map View</source>
         <translation>GPS-kaartweergave</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="108"/>
+        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="116"/>
         <source>Zoom In (+)</source>
         <translation>Inzoomen (+)</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="112"/>
+        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="120"/>
         <source>Zoom Out (-)</source>
         <translation>Uitzoomen (-)</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="116"/>
+        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="124"/>
         <source>Fit All (F)</source>
         <translation>Alles passend maken (F)</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="120"/>
+        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="128"/>
         <source>Rotate (R)</source>
         <translation>Roteren (R)</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="128"/>
-        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="338"/>
+        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="136"/>
+        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="348"/>
         <source>Satellite View</source>
         <translation>Satellietweergave</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="135"/>
+        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="143"/>
         <source>POD Overlay</source>
         <translation>POD-overlay</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="139"/>
+        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="147"/>
         <source>Run a map export with the POD option to generate this overlay</source>
         <translation>Voer een kaartexport uit met de POD-optie om deze overlay te genereren</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="144"/>
+        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="152"/>
         <source>POD (beta)</source>
         <translation>POD (beta)</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="145"/>
+        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="153"/>
         <source>Look count</source>
         <translation>Aantal waarnemingen</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="146"/>
+        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="154"/>
         <source>Canopy height</source>
         <translation>Kroonhoogte</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="156"/>
+        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="164"/>
         <source>POD overlay opacity</source>
         <translation>Dekking van POD-overlay</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="162"/>
+        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="170"/>
         <source>Download Canopy Tiles</source>
         <translation>Kroontegels downloaden</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="169"/>
+        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="177"/>
         <source>Calculate POD</source>
         <translation>POD berekenen</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="172"/>
+        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="180"/>
         <source>Compute the terrain-aware probability-of-detection heatmap for this mission (may take several minutes)</source>
         <translation>Bereken de terreinbewuste detectiekans-heatmap voor deze missie (kan enkele minuten duren)</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="179"/>
-        <source>Click point to select • Drag to pan • Scroll to zoom</source>
-        <translation>Klik op punt om te selecteren • Sleep om te verplaatsen • Scrol om te zoomen</translation>
+        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="189"/>
+        <source>Click point to select • Drag to pan • Scroll to zoom • Drag AOI marker to correct its location</source>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="264"/>
+        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="274"/>
         <source>Downloading tiles is disabled in Offline Only mode</source>
         <translation>Tegels downloaden is uitgeschakeld in de modus alleen offline</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="265"/>
+        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="275"/>
         <source>Download elevation and canopy-height tiles for this mission&apos;s area</source>
         <translation>Hoogte- en kroonhoogtetegels voor het gebied van deze missie downloaden</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="335"/>
+        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="345"/>
         <source>Map View</source>
         <translation>Kaartweergave</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="372"/>
+        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="382"/>
         <source>⚠ {error}</source>
         <translation>⚠ {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="382"/>
+        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="392"/>
         <source>Map Tile Loading Issue</source>
         <translation>Probleem met laden van kaarttegels</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="385"/>
+        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="395"/>
         <source>{error}
 
 The map will continue to work with cached tiles where available.</source>
@@ -5739,13 +5761,28 @@ De kaart blijft werken met gecachete tegels waar beschikbaar.</translation>
 <context>
     <name>GPSMapView</name>
     <message>
-        <location filename="../app/core/views/images/viewer/widgets/GPSMapView.py" line="1216"/>
+        <location filename="../app/core/views/images/viewer/widgets/GPSMapView.py" line="1277"/>
         <source>Copy Data</source>
         <translation>Gegevens kopiëren</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/widgets/GPSMapView.py" line="1777"/>
-        <location filename="../app/core/views/images/viewer/widgets/GPSMapView.py" line="1888"/>
+        <location filename="../app/core/views/images/viewer/widgets/GPSMapView.py" line="1281"/>
+        <source>Reset to estimated position</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/views/images/viewer/widgets/GPSMapView.py" line="1422"/>
+        <source>Position corrected by user</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/views/images/viewer/widgets/GPSMapView.py" line="1423"/>
+        <source>Drag to correct the location</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/views/images/viewer/widgets/GPSMapView.py" line="1845"/>
+        <location filename="../app/core/views/images/viewer/widgets/GPSMapView.py" line="1956"/>
         <source>Zoom FOV</source>
         <translation>Zoom-gezichtsveld</translation>
     </message>
@@ -10240,174 +10277,246 @@ Verwachte bestandsnamen:
 <context>
     <name>PersonReferenceDialog</name>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="285"/>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="312"/>
         <source>Person Size Reference</source>
         <translation>Referentie voor persoonsgrootte</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="292"/>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="319"/>
         <source>Reference Person</source>
         <translation>Referentiepersoon</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="311"/>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="338"/>
         <source>Standing</source>
         <translation>Staand</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="313"/>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="340"/>
         <source>Lying down</source>
         <translation>Liggend</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="315"/>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="342"/>
         <source>Sitting</source>
         <translation>Zittend</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="324"/>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="351"/>
         <source>Show shadows (from capture time)</source>
         <translation>Schaduwen tonen (opnametijd)</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="327"/>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="354"/>
         <source>Use terrain elevation (DEM)</source>
         <translation>Terreinhoogte gebruiken (DEM)</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="337"/>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="364"/>
         <source>Rotate the person on the ground to line it up with an object</source>
         <translation>Draai de persoon op de grond om deze met een object uit te lijnen</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="341"/>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="368"/>
         <source>Click to choose overlay color</source>
         <translation>Klik om de overlaykleur te kiezen</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="349"/>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="376"/>
         <source>Size:</source>
         <translation>Grootte:</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="350"/>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="377"/>
         <source>Show:</source>
         <translation>Tonen:</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="351"/>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="378"/>
         <source>Rotation:</source>
         <translation>Rotatie:</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="354"/>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="381"/>
         <source>Color:</source>
         <translation>Kleur:</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="370"/>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="397"/>
         <source>Adjust camera clock...</source>
         <translation>Cameraklok aanpassen...</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="377"/>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="402"/>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="1247"/>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="1254"/>
+        <source>Trace shadow...</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="406"/>
+        <source>Derive the time of day from a real shadow: click the base of an object casting a shadow (rock, tree, post), then the tip of its shadow. The solved time drives the rendered shadows.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="413"/>
         <source>Drag the white handle to position the reference person. Silhouettes are drawn at true ground scale for this image&apos;s altitude and camera angle.</source>
         <translation>Sleep de witte greep om de referentiepersoon te plaatsen. Silhouetten worden op ware terreinschaal getekend voor de hoogte en camerahoek van deze afbeelding.</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="382"/>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="418"/>
         <source>Recenter</source>
         <translation>Centreren</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="383"/>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="420"/>
+        <source>Bring the reference person to the center of the current view</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="421"/>
         <source>Close</source>
         <translation>Sluiten</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="447"/>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="487"/>
         <source>No camera clock fault or applied correction was found for this folder.</source>
         <translation>Er is geen cameraklokfout of toegepaste correctie gevonden voor deze map.</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="492"/>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="539"/>
         <source>Perspective overlay unavailable: this image is missing the altitude or lens metadata needed to project a person.</source>
         <translation>Perspectiefoverlay niet beschikbaar: deze afbeelding mist de hoogte- of lensmetadata die nodig zijn om een persoon te projecteren.</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="547"/>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="595"/>
         <source>Zoomed to the reference person: at this altitude a person spans only a few pixels.</source>
         <translation>Ingezoomd op de referentiepersoon: op deze hoogte beslaat een persoon slechts enkele pixels.</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="562"/>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="638"/>
         <source>no image loaded</source>
         <translation>geen afbeelding geladen</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="567"/>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="643"/>
         <source>image metadata could not be read</source>
         <translation>afbeeldingsmetadata konden niet worden gelezen</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="571"/>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="647"/>
         <source>image has no GPS coordinates</source>
         <translation>afbeelding heeft geen GPS-coördinaten</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="583"/>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="659"/>
         <source>capture time / timezone not in metadata</source>
         <translation>opnametijd / tijdzone ontbreekt in metadata</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="589"/>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="670"/>
         <source>sun position could not be computed</source>
         <translation>zonnestand kon niet worden berekend</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="600"/>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="684"/>
         <source>Sun at capture: {elev:.0f}° above horizon, azimuth {az:.0f}°.</source>
         <translation>Zon bij opname: {elev:.0f}° boven de horizon, azimut {az:.0f}°.</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="604"/>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="688"/>
         <source>Capture time zone estimated from GPS location.</source>
         <translation>Tijdzone van opname geschat op basis van GPS-locatie.</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="607"/>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="691"/>
         <source>Using repaired capture time (camera clock fault).</source>
         <translation>Gecorrigeerde opnametijd wordt gebruikt (cameraklokfout).</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="612"/>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="694"/>
+        <source>Time of day derived from the traced shadow.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="699"/>
         <source>the sun was below the horizon at capture</source>
         <translation>de zon stond tijdens de opname onder de horizon</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="614"/>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="701"/>
         <source>sun position unavailable</source>
         <translation>zonnestand niet beschikbaar</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="615"/>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="702"/>
         <source>Shadow unavailable: {reason}.</source>
         <translation>Schaduw niet beschikbaar: {reason}.</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="714"/>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="801"/>
         <source>Place the person and shadow on the DEM terrain surface</source>
         <translation>Plaats de persoon en schaduw op het DEM-terreinoppervlak</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="718"/>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="805"/>
         <source>Terrain (DEM) data is not available for this image</source>
         <translation>Terreingegevens (DEM) zijn niet beschikbaar voor deze afbeelding</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="978"/>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="1065"/>
         <source>Choose Overlay Color</source>
         <translation>Overlaykleur kiezen</translation>
+    </message>
+    <message>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="1222"/>
+        <source>Cancel trace</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="1225"/>
+        <source>Shadow trace: on the image, click the BASE of an object casting a shadow (rock, tree, post), then click the TIP of its shadow.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="1265"/>
+        <source>Shadow trace: now click the TIP of the shadow.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="1351"/>
+        <source>Shadow trace: the traced points could not be projected to the ground - try two points further apart.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="1357"/>
+        <source>Shadow trace: the image is missing the capture date or GPS position needed to solve the time.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="1373"/>
+        <source>Shadow trace: no daylight sun position matches that direction on the capture date. Check the traced direction (base first, then shadow tip).</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="1376"/>
+        <source>Clear traced time</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="1380"/>
+        <source>Time solved from the traced shadow: {time} (sun azimuth {az:.0f}°, {elev:.0f}° above horizon).</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="1387"/>
+        <source>The traced direction looked reversed and was interpreted tip-to-base.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="1391"/>
+        <source>Note: another time of day matches this direction almost as well.</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
@@ -10999,7 +11108,7 @@ Hierdoor moeten tegels opnieuw worden gedownload wanneer terreinhoogte wordt geb
 <context>
     <name>QtImageViewer</name>
     <message>
-        <location filename="../app/core/views/images/viewer/widgets/QtImageViewer.py" line="384"/>
+        <location filename="../app/core/views/images/viewer/widgets/QtImageViewer.py" line="390"/>
         <source>Open image</source>
         <translation>Afbeelding openen</translation>
     </message>

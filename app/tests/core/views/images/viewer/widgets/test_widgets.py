@@ -1049,3 +1049,49 @@ def test_aoi_marker_stationary_press_opens_popup(app):
 
     view.show_aoi_popup.assert_called_once()
     assert moved == []
+
+
+# ---------------------------------------------------------------------------
+# Point capture (shadow trace): plain left clicks must reach the click signal
+# on the MAIN image, where the left button normally starts a region zoom
+# ---------------------------------------------------------------------------
+
+def test_left_click_signal_blocked_by_region_zoom_without_capture(app, qtbot):
+    """Documents the default: region zoom consumes the press, no signal."""
+    viewer = _viewer_with_image(qtbot)
+    viewer.window.aoi_creation_mode = False  # MagicMock attrs default truthy
+    clicks = []
+    viewer.leftMouseButtonPressed.connect(lambda x, y, v: clicks.append((x, y)))
+
+    viewer.mousePressEvent(_mouse_event(
+        QEvent.Type.MouseButtonPress, 50, 40, Qt.LeftButton, Qt.LeftButton))
+    viewer.mouseReleaseEvent(_mouse_event(
+        QEvent.Type.MouseButtonRelease, 50, 40, Qt.LeftButton, Qt.NoButton))
+
+    assert clicks == []
+
+
+def test_point_capture_routes_left_clicks_to_signal(app, qtbot):
+    viewer = _viewer_with_image(qtbot)
+    viewer.window.aoi_creation_mode = False
+    clicks = []
+    viewer.leftMouseButtonPressed.connect(lambda x, y, v: clicks.append((x, y)))
+
+    viewer.begin_point_capture()
+    viewer.mousePressEvent(_mouse_event(
+        QEvent.Type.MouseButtonPress, 50, 40, Qt.LeftButton, Qt.LeftButton))
+    viewer.mouseReleaseEvent(_mouse_event(
+        QEvent.Type.MouseButtonRelease, 50, 40, Qt.LeftButton, Qt.NoButton))
+
+    assert len(clicks) == 1
+    assert getattr(viewer, '_isZooming', False) is False
+    assert viewer.zoomStack == []  # the swallowed release must not zoom
+
+    # Ending capture hands the left button back to region zoom.
+    viewer.end_point_capture()
+    viewer.mousePressEvent(_mouse_event(
+        QEvent.Type.MouseButtonPress, 60, 50, Qt.LeftButton, Qt.LeftButton))
+    assert len(clicks) == 1
+    assert getattr(viewer, '_isZooming', False) is True
+    viewer.mouseReleaseEvent(_mouse_event(
+        QEvent.Type.MouseButtonRelease, 60, 50, Qt.LeftButton, Qt.NoButton))
