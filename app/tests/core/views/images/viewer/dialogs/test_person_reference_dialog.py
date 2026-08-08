@@ -77,12 +77,31 @@ def test_defaults_when_nothing_saved(app, qtbot, isolated_settings):
     assert dialog.terrain_check.isChecked() is True
 
 
-def test_default_anchor_is_nadir(app, qtbot, isolated_settings):
-    """The overlay opens at the straight-down point, not the zoomed view centre."""
+def test_default_anchor_is_current_view_center(app, qtbot, isolated_settings):
+    """The overlay opens where the user is looking, not at the image centre
+    (field report: opening while zoomed to an AOI panned the view away)."""
+    from types import SimpleNamespace as _NS
     from core.services.CameraModel import CameraModel
 
     dialog = _make_dialog(qtbot)
     dialog.camera = CameraModel(50.0, -90.0, 0.0, 8.38, 13.2, 8.8, 5472, 3078)
+    dialog.image_viewer.viewport = lambda: _NS(
+        rect=lambda: QtCore.QRect(0, 0, 400, 300))
+    dialog.image_viewer.mapToScene = lambda p: QtCore.QPointF(1200.0, 800.0)
+    point = dialog._default_anchor_scene()
+    assert point.x() == pytest.approx(1200.0)
+    assert point.y() == pytest.approx(800.0)
+
+
+def test_default_anchor_falls_back_to_nadir(app, qtbot, isolated_settings):
+    """With no usable view centre the overlay opens at the straight-down
+    point (compact, upright silhouette at any camera angle)."""
+    from core.services.CameraModel import CameraModel
+
+    dialog = _make_dialog(qtbot)
+    dialog.camera = CameraModel(50.0, -90.0, 0.0, 8.38, 13.2, 8.8, 5472, 3078)
+    dialog.image_viewer.mapToScene = None  # not callable -> raises
+    dialog.image_viewer.sceneRect = None   # fallback path raises too
     point = dialog._default_anchor_scene()
     assert point.x() == pytest.approx(5472 / 2.0, abs=1.0)
     assert point.y() == pytest.approx(3078 / 2.0, abs=1.0)

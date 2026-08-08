@@ -1032,13 +1032,31 @@ class PersonReferenceDialog(TranslationMixin, QDialog):
             return self.image_viewer.sceneRect().center()
 
     def _default_anchor_scene(self):
-        """Initial person placement: the ground point directly under the drone.
+        """Person placement for open and Recenter: the current view centre.
 
-        The nadir projects to a compact, upright silhouette, so the overlay
-        opens sensibly no matter how the image is zoomed when the tool is
-        triggered (previously it dropped the person at the zoomed viewport
-        centre, which lands off-nadir and looks like an elongated smear).
-        Falls back to the image centre, then the viewport centre.
+        Opening the tool must not yank the operator away from the area
+        they are inspecting (field report: opening while zoomed to an AOI
+        panned the view to the image centre) - the person appears where
+        they are already looking, clamped to the image bounds. Falls back
+        to the nadir placement when the view centre cannot be determined.
+        """
+        try:
+            point = self._viewport_center_scene()
+            x = float(point.x())
+            y = float(point.y())
+            if self.camera is not None:
+                x = min(max(x, 0.0), float(self.camera.width))
+                y = min(max(y, 0.0), float(self.camera.height))
+            return QPointF(x, y)
+        except Exception:
+            return self._nadir_anchor_scene()
+
+    def _nadir_anchor_scene(self):
+        """Fallback placement: the ground point directly under the drone.
+
+        The nadir projects to a compact, upright silhouette, so the
+        overlay still opens sensibly when the view centre is unusable.
+        Falls back further to the image centre.
         """
         if self.camera is not None:
             nadir = self.camera.project(0.0, 0.0, self.camera.agl_m)
@@ -1048,7 +1066,7 @@ class PersonReferenceDialog(TranslationMixin, QDialog):
                         and 0.0 <= v <= self.camera.height):
                     return QPointF(u, v)
             return QPointF(self.camera.width / 2.0, self.camera.height / 2.0)
-        return self._viewport_center_scene()
+        return QPointF(0.0, 0.0)
 
     def _show_status(self, message):
         if message:
@@ -1080,28 +1098,12 @@ class PersonReferenceDialog(TranslationMixin, QDialog):
         """Bring the reference person into the user's current view.
 
         The user pans/zooms to the spot they are inspecting and hits
-        Recenter to pull the overlay there - not back to the full-image
-        default. (Initial placement on open still uses the nadir via
-        _default_anchor_scene.)
+        Recenter to pull the overlay there - the same placement rule the
+        tool uses when it opens.
         """
         if self.anchor_item is not None:
-            self.anchor_item.setPos(self._current_view_anchor_scene())
+            self.anchor_item.setPos(self._default_anchor_scene())
             self._render_all()
-
-    def _current_view_anchor_scene(self):
-        """Recenter target: the current viewport centre, clamped to the
-        image bounds; falls back to the default (nadir) placement when the
-        view centre cannot be determined."""
-        try:
-            point = self._viewport_center_scene()
-            x = float(point.x())
-            y = float(point.y())
-            if self.camera is not None:
-                x = min(max(x, 0.0), float(self.camera.width))
-                y = min(max(y, 0.0), float(self.camera.height))
-            return QPointF(x, y)
-        except Exception:
-            return self._default_anchor_scene()
 
     # ---------------- shadow trace ----------------
     def _on_trace_shadow_clicked(self):
