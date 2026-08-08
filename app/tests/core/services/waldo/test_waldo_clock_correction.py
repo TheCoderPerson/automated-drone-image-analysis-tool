@@ -260,3 +260,87 @@ def test_audit_still_warns_without_correction(fault_setup):
     svc = WaldoMetadataService(terrain_service=None)
     warnings = svc.audit_capture_times([fault_setup])
     assert warnings  # timezone mismatch + AM/PM flip both present
+
+
+# --------------------------------------------------------------------------
+# Amendment: propose_amendment / stamped_correction_suspect
+# --------------------------------------------------------------------------
+
+def test_propose_amendment_prefills_from_stamp(tmp_path, monkeypatch):
+    path = _make_image(tmp_path)
+    monkeypatch.setattr(waldo_module.MetaDataHelper, 'get_exif_data_piexif',
+                        staticmethod(lambda p: _fault_exif()))
+    monkeypatch.setattr(WaldoMetadataService, 'get_correction_stamp_details',
+                        staticmethod(lambda p: (-12.0, 'America/Los_Angeles')))
+    svc = WaldoMetadataService(terrain_service=None)
+    proposal = svc.propose_amendment([path])
+    assert proposal is not None
+    assert proposal.face_shift_h == -12
+    assert proposal.tz_name == 'America/Los_Angeles'
+    assert "already stamped" in proposal.evidence[0]
+    assert proposal.sample_corrected_utc == "2026-07-23 13:49:37 UTC"
+
+
+def test_propose_amendment_fixed_offset_stamp(tmp_path, monkeypatch):
+    path = _make_image(tmp_path)
+    monkeypatch.setattr(waldo_module.MetaDataHelper, 'get_exif_data_piexif',
+                        staticmethod(lambda p: _fault_exif()))
+    monkeypatch.setattr(WaldoMetadataService, 'get_correction_stamp_details',
+                        staticmethod(lambda p: (0.0, 'UTC+0.0')))
+    svc = WaldoMetadataService(terrain_service=None)
+    proposal = svc.propose_amendment([path])
+    assert proposal is not None
+    assert proposal.face_shift_h == 0
+    assert proposal.tz_name is None
+    assert proposal.fixed_offset_h == pytest.approx(0.0)
+    # face 18:49:37 interpreted as UTC with no shift
+    assert proposal.sample_corrected_utc == "2026-07-23 18:49:37 UTC"
+
+
+def test_propose_amendment_none_without_stamp(tmp_path, monkeypatch):
+    path = _make_image(tmp_path)
+    monkeypatch.setattr(WaldoMetadataService, 'get_correction_stamp_details',
+                        staticmethod(lambda p: None))
+    svc = WaldoMetadataService(terrain_service=None)
+    assert svc.propose_amendment([path]) is None
+
+
+def test_suspect_flags_below_horizon_daylight(tmp_path, monkeypatch):
+    """A stamped correction placing a bright image before sunrise is wrong."""
+    import numpy as np
+    path = _make_image(tmp_path)
+    # 04:21 PDT = 11:21 UTC on Aug 7 at Inyo: sun well below the horizon.
+    monkeypatch.setattr(WaldoMetadataService, 'get_corrected_utc_stamp',
+                        staticmethod(lambda p: "2026-08-07T11:21:28+00:00"))
+    monkeypatch.setattr(waldo_module.MetaDataHelper, 'get_exif_data_piexif',
+                        staticmethod(lambda p: _fault_exif()))
+    monkeypatch.setattr(waldo_module.LocationInfo, 'get_gps',
+                        staticmethod(lambda exif_data: {'latitude': 37.04, 'longitude': -117.63}))
+    monkeypatch.setattr(waldo_module.cv2, 'imdecode',
+                        lambda buf, flags: np.full((400, 500), 150, dtype=np.uint8))
+    svc = WaldoMetadataService(terrain_service=None)
+    reason = svc.stamped_correction_suspect([path])
+    assert reason is not None
+    assert "below the horizon" in reason
+
+
+def test_suspect_quiet_on_plausible_correction(tmp_path, monkeypatch):
+    """A corrected time with the sun up is not second-guessed."""
+    path = _make_image(tmp_path)
+    # 09:21 PDT = 16:21 UTC: sun up.
+    monkeypatch.setattr(WaldoMetadataService, 'get_corrected_utc_stamp',
+                        staticmethod(lambda p: "2026-08-07T16:21:28+00:00"))
+    monkeypatch.setattr(waldo_module.MetaDataHelper, 'get_exif_data_piexif',
+                        staticmethod(lambda p: _fault_exif()))
+    monkeypatch.setattr(waldo_module.LocationInfo, 'get_gps',
+                        staticmethod(lambda exif_data: {'latitude': 37.04, 'longitude': -117.63}))
+    svc = WaldoMetadataService(terrain_service=None)
+    assert svc.stamped_correction_suspect([path]) is None
+
+
+def test_suspect_quiet_without_stamp(tmp_path, monkeypatch):
+    path = _make_image(tmp_path)
+    monkeypatch.setattr(WaldoMetadataService, 'get_corrected_utc_stamp',
+                        staticmethod(lambda p: None))
+    svc = WaldoMetadataService(terrain_service=None)
+    assert svc.stamped_correction_suspect([path]) is None

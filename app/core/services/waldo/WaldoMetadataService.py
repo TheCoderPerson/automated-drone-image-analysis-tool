@@ -62,7 +62,16 @@ WALDO_NAMESPACE_URI = "http://adiat.io/ns/waldo/1.0/"
 # heading - 15 of 1464 images on field data), and cannot handle frames
 # re-flown in the opposite direction. The bump restamps existing datasets
 # so those images get corrected on their next open.
-WALDO_PROCESSOR_VERSION = "8"
+# Version 9: cam 1 is stored with image-top = plane FORWARD, not backward.
+# Content-vs-GPS-motion measurement on two independent flights proved the
+# two cameras come out of the WALDO ground software rotated 180 deg from
+# each other (the pods are body-opposed); v5..v8 stamped both cams
+# image-top = backward, so every 1_* image had its pixel-to-ground mapping
+# rotated 180 deg. The orientation safety net also aggregates in
+# track-RELATIVE space now: the old absolute circular mean mixed opposite
+# serpentine lanes into meaningless statistics and silently fell back to
+# the (wrong, for cam 1) model.
+WALDO_PROCESSOR_VERSION = "9"
 
 DRONE_DJI_NS = "http://www.dji.com/drone-dji/1.0/"
 
@@ -77,6 +86,14 @@ CLOCK_TIMEZONE_XMP = "ClockTimeZone"
 STATIONARY_THRESHOLD_M = 5.0
 MAX_NEIGHBOR_DT_S = 30.0
 OUTWARD_ROLL_DEG = 22.5
+
+# Mounting-model image-top offset from the plane heading, per camera.
+# The two DSLR bodies are mounted opposed, and the ground software keeps
+# each body's native orientation: cam 0 (`0_*`, RIGHT pod) comes out with
+# image-top = plane BACKWARD, cam 1 (`1_*`, LEFT pod) with image-top =
+# plane FORWARD. Field-verified by inter-frame content motion vs the GPS
+# track on two independent flights (2026-07-25 and 2026-08-07).
+MODEL_IMAGE_UP_OFFSET_DEG = {0: 180.0, 1: 0.0}
 
 # Orientation-measurement tunables. Field imagery showed the mounting-model
 # yaw assumption off by ~41 degrees (post-flight software had normalized the
@@ -201,23 +218,25 @@ class WaldoMetadataService:
 
     @staticmethod
     def compute_optical_axis_angles(heading_deg: float, cam_idx: int,
-                                    image_up_deg: Optional[float] = None) -> Dict[str, float]:
+                                    measured_orientation: Optional[Tuple[str, float]] = None
+                                    ) -> Dict[str, float]:
         """Return drone-dji-style gimbal triple for a WALDO capture.
 
         Yaw — the compass bearing of the stored JPEG's top edge, which is
         what AOIService and the FOV-box renderer consume:
 
-        - When `image_up_deg` is given it is the *measured* orientation
-          (from inter-frame content motion vs the GPS track; see
-          measure_image_up_bearing) and is used directly. Field imagery
-          proved the mounting model below wrong by ~41° on flights whose
-          post-flight software had normalized frames north-up, so a
-          measurement always wins over the model.
-        - Fallback (no measurement): the pod-mounting model, per WALDO
-          operator 2026-05-04 + screenshot. Cam 0 (`0_*`, RIGHT pod) is
-          stored rotated 180° by post-flight software; cam 1 (`1_*`,
-          LEFT pod) has body top facing the tail. Both stored images then
-          share image-top = plane backward: `yaw = heading + 180°`.
+        - Default: the pod-mounting model. The two DSLR bodies are mounted
+          opposed and each keeps its native orientation through the ground
+          software, so the image-top offset from the plane heading is
+          per-camera (MODEL_IMAGE_UP_OFFSET_DEG): cam 0 backward, cam 1
+          FORWARD. v5..v8 wrongly stamped both cams backward — every 1_*
+          image was 180 deg off (field-verified 2026-08-07).
+        - `measured_orientation` overrides the model when the inter-frame
+          content-motion measurement confidently contradicts it (see
+          measure_image_up_orientation). It is ('offset', deg) for a
+          track-relative image-top offset (normal WALDO storage), or
+          ('absolute', deg) for a fixed compass image-top (post-flight
+          software that normalizes frames, e.g. north-up).
 
         Roll — the pods physically tilt ±OUTWARD_ROLL_DEG cross-track
         (cam 0 to plane RIGHT, cam 1 to plane LEFT). As of processor
@@ -232,10 +251,16 @@ class WaldoMetadataService:
         """
         if cam_idx not in (0, 1):
             raise ValueError(f"Invalid WALDO cam_idx {cam_idx}")
-        if image_up_deg is not None:
-            yaw = float(image_up_deg) % 360.0
+        if measured_orientation is not None:
+            mode, value = measured_orientation
+            if mode == 'absolute':
+                yaw = float(value) % 360.0
+            elif mode == 'offset':
+                yaw = (float(heading_deg) + float(value)) % 360.0
+            else:
+                raise ValueError(f"Invalid orientation mode {mode!r}")
         else:
-            yaw = (float(heading_deg) + 180.0) % 360.0
+            yaw = (float(heading_deg) + MODEL_IMAGE_UP_OFFSET_DEG[cam_idx]) % 360.0
         roll = (-OUTWARD_ROLL_DEG) if cam_idx == 0 else (+OUTWARD_ROLL_DEG)
         return {
             'pitch': -90.0,
@@ -325,47 +350,62 @@ class WaldoMetadataService:
         spread_deg = math.degrees(math.sqrt(-2.0 * math.log(resultant)))
         return mean_deg, spread_deg
 
-    def _pair_motion_bearing(self, group: List["WaldoImageRecord"]) -> Optional[Tuple[float, float, int]]:
-        """Coarse image-top bearing from inter-frame motion vs the GPS track.
+    def _pair_motion_samples(self, group: List["WaldoImageRecord"]) -> List[Tuple[float, float, float]]:
+        """Per-pair orientation samples from inter-frame motion vs the track.
+
+        Pairs are name-consecutive frames (spatially adjacent regardless of
+        capture order; the spatial displacement between two frames gives the
+        same absolute image-top either way). Each sample carries the pair's
+        plane heading so the caller can aggregate in track-relative space.
 
         Returns:
-            (mean_deg, spread_deg, sample_count), or None with no usable pairs.
+            list of (image_up_deg, pair_heading_deg, inlier_weight).
         """
         candidates = []
         for a, b in zip(group, group[1:]):
+            if a.heading_deg is None:
+                continue
             north_m = (b.lat - a.lat) * 111320.0
             east_m = (b.lon - a.lon) * 111320.0 * math.cos(math.radians(a.lat))
             dist = math.hypot(north_m, east_m)
             if dist < ORIENTATION_MIN_BASELINE_M:
                 continue
             bearing = math.degrees(math.atan2(east_m, north_m)) % 360.0
-            candidates.append((a.path, b.path, bearing))
-        if not candidates:
-            return None
+            candidates.append((a.path, b.path, bearing, a.heading_deg))
 
-        step = max(1, len(candidates) // ORIENTATION_SAMPLE_PAIRS)
+        step = max(1, len(candidates) // ORIENTATION_SAMPLE_PAIRS) if candidates else 1
         samples = []
-        for path_a, path_b, bearing in candidates[::step][:ORIENTATION_SAMPLE_PAIRS]:
+        for path_a, path_b, bearing, heading in candidates[::step][:ORIENTATION_SAMPLE_PAIRS]:
             result = self._pair_orientation_sample(path_a, path_b, bearing)
             if result is not None:
-                samples.append(result)
-        if len(samples) < 2:
-            return None
-        mean_deg, spread_deg = self._circular_stats(
-            [s[0] for s in samples], [s[1] for s in samples])
-        return mean_deg, spread_deg, len(samples)
+                image_up, inliers = result
+                samples.append((image_up, heading, float(inliers)))
+        return samples
 
-    def measure_image_up_bearing(self, records: List["WaldoImageRecord"],
-                                 cam_idx: int) -> Optional[float]:
-        """Return a measured image-top bearing ONLY when it refutes the model.
+    def measure_image_up_orientation(self, records: List["WaldoImageRecord"],
+                                     cam_idx: int) -> Optional[Tuple[str, float]]:
+        """Measure the stored image orientation; report ONLY refutations.
 
         The inter-frame-motion measurement is too noisy on tilted fixed-wing
         imagery over relief to fine-tune the mounting model, but a dataset
-        whose frames were re-oriented by post-flight software reads far away
-        from the model (typically ~180 deg) - far beyond measurement noise.
-        So: measure, and return the measurement only when it is confident
-        AND disagrees with the model by more than ORIENTATION_OVERRIDE_DEG.
-        Returns None otherwise (caller stamps the mounting model).
+        whose frames were re-oriented reads far from the model (typically
+        ~180 deg) - far beyond measurement noise.
+
+        Samples are aggregated in TWO spaces and the tighter one wins:
+        - track-RELATIVE (image_up minus plane heading): normal WALDO
+          storage, where the orientation follows the flight direction. A
+          plain absolute mean would blend opposite serpentine lanes into
+          garbage statistics - exactly how the v5..v8 cam-1 fault stayed
+          invisible.
+        - ABSOLUTE compass: post-flight software that normalizes frames
+          (e.g. north-up) gives a constant absolute orientation, which the
+          relative space would scramble on serpentine flights.
+
+        Returns:
+            ('offset', deg) or ('absolute', deg) when the confident winner
+            contradicts the mounting model by more than
+            ORIENTATION_OVERRIDE_DEG; None otherwise (caller stamps the
+            model).
         """
         group = [r for r in records
                  if r.cam_idx == cam_idx and r.lat is not None and r.lon is not None]
@@ -373,37 +413,69 @@ class WaldoMetadataService:
         if not group:
             return None
 
-        motion = self._pair_motion_bearing(group)
-        if motion is None:
-            return None
-        mean_deg, spread_deg, count = motion
-        stderr_deg = spread_deg / math.sqrt(count)
-        if count < ORIENTATION_MIN_PAIRS or stderr_deg > ORIENTATION_MAX_STDERR_DEG:
+        samples = self._pair_motion_samples(group)
+        if len(samples) < ORIENTATION_MIN_PAIRS:
             self.logger.info(
                 f"WALDO cam {cam_idx}: orientation measurement inconclusive "
-                f"({count} pairs, stderr {stderr_deg:.1f} deg); using the mounting model"
+                f"({len(samples)} pairs); using the mounting model"
             )
             return None
 
-        headings = [r.heading_deg for r in group if r.heading_deg is not None]
-        if not headings:
+        weights = [s[2] for s in samples]
+        rel_mean, rel_spread = self._circular_stats(
+            [(s[0] - s[1]) % 360.0 for s in samples], weights)
+        abs_mean, abs_spread = self._circular_stats(
+            [s[0] for s in samples], weights)
+        count = len(samples)
+
+        headings = [s[1] for s in samples]
+        mean_heading, heading_spread = self._circular_stats(headings, weights)
+
+        if rel_spread <= abs_spread:
+            mode, mean_deg, spread_deg = 'offset', rel_mean, rel_spread
+            model_deg = MODEL_IMAGE_UP_OFFSET_DEG[cam_idx]
+        else:
+            mode, mean_deg, spread_deg = 'absolute', abs_mean, abs_spread
+            model_deg = (mean_heading + MODEL_IMAGE_UP_OFFSET_DEG[cam_idx]) % 360.0
+
+        stderr_deg = spread_deg / math.sqrt(count)
+        if stderr_deg > ORIENTATION_MAX_STDERR_DEG:
+            self.logger.info(
+                f"WALDO cam {cam_idx}: orientation measurement inconclusive "
+                f"({count} pairs, {mode} stderr {stderr_deg:.1f} deg); "
+                f"using the mounting model"
+            )
             return None
-        mean_heading, _ = self._circular_stats(headings, [1.0] * len(headings))
-        model_deg = (mean_heading + 180.0) % 360.0
+
+        if mode == 'absolute' and heading_spread > 45.0:
+            # A confident constant-ABSOLUTE orientation on a flight with
+            # mixed headings (serpentine) cannot come from any track-relative
+            # mounting: the frames were normalized by post-flight software.
+            # The mean-heading model comparison below would be degenerate, so
+            # this is a contradiction by construction.
+            self.logger.warning(
+                f"WALDO cam {cam_idx}: frames read a constant absolute "
+                f"orientation ({mean_deg:.1f} deg, {count} pairs, stderr "
+                f"{stderr_deg:.1f} deg) across mixed headings (spread "
+                f"{heading_spread:.0f} deg) - post-flight normalized imagery; "
+                f"stamping the measurement"
+            )
+            return ('absolute', mean_deg)
+
         gap = abs((mean_deg - model_deg + 180.0) % 360.0 - 180.0)
         if gap <= ORIENTATION_OVERRIDE_DEG:
             self.logger.info(
-                f"WALDO cam {cam_idx}: measured orientation {mean_deg:.1f} deg agrees "
-                f"with the mounting model {model_deg:.1f} deg (gap {gap:.1f} deg); "
+                f"WALDO cam {cam_idx}: measured orientation ({mode} {mean_deg:.1f} deg) "
+                f"agrees with the mounting model ({model_deg:.1f} deg, gap {gap:.1f}); "
                 f"stamping the model"
             )
             return None
         self.logger.warning(
-            f"WALDO cam {cam_idx}: measured orientation {mean_deg:.1f} deg "
-            f"({count} pairs, stderr {stderr_deg:.1f} deg) contradicts the mounting "
-            f"model {model_deg:.1f} deg (gap {gap:.1f} deg); stamping the measurement"
+            f"WALDO cam {cam_idx}: measured orientation ({mode} {mean_deg:.1f} deg, "
+            f"{count} pairs, stderr {stderr_deg:.1f} deg) contradicts the mounting "
+            f"model ({model_deg:.1f} deg, gap {gap:.1f} deg); stamping the measurement"
         )
-        return mean_deg
+        return (mode, mean_deg)
 
     # ------------------------------------------------------------------
     # Capture-time audit
@@ -687,6 +759,110 @@ class WaldoMetadataService:
                 )
             except Exception as e:
                 self.logger.warning(f"Clock-correction detection failed for {name}: {e}")
+        return None
+
+    @staticmethod
+    def get_correction_stamp_details(image_path: str) -> Optional[Tuple[float, str]]:
+        """(face_shift_h, tz_text) parsed from an image's correction stamp."""
+        try:
+            xmp = MetaDataHelper.get_xmp_data_merged(image_path) or {}
+        except Exception:
+            return None
+        shift_raw = None
+        tz_raw = None
+        for prefix in ('waldo:', '', 'XMP-waldo:'):
+            shift_raw = shift_raw or xmp.get(f'{prefix}{CLOCK_FACE_SHIFT_XMP}')
+            tz_raw = tz_raw or xmp.get(f'{prefix}{CLOCK_TIMEZONE_XMP}')
+        if shift_raw is None or tz_raw is None:
+            return None
+        try:
+            return float(str(shift_raw)), str(tz_raw)
+        except ValueError:
+            return None
+
+    def propose_amendment(self, paths: List[str]) -> Optional[ClockCorrectionProposal]:
+        """Build a proposal PRE-FILLED from an already-stamped correction.
+
+        Used when the operator wants to change an applied correction (the
+        normal detection deliberately goes quiet on corrected images).
+        Returns None when no sampled image carries a correction stamp.
+        """
+        for path in paths[:self.AUDIT_SAMPLE_FILES]:
+            name = os.path.basename(path)
+            try:
+                details = self.get_correction_stamp_details(path)
+                if details is None:
+                    continue
+                shift_h, tz_text = details
+                exif = MetaDataHelper.get_exif_data_piexif(path)
+                face_dt = self._parse_exif_face_time(exif)
+                if face_dt is None:
+                    continue
+                tz_name: Optional[str] = None
+                fixed_offset_h: Optional[float] = None
+                try:
+                    ZoneInfo(tz_text)
+                    tz_name = tz_text
+                except Exception:
+                    try:
+                        fixed_offset_h = float(tz_text.replace('UTC', '').strip())
+                    except ValueError:
+                        continue
+                corrected = self.compute_corrected_utc(
+                    face_dt, shift_h, tz_name, fixed_offset_h)
+                return ClockCorrectionProposal(
+                    face_shift_h=int(shift_h),
+                    tz_name=tz_name,
+                    fixed_offset_h=fixed_offset_h,
+                    evidence=[
+                        f"A capture-time correction is already stamped on these "
+                        f"images (face shift {shift_h:+.0f} h, zone {tz_text}). "
+                        f"Applying different values replaces it on every image."
+                    ],
+                    sample_name=name,
+                    sample_face=face_dt.strftime("%Y:%m:%d %H:%M:%S"),
+                    sample_corrected_utc=corrected.strftime("%Y-%m-%d %H:%M:%S UTC"),
+                )
+            except Exception as e:
+                self.logger.warning(f"Clock amendment proposal failed for {name}: {e}")
+        return None
+
+    def stamped_correction_suspect(self, paths: List[str]) -> Optional[str]:
+        """Detect an applied correction that is physically impossible.
+
+        A corrected capture time that puts the sun below the horizon while
+        the image is clearly daylight proves the correction is wrong (e.g.
+        a 12-hour shift applied to a camera whose clock face had already
+        been fixed). Returns a human-readable reason, or None.
+        """
+        for path in paths[:self.AUDIT_SAMPLE_FILES]:
+            name = os.path.basename(path)
+            try:
+                stamp = self.get_corrected_utc_stamp(path)
+                if not stamp:
+                    continue
+                corrected_utc = datetime.fromisoformat(stamp).astimezone(timezone.utc)
+                exif = MetaDataHelper.get_exif_data_piexif(path)
+                gps = LocationInfo.get_gps(exif_data=exif)
+                if gps is None:
+                    continue
+                elev, _az = get_solar_position(
+                    gps['latitude'], gps['longitude'], corrected_utc)
+                if elev >= -2.0:
+                    continue
+                img = cv2.imdecode(np.fromfile(path, dtype=np.uint8),
+                                   cv2.IMREAD_GRAYSCALE)
+                if img is None:
+                    continue
+                if float(img[::8, ::8].mean()) > self.AUDIT_DAYLIGHT_BRIGHTNESS:
+                    return (
+                        f"{name}: the stamped clock correction puts the capture at "
+                        f"{corrected_utc.strftime('%Y-%m-%d %H:%M UTC')}, when the sun "
+                        f"was below the horizon - but the image is clearly daylight. "
+                        f"The applied correction is wrong."
+                    )
+            except Exception as e:
+                self.logger.warning(f"Correction sanity check failed for {name}: {e}")
         return None
 
     def apply_clock_correction(
@@ -1118,17 +1294,16 @@ class WaldoMetadataService:
         self._apply_trigger_log_headings(records, result)
 
         # 3b. Measure the stored image orientation per camera by comparing
-        #     inter-frame content motion against the GPS track. Post-flight
-        #     software may normalize frames (field data showed north-up
-        #     imagery ~41 deg away from the mounting model), so measurement
-        #     always wins; the model is only the fallback.
-        image_up_by_cam: Dict[int, Optional[float]] = {}
+        #     inter-frame content motion against the GPS track. The mounting
+        #     model is stamped unless the measurement confidently refutes it
+        #     (catches post-flight software that re-orients frames).
+        orientation_by_cam: Dict[int, Optional[Tuple[str, float]]] = {}
         for cam_idx in sorted({r.cam_idx for r in records}):
             if cancel_cb():
                 result.cancelled = True
                 return result
             emit(0, 0, f"Measuring image orientation (cam {cam_idx})...")
-            image_up_by_cam[cam_idx] = self.measure_image_up_bearing(records, cam_idx)
+            orientation_by_cam[cam_idx] = self.measure_image_up_orientation(records, cam_idx)
 
         # 4. Per-image XMP synthesis
         total = len(records)
@@ -1162,7 +1337,7 @@ class WaldoMetadataService:
 
             angles = self.compute_optical_axis_angles(
                 rec.heading_deg, rec.cam_idx,
-                image_up_deg=image_up_by_cam.get(rec.cam_idx)
+                measured_orientation=orientation_by_cam.get(rec.cam_idx)
             )
 
             try:
@@ -1184,9 +1359,9 @@ class WaldoMetadataService:
         """Write the synthesised drone-dji + waldo:Processed fields in one batch.
 
         FlightYawDegree carries the plane's true heading (drone-body direction).
-        GimbalYawDegree carries the per-camera body orientation, which differs
-        from FlightYaw by 180° for cam 1 because that pod is mounted with its
-        body top facing the tail.
+        GimbalYawDegree carries the stored image-top bearing per camera:
+        image-top = plane backward for cam 0, plane FORWARD for cam 1 (the
+        opposed body mounting; see MODEL_IMAGE_UP_OFFSET_DEG).
         """
         flight_yaw = float(plane_heading_deg) % 360.0
         fields = [
