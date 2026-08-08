@@ -798,12 +798,16 @@ class GalleryController:
                 # recursion guard active on every viewChanged emission) or
                 # undone by layout/resize events that settle after the click
                 # (field report: the first click switched image but landed
-                # un-zoomed; only a second click - no load - zoomed). Once
-                # the event queue drains, re-assert the AOI zoom unless the
-                # view is already zoomed or a newer click superseded this one.
-                QTimer.singleShot(
-                    150,
-                    lambda: self._ensure_aoi_zoom(image_idx, aoi_data))
+                # un-zoomed; only a second click - no load - zoomed). The
+                # wipe lands at unpredictable times relative to the click on
+                # real hardware, so the guarantee re-checks at several points
+                # across the settle window. Each check is a strict no-op
+                # unless this is still the newest click, the image still
+                # matches, and the view is sitting un-zoomed.
+                for delay_ms in (150, 600, 1600):
+                    QTimer.singleShot(
+                        delay_ms,
+                        lambda: self._ensure_aoi_zoom(image_idx, aoi_data))
             else:
                 # Same image - zoom immediately
                 self._zoom_to_aoi(aoi_data)
@@ -892,6 +896,9 @@ class GalleryController:
             return
         if getattr(main, 'zoomStack', None):
             return  # already zoomed
+        # Logged so field sessions show when (and how late) the in-load
+        # zoom needed repair - evidence for chasing the underlying reset.
+        self.logger.info("Gallery: re-asserting AOI zoom after a late zoom reset")
         self._zoom_to_aoi(aoi_data)
 
     def _zoom_to_aoi(self, aoi_data):

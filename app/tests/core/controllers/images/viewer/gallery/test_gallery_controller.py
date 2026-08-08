@@ -483,10 +483,17 @@ def test_needs_load_click_schedules_the_deferred_zoom(controller):
         controller.on_aoi_clicked(1, 0, aoi)
 
     controller._zoom_to_aoi.assert_not_called()  # nothing zoomed in-load
-    assert len(captured) == 1
+    # Several checkpoints across the settle window, not a single shot: the
+    # late zoom reset lands at unpredictable times on real hardware.
+    assert len(captured) == 3
 
     # The cascade settles: guard released, image shown un-zoomed.
     main._recursion_guard = False
     captured[0]()
+    controller._zoom_to_aoi.assert_called_once_with(aoi)
 
+    # Once the zoom took effect, later checkpoints are no-ops.
+    main.zoomStack = [object()]
+    captured[1]()
+    captured[2]()
     controller._zoom_to_aoi.assert_called_once_with(aoi)
