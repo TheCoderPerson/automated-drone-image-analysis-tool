@@ -155,10 +155,13 @@ class WaldoPrePassDialog(TranslationMixin, QDialog):
         lines.append(self.tr("Already up-to-date: {n}").format(n=result.already_current))
         lines.append(self.tr("Skipped (non-WALDO): {n}").format(n=result.skipped))
         lines.append(self.tr("Errors:           {n}").format(n=len(result.errors)))
+        notes = getattr(result, 'notes', None) or []
+        for msg in notes:
+            lines.append(f"  {msg}")
         warnings = getattr(result, 'warnings', None) or []
         if warnings:
             lines.append("")
-            lines.append(self.tr("⚠ Capture-time warnings (camera clock is suspect):"))
+            lines.append(self.tr("⚠ Metadata warnings:"))
             for msg in warnings:
                 lines.append(f"  {msg}")
         if result.errors:

@@ -17,6 +17,10 @@ from .WaldoMetadataService import (
     WALDO_NAMESPACE_URI,
     WALDO_PROCESSOR_VERSION,
 )
+from .WaldoTriggerLog import (
+    WaldoTriggerLogService,
+    TriggerPoint,
+)
 
 __all__ = [
     'WaldoMetadataService',
@@ -27,4 +31,6 @@ __all__ = [
     'WaldoMissingGPSError',
     'WALDO_NAMESPACE_URI',
     'WALDO_PROCESSOR_VERSION',
+    'WaldoTriggerLogService',
+    'TriggerPoint',
 ]

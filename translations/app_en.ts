@@ -1679,70 +1679,70 @@ Please check your credentials and try again.</translation>
 <context>
     <name>CalTopoAuthDialog</name>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/CalTopoAuthDialog.py" line="164"/>
+        <location filename="../app/core/views/images/viewer/dialogs/CalTopoAuthDialog.py" line="155"/>
         <source>CalTopo Login &amp; Map Selection</source>
         <translation>CalTopo Login &amp; Map Selection</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/CalTopoAuthDialog.py" line="249"/>
+        <location filename="../app/core/views/images/viewer/dialogs/CalTopoAuthDialog.py" line="240"/>
         <source>Current map: Not selected</source>
         <translation>Current map: Not selected</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/CalTopoAuthDialog.py" line="253"/>
+        <location filename="../app/core/views/images/viewer/dialogs/CalTopoAuthDialog.py" line="244"/>
         <source>(Login → Navigate to your map → Click &apos;I&apos;m Logged In&apos;)</source>
         <translation>(Login → Navigate to your map → Click &apos;I&apos;m Logged In&apos;)</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/CalTopoAuthDialog.py" line="267"/>
-        <location filename="../app/core/views/images/viewer/dialogs/CalTopoAuthDialog.py" line="821"/>
+        <location filename="../app/core/views/images/viewer/dialogs/CalTopoAuthDialog.py" line="258"/>
+        <location filename="../app/core/views/images/viewer/dialogs/CalTopoAuthDialog.py" line="799"/>
         <source>I&apos;m Logged In - Export Data</source>
         <translation>I&apos;m Logged In - Export Data</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/CalTopoAuthDialog.py" line="269"/>
+        <location filename="../app/core/views/images/viewer/dialogs/CalTopoAuthDialog.py" line="260"/>
         <source>Click this after logging in and navigating to your map</source>
         <translation>Click this after logging in and navigating to your map</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/CalTopoAuthDialog.py" line="272"/>
+        <location filename="../app/core/views/images/viewer/dialogs/CalTopoAuthDialog.py" line="263"/>
         <source>Cancel</source>
         <translation>Cancel</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/CalTopoAuthDialog.py" line="378"/>
+        <location filename="../app/core/views/images/viewer/dialogs/CalTopoAuthDialog.py" line="369"/>
         <source>Initialization Error</source>
         <translation>Initialization Error</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/CalTopoAuthDialog.py" line="379"/>
+        <location filename="../app/core/views/images/viewer/dialogs/CalTopoAuthDialog.py" line="370"/>
         <source>Failed to initialize CalTopo browser:
 {error}</source>
         <translation>Failed to initialize CalTopo browser:
 {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/CalTopoAuthDialog.py" line="423"/>
+        <location filename="../app/core/views/images/viewer/dialogs/CalTopoAuthDialog.py" line="414"/>
         <source>Failed to Load</source>
         <translation>Failed to Load</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/CalTopoAuthDialog.py" line="425"/>
+        <location filename="../app/core/views/images/viewer/dialogs/CalTopoAuthDialog.py" line="416"/>
         <source>Failed to load CalTopo. Please check your internet connection and try again.</source>
         <translation>Failed to load CalTopo. Please check your internet connection and try again.</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/CalTopoAuthDialog.py" line="456"/>
+        <location filename="../app/core/views/images/viewer/dialogs/CalTopoAuthDialog.py" line="447"/>
         <source>Current map: {map_id}</source>
         <translation>Current map: {map_id}</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/CalTopoAuthDialog.py" line="484"/>
+        <location filename="../app/core/views/images/viewer/dialogs/CalTopoAuthDialog.py" line="475"/>
         <source>No Map Selected</source>
         <translation>No Map Selected</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/CalTopoAuthDialog.py" line="486"/>
+        <location filename="../app/core/views/images/viewer/dialogs/CalTopoAuthDialog.py" line="477"/>
         <source>Please navigate to a CalTopo map before capturing the session.
 
 The map URL should contain a map ID (e.g., /m/ABC123 or #id=ABC123).</source>
@@ -1751,33 +1751,33 @@ The map URL should contain a map ID (e.g., /m/ABC123 or #id=ABC123).</source>
 The map URL should contain a map ID (e.g., /m/ABC123 or #id=ABC123).</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/CalTopoAuthDialog.py" line="495"/>
+        <location filename="../app/core/views/images/viewer/dialogs/CalTopoAuthDialog.py" line="486"/>
         <source>Browser Not Ready</source>
         <translation>Browser Not Ready</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/CalTopoAuthDialog.py" line="496"/>
+        <location filename="../app/core/views/images/viewer/dialogs/CalTopoAuthDialog.py" line="487"/>
         <source>The CalTopo browser is still loading. Please wait a moment and try again.</source>
         <translation>The CalTopo browser is still loading. Please wait a moment and try again.</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/CalTopoAuthDialog.py" line="504"/>
+        <location filename="../app/core/views/images/viewer/dialogs/CalTopoAuthDialog.py" line="493"/>
         <source>Starting export...</source>
         <translation>Starting export...</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/CalTopoAuthDialog.py" line="522"/>
-        <location filename="../app/core/views/images/viewer/dialogs/CalTopoAuthDialog.py" line="782"/>
+        <location filename="../app/core/views/images/viewer/dialogs/CalTopoAuthDialog.py" line="511"/>
+        <location filename="../app/core/views/images/viewer/dialogs/CalTopoAuthDialog.py" line="762"/>
         <source>Authentication Failed</source>
         <translation>Authentication Failed</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/CalTopoAuthDialog.py" line="523"/>
+        <location filename="../app/core/views/images/viewer/dialogs/CalTopoAuthDialog.py" line="512"/>
         <source>Browser not initialized. Please try again.</source>
         <translation>Browser not initialized. Please try again.</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/CalTopoAuthDialog.py" line="784"/>
+        <location filename="../app/core/views/images/viewer/dialogs/CalTopoAuthDialog.py" line="764"/>
         <source>Could not read your CalTopo session.
 
 Make sure you are signed in to CalTopo in this window and have opened your map, then click &apos;I&apos;m Logged In - Export Data&apos; again.</source>
@@ -1983,13 +1983,13 @@ Please check:
     <name>CalTopoExportController</name>
     <message>
         <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="487"/>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1301"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1292"/>
         <source>Offline Mode Enabled</source>
         <translation>Offline Mode Enabled</translation>
     </message>
     <message>
         <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="489"/>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1303"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1294"/>
         <source>Offline Only is turned on in Preferences:
 
 • Map tiles will not be retrieved.
@@ -2005,13 +2005,13 @@ Turn off Offline Only to export to CalTopo.</translation>
     </message>
     <message>
         <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="500"/>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1314"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1305"/>
         <source>Nothing Selected</source>
         <translation>Nothing Selected</translation>
     </message>
     <message>
         <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="502"/>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1316"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1307"/>
         <source>Select at least one data type (flagged AOIs, drone/image locations, or coverage area) to export.</source>
         <translation>Select at least one data type (flagged AOIs, drone/image locations, or coverage area) to export.</translation>
     </message>
@@ -2121,7 +2121,7 @@ Please ensure your images have GPS coordinates and are nadir shots.</translation
     </message>
     <message>
         <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="636"/>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="683"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="679"/>
         <source>No Map Selected</source>
         <translation>No Map Selected</translation>
     </message>
@@ -2137,7 +2137,7 @@ The map URL should look like:
 https://caltopo.com/map.html#...&amp;id=ABC123</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="685"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="681"/>
         <source>No CalTopo map was selected, so there was nothing to export to.
 
 Open your map in the CalTopo window before clicking &apos;I&apos;m Logged In - Export Data&apos;.</source>
@@ -2146,7 +2146,7 @@ Open your map in the CalTopo window before clicking &apos;I&apos;m Logged In - E
 Open your map in the CalTopo window before clicking &apos;I&apos;m Logged In - Export Data&apos;.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1618"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1607"/>
         <source>Nothing could be exported to CalTopo.
 
 The reason was written to the log (adiat_logs.txt) and the console.</source>
@@ -2155,12 +2155,12 @@ The reason was written to the log (adiat_logs.txt) and the console.</source>
 The reason was written to the log (adiat_logs.txt) and the console.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1627"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1616"/>
         <source>Photos uploaded: {uploaded} of {total}.</source>
         <translation>Photos uploaded: {uploaded} of {total}.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1635"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1624"/>
         <source>Successfully exported all {total} item(s) to CalTopo.
 
 The items should now be visible on your map.</source>
@@ -2169,7 +2169,7 @@ The items should now be visible on your map.</source>
 The items should now be visible on your map.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1644"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1633"/>
         <source>Exported {created} of {total} item(s) to CalTopo.{photos}
 
 Details for anything that failed were written to the log (adiat_logs.txt) and the console.</source>
@@ -2178,30 +2178,30 @@ Details for anything that failed were written to the log (adiat_logs.txt) and th
 Details for anything that failed were written to the log (adiat_logs.txt) and the console.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1633"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1622"/>
         <source>Export Successful</source>
         <translation>Export Successful</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1642"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1631"/>
         <source>Partial Success</source>
         <translation>Partial Success</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1616"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1605"/>
         <source>Export Failed</source>
         <translation>Export Failed</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="726"/>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1381"/>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1576"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="717"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1372"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1567"/>
         <source>Export Error</source>
         <translation>Export Error</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="728"/>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1578"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="719"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1569"/>
         <source>An error occurred during CalTopo export:
 
 {error}</source>
@@ -2210,7 +2210,7 @@ Details for anything that failed were written to the log (adiat_logs.txt) and th
 {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1058"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1049"/>
         <source>Coverage area: {sqkm:.3f} km² ({acres:.2f} acres)
 Area in square meters: {sqm:.0f} m²
 Number of corners: {count}</source>
@@ -2219,42 +2219,42 @@ Area in square meters: {sqm:.0f} m²
 Number of corners: {count}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1538"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1529"/>
         <source>Exporting to CalTopo</source>
         <translation>Exporting to CalTopo</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1269"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1260"/>
         <source>Logged Out</source>
         <translation>Logged Out</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1270"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1261"/>
         <source>Successfully logged out from CalTopo.</source>
         <translation>Successfully logged out from CalTopo.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1429"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1420"/>
         <source>Loading CalTopo Maps</source>
         <translation>Loading CalTopo Maps</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1432"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1423"/>
         <source>Connecting to CalTopo...</source>
         <translation>Connecting to CalTopo...</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1433"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1424"/>
         <source>Fetching account data and maps...</source>
         <translation>Fetching account data and maps...</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1488"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1479"/>
         <source>Connection Error</source>
         <translation>Connection Error</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1490"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1481"/>
         <source>An error occurred while connecting to CalTopo API:
 
 {error}</source>
@@ -2263,18 +2263,18 @@ Number of corners: {count}</translation>
 {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="698"/>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1493"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="694"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1484"/>
         <source>Authentication Failed</source>
         <translation>Authentication Failed</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="699"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="695"/>
         <source>No CalTopo session cookies were captured. Please log in and try again.</source>
         <translation>No CalTopo session cookies were captured. Please log in and try again.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1383"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1374"/>
         <source>An error occurred during CalTopo API export:
 
 {error}</source>
@@ -2283,7 +2283,7 @@ Number of corners: {count}</translation>
 {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1495"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1486"/>
         <source>CalTopo did not accept these credentials.
 
 The reason was written to the log (adiat_logs.txt) and the console.
@@ -2296,12 +2296,12 @@ The reason was written to the log (adiat_logs.txt) and the console.
 Would you like to re-enter your Team ID, Credential ID and Credential Secret?</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1541"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1532"/>
         <source>Exporting to CalTopo...</source>
         <translation>Exporting to CalTopo...</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1542"/>
+        <location filename="../app/core/controllers/images/viewer/exports/CalTopoExportController.py" line="1533"/>
         <source>Preparing data and exporting...</source>
         <translation>Preparing data and exporting...</translation>
     </message>
@@ -15857,22 +15857,22 @@ Please install it using: pip install qimage2ndarray</translation>
         <translation>Errors:           {n}</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/WaldoPrePassDialog.py" line="161"/>
-        <source>⚠ Capture-time warnings (camera clock is suspect):</source>
+        <location filename="../app/core/views/images/viewer/dialogs/WaldoPrePassDialog.py" line="164"/>
+        <source>⚠ Metadata warnings:</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/WaldoPrePassDialog.py" line="166"/>
+        <location filename="../app/core/views/images/viewer/dialogs/WaldoPrePassDialog.py" line="169"/>
         <source>Per-image errors:</source>
         <translation>Per-image errors:</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/WaldoPrePassDialog.py" line="180"/>
+        <location filename="../app/core/views/images/viewer/dialogs/WaldoPrePassDialog.py" line="183"/>
         <source>Cancelling...</source>
         <translation>Cancelling...</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/WaldoPrePassDialog.py" line="181"/>
+        <location filename="../app/core/views/images/viewer/dialogs/WaldoPrePassDialog.py" line="184"/>
         <source>Cancellation requested...</source>
         <translation>Cancellation requested...</translation>
     </message>
