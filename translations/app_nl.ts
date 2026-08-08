@@ -5691,7 +5691,7 @@ Hiermee wordt Meta/WRI-kroonhoogte (1 m) gedownload en ingesteld als bron voor k
     <message>
         <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="179"/>
         <source>Click point to select • Drag to pan • Scroll to zoom</source>
-        <translation>Klik op punt om te selecteren • Sleep om te verplaatsen • Scrol om te zoomen</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="263"/>
@@ -10234,174 +10234,241 @@ Verwachte bestandsnamen:
 <context>
     <name>PersonReferenceDialog</name>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="285"/>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="297"/>
         <source>Person Size Reference</source>
         <translation>Referentie voor persoonsgrootte</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="292"/>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="304"/>
         <source>Reference Person</source>
         <translation>Referentiepersoon</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="311"/>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="323"/>
         <source>Standing</source>
         <translation>Staand</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="313"/>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="325"/>
         <source>Lying down</source>
         <translation>Liggend</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="315"/>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="327"/>
         <source>Sitting</source>
         <translation>Zittend</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="324"/>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="336"/>
         <source>Show shadows (from capture time)</source>
         <translation>Schaduwen tonen (opnametijd)</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="327"/>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="339"/>
         <source>Use terrain elevation (DEM)</source>
         <translation>Terreinhoogte gebruiken (DEM)</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="336"/>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="348"/>
         <source>Rotate the person on the ground to line it up with an object</source>
         <translation>Draai de persoon op de grond om deze met een object uit te lijnen</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="341"/>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="353"/>
         <source>Click to choose overlay color</source>
         <translation>Klik om de overlaykleur te kiezen</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="349"/>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="361"/>
         <source>Size:</source>
         <translation>Grootte:</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="350"/>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="362"/>
         <source>Show:</source>
         <translation>Tonen:</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="351"/>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="363"/>
         <source>Rotation:</source>
         <translation>Rotatie:</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="354"/>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="366"/>
         <source>Color:</source>
         <translation>Kleur:</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="370"/>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="382"/>
         <source>Adjust camera clock...</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="374"/>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="387"/>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="1119"/>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="1126"/>
+        <source>Trace shadow...</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="389"/>
+        <source>Derive the time of day from a real shadow: click the base of an object casting a shadow (rock, tree, post), then the tip of its shadow. The solved time drives the rendered shadows.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="395"/>
         <source>Drag the white handle to position the reference person. Silhouettes are drawn at true ground scale for this image&apos;s altitude and camera angle.</source>
         <translation>Sleep de witte greep om de referentiepersoon te plaatsen. Silhouetten worden op ware terreinschaal getekend voor de hoogte en camerahoek van deze afbeelding.</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="382"/>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="403"/>
         <source>Recenter</source>
         <translation>Centreren</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="383"/>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="404"/>
         <source>Close</source>
         <translation>Sluiten</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="446"/>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="469"/>
         <source>No camera clock fault or applied correction was found for this folder.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="490"/>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="513"/>
         <source>Perspective overlay unavailable: this image is missing the altitude or lens metadata needed to project a person.</source>
         <translation>Perspectiefoverlay niet beschikbaar: deze afbeelding mist de hoogte- of lensmetadata die nodig zijn om een persoon te projecteren.</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="545"/>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="568"/>
         <source>Zoomed to the reference person: at this altitude a person spans only a few pixels.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="561"/>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="586"/>
         <source>no image loaded</source>
         <translation>geen afbeelding geladen</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="566"/>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="591"/>
         <source>image metadata could not be read</source>
         <translation>afbeeldingsmetadata konden niet worden gelezen</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="570"/>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="595"/>
         <source>image has no GPS coordinates</source>
         <translation>afbeelding heeft geen GPS-coördinaten</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="582"/>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="607"/>
         <source>capture time / timezone not in metadata</source>
         <translation>opnametijd / tijdzone ontbreekt in metadata</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="588"/>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="618"/>
         <source>sun position could not be computed</source>
         <translation>zonnestand kon niet worden berekend</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="598"/>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="631"/>
         <source>Sun at capture: {elev:.0f}° above horizon, azimuth {az:.0f}°.</source>
         <translation>Zon bij opname: {elev:.0f}° boven de horizon, azimut {az:.0f}°.</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="603"/>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="636"/>
         <source>Capture time zone estimated from GPS location.</source>
         <translation>Tijdzone van opname geschat op basis van GPS-locatie.</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="606"/>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="639"/>
         <source>Using repaired capture time (camera clock fault).</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="611"/>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="642"/>
+        <source>Time of day derived from the traced shadow.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="647"/>
         <source>the sun was below the horizon at capture</source>
         <translation>de zon stond tijdens de opname onder de horizon</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="613"/>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="649"/>
         <source>sun position unavailable</source>
         <translation>zonnestand niet beschikbaar</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="614"/>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="650"/>
         <source>Shadow unavailable: {reason}.</source>
         <translation>Schaduw niet beschikbaar: {reason}.</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="713"/>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="749"/>
         <source>Place the person and shadow on the DEM terrain surface</source>
         <translation>Plaats de persoon en schaduw op het DEM-terreinoppervlak</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="717"/>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="753"/>
         <source>Terrain (DEM) data is not available for this image</source>
         <translation>Terreingegevens (DEM) zijn niet beschikbaar voor deze afbeelding</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="977"/>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="1013"/>
         <source>Choose Overlay Color</source>
         <translation>Overlaykleur kiezen</translation>
+    </message>
+    <message>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="1104"/>
+        <source>Cancel trace</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="1106"/>
+        <source>Shadow trace: on the image, click the BASE of an object casting a shadow (rock, tree, post), then click the TIP of its shadow.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="1137"/>
+        <source>Shadow trace: now click the TIP of the shadow.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="1222"/>
+        <source>Shadow trace: the traced points could not be projected to the ground - try two points further apart.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="1228"/>
+        <source>Shadow trace: the image is missing the capture date or GPS position needed to solve the time.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="1243"/>
+        <source>Shadow trace: no daylight sun position matches that direction on the capture date. Check the traced direction (base first, then shadow tip).</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="1248"/>
+        <source>Clear traced time</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="1250"/>
+        <source>Time solved from the traced shadow: {time} (sun azimuth {az:.0f}°, {elev:.0f}° above horizon).</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="1257"/>
+        <source>The traced direction looked reversed and was interpreted tip-to-base.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="1261"/>
+        <source>Note: another time of day matches this direction almost as well.</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>

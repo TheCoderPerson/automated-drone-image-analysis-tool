@@ -27,7 +27,8 @@ from PySide6.QtGui import QPen, QColor, QBrush, QPainterPath, QPolygonF
 from PySide6.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QWidget,
     QGroupBox, QComboBox, QSpinBox, QFormLayout, QCheckBox, QGraphicsPathItem,
-    QGraphicsEllipseItem, QGraphicsItem, QColorDialog,
+    QGraphicsEllipseItem, QGraphicsItem, QGraphicsLineItem, QColorDialog,
+    QApplication,
 )
 
 from helpers.TranslationMixin import TranslationMixin
@@ -40,7 +41,9 @@ from core.services import PersonModel
 from core.services.shadow.PersonShadow import compute_shadow_ground_points
 from core.services.shadow.SolarPosition import (
     resolve_capture_utc, get_solar_position, SolarTimeUnresolvable,
+    timezone_name_for_position,
 )
+from core.services.shadow.ShadowTimeSolver import solve_time_for_shadow_azimuth
 
 # Persisted setting keys. The overlay is a recurring reference tool, so the
 # user's last choices (colour, size class, which poses/shadow/terrain are on)
@@ -259,6 +262,15 @@ class PersonReferenceDialog(TranslationMixin, QDialog):
         self.sun_error = None
         self.sun_time_source = None
 
+        # Shadow-trace state: the user can trace a real shadow on the image
+        # (base of the caster, then shadow tip) and the solved time of day
+        # overrides the - possibly wrong - camera clock for sun rendering.
+        self._capture_utc = None          # resolved capture moment (UTC)
+        self._trace_override_utc = None   # solved time from a traced shadow
+        self._trace_active = False
+        self._trace_points = []           # image-pixel clicks, base first
+        self._trace_items = []            # scene items visualising the trace
+
         # DEM terrain state for the current image.
         self.terrain_service = None
         self.terrain_nadir_elev = None
@@ -370,6 +382,15 @@ class PersonReferenceDialog(TranslationMixin, QDialog):
         self.adjust_clock_button = QPushButton(self.tr("Adjust camera clock..."))
         self.adjust_clock_button.setVisible(False)
 
+        # Trace a real shadow in the image to recover the true time of day
+        # (works even when the camera clock is wrong).
+        self.trace_shadow_button = QPushButton(self.tr("Trace shadow..."))
+        self.trace_shadow_button.setToolTip(self.tr(
+            "Derive the time of day from a real shadow: click the base of "
+            "an object casting a shadow (rock, tree, post), then the tip of "
+            "its shadow. The solved time drives the rendered shadows."))
+        self.trace_shadow_button.setEnabled(False)
+
         instructions = QLabel(self.tr(
             "Drag the white handle to position the reference person. "
             "Silhouettes are drawn at true ground scale for this image's "
@@ -382,6 +403,7 @@ class PersonReferenceDialog(TranslationMixin, QDialog):
         self.recenter_button = QPushButton(self.tr("Recenter"))
         self.close_button = QPushButton(self.tr("Close"))
         button_row.addWidget(self.recenter_button)
+        button_row.addWidget(self.trace_shadow_button)
         button_row.addWidget(self.adjust_clock_button)
         button_row.addStretch()
         button_row.addWidget(self.close_button)
@@ -409,6 +431,7 @@ class PersonReferenceDialog(TranslationMixin, QDialog):
         self.color_button.clicked.connect(self._on_color_button_clicked)
         self.recenter_button.clicked.connect(self._recenter)
         self.adjust_clock_button.clicked.connect(self._on_adjust_clock)
+        self.trace_shadow_button.clicked.connect(self._on_trace_shadow_clicked)
         self.close_button.clicked.connect(self.close)
 
     def _is_waldo_image(self) -> bool:
@@ -548,6 +571,7 @@ class PersonReferenceDialog(TranslationMixin, QDialog):
 
     def update_for_image(self, image_service, image_path, agl_override_m=None):
         """Rebuild the camera/sun for a newly selected image (called by Viewer)."""
+        self._reset_trace_state()
         self._clear_items()
         self._load_image(image_service, image_path, agl_override_m)
 
@@ -557,6 +581,7 @@ class PersonReferenceDialog(TranslationMixin, QDialog):
         self.sun_az = None
         self.sun_error = None
         self.sun_time_source = None
+        self._capture_utc = None
         if not self.image_path:
             self.sun_error = self.tr("no image loaded")
             return
@@ -581,6 +606,11 @@ class PersonReferenceDialog(TranslationMixin, QDialog):
         except SolarTimeUnresolvable:
             self.sun_error = self.tr("capture time / timezone not in metadata")
             return
+        self._capture_utc = utc
+        # A time solved from a traced shadow beats the camera clock.
+        if self._trace_override_utc is not None:
+            utc = self._trace_override_utc
+            source = 'shadow_trace'
         self.sun_time_source = source
         try:
             elev, az = get_solar_position(self.drone_lat, self.drone_lon, utc)
@@ -593,6 +623,9 @@ class PersonReferenceDialog(TranslationMixin, QDialog):
     def _update_sun_label(self):
         """Refresh the sun-info line and enable/disable the shadow toggle."""
         self.adjust_clock_button.setVisible(self._is_waldo_image())
+        self.trace_shadow_button.setEnabled(
+            self.camera is not None and self.drone_lat is not None
+            and self._capture_utc is not None)
         if self.sun_elev is not None and self.sun_elev > 0:
             text = self.tr(
                 "Sun at capture: {elev:.0f}° above horizon, "
@@ -604,6 +637,9 @@ class PersonReferenceDialog(TranslationMixin, QDialog):
             elif self.sun_time_source == 'waldo_corrected':
                 text += " " + self.tr(
                     "Using repaired capture time (camera clock fault).")
+            elif self.sun_time_source == 'shadow_trace':
+                text += " " + self.tr(
+                    "Time of day derived from the traced shadow.")
             self.sun_label.setText(text)
             self.shadow_check.setEnabled(True)
         else:
@@ -1042,7 +1078,195 @@ class PersonReferenceDialog(TranslationMixin, QDialog):
             self.anchor_item.setPos(self._default_anchor_scene())
             self._render_all()
 
+    # ---------------- shadow trace ----------------
+    def _on_trace_shadow_clicked(self):
+        """Start/cancel a shadow trace, or clear an applied traced time."""
+        if self._trace_active:
+            self._end_trace(cancelled=True)
+            return
+        if self._trace_override_utc is not None:
+            self._reset_trace_state()
+            self._resolve_sun()
+            self._update_sun_label()
+            self._on_params_changed()
+            return
+        self._begin_trace()
+
+    def _begin_trace(self):
+        """Arm the two-click trace on the main image viewer."""
+        self._trace_points = []
+        self._clear_trace_items()
+        try:
+            self.image_viewer.leftMouseButtonPressed.connect(self._on_trace_click)
+        except Exception:
+            return
+        self._trace_active = True
+        self.trace_shadow_button.setText(self.tr("Cancel trace"))
+        self._show_status(self.tr(
+            "Shadow trace: on the image, click the BASE of an object casting "
+            "a shadow (rock, tree, post), then click the TIP of its shadow."))
+
+    def _end_trace(self, cancelled=False):
+        """Disarm the trace clicks; optionally discard what was traced."""
+        self._trace_active = False
+        try:
+            self.image_viewer.leftMouseButtonPressed.disconnect(self._on_trace_click)
+        except Exception:
+            pass
+        if cancelled:
+            self._trace_points = []
+            self._clear_trace_items()
+            self.trace_shadow_button.setText(self.tr("Trace shadow..."))
+            self._show_status(None)
+
+    def _reset_trace_state(self):
+        """Drop the trace override and visuals (image change / clear / close)."""
+        self._end_trace(cancelled=True)
+        self._trace_override_utc = None
+        self.trace_shadow_button.setText(self.tr("Trace shadow..."))
+
+    def _on_trace_click(self, x, y, _viewer=None):
+        """Collect the two trace clicks: shadow base, then shadow tip."""
+        if not self._trace_active:
+            return
+        self._trace_points.append((float(x), float(y)))
+        self._add_trace_marker(float(x), float(y),
+                               first=len(self._trace_points) == 1)
+        if len(self._trace_points) < 2:
+            self._show_status(self.tr(
+                "Shadow trace: now click the TIP of the shadow."))
+            return
+        self._end_trace()
+        self._draw_trace_line()
+        self._solve_traced_shadow()
+
+    def _add_trace_marker(self, x, y, first):
+        """Drop a fixed-screen-size dot where the user clicked."""
+        scene = getattr(self.image_viewer, 'scene', None)
+        if scene is None:
+            return
+        radius = 5.0
+        item = QGraphicsEllipseItem(-radius, -radius, 2 * radius, 2 * radius)
+        item.setPos(QPointF(x, y))
+        color = QColor('#ff9800') if first else QColor('#ffc107')
+        item.setBrush(QBrush(color))
+        item.setPen(QPen(QColor(0, 0, 0), 1))
+        item.setZValue(1101)
+        item.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIgnoresTransformations, True)
+        scene.addItem(item)
+        self._trace_items.append(item)
+
+    def _draw_trace_line(self):
+        """Draw the traced base->tip line (kept visible for comparison with
+        the rendered shadow)."""
+        scene = getattr(self.image_viewer, 'scene', None)
+        if scene is None or len(self._trace_points) != 2:
+            return
+        (x1, y1), (x2, y2) = self._trace_points
+        line = QGraphicsLineItem(x1, y1, x2, y2)
+        pen = QPen(QColor('#ff9800'), 2, Qt.DashLine)
+        pen.setCosmetic(True)
+        line.setPen(pen)
+        line.setZValue(1100)
+        scene.addItem(line)
+        self._trace_items.append(line)
+
+    def _clear_trace_items(self):
+        """Remove the trace visuals from the scene."""
+        scene = getattr(self.image_viewer, 'scene', None)
+        for item in self._trace_items:
+            if scene is not None:
+                try:
+                    scene.removeItem(item)
+                except Exception:
+                    pass
+        self._trace_items = []
+
+    def _traced_shadow_azimuth(self):
+        """World azimuth of the traced shadow (base -> tip), or None.
+
+        Both clicks are cast onto the ground through the same CameraModel
+        used to render the person and its shadow, so the traced azimuth and
+        the rendered shadow live in the same frame - after applying the
+        solved time the rendered shadow lines up with the traced line.
+        """
+        if self.camera is None or len(self._trace_points) != 2:
+            return None
+        base = self.camera.pixel_to_ground(*self._trace_points[0])
+        tip = self.camera.pixel_to_ground(*self._trace_points[1])
+        if base is None or tip is None:
+            return None
+        d_north = tip[0] - base[0]
+        d_east = tip[1] - base[1]
+        if abs(d_north) < 1e-9 and abs(d_east) < 1e-9:
+            return None
+        return math.degrees(math.atan2(d_east, d_north)) % 360.0
+
+    def _format_local_time(self, utc_dt):
+        """Format a UTC moment as local wall time at the drone's position."""
+        try:
+            from zoneinfo import ZoneInfo
+            tz_name = timezone_name_for_position(self.drone_lat, self.drone_lon)
+            if tz_name:
+                return utc_dt.astimezone(ZoneInfo(tz_name)).strftime('%H:%M %Z')
+        except Exception:
+            pass
+        return utc_dt.strftime('%H:%M UTC')
+
+    def _solve_traced_shadow(self):
+        """Invert the traced shadow to a time of day and apply it."""
+        shadow_az = self._traced_shadow_azimuth()
+        if shadow_az is None:
+            self._reset_trace_state()
+            self._show_status(self.tr(
+                "Shadow trace: the traced points could not be projected to "
+                "the ground - try two points further apart."))
+            return
+        if self._capture_utc is None or self.drone_lat is None:
+            self._reset_trace_state()
+            self._show_status(self.tr(
+                "Shadow trace: the image is missing the capture date or GPS "
+                "position needed to solve the time."))
+            return
+        QApplication.setOverrideCursor(Qt.CursorShape.WaitCursor)
+        try:
+            solution = solve_time_for_shadow_azimuth(
+                self.drone_lat, self.drone_lon, self._capture_utc, shadow_az)
+        except Exception as e:
+            solution = None
+            self.logger.error(f"Shadow trace: solver failed - {e}")
+        finally:
+            QApplication.restoreOverrideCursor()
+        if solution is None:
+            self._reset_trace_state()
+            self._show_status(self.tr(
+                "Shadow trace: no daylight sun position matches that "
+                "direction on the capture date. Check the traced direction "
+                "(base first, then shadow tip)."))
+            return
+        self._trace_override_utc = solution.utc
+        self.trace_shadow_button.setText(self.tr("Clear traced time"))
+        message = self.tr(
+            "Time solved from the traced shadow: {time} "
+            "(sun azimuth {az:.0f}°, {elev:.0f}° above horizon)."
+        ).format(time=self._format_local_time(solution.utc),
+                 az=solution.sun_azimuth_deg,
+                 elev=solution.sun_elevation_deg)
+        if solution.direction_flipped:
+            message += " " + self.tr(
+                "The traced direction looked reversed and was interpreted "
+                "tip-to-base.")
+        if solution.ambiguous:
+            message += " " + self.tr(
+                "Note: another time of day matches this direction almost "
+                "as well.")
+        self._show_status(message)
+        self._resolve_sun()
+        self._update_sun_label()
+        self._on_params_changed()
+
     # ---------------- close ----------------
     def closeEvent(self, event):
+        self._reset_trace_state()
         self._clear_items()
         super().closeEvent(event)

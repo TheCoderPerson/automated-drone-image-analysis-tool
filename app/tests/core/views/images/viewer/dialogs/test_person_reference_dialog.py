@@ -221,3 +221,104 @@ def test_auto_zoom_failure_is_non_fatal(app, qtbot, isolated_settings):
     qtbot.addWidget(dialog)
 
     assert dialog.camera is not None  # dialog still built the overlay
+
+
+# ---------------------------------------------------------------------------
+# Shadow trace -> time of day (the traced shadow drives the sun rendering)
+# ---------------------------------------------------------------------------
+
+import math
+from datetime import datetime, timezone
+
+_TRACE_LAT, _TRACE_LON = 36.8, -118.2
+
+
+def _patch_sun_metadata(monkeypatch, claimed_utc):
+    """Make the dialog resolve GPS + capture time without touching disk."""
+    import core.views.images.viewer.dialogs.PersonReferenceDialog as dlg_mod
+    monkeypatch.setattr(dlg_mod, 'MetaDataHelper', SimpleNamespace(
+        get_exif_data_piexif=lambda path: {},
+        get_xmp_data=lambda path, parse=True: None))
+    monkeypatch.setattr(dlg_mod, 'LocationInfo', SimpleNamespace(
+        get_gps=lambda exif_data: {'latitude': _TRACE_LAT,
+                                   'longitude': _TRACE_LON}))
+    monkeypatch.setattr(
+        dlg_mod, 'resolve_capture_utc',
+        lambda exif, xmp, lat=None, lon=None: (claimed_utc, 'gps'))
+
+
+def _solved_trace_dialog(qtbot, monkeypatch, truth, claimed):
+    """Dialog with a completed shadow trace built from the real sun at ``truth``."""
+    from core.services.shadow.SolarPosition import get_solar_position
+
+    _patch_sun_metadata(monkeypatch, claimed)
+    dialog, _viewer = _make_projected_dialog(qtbot, agl_m=40.0)
+    assert dialog.trace_shadow_button.isEnabled()
+
+    # The camera is nadir with yaw 0, so image +u = east and +v = south.
+    # Trace the shadow a real sun at ``truth`` would cast.
+    _elev, sun_az = get_solar_position(_TRACE_LAT, _TRACE_LON, truth)
+    shadow_rad = math.radians((sun_az + 180.0) % 360.0)
+    base = (434.0, 289.0)  # ~image centre = ground nadir
+    tip = (base[0] + 100.0 * math.sin(shadow_rad),
+           base[1] - 100.0 * math.cos(shadow_rad))
+
+    dialog._trace_active = True
+    dialog._on_trace_click(*base)
+    assert dialog._trace_override_utc is None  # one click is not enough
+    dialog._on_trace_click(*tip)
+    return dialog, sun_az
+
+
+def test_shadow_trace_solves_and_applies_time(app, qtbot, isolated_settings,
+                                              monkeypatch):
+    truth = datetime(2026, 6, 15, 17, 0, tzinfo=timezone.utc)    # 10:00 PDT
+    claimed = datetime(2026, 6, 15, 22, 0, tzinfo=timezone.utc)  # clock wrong
+    dialog, sun_az = _solved_trace_dialog(qtbot, monkeypatch, truth, claimed)
+
+    assert dialog._trace_override_utc is not None
+    assert abs((dialog._trace_override_utc - truth).total_seconds()) < 300
+    assert dialog.sun_time_source == 'shadow_trace'
+    # The rendered sun now matches the traced moment, not the camera clock.
+    assert dialog.sun_az == pytest.approx(sun_az, abs=2.0)
+    assert dialog.trace_shadow_button.text() == 'Clear traced time'
+
+
+def test_shadow_trace_clear_restores_clock_time(app, qtbot, isolated_settings,
+                                                monkeypatch):
+    truth = datetime(2026, 6, 15, 17, 0, tzinfo=timezone.utc)
+    claimed = datetime(2026, 6, 15, 22, 0, tzinfo=timezone.utc)
+    dialog, _sun_az = _solved_trace_dialog(qtbot, monkeypatch, truth, claimed)
+    assert dialog.sun_time_source == 'shadow_trace'
+
+    dialog._on_trace_shadow_clicked()  # "Clear traced time"
+
+    assert dialog._trace_override_utc is None
+    assert dialog.sun_time_source == 'gps'
+    assert dialog.trace_shadow_button.text() == 'Trace shadow...'
+    assert dialog._trace_items == []
+
+
+def test_shadow_trace_disabled_without_camera(app, qtbot, isolated_settings,
+                                              monkeypatch):
+    """No camera model (missing metadata) -> the trace button stays off."""
+    claimed = datetime(2026, 6, 15, 22, 0, tzinfo=timezone.utc)
+    _patch_sun_metadata(monkeypatch, claimed)
+    dialog = _make_dialog(qtbot)  # null-camera mock
+    assert dialog.camera is None
+    assert not dialog.trace_shadow_button.isEnabled()
+
+
+def test_shadow_trace_reset_on_image_change(app, qtbot, isolated_settings,
+                                            monkeypatch):
+    """Switching images drops the traced time (it belongs to one frame)."""
+    truth = datetime(2026, 6, 15, 17, 0, tzinfo=timezone.utc)
+    claimed = datetime(2026, 6, 15, 22, 0, tzinfo=timezone.utc)
+    dialog, _sun_az = _solved_trace_dialog(qtbot, monkeypatch, truth, claimed)
+    assert dialog._trace_override_utc is not None
+
+    dialog.update_for_image(_camera_image_service(40.0), 'other-image.jpg')
+
+    assert dialog._trace_override_utc is None
+    assert dialog.sun_time_source == 'gps'
+    assert dialog.trace_shadow_button.text() == 'Trace shadow...'
