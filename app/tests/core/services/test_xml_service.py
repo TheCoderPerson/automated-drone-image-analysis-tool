@@ -98,6 +98,53 @@ def test_save_xml_file(tmp_path):
     assert os.path.exists(path)
 
 
+def test_user_corrected_aoi_position_round_trip(tmp_path, sample_xml):
+    """A user-corrected AOI position (dragged map marker) persists through
+    save/reload, and files without one parse exactly as before."""
+    service = XmlService(sample_xml)
+    images = service.get_images()
+    aoi = images[0]["areas_of_interest"][0]
+    assert "user_latitude" not in aoi  # legacy files stay untouched
+
+    aoi["xml"].set("user_latitude", "36.123456")
+    aoi["xml"].set("user_longitude", "-118.654321")
+    out_path = tmp_path / "saved.xml"
+    service.save_xml_file(out_path)
+
+    reloaded = XmlService(out_path).get_images()
+    aoi2 = reloaded[0]["areas_of_interest"][0]
+    assert aoi2["user_latitude"] == pytest.approx(36.123456)
+    assert aoi2["user_longitude"] == pytest.approx(-118.654321)
+    # The untouched AOI on the second image must not gain an override.
+    assert "user_latitude" not in reloaded[1]["areas_of_interest"][0]
+
+
+def test_add_image_to_xml_writes_user_corrected_position():
+    service = XmlService()
+    service.add_image_to_xml({
+        "path": "new_image.jpg",
+        "aois": [{"center": (25, 25), "radius": 5, "area": 50,
+                  "user_latitude": 36.5, "user_longitude": -118.25}],
+    })
+    aoi = service.get_images()[0]["areas_of_interest"][0]
+    assert aoi["user_latitude"] == pytest.approx(36.5)
+    assert aoi["user_longitude"] == pytest.approx(-118.25)
+
+
+def test_malformed_user_corrected_position_is_ignored(tmp_path):
+    xml_content = (
+        '<data><images><image path="image1.jpg">'
+        '<areas_of_interest center="(50,50)" radius="10" area="150" '
+        'user_latitude="garbage" user_longitude="1.0"/>'
+        '</image></images></data>'
+    )
+    path = tmp_path / "bad.xml"
+    path.write_text(xml_content)
+    aoi = XmlService(path).get_images()[0]["areas_of_interest"][0]
+    assert "user_latitude" not in aoi
+    assert "user_longitude" not in aoi
+
+
 @pytest.fixture
 def fov_corners():
     return [

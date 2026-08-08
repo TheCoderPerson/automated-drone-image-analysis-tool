@@ -40,6 +40,12 @@ class GPSMapView(TranslationMixin, QGraphicsView):
     # Signal emitted when user right-clicks on the map (lat, lon)
     gps_right_clicked = Signal(float, float)
 
+    # Signal emitted when the AOI marker is dragged to a new position (lat, lon)
+    aoi_marker_moved = Signal(float, float)
+
+    # Signal emitted when the user asks to clear a user-corrected AOI position
+    aoi_reset_requested = Signal()
+
     def __init__(self, parent=None, offline_only=False):
         """Initialize the GPS map view."""
         super().__init__(parent)
@@ -78,6 +84,12 @@ class GPSMapView(TranslationMixin, QGraphicsView):
         # AOI marker storage
         self.aoi_marker = None  # Current AOI marker
         self.aoi_data = None  # Current AOI metadata
+
+        # AOI marker drag state: view position of the arming press (None when
+        # no press is active) and whether the press became a drag.
+        self._aoi_press_view_pos = None
+        self._aoi_dragging = False
+        self._saved_viewport_cursor = None
 
         # FOV (Field of View) box for current image
         self.fov_box = None
@@ -1162,13 +1174,16 @@ class GPSMapView(TranslationMixin, QGraphicsView):
             return
 
         if event.button() == Qt.MouseButton.LeftButton:
-            # Check AOI marker click
+            # Check AOI marker press: arm a possible drag. A press that never
+            # moves past the drag threshold shows the data popup on release.
             if self.aoi_marker:
                 aoi_view_pos = self.mapFromScene(self.aoi_marker.pos())
                 dx = event.pos().x() - aoi_view_pos.x()
                 dy = event.pos().y() - aoi_view_pos.y()
                 if math.sqrt(dx * dx + dy * dy) <= 10:
-                    self.show_aoi_popup(event.globalPos())
+                    self._aoi_press_view_pos = event.pos()
+                    self._aoi_dragging = False
+                    event.accept()
                     return
 
             # Check point click
@@ -1184,6 +1199,47 @@ class GPSMapView(TranslationMixin, QGraphicsView):
                         return
 
         super().mousePressEvent(event)
+
+    def mouseMoveEvent(self, event: QMouseEvent):
+        """Drag the AOI marker while a press on it is active."""
+        if self._aoi_press_view_pos is not None and self.aoi_marker:
+            delta = event.pos() - self._aoi_press_view_pos
+            if (not self._aoi_dragging
+                    and delta.manhattanLength() > QApplication.startDragDistance()):
+                self._aoi_dragging = True
+                self._saved_viewport_cursor = self.viewport().cursor()
+                self.viewport().setCursor(Qt.CursorShape.ClosedHandCursor)
+            if self._aoi_dragging:
+                self.aoi_marker.setPos(self.mapToScene(event.pos()))
+            event.accept()
+            return
+        super().mouseMoveEvent(event)
+
+    def mouseReleaseEvent(self, event: QMouseEvent):
+        """Finish an AOI-marker press: a drag emits the new GPS position for
+        confirmation; a stationary press opens the marker's data popup."""
+        if self._aoi_press_view_pos is not None:
+            was_dragging = self._aoi_dragging
+            self._aoi_press_view_pos = None
+            self._aoi_dragging = False
+            if self._saved_viewport_cursor is not None:
+                self.viewport().setCursor(self._saved_viewport_cursor)
+                self._saved_viewport_cursor = None
+            if was_dragging and self.aoi_marker:
+                pos = self.aoi_marker.pos()
+                lat, lon = self.scene_to_lat_lon(pos.x(), pos.y())
+                self.aoi_marker_moved.emit(lat, lon)
+            else:
+                self.show_aoi_popup(event.globalPos())
+            event.accept()
+            return
+        super().mouseReleaseEvent(event)
+
+    def reset_aoi_marker_position(self):
+        """Snap the AOI marker back to its stored GPS position (drag declined)."""
+        if self.aoi_marker and self.aoi_data:
+            self.aoi_marker.setPos(self.lat_lon_to_scene(
+                self.aoi_data['latitude'], self.aoi_data['longitude']))
 
     def show_aoi_popup(self, global_pos):
         """
@@ -1215,6 +1271,10 @@ class GPSMapView(TranslationMixin, QGraphicsView):
 
         copy_action = menu.addAction(self.tr("Copy Data"))
         copy_action.triggered.connect(self.copy_aoi_data)
+        # A user-corrected position can be cleared back to the estimate.
+        if self.aoi_data.get('elevation_source') == 'user':
+            reset_action = menu.addAction(self.tr("Reset to estimated position"))
+            reset_action.triggered.connect(self.aoi_reset_requested.emit)
         menu.exec(global_pos)
 
     def copy_aoi_data(self):
@@ -1352,6 +1412,9 @@ class GPSMapView(TranslationMixin, QGraphicsView):
         if aoi_gps_data.get('avg_info'):
             tooltip += f"{aoi_gps_data['avg_info']}\n"
         tooltip += f"GPS: {aoi_gps_data['latitude']:.6f}, {aoi_gps_data['longitude']:.6f}"
+        if aoi_gps_data.get('elevation_source') == 'user':
+            tooltip += "\n" + self.tr("Position corrected by user")
+        tooltip += "\n" + self.tr("Drag to correct the location")
         self.aoi_marker.setToolTip(tooltip)
 
         self.scene.addItem(self.aoi_marker)

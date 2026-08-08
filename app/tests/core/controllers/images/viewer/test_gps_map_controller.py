@@ -136,3 +136,80 @@ def test_closing_dialog_cancels_pending_fov_redraw():
     dialog.update_zoom_fov.reset_mock()
     controller._flush_zoom_fov()
     dialog.update_zoom_fov.assert_not_called()
+
+
+# ---------------------------------------------------------------------------
+# Draggable AOI marker: confirm + persist a user-corrected AOI position
+# ---------------------------------------------------------------------------
+
+import xml.etree.ElementTree as ET  # noqa: E402
+
+
+def _controller_with_marker():
+    """Controller wired to a stub dialog showing a marker for image 0, AOI 0."""
+    from core.controllers.images.viewer.GPSMapController import GPSMapController
+    parent = _Parent()
+    xml_element = ET.Element('areas_of_interest')
+    aoi = {'center': (10, 20), 'xml': xml_element}
+    parent.images = [{'name': 'img1.jpg', 'areas_of_interest': [aoi]}]
+    parent.xml_service = MagicMock()
+    parent.xml_path = 'results/ADIAT_Data.xml'
+    controller = GPSMapController(parent)
+    dialog = MagicMock()
+    dialog.isVisible.return_value = True
+    view = MagicMock()
+    view.aoi_data = {'latitude': 37.0, 'longitude': -117.0,
+                     'aoi_index': 0, 'image_index': 0}
+    dialog.map_view = view
+    controller.map_dialog = dialog
+    controller.update_aoi_on_map = MagicMock()  # marker redraw not under test
+    return controller, parent, aoi, xml_element, view
+
+
+def test_marker_drag_accept_persists_user_position():
+    controller, parent, aoi, xml_element, view = _controller_with_marker()
+    with patch('core.controllers.images.viewer.GPSMapController.QMessageBox') as box:
+        box.question.return_value = box.StandardButton.Yes
+        controller.on_aoi_marker_moved(37.001, -117.002)
+    assert aoi['user_latitude'] == pytest.approx(37.001)
+    assert aoi['user_longitude'] == pytest.approx(-117.002)
+    assert float(xml_element.get('user_latitude')) == pytest.approx(37.001)
+    assert float(xml_element.get('user_longitude')) == pytest.approx(-117.002)
+    parent.xml_service.save_xml_file.assert_called_once_with(parent.xml_path)
+    controller.update_aoi_on_map.assert_called_once()
+
+
+def test_marker_drag_decline_restores_marker():
+    controller, parent, aoi, xml_element, view = _controller_with_marker()
+    with patch('core.controllers.images.viewer.GPSMapController.QMessageBox') as box:
+        box.question.return_value = box.StandardButton.No
+        controller.on_aoi_marker_moved(37.001, -117.002)
+    view.reset_aoi_marker_position.assert_called_once()
+    assert 'user_latitude' not in aoi
+    assert xml_element.get('user_latitude') is None
+    parent.xml_service.save_xml_file.assert_not_called()
+
+
+def test_marker_reset_clears_user_position():
+    controller, parent, aoi, xml_element, view = _controller_with_marker()
+    aoi['user_latitude'] = 37.001
+    aoi['user_longitude'] = -117.002
+    xml_element.set('user_latitude', '37.001')
+    xml_element.set('user_longitude', '-117.002')
+    controller.on_aoi_reset_requested()
+    assert 'user_latitude' not in aoi
+    assert 'user_longitude' not in aoi
+    assert xml_element.get('user_latitude') is None
+    assert xml_element.get('user_longitude') is None
+    parent.xml_service.save_xml_file.assert_called_once_with(parent.xml_path)
+
+
+def test_marker_drag_with_stale_marker_metadata_is_safe():
+    """A marker whose indices no longer resolve must not corrupt anything."""
+    controller, parent, aoi, xml_element, view = _controller_with_marker()
+    view.aoi_data = {'latitude': 37.0, 'longitude': -117.0,
+                     'aoi_index': 5, 'image_index': 0}  # out of range
+    controller.on_aoi_marker_moved(37.001, -117.002)
+    view.reset_aoi_marker_position.assert_called_once()
+    assert 'user_latitude' not in aoi
+    parent.xml_service.save_xml_file.assert_not_called()

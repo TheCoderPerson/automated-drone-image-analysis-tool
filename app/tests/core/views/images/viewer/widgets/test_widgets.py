@@ -743,3 +743,67 @@ def test_thermal_range_slider_wrap_updates(app):
 
     slider.set_selection_wrap(True)
     assert slider.selection_wrap()
+
+
+# ---------------------------------------------------------------------------
+# Draggable AOI marker (drag to correct the AOI's GPS position)
+# ---------------------------------------------------------------------------
+
+def _view_with_marker(app):
+    view = GPSMapView()
+    view.current_zoom = 15
+    aoi_data = {'latitude': 37.0, 'longitude': -117.0, 'image_name': 'x.jpg',
+                'center_pixels': (10, 10), 'pixel_area': 100.0,
+                'aoi_index': 0, 'image_index': 0}
+    view.set_aoi_marker(aoi_data, [255, 255, 0])
+    return view
+
+
+def test_aoi_marker_drag_emits_moved_signal(app):
+    view = _view_with_marker(app)
+    moved = []
+    view.aoi_marker_moved.connect(lambda lat, lon: moved.append((lat, lon)))
+
+    press_pos = view.mapFromScene(view.aoi_marker.pos())
+    target_pos = press_pos + type(press_pos)(60, -40)
+
+    view.mousePressEvent(_mouse_event(
+        QEvent.Type.MouseButtonPress, press_pos.x(), press_pos.y(),
+        Qt.MouseButton.LeftButton, Qt.MouseButton.LeftButton))
+    view.mouseMoveEvent(_mouse_event(
+        QEvent.Type.MouseMove, target_pos.x(), target_pos.y(),
+        Qt.MouseButton.NoButton, Qt.MouseButton.LeftButton))
+    view.mouseReleaseEvent(_mouse_event(
+        QEvent.Type.MouseButtonRelease, target_pos.x(), target_pos.y(),
+        Qt.MouseButton.LeftButton, Qt.MouseButton.NoButton))
+
+    assert len(moved) == 1
+    expected_scene = view.mapToScene(target_pos)
+    expected = view.scene_to_lat_lon(expected_scene.x(), expected_scene.y())
+    assert moved[0][0] == pytest.approx(expected[0], abs=1e-9)
+    assert moved[0][1] == pytest.approx(expected[1], abs=1e-9)
+
+    # Declining the move puts the marker back at the stored GPS position.
+    view.reset_aoi_marker_position()
+    restored = view.aoi_marker.pos()
+    original = view.lat_lon_to_scene(37.0, -117.0)
+    assert restored.x() == pytest.approx(original.x(), abs=1e-6)
+    assert restored.y() == pytest.approx(original.y(), abs=1e-6)
+
+
+def test_aoi_marker_stationary_press_opens_popup(app):
+    view = _view_with_marker(app)
+    view.show_aoi_popup = MagicMock()
+    moved = []
+    view.aoi_marker_moved.connect(lambda lat, lon: moved.append((lat, lon)))
+
+    press_pos = view.mapFromScene(view.aoi_marker.pos())
+    view.mousePressEvent(_mouse_event(
+        QEvent.Type.MouseButtonPress, press_pos.x(), press_pos.y(),
+        Qt.MouseButton.LeftButton, Qt.MouseButton.LeftButton))
+    view.mouseReleaseEvent(_mouse_event(
+        QEvent.Type.MouseButtonRelease, press_pos.x(), press_pos.y(),
+        Qt.MouseButton.LeftButton, Qt.MouseButton.NoButton))
+
+    view.show_aoi_popup.assert_called_once()
+    assert moved == []

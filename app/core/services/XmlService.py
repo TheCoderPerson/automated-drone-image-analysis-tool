@@ -234,6 +234,16 @@ class XmlService:
                     team_value = area_of_interest_xml.get('team', '')
                     if team_value:
                         area_of_interest['team'] = team_value
+                    # Load a user-corrected GPS position if present (set by
+                    # dragging the AOI marker on the GPS map). Old builds
+                    # ignore unknown attributes, so this stays read-compatible.
+                    if (area_of_interest_xml.get('user_latitude')
+                            and area_of_interest_xml.get('user_longitude')):
+                        try:
+                            area_of_interest['user_latitude'] = float(area_of_interest_xml.get('user_latitude'))
+                            area_of_interest['user_longitude'] = float(area_of_interest_xml.get('user_longitude'))
+                        except (ValueError, TypeError):
+                            pass
 
                     areas_of_interest.append(area_of_interest)
                 image['areas_of_interest'] = areas_of_interest
@@ -375,6 +385,11 @@ class XmlService:
             # Save user comment if present
             if 'user_comment' in area and area['user_comment']:
                 area_xml.set('user_comment', str(area['user_comment']))
+            # Save a user-corrected GPS position if present
+            if (area.get('user_latitude') is not None
+                    and area.get('user_longitude') is not None):
+                area_xml.set('user_latitude', str(area['user_latitude']))
+                area_xml.set('user_longitude', str(area['user_longitude']))
             # Save confidence scoring data if present
             if 'confidence' in area:
                 area_xml.set('confidence', str(area['confidence']))

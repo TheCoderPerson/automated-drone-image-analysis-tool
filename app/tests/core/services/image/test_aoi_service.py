@@ -100,6 +100,31 @@ def test_estimate_aoi_gps(sample_image_data, sample_aoi):
             assert hasattr(result, 'elevation_source')
 
 
+def test_estimate_aoi_gps_prefers_user_corrected_position(sample_image_data, sample_aoi):
+    """A user-corrected position (dragged marker) overrides every estimate
+    without touching metadata, terrain, or the image itself."""
+    with patch('core.services.image.AOIService.ImageService'):
+        service = AOIService(sample_image_data)
+        aoi = dict(sample_aoi, user_latitude=36.123456, user_longitude=-118.654321)
+        result = service.estimate_aoi_gps(sample_image_data, aoi)
+        assert result is not None
+        assert result.latitude == pytest.approx(36.123456)
+        assert result.longitude == pytest.approx(-118.654321)
+        assert result.elevation_source == 'user'
+
+
+def test_estimate_aoi_gps_ignores_malformed_user_position(sample_image_data, sample_aoi):
+    """A malformed override falls through to the normal estimate path."""
+    with patch('core.services.image.AOIService.ImageService'), \
+            patch('helpers.MetaDataHelper.MetaDataHelper.get_exif_data_piexif') as mock_exif, \
+            patch('helpers.LocationInfo.LocationInfo.get_gps') as mock_gps:
+        mock_exif.return_value = {}
+        mock_gps.return_value = None  # normal path bails out with None
+        service = AOIService(sample_image_data)
+        aoi = dict(sample_aoi, user_latitude='not-a-number', user_longitude='nope')
+        assert service.estimate_aoi_gps(sample_image_data, aoi) is None
+
+
 def test_get_aoi_representative_color(sample_image_data, sample_aoi):
     """Test getting representative color for an AOI."""
     test_img = np.zeros((200, 200, 3), dtype=np.uint8)
