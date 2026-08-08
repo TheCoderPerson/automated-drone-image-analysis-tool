@@ -309,6 +309,27 @@ def test_shadow_trace_disabled_without_camera(app, qtbot, isolated_settings,
     assert not dialog.trace_shadow_button.isEnabled()
 
 
+def test_trace_toggles_viewer_point_capture(app, qtbot, isolated_settings,
+                                            monkeypatch):
+    """Arming the trace must put the image viewer in point-capture mode:
+    on the main image the left button region-zooms, so without capture the
+    trace clicks never reach the dialog (field-reported bug)."""
+    claimed = datetime(2026, 6, 15, 22, 0, tzinfo=timezone.utc)
+    _patch_sun_metadata(monkeypatch, claimed)
+    dialog, viewer = _make_projected_dialog(qtbot, agl_m=40.0)
+    calls = []
+    viewer.leftMouseButtonPressed = MagicMock()  # connectable stand-in
+    viewer.begin_point_capture = lambda: calls.append('begin')
+    viewer.end_point_capture = lambda: calls.append('end')
+
+    dialog._begin_trace()
+    assert dialog._trace_active
+    assert calls == ['begin']
+
+    dialog._end_trace(cancelled=True)
+    assert calls == ['begin', 'end']
+
+
 def test_shadow_trace_reset_on_image_change(app, qtbot, isolated_settings,
                                             monkeypatch):
     """Switching images drops the traced time (it belongs to one frame)."""

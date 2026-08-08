@@ -268,6 +268,7 @@ class PersonReferenceDialog(TranslationMixin, QDialog):
         self._capture_utc = None          # resolved capture moment (UTC)
         self._trace_override_utc = None   # solved time from a traced shadow
         self._trace_active = False
+        self._trace_connected = False     # click signal currently connected
         self._trace_points = []           # image-pixel clicks, base first
         self._trace_items = []            # scene items visualising the trace
 
@@ -1100,6 +1101,16 @@ class PersonReferenceDialog(TranslationMixin, QDialog):
             self.image_viewer.leftMouseButtonPressed.connect(self._on_trace_click)
         except Exception:
             return
+        self._trace_connected = True
+        # The main image's left button normally starts a region zoom, which
+        # consumes the press before leftMouseButtonPressed is emitted -
+        # point-capture mode routes plain left clicks to the signal instead.
+        begin_capture = getattr(self.image_viewer, 'begin_point_capture', None)
+        if callable(begin_capture):
+            try:
+                begin_capture()
+            except Exception:
+                pass
         self._trace_active = True
         self.trace_shadow_button.setText(self.tr("Cancel trace"))
         self._show_status(self.tr(
@@ -1109,10 +1120,20 @@ class PersonReferenceDialog(TranslationMixin, QDialog):
     def _end_trace(self, cancelled=False):
         """Disarm the trace clicks; optionally discard what was traced."""
         self._trace_active = False
-        try:
-            self.image_viewer.leftMouseButtonPressed.disconnect(self._on_trace_click)
-        except Exception:
-            pass
+        # Only disconnect when actually connected: a blind disconnect makes
+        # Qt print a RuntimeWarning on every image change.
+        if self._trace_connected:
+            self._trace_connected = False
+            try:
+                self.image_viewer.leftMouseButtonPressed.disconnect(self._on_trace_click)
+            except Exception:
+                pass
+        end_capture = getattr(self.image_viewer, 'end_point_capture', None)
+        if callable(end_capture):
+            try:
+                end_capture()
+            except Exception:
+                pass
         if cancelled:
             self._trace_points = []
             self._clear_trace_items()

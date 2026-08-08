@@ -115,6 +115,12 @@ class QtImageViewer(TranslationMixin, QGraphicsView):
         self.canZoom = True
         self.canPan = True
 
+        # Point-capture mode: while active, a plain left click emits
+        # leftMouseButtonPressed instead of starting a region zoom (which
+        # normally consumes the press before the signal is reached). See
+        # begin_point_capture().
+        self._point_capture_active = False
+
         self.setMouseTracking(True)
         self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
 
@@ -792,8 +798,32 @@ class QtImageViewer(TranslationMixin, QGraphicsView):
     #  original file, only whitespace touched so it fits here.             #
     # -------------------------------------------------------------------- #
     # ------------------------- mousePressEvent -------------------------- #
+    def begin_point_capture(self):
+        """Route plain left clicks to leftMouseButtonPressed.
+
+        Used by tools that need the user to click points on the image (e.g.
+        the Person Reference shadow trace). The left button normally starts
+        a region zoom, which consumes the press before the click signal is
+        reached - while capture is active the press is emitted and consumed
+        instead. Right-button pan, wheel zoom, and modifier clicks keep
+        working so the user can still navigate to the target.
+        """
+        self._point_capture_active = True
+
+    def end_point_capture(self):
+        """Restore normal left-click behaviour (region zoom)."""
+        self._point_capture_active = False
+
     def mousePressEvent(self, ev):
         if self._is_destroyed:
+            return
+
+        # ------------- point capture (takes precedence over every other
+        # left-click behaviour while a tool is collecting clicks)
+        if self._point_capture_active and ev.button() == Qt.LeftButton:
+            scenePos = self.mapToScene(ev.position().toPoint())
+            self.leftMouseButtonPressed.emit(scenePos.x(), scenePos.y(), self)
+            ev.accept()
             return
 
         # Check if we're in AOI creation mode (via parent window)
@@ -883,6 +913,14 @@ class QtImageViewer(TranslationMixin, QGraphicsView):
     # ----------------------- mouseReleaseEvent -------------------------- #
     def mouseReleaseEvent(self, ev):
         if self._is_destroyed:
+            return
+
+        # ---- point capture: the press never started a region zoom, so the
+        # release must not run the zoom-finish logic against stale state.
+        if self._point_capture_active and ev.button() == Qt.LeftButton:
+            scenePos = self.mapToScene(ev.position().toPoint())
+            self.leftMouseButtonReleased.emit(scenePos.x(), scenePos.y())
+            ev.accept()
             return
 
         # Handle AOI creation completion
