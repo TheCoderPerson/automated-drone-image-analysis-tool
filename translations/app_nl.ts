@@ -226,83 +226,83 @@ toegeeflijk</translation>
 <context>
     <name>AOIController</name>
     <message>
-        <location filename="../app/core/controllers/images/viewer/aoi/AOIController.py" line="366"/>
+        <location filename="../app/core/controllers/images/viewer/aoi/AOIController.py" line="380"/>
         <source>No AOI #{number} in this analysis.</source>
         <translation>Geen AOI #{number} in deze analyse.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/aoi/AOIController.py" line="379"/>
-        <location filename="../app/core/controllers/images/viewer/aoi/AOIController.py" line="389"/>
+        <location filename="../app/core/controllers/images/viewer/aoi/AOIController.py" line="393"/>
+        <location filename="../app/core/controllers/images/viewer/aoi/AOIController.py" line="403"/>
         <source>AOI #{number} is hidden by the current filter.</source>
         <translation>AOI #{number} is verborgen door het huidige filter.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/aoi/AOIController.py" line="685"/>
+        <location filename="../app/core/controllers/images/viewer/aoi/AOIController.py" line="699"/>
         <source>Comment saved</source>
         <translation>Opmerking opgeslagen</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/aoi/AOIController.py" line="687"/>
+        <location filename="../app/core/controllers/images/viewer/aoi/AOIController.py" line="701"/>
         <source>Comment cleared</source>
         <translation>Opmerking gewist</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/aoi/AOIController.py" line="776"/>
+        <location filename="../app/core/controllers/images/viewer/aoi/AOIController.py" line="790"/>
         <source>Copy Data</source>
         <translation>Gegevens kopiëren</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/aoi/AOIController.py" line="782"/>
+        <location filename="../app/core/controllers/images/viewer/aoi/AOIController.py" line="796"/>
         <source>Find Similar AOIs</source>
         <translation>Vergelijkbare AOI&apos;s zoeken</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/aoi/AOIController.py" line="885"/>
+        <location filename="../app/core/controllers/images/viewer/aoi/AOIController.py" line="899"/>
         <source>AOI data copied</source>
         <translation>AOI-gegevens gekopieerd</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/aoi/AOIController.py" line="972"/>
+        <location filename="../app/core/controllers/images/viewer/aoi/AOIController.py" line="986"/>
         <source>Invalid image index</source>
         <translation>Ongeldige afbeeldingsindex</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/aoi/AOIController.py" line="977"/>
+        <location filename="../app/core/controllers/images/viewer/aoi/AOIController.py" line="991"/>
         <source>Invalid AOI index</source>
         <translation>Ongeldige AOI-index</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/aoi/AOIController.py" line="1040"/>
+        <location filename="../app/core/controllers/images/viewer/aoi/AOIController.py" line="1054"/>
         <source>Could not calculate AOI location. Diagnostic info copied to clipboard!</source>
         <translation>Kan AOI-locatie niet berekenen. Diagnostische informatie naar klembord gekopieerd!</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/aoi/AOIController.py" line="1046"/>
+        <location filename="../app/core/controllers/images/viewer/aoi/AOIController.py" line="1060"/>
         <source>Could not calculate AOI location</source>
         <translation>Kan AOI-locatie niet berekenen</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/aoi/AOIController.py" line="1503"/>
+        <location filename="../app/core/controllers/images/viewer/aoi/AOIController.py" line="1517"/>
         <source>Temperature sorting unavailable (no thermal data)</source>
         <translation>Sorteren op temperatuur niet beschikbaar (geen thermische gegevens)</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/aoi/AOIController.py" line="1855"/>
+        <location filename="../app/core/controllers/images/viewer/aoi/AOIController.py" line="1869"/>
         <source>Cannot Delete AOI</source>
         <translation>Kan AOI niet verwijderen</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/aoi/AOIController.py" line="1857"/>
+        <location filename="../app/core/controllers/images/viewer/aoi/AOIController.py" line="1871"/>
         <source>Only manually created AOIs can be deleted. Algorithm-detected AOIs cannot be deleted.</source>
         <translation>Alleen handmatig gemaakte AOI&apos;s kunnen worden verwijderd. Door algoritmen gedetecteerde AOI&apos;s kunnen niet worden verwijderd.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/aoi/AOIController.py" line="1866"/>
+        <location filename="../app/core/controllers/images/viewer/aoi/AOIController.py" line="1880"/>
         <source>Delete AOI</source>
         <translation>AOI verwijderen</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/aoi/AOIController.py" line="1868"/>
+        <location filename="../app/core/controllers/images/viewer/aoi/AOIController.py" line="1882"/>
         <source>Are you sure you want to delete this AOI? This action cannot be undone.</source>
         <translation>Weet u zeker dat u deze AOI wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt.</translation>
     </message>
@@ -717,7 +717,7 @@ Dit kan komen door ontbrekende afbeeldingsmetagegevens (GPS, hoogte of camera-in
     <message>
         <location filename="../app/core/controllers/images/viewer/neighbor/AOINeighborTrackingController.py" line="461"/>
         <source> (no detections)</source>
-        <translation type="unfinished"></translation>
+        <translation> (geen detecties)</translation>
     </message>
     <message>
         <location filename="../app/core/controllers/images/viewer/neighbor/AOINeighborTrackingController.py" line="476"/>
@@ -9347,18 +9347,19 @@ AI-PERSOONSDETECTOR: deep-learning model voor nauwkeurige persoonsdetectie
     <message>
         <location filename="../app/core/controllers/images/MainWindow.py" line="989"/>
         <source>Open Recent Results</source>
-        <translation type="unfinished"></translation>
+        <translation>Recente resultaten openen</translation>
     </message>
     <message>
         <location filename="../app/core/controllers/images/MainWindow.py" line="1033"/>
         <source>(no results opened yet)</source>
-        <translation type="unfinished"></translation>
+        <translation>(nog geen resultaten geopend)</translation>
     </message>
     <message>
         <location filename="../app/core/controllers/images/MainWindow.py" line="1049"/>
         <source>This results file no longer exists:
 {path}</source>
-        <translation type="unfinished"></translation>
+        <translation>Dit resultatenbestand bestaat niet meer:
+{path}</translation>
     </message>
     <message>
         <location filename="../app/core/controllers/images/MainWindow.py" line="1066"/>
@@ -9618,29 +9619,31 @@ AI-PERSOONSDETECTOR: deep-learning model voor nauwkeurige persoonsdetectie
     <message>
         <location filename="../app/core/views/images/viewer/dialogs/MapExportDialog.py" line="135"/>
         <source>Photo for flagged AOIs:</source>
-        <translation type="unfinished"></translation>
+        <translation>Foto voor gemarkeerde AOI's:</translation>
     </message>
     <message>
         <location filename="../app/core/views/images/viewer/dialogs/MapExportDialog.py" line="137"/>
         <source>Large Image (with zoom insets)</source>
-        <translation type="unfinished"></translation>
+        <translation>Grote afbeelding (met zoominzetten)</translation>
     </message>
     <message>
         <location filename="../app/core/views/images/viewer/dialogs/MapExportDialog.py" line="138"/>
         <source>AOI Thumbnail Only</source>
-        <translation type="unfinished"></translation>
+        <translation>Alleen AOI-miniatuur</translation>
     </message>
     <message>
         <location filename="../app/core/views/images/viewer/dialogs/MapExportDialog.py" line="139"/>
         <source>Both</source>
-        <translation type="unfinished">Beide</translation>
+        <translation>Beide</translation>
     </message>
     <message>
         <location filename="../app/core/views/images/viewer/dialogs/MapExportDialog.py" line="142"/>
         <source>Large Image uploads the same multi-zoom composite used in the PDF report
 (full image with 3x and 6x insets). AOI Thumbnail uploads a zoomed crop
 centered on the detection. Both uploads each.</source>
-        <translation type="unfinished"></translation>
+        <translation>"Grote afbeelding" uploadt hetzelfde multi-zoomcomposiet als het PDF-rapport
+(volledige afbeelding met 3x- en 6x-inzetten). "Alleen AOI-miniatuur" uploadt een
+ingezoomde uitsnede rond de detectie. "Beide" uploadt ze allebei.</translation>
     </message>
     <message>
         <location filename="../app/core/views/images/viewer/dialogs/MapExportDialog.py" line="173"/>
@@ -9867,12 +9870,12 @@ klik daarna nogmaals om het tweede punt te plaatsen.</translation>
     <message>
         <location filename="../resources/views/SelectionDialog.ui" line="163"/>
         <source>Open a completed analysis for review: scan a folder for results or reopen a recent one.</source>
-        <translation type="unfinished"></translation>
+        <translation>Open een voltooide analyse voor beoordeling: scan een map op resultaten of open een recente opnieuw.</translation>
     </message>
     <message>
         <location filename="../resources/views/SelectionDialog.ui" line="169"/>
         <source>Review Results</source>
-        <translation type="unfinished"></translation>
+        <translation>Resultaten beoordelen</translation>
     </message>
     <message>
         <location filename="../resources/views/SelectionDialog.ui" line="252"/>
@@ -10301,7 +10304,7 @@ Verwachte bestandsnamen:
     <message>
         <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="370"/>
         <source>Adjust camera clock...</source>
-        <translation type="unfinished"></translation>
+        <translation>Cameraklok aanpassen...</translation>
     </message>
     <message>
         <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="374"/>
@@ -10321,7 +10324,7 @@ Verwachte bestandsnamen:
     <message>
         <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="446"/>
         <source>No camera clock fault or applied correction was found for this folder.</source>
-        <translation type="unfinished"></translation>
+        <translation>Er is geen cameraklokfout of toegepaste correctie gevonden voor deze map.</translation>
     </message>
     <message>
         <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="490"/>
@@ -10331,7 +10334,7 @@ Verwachte bestandsnamen:
     <message>
         <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="545"/>
         <source>Zoomed to the reference person: at this altitude a person spans only a few pixels.</source>
-        <translation type="unfinished"></translation>
+        <translation>Ingezoomd op de referentiepersoon: op deze hoogte beslaat een persoon slechts enkele pixels.</translation>
     </message>
     <message>
         <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="561"/>
@@ -10371,7 +10374,7 @@ Verwachte bestandsnamen:
     <message>
         <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="606"/>
         <source>Using repaired capture time (camera clock fault).</source>
-        <translation type="unfinished"></translation>
+        <translation>Gecorrigeerde opnametijd wordt gebruikt (cameraklokfout).</translation>
     </message>
     <message>
         <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="611"/>
@@ -15819,107 +15822,107 @@ Installeer deze met: pip install qimage2ndarray</translation>
     <message>
         <location filename="../app/core/views/images/viewer/dialogs/WaldoClockCorrectionDialog.py" line="77"/>
         <source>WALDO Camera Clock Correction</source>
-        <translation type="unfinished"></translation>
+        <translation>WALDO-cameraklokcorrectie</translation>
     </message>
     <message>
         <location filename="../app/core/views/images/viewer/dialogs/WaldoClockCorrectionDialog.py" line="99"/>
         <source>The camera clock on these images appears to be misconfigured:</source>
-        <translation type="unfinished"></translation>
+        <translation>De cameraklok van deze afbeeldingen lijkt verkeerd ingesteld:</translation>
     </message>
     <message>
         <location filename="../app/core/views/images/viewer/dialogs/WaldoClockCorrectionDialog.py" line="108"/>
         <source>ADIAT can stamp a corrected capture time into the image metadata. This is non-destructive: the original EXIF fields are not changed, and sun/shadow calculations will use the corrected time. Check the preview against when the flight actually flew - if it is off by 12 hours, adjust the clock face error.</source>
-        <translation type="unfinished"></translation>
+        <translation>ADIAT kan een gecorrigeerde opnametijd in de afbeeldingsmetadata schrijven. Dit is niet-destructief: de oorspronkelijke EXIF-velden blijven ongewijzigd en zon- en schaduwberekeningen gebruiken de gecorrigeerde tijd. Vergelijk het voorbeeld met het werkelijke tijdstip van de vlucht; als het 12 uur afwijkt, pas dan de klokstandfout aan.</translation>
     </message>
     <message>
         <location filename="../app/core/views/images/viewer/dialogs/WaldoClockCorrectionDialog.py" line="120"/>
         <source> hours</source>
-        <translation type="unfinished"></translation>
+        <translation> uur</translation>
     </message>
     <message>
         <location filename="../app/core/views/images/viewer/dialogs/WaldoClockCorrectionDialog.py" line="121"/>
         <source>Clock face error to remove:</source>
-        <translation type="unfinished"></translation>
+        <translation>Te corrigeren klokstandfout:</translation>
     </message>
     <message>
         <location filename="../app/core/views/images/viewer/dialogs/WaldoClockCorrectionDialog.py" line="128"/>
         <source>IANA time zone name (e.g. America/Los_Angeles) or a fixed UTC offset in hours (e.g. -7)</source>
-        <translation type="unfinished"></translation>
+        <translation>IANA-tijdzonenaam (bijv. America/Los_Angeles) of een vaste UTC-offset in uren (bijv. -7)</translation>
     </message>
     <message>
         <location filename="../app/core/views/images/viewer/dialogs/WaldoClockCorrectionDialog.py" line="130"/>
         <source>True camera time zone:</source>
-        <translation type="unfinished"></translation>
+        <translation>Werkelijke tijdzone van de camera:</translation>
     </message>
     <message>
         <location filename="../app/core/views/images/viewer/dialogs/WaldoClockCorrectionDialog.py" line="139"/>
         <source>Remember my choice for this folder</source>
-        <translation type="unfinished"></translation>
+        <translation>Mijn keuze onthouden voor deze map</translation>
     </message>
     <message>
         <location filename="../app/core/views/images/viewer/dialogs/WaldoClockCorrectionDialog.py" line="159"/>
         <source>Apply Correction</source>
-        <translation type="unfinished"></translation>
+        <translation>Correctie toepassen</translation>
     </message>
     <message>
         <location filename="../app/core/views/images/viewer/dialogs/WaldoClockCorrectionDialog.py" line="163"/>
         <source>Not Now</source>
-        <translation type="unfinished"></translation>
+        <translation>Niet nu</translation>
     </message>
     <message>
         <location filename="../app/core/views/images/viewer/dialogs/WaldoClockCorrectionDialog.py" line="166"/>
         <source>Cancel</source>
-        <translation type="unfinished">Annuleren</translation>
+        <translation>Annuleren</translation>
     </message>
     <message>
         <location filename="../app/core/views/images/viewer/dialogs/WaldoClockCorrectionDialog.py" line="170"/>
         <source>OK</source>
-        <translation type="unfinished">OK</translation>
+        <translation>OK</translation>
     </message>
     <message>
         <location filename="../app/core/views/images/viewer/dialogs/WaldoClockCorrectionDialog.py" line="231"/>
         <source>Enter a valid time zone (IANA name or UTC offset in hours).</source>
-        <translation type="unfinished"></translation>
+        <translation>Voer een geldige tijdzone in (IANA-naam of UTC-offset in uren).</translation>
     </message>
     <message>
         <location filename="../app/core/views/images/viewer/dialogs/WaldoClockCorrectionDialog.py" line="239"/>
         <source>{name}: camera says {before}  →  corrected {after}</source>
-        <translation type="unfinished"></translation>
+        <translation>{name}: camera geeft {before}  →  gecorrigeerd {after}</translation>
     </message>
     <message>
         <location filename="../app/core/views/images/viewer/dialogs/WaldoClockCorrectionDialog.py" line="245"/>
         <source>Correction preview unavailable.</source>
-        <translation type="unfinished"></translation>
+        <translation>Voorbeeld van de correctie niet beschikbaar.</translation>
     </message>
     <message>
         <location filename="../app/core/views/images/viewer/dialogs/WaldoClockCorrectionDialog.py" line="272"/>
         <source>Stamping corrected capture times...</source>
-        <translation type="unfinished"></translation>
+        <translation>Gecorrigeerde opnametijden schrijven...</translation>
     </message>
     <message>
         <location filename="../app/core/views/images/viewer/dialogs/WaldoClockCorrectionDialog.py" line="292"/>
         <source>Cancelling...</source>
-        <translation type="unfinished">Annuleren...</translation>
+        <translation>Annuleren...</translation>
     </message>
     <message>
         <location filename="../app/core/views/images/viewer/dialogs/WaldoClockCorrectionDialog.py" line="308"/>
         <source>Corrected:        {n}</source>
-        <translation type="unfinished"></translation>
+        <translation>Gecorrigeerd:    {n}</translation>
     </message>
     <message>
         <location filename="../app/core/views/images/viewer/dialogs/WaldoClockCorrectionDialog.py" line="309"/>
         <source>Already corrected: {n}</source>
-        <translation type="unfinished"></translation>
+        <translation>Al gecorrigeerd: {n}</translation>
     </message>
     <message>
         <location filename="../app/core/views/images/viewer/dialogs/WaldoClockCorrectionDialog.py" line="310"/>
         <source>Errors:           {n}</source>
-        <translation type="unfinished">Fouten:          {n}</translation>
+        <translation>Fouten:          {n}</translation>
     </message>
     <message>
         <location filename="../app/core/views/images/viewer/dialogs/WaldoClockCorrectionDialog.py" line="313"/>
         <source>Cancelled - remaining images are uncorrected.</source>
-        <translation type="unfinished"></translation>
+        <translation>Geannuleerd: de resterende afbeeldingen zijn niet gecorrigeerd.</translation>
     </message>
 </context>
 <context>
@@ -15982,7 +15985,7 @@ Installeer deze met: pip install qimage2ndarray</translation>
     <message>
         <location filename="../app/core/views/images/viewer/dialogs/WaldoPrePassDialog.py" line="164"/>
         <source>⚠ Metadata warnings:</source>
-        <translation type="unfinished"></translation>
+        <translation>⚠ Metadatawaarschuwingen:</translation>
     </message>
     <message>
         <location filename="../app/core/views/images/viewer/dialogs/WaldoPrePassDialog.py" line="169"/>
