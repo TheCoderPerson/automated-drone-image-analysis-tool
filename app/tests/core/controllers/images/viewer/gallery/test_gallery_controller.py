@@ -372,3 +372,32 @@ def test_start_color_calc_connects_complete_and_sets_flag(controller):
         controller._on_color_calc_complete
     )
     assert controller._color_calc_complete_connected is True
+
+
+# ---------------------------------------------------------------------------
+# on_aoi_clicked must sync the single-image AOI selection (GPS-map marker,
+# on-image overlay). Field report: selecting AOIs in the gallery never
+# showed the marker in the map window.
+# ---------------------------------------------------------------------------
+
+def test_gallery_click_syncs_aoi_controller_selection(controller):
+    parent = controller.parent
+    parent.current_image = 3  # same image: no load path needed
+    parent.aoi_controller.aoi_index_to_visible_index = {2: 1}
+    controller._zoom_to_aoi = MagicMock()
+
+    controller.on_aoi_clicked(3, 2, _aoi())
+
+    parent.aoi_controller.select_aoi.assert_called_once_with(2, 1)
+    controller._zoom_to_aoi.assert_called_once()
+
+
+def test_gallery_click_syncs_selection_with_unmapped_visible_index(controller):
+    parent = controller.parent
+    parent.current_image = 0
+    parent.aoi_controller.aoi_index_to_visible_index = {}
+    controller._zoom_to_aoi = MagicMock()
+
+    controller.on_aoi_clicked(0, 5, _aoi())
+
+    parent.aoi_controller.select_aoi.assert_called_once_with(5, -1)

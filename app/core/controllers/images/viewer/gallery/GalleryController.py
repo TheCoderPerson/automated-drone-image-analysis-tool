@@ -791,6 +791,15 @@ class GalleryController:
                 # Same image - zoom immediately
                 self._zoom_to_aoi(aoi_data)
 
+            # Sync the single-image AOI selection: everything keyed to it
+            # (the GPS-map marker, the on-image overlay) never followed
+            # gallery clicks because only the gallery's own model selection
+            # was updated. select_aoi tolerates the sidebar list not being
+            # populated in gallery mode (visible_index -1 skips styling).
+            if hasattr(self.parent, 'aoi_controller'):
+                visible_index = self.parent.aoi_controller.aoi_index_to_visible_index.get(aoi_idx, -1)
+                self.parent.aoi_controller.select_aoi(aoi_idx, visible_index)
+
         except Exception as e:
             self.logger.error(f"Error handling AOI click: {e}")
             self.logger.error(traceback.format_exc())
