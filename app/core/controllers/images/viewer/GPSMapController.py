@@ -118,6 +118,8 @@ class GPSMapController(QObject):
             self.map_dialog = GPSMapDialog(self.parent, self.gps_data, current_gps_index, offline_only=offline_only)
             self.map_dialog.image_selected.connect(self.on_map_image_selected)
             self.map_dialog.gps_right_clicked.connect(self.on_map_gps_clicked)
+            self.map_dialog.aoi_marker_moved.connect(self.on_aoi_marker_moved)
+            self.map_dialog.aoi_reset_requested.connect(self.on_aoi_reset_requested)
             if hasattr(self.map_dialog, 'pod_display_changed'):
                 self.map_dialog.pod_display_changed.connect(self.on_pod_display_changed)
             if hasattr(self.map_dialog, 'canopy_download_requested'):
@@ -1206,3 +1208,92 @@ class GPSMapController(QObject):
             identifier_color = self.parent.settings.get('identifier_color', [255, 255, 0])
 
             self.map_dialog.update_aoi_marker(aoi_gps, identifier_color)
+
+    def _resolve_marker_aoi(self):
+        """Return the AOI dict behind the displayed marker, or None.
+
+        Resolves through the marker's own metadata (image_index/aoi_index)
+        rather than live viewer state, so a selection change racing the drag
+        cannot corrupt a different AOI.
+        """
+        view = self.map_dialog.map_view if self.map_dialog else None
+        aoi_data = getattr(view, 'aoi_data', None)
+        if not aoi_data:
+            return None
+        image_index = aoi_data.get('image_index', self.parent.current_image)
+        aoi_index = aoi_data.get('aoi_index', -1)
+        if aoi_index is None or aoi_index < 0:
+            return None
+        try:
+            image = self.parent.images[image_index]
+            return image['areas_of_interest'][aoi_index]
+        except (IndexError, KeyError, TypeError):
+            return None
+
+    def _store_user_aoi_position(self, aoi, lat, lon):
+        """Write (or clear, when lat/lon are None) an AOI's user-corrected
+        GPS position on the dict and its backing XML element, save the result
+        file, and redraw the marker from the stored state."""
+        xml_element = aoi.get('xml')
+        if lat is None or lon is None:
+            aoi.pop('user_latitude', None)
+            aoi.pop('user_longitude', None)
+            if xml_element is not None:
+                xml_element.attrib.pop('user_latitude', None)
+                xml_element.attrib.pop('user_longitude', None)
+        else:
+            aoi['user_latitude'] = lat
+            aoi['user_longitude'] = lon
+            if xml_element is not None:
+                xml_element.set('user_latitude', str(lat))
+                xml_element.set('user_longitude', str(lon))
+        try:
+            self.parent.xml_service.save_xml_file(self.parent.xml_path)
+        except Exception as e:
+            self.logger.error(f"Failed to save AOI position correction: {e}")
+        self.update_aoi_on_map()
+
+    def on_aoi_marker_moved(self, lat, lon):
+        """Confirm and persist an AOI position the user dragged on the map.
+
+        Declining snaps the marker back to where it was; accepting stores
+        the position on the AOI so the marker, viewer labels, and exports
+        all use the corrected coordinates from then on.
+        """
+        view = self.map_dialog.map_view if self.map_dialog else None
+        aoi = self._resolve_marker_aoi()
+        if view is None or view.aoi_data is None:
+            return
+        if aoi is None:
+            view.reset_aoi_marker_position()
+            return
+        old = view.aoi_data
+        dlat_m = (lat - old['latitude']) * 111320
+        dlon_m = (lon - old['longitude']) * 111320 * math.cos(math.radians(lat))
+        dist_m = math.sqrt(dlat_m * dlat_m + dlon_m * dlon_m)
+        resp = QMessageBox.question(
+            self.map_dialog,
+            self.tr("Update AOI Location?"),
+            self.tr("Move this AOI to {lat:.6f}, {lon:.6f}?\n\n"
+                    "That is {dist:.1f} m from its previous position. The "
+                    "corrected location is saved with the results and used "
+                    "for exports.").format(lat=lat, lon=lon, dist=dist_m),
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.Yes)
+        if resp != QMessageBox.StandardButton.Yes:
+            view.reset_aoi_marker_position()
+            return
+        self._store_user_aoi_position(aoi, float(lat), float(lon))
+        if hasattr(self.parent, 'status_controller'):
+            self.parent.status_controller.show_toast(
+                self.tr("AOI location updated"), 3000)
+
+    def on_aoi_reset_requested(self):
+        """Clear a user-corrected AOI position back to the computed estimate."""
+        aoi = self._resolve_marker_aoi()
+        if aoi is None:
+            return
+        self._store_user_aoi_position(aoi, None, None)
+        if hasattr(self.parent, 'status_controller'):
+            self.parent.status_controller.show_toast(
+                self.tr("AOI location reset to the computed estimate"), 3000)

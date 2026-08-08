@@ -50,7 +50,7 @@ class AOIGPSResult:
     """Result of AOI GPS calculation with metadata."""
     latitude: float
     longitude: float
-    elevation_source: str  # 'terrain', 'flat', 'refined', 'refined_terrain', or 'error'
+    elevation_source: str  # 'terrain', 'flat', 'refined', 'refined_terrain', 'user', or 'error'
     terrain_elevation_m: Optional[float] = None
     effective_agl_m: Optional[float] = None
     geoid_correction_m: Optional[float] = None
@@ -121,6 +121,21 @@ class AOIService:
             AOIGPSResult or None: Result with coordinates and metadata, or None if not calculable.
         """
         try:
+            # --- User-corrected path: a hand-placed position wins outright ---
+            # The user dragged this AOI's marker to its true location on the
+            # map (satellite imagery), which overrides any computed estimate.
+            user_lat = aoi.get('user_latitude')
+            user_lon = aoi.get('user_longitude')
+            if user_lat is not None and user_lon is not None:
+                try:
+                    return AOIGPSResult(
+                        latitude=float(user_lat),
+                        longitude=float(user_lon),
+                        elevation_source='user',
+                    )
+                except (TypeError, ValueError):
+                    pass  # malformed override - fall through to the estimate
+
             # --- Refined path: user-aligned FOV corners bypass the metadata ---
             # When the user has manually aligned the image to satellite imagery,
             # the alignment is independent of the (possibly wrong) gimbal/GPS

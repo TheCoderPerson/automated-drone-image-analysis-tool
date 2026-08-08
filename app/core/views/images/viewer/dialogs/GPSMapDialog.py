@@ -28,6 +28,12 @@ class GPSMapDialog(TranslationMixin, QDialog):
     # Signal emitted when user right-clicks on the map (lat, lon)
     gps_right_clicked = Signal(float, float)
 
+    # Signal emitted when the AOI marker is dragged to a new position (lat, lon)
+    aoi_marker_moved = Signal(float, float)
+
+    # Signal emitted when the user asks to clear a user-corrected AOI position
+    aoi_reset_requested = Signal()
+
     # Signal emitted when the POD overlay display changes (enabled, mode, opacity 0-100)
     pod_display_changed = Signal(bool, str, int)
 
@@ -84,6 +90,8 @@ class GPSMapDialog(TranslationMixin, QDialog):
         self.map_view = GPSMapView(self, offline_only=self.offline_only)
         self.map_view.point_clicked.connect(self.on_point_clicked)
         self.map_view.gps_right_clicked.connect(self.gps_right_clicked.emit)
+        self.map_view.aoi_marker_moved.connect(self.aoi_marker_moved.emit)
+        self.map_view.aoi_reset_requested.connect(self.aoi_reset_requested.emit)
 
         # Connect to tile error signals
         self.map_view.tile_loader.tile_error.connect(self.on_tile_error)
@@ -176,7 +184,9 @@ class GPSMapDialog(TranslationMixin, QDialog):
         controls_layout.addStretch()
 
         # Help text
-        help_label = QLabel(self.tr("Click point to select • Drag to pan • Scroll to zoom"))
+        help_label = QLabel(self.tr(
+            "Click point to select • Drag to pan • Scroll to zoom • "
+            "Drag AOI marker to correct its location"))
         help_label.setStyleSheet("font-size: 10px; color: gray;")
         controls_layout.addWidget(help_label)
 
