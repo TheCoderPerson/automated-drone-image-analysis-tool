@@ -39,6 +39,10 @@ from core.services.shadow.SolarPosition import (
     get_solar_position,
     resolve_capture_utc,
 )
+from core.services.waldo.WaldoTriggerLog import (
+    TRIGGER_MIN_CHRONOLOGY_FRACTION,
+    WaldoTriggerLogService,
+)
 
 
 WALDO_NAMESPACE_URI = "http://adiat.io/ns/waldo/1.0/"
@@ -49,7 +53,14 @@ WALDO_NAMESPACE_URI = "http://adiat.io/ns/waldo/1.0/"
 # (catches datasets whose post-flight software re-orients the frames).
 # Version 7 also retires v6's sun-shadow orientation measurement: on steep
 # terrain at low sun, slope shear and charred fallen logs mislead it.
-WALDO_PROCESSOR_VERSION = "7"
+# Version 8: per-image headings come from the WALDO *_Triggers.kml capture
+# log when one is found near the images. Timestamp-derived headings flip
+# ~180 deg on the first image of each serpentine lane (the >30 s turn gap
+# starves the bearing pass and the fill then copies the OPPOSITE lane's
+# heading - 15 of 1464 images on field data), and cannot handle frames
+# re-flown in the opposite direction. The bump restamps existing datasets
+# so those images get corrected on their next open.
+WALDO_PROCESSOR_VERSION = "8"
 
 DRONE_DJI_NS = "http://www.dji.com/drone-dji/1.0/"
 
@@ -113,6 +124,7 @@ class WaldoProcessResult:
     skipped: int = 0  # non-WALDO files
     errors: List[Tuple[str, str]] = field(default_factory=list)
     warnings: List[str] = field(default_factory=list)
+    notes: List[str] = field(default_factory=list)  # informational, non-warning
     cancelled: bool = False
 
 
@@ -689,6 +701,68 @@ class WaldoMetadataService:
                     r.heading_deg = heading
 
     # ------------------------------------------------------------------
+    # Trigger-log heading override
+    # ------------------------------------------------------------------
+
+    def _apply_trigger_log_headings(self, records: List[WaldoImageRecord],
+                                    result: WaldoProcessResult):
+        """Replace GPS/timestamp-derived headings with trigger-log headings.
+
+        Runs AFTER derive_headings so the comparison can report how many
+        images the log corrected; the log wins wherever it matches. A log
+        whose document order contradicts the EXIF timestamps is rejected
+        (it would flip serpentine lanes instead of fixing them). Failures
+        never abort the pass - the timestamp-derived headings remain.
+        """
+        try:
+            trigger_service = WaldoTriggerLogService()
+            found = trigger_service.discover(records)
+            if found is None:
+                return
+            kml_path, triggers = found
+            kml_name = os.path.basename(kml_path)
+
+            chrono = WaldoTriggerLogService.chronology_fraction(triggers, records)
+            if chrono is not None and chrono < TRIGGER_MIN_CHRONOLOGY_FRACTION:
+                result.warnings.append(
+                    f"{kml_name}: trigger order disagrees with image timestamps "
+                    f"({chrono:.0%} consistent) - the log was ignored for headings."
+                )
+                return
+
+            headings = WaldoTriggerLogService.headings_by_name(triggers)
+            applied = 0
+            corrected = 0
+            for rec in records:
+                tname = WaldoTriggerLogService.image_trigger_name(rec.name)
+                heading = headings.get(tname) if tname else None
+                if heading is None:
+                    continue
+                if rec.heading_deg is not None:
+                    diff = abs((rec.heading_deg - heading + 180.0) % 360.0 - 180.0)
+                    if diff > 90.0:
+                        corrected += 1
+                        self.logger.info(
+                            f"WALDO trigger log corrected {rec.name}: "
+                            f"{rec.heading_deg:.1f} -> {heading:.1f} deg")
+                rec.heading_deg = heading
+                applied += 1
+
+            result.notes.append(
+                f"Trigger log {kml_name}: flight direction applied to "
+                f"{applied} of {len(records)} image(s)."
+            )
+            if corrected:
+                result.warnings.append(
+                    f"{kml_name}: corrected the flight direction of {corrected} "
+                    f"image(s) by more than 90 degrees (serpentine lane starts / "
+                    f"re-flown frames). AOI positions on those images were "
+                    f"unreliable in analyses run before this pass."
+                )
+        except Exception as e:
+            self.logger.warning(f"WALDO trigger-log pass failed: {e}")
+
+    # ------------------------------------------------------------------
     # Public folder pipeline
     # ------------------------------------------------------------------
 
@@ -771,6 +845,13 @@ class WaldoMetadataService:
         #    runs in milliseconds even for thousands of records).
         emit(0, 0, "Deriving plane heading from GPS track...")
         self.derive_headings(records)
+
+        # 3a. Trigger-log override: WALDO's *_Triggers.kml lists every
+        #     trigger in CAPTURE order with its position - authoritative for
+        #     flight direction where timestamp sorting fails (serpentine
+        #     lane starts, frames re-flown the opposite way, clock faults).
+        emit(0, 0, "Looking for WALDO trigger log (*_Triggers.kml)...")
+        self._apply_trigger_log_headings(records, result)
 
         # 3b. Measure the stored image orientation per camera by comparing
         #     inter-frame content motion against the GPS track. Post-flight
