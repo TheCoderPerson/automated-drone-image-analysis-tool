@@ -16,6 +16,7 @@ from typing import Any, Dict, List, Union
 from PySide6.QtCore import QSettings
 
 from core.services.LoggerService import LoggerService
+from core.services.export.PhotoPayload import encode_photo
 
 
 class CalTopoService:
@@ -550,13 +551,11 @@ class CalTopoService:
             tuple: (success: bool, media_object_id: str or None)
         """
         try:
-            with open(photo_path, 'rb') as image_file:
-                base64_data = base64.b64encode(image_file.read()).decode('utf-8')
+            base64_data, filename = encode_photo(photo_path, logger=self.logger)
         except OSError as e:
             self.logger.error(f"Could not read photo {photo_path}: {e}")
             return False, None
 
-        filename = os.path.basename(photo_path)
         media_id = str(uuid.uuid4())
 
         # Step 1: register the media object.

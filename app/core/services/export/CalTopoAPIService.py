@@ -17,6 +17,7 @@ from typing import Dict, Optional, Tuple
 from urllib.parse import urlencode
 
 from core.services.LoggerService import LoggerService
+from core.services.export.PhotoPayload import encode_photo
 
 # CalTopo hands out the credential secret as base64. Some consoles/clients hand
 # it back in the URL-safe alphabet, so accept that too rather than failing on a
@@ -354,9 +355,9 @@ class CalTopoAPIService:
             tuple: (success: bool, media_object_id: str or None)
         """
         try:
-            # Read and encode image
-            with open(photo_path, "rb") as img_file:
-                base64_data = base64.b64encode(img_file.read()).decode()
+            # Read and encode image, capping camera-sized originals (see
+            # PhotoPayload: base64 plus form-encoding inflates a file by ~43%).
+            base64_data, filename = encode_photo(photo_path, logger=self.logger)
 
             # Generate media ID
             media_id = str(uuid.uuid4())
@@ -365,7 +366,7 @@ class CalTopoAPIService:
             media_metadata_payload = {
                 "properties": {
                     "creator": team_id,
-                    "filename": os.path.basename(photo_path)
+                    "filename": filename
                 }
             }
             endpoint = f"/api/v1/media/{media_id}"
@@ -391,7 +392,7 @@ class CalTopoAPIService:
                 "properties": {
                     "parentId": f"Marker:{marker_id}" if marker_id else "",
                     "backendMediaId": media_id,
-                    "title": title or os.path.basename(photo_path),
+                    "title": title or filename,
                     "heading": None,
                     "description": description,
                     "marker-symbol": "aperture",
