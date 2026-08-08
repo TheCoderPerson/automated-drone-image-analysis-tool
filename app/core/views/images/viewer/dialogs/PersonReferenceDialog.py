@@ -363,6 +363,13 @@ class PersonReferenceDialog(TranslationMixin, QDialog):
         self.sun_label.setWordWrap(True)
         self.sun_label.setStyleSheet("QLabel { color: gray; }")
 
+        # WALDO imagery: the camera clock is corrected via stamped metadata;
+        # when the rendered shadow reveals a wrong correction, this is the
+        # place the operator notices - offer the amendment right here.
+        # (Visibility is decided in _update_sun_label, after the image loads.)
+        self.adjust_clock_button = QPushButton(self.tr("Adjust camera clock..."))
+        self.adjust_clock_button.setVisible(False)
+
         instructions = QLabel(self.tr(
             "Drag the white handle to position the reference person. "
             "Silhouettes are drawn at true ground scale for this image's "
@@ -375,6 +382,7 @@ class PersonReferenceDialog(TranslationMixin, QDialog):
         self.recenter_button = QPushButton(self.tr("Recenter"))
         self.close_button = QPushButton(self.tr("Close"))
         button_row.addWidget(self.recenter_button)
+        button_row.addWidget(self.adjust_clock_button)
         button_row.addStretch()
         button_row.addWidget(self.close_button)
 
@@ -400,7 +408,58 @@ class PersonReferenceDialog(TranslationMixin, QDialog):
         self.rotation_spin.valueChanged.connect(self._on_rotation_changed)
         self.color_button.clicked.connect(self._on_color_button_clicked)
         self.recenter_button.clicked.connect(self._recenter)
+        self.adjust_clock_button.clicked.connect(self._on_adjust_clock)
         self.close_button.clicked.connect(self.close)
+
+    def _is_waldo_image(self) -> bool:
+        try:
+            from core.services.waldo import WaldoMetadataService
+            return (self.image_path is not None
+                    and WaldoMetadataService.is_waldo_image(self.image_path) is not None)
+        except Exception:
+            return False
+
+    def _on_adjust_clock(self):
+        """Open the clock-correction dialog for this image's folder.
+
+        Prefilled from the currently stamped correction when one exists,
+        else from fresh fault detection. After an apply, the sun position
+        and shadows re-render with the corrected time.
+        """
+        import glob as _glob
+        import os as _os
+        from core.services.waldo import WaldoMetadataService, WaldoClockDecisions
+        from core.views.images.viewer.dialogs.WaldoClockCorrectionDialog import (
+            WaldoClockCorrectionDialog,
+        )
+        try:
+            folder = _os.path.dirname(self.image_path)
+            paths = [p for p in sorted(_glob.glob(_os.path.join(folder, '*.jpg')))
+                     if WaldoMetadataService.is_waldo_image(p) is not None]
+            if not paths:
+                return
+            service = WaldoMetadataService(terrain_service=None)
+            proposal = (service.propose_amendment(paths)
+                        or service.propose_clock_correction(paths))
+            if proposal is None:
+                self.sun_label.setText(self.tr(
+                    "No camera clock fault or applied correction was found "
+                    "for this folder."))
+                return
+            dialog = WaldoClockCorrectionDialog(self, service, paths, proposal)
+            dialog.exec()
+            if dialog.applied:
+                if dialog.remember_choice:
+                    WaldoClockDecisions.store_decision(
+                        WaldoClockDecisions.folder_key_for(paths[0]),
+                        {'decision': 'accepted',
+                         'face_shift_h': dialog.accepted_face_shift_h,
+                         'tz_text': dialog.accepted_tz_text})
+                self._resolve_sun()
+                self._update_sun_label()
+                self._on_params_changed()
+        except Exception as e:
+            LoggerService().error(f"PersonReferenceDialog: clock adjustment failed - {e}")
 
     def showEvent(self, event):
         super().showEvent(event)
@@ -533,6 +592,7 @@ class PersonReferenceDialog(TranslationMixin, QDialog):
 
     def _update_sun_label(self):
         """Refresh the sun-info line and enable/disable the shadow toggle."""
+        self.adjust_clock_button.setVisible(self._is_waldo_image())
         if self.sun_elev is not None and self.sun_elev > 0:
             text = self.tr(
                 "Sun at capture: {elev:.0f}° above horizon, "

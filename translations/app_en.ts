@@ -5736,8 +5736,8 @@ The map will continue to work with cached tiles where available.</translation>
         <translation>Copy Data</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/widgets/GPSMapView.py" line="1770"/>
-        <location filename="../app/core/views/images/viewer/widgets/GPSMapView.py" line="1878"/>
+        <location filename="../app/core/views/images/viewer/widgets/GPSMapView.py" line="1777"/>
+        <location filename="../app/core/views/images/viewer/widgets/GPSMapView.py" line="1888"/>
         <source>Zoom FOV</source>
         <translation>Zoom FOV</translation>
     </message>
@@ -10299,97 +10299,107 @@ Expected to find files named:
         <translation>Color:</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="367"/>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="370"/>
+        <source>Adjust camera clock...</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="374"/>
         <source>Drag the white handle to position the reference person. Silhouettes are drawn at true ground scale for this image&apos;s altitude and camera angle.</source>
         <translation>Drag the white handle to position the reference person. Silhouettes are drawn at true ground scale for this image&apos;s altitude and camera angle.</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="375"/>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="382"/>
         <source>Recenter</source>
         <translation>Recenter</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="376"/>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="383"/>
         <source>Close</source>
         <translation>Close</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="431"/>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="446"/>
+        <source>No camera clock fault or applied correction was found for this folder.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="490"/>
         <source>Perspective overlay unavailable: this image is missing the altitude or lens metadata needed to project a person.</source>
         <translation>Perspective overlay unavailable: this image is missing the altitude or lens metadata needed to project a person.</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="486"/>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="545"/>
         <source>Zoomed to the reference person: at this altitude a person spans only a few pixels.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="502"/>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="561"/>
         <source>no image loaded</source>
         <translation>no image loaded</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="507"/>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="566"/>
         <source>image metadata could not be read</source>
         <translation>image metadata could not be read</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="511"/>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="570"/>
         <source>image has no GPS coordinates</source>
         <translation>image has no GPS coordinates</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="523"/>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="582"/>
         <source>capture time / timezone not in metadata</source>
         <translation>capture time / timezone not in metadata</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="529"/>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="588"/>
         <source>sun position could not be computed</source>
         <translation>sun position could not be computed</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="538"/>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="598"/>
         <source>Sun at capture: {elev:.0f}° above horizon, azimuth {az:.0f}°.</source>
         <translation>Sun at capture: {elev:.0f}° above horizon, azimuth {az:.0f}°.</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="543"/>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="603"/>
         <source>Capture time zone estimated from GPS location.</source>
         <translation>Capture time zone estimated from GPS location.</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="546"/>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="606"/>
         <source>Using repaired capture time (camera clock fault).</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="551"/>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="611"/>
         <source>the sun was below the horizon at capture</source>
         <translation>the sun was below the horizon at capture</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="553"/>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="613"/>
         <source>sun position unavailable</source>
         <translation>sun position unavailable</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="554"/>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="614"/>
         <source>Shadow unavailable: {reason}.</source>
         <translation>Shadow unavailable: {reason}.</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="653"/>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="713"/>
         <source>Place the person and shadow on the DEM terrain surface</source>
         <translation>Place the person and shadow on the DEM terrain surface</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="657"/>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="717"/>
         <source>Terrain (DEM) data is not available for this image</source>
         <translation>Terrain (DEM) data is not available for this image</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="917"/>
+        <location filename="../app/core/views/images/viewer/dialogs/PersonReferenceDialog.py" line="977"/>
         <source>Choose Overlay Color</source>
         <translation>Choose Overlay Color</translation>
     </message>

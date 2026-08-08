@@ -122,3 +122,51 @@ def test_decline_without_remember_is_not_persisted(monkeypatch, tmp_path):
     controller._offer_clock_correction(
         [str(tmp_path / "0_a.jpg")], _proposal(), service=_StubService())
     assert CLOCK_DECISIONS_SETTING not in controller.settings_service.values
+
+
+class _AmendStubService:
+    """No live fault, but a stamped correction that fails the sanity check."""
+
+    def __init__(self, suspect_reason, amend_proposal):
+        self.suspect_reason = suspect_reason
+        self.amend_proposal = amend_proposal
+
+    def stamped_correction_suspect(self, paths):
+        return self.suspect_reason
+
+    def propose_amendment(self, paths):
+        return self.amend_proposal
+
+
+def test_suspect_stamp_triggers_amendment_despite_stored_acceptance(monkeypatch, tmp_path):
+    """A physically impossible applied correction must re-ask, not silently
+    re-apply the remembered (wrong) values."""
+    controller = _make_controller(monkeypatch)
+    paths = [str(tmp_path / "0_a.jpg")]
+    import os
+    folder_key = os.path.normcase(os.path.abspath(str(tmp_path)))
+    controller.settings_service.values[CLOCK_DECISIONS_SETTING] = json.dumps({
+        folder_key: {'decision': 'accepted', 'face_shift_h': -12,
+                     'tz_text': 'America/Los_Angeles'}})
+    _FakeDialog.script = {'applied': True, 'remember': True,
+                          'face_shift': 0, 'tz_text': 'UTC'}
+    service = _AmendStubService("0_a.jpg: sun below horizon on daylight image",
+                                _proposal())
+    controller._offer_clock_correction(paths, None, service=service)
+
+    assert len(_FakeDialog.instances) == 1
+    dlg = _FakeDialog.instances[0]
+    assert dlg.auto_apply is False  # never silently re-apply suspect values
+    assert "sun below horizon" in dlg.proposal.evidence[0]
+    # The new choice replaces the stored decision.
+    stored = json.loads(controller.settings_service.values[CLOCK_DECISIONS_SETTING])
+    assert stored[folder_key] == {'decision': 'accepted', 'face_shift_h': 0,
+                                  'tz_text': 'UTC'}
+
+
+def test_no_proposal_and_healthy_stamp_stays_quiet(monkeypatch, tmp_path):
+    controller = _make_controller(monkeypatch)
+    service = _AmendStubService(None, None)
+    controller._offer_clock_correction(
+        [str(tmp_path / "0_a.jpg")], None, service=service)
+    assert _FakeDialog.instances == []
