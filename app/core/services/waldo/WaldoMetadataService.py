@@ -27,6 +27,7 @@ import re
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 from typing import Callable, Dict, List, Optional, Tuple
+from zoneinfo import ZoneInfo
 
 import cv2
 import numpy as np
@@ -38,6 +39,7 @@ from core.services.shadow.SolarPosition import (
     SolarTimeUnresolvable,
     get_solar_position,
     resolve_capture_utc,
+    timezone_name_for_position,
 )
 from core.services.waldo.WaldoTriggerLog import (
     TRIGGER_MIN_CHRONOLOGY_FRACTION,
@@ -63,6 +65,13 @@ WALDO_NAMESPACE_URI = "http://adiat.io/ns/waldo/1.0/"
 WALDO_PROCESSOR_VERSION = "8"
 
 DRONE_DJI_NS = "http://www.dji.com/drone-dji/1.0/"
+
+# Clock-correction XMP fields (waldo namespace). The EXIF timestamps are
+# never modified: the corrected UTC lives alongside them, and consumers
+# (SolarPosition.resolve_capture_utc) prefer it when present.
+CLOCK_CORRECTED_UTC_XMP = "CaptureUtcCorrected"
+CLOCK_FACE_SHIFT_XMP = "ClockFaceShiftHours"
+CLOCK_TIMEZONE_XMP = "ClockTimeZone"
 
 # Heading-derivation tunables
 STATIONARY_THRESHOLD_M = 5.0
@@ -126,6 +135,22 @@ class WaldoProcessResult:
     warnings: List[str] = field(default_factory=list)
     notes: List[str] = field(default_factory=list)  # informational, non-warning
     cancelled: bool = False
+
+
+@dataclass
+class ClockCorrectionProposal:
+    """A detected camera-clock fault plus the correction offered to the user.
+
+    Built by propose_clock_correction; the operator confirms (and may edit)
+    the values before apply_clock_correction stamps anything.
+    """
+    face_shift_h: int                 # hours to ADD to the clock face (e.g. -12)
+    tz_name: Optional[str]            # IANA zone from GPS (DST-correct), if known
+    fixed_offset_h: Optional[float]   # fallback UTC offset when no zone found
+    evidence: List[str]               # human-readable findings behind the proposal
+    sample_name: str                  # image the preview line is built from
+    sample_face: str                  # its raw EXIF DateTimeOriginal
+    sample_corrected_utc: str         # its corrected time, ISO 8601 UTC
 
 
 class WaldoMetadataService:
@@ -395,6 +420,16 @@ class WaldoMetadataService:
     AUDIT_MTIME_SLACK_S = 3600.0    # claimed capture this far after file-write is impossible
     AUDIT_DAYLIGHT_BRIGHTNESS = 45  # mean pixel value that cannot be a night exposure
 
+    # A file can never be written BEFORE it was captured, so any claimed
+    # capture time ahead of the file's mtime proves the clock runs ahead
+    # (mtime survives Windows copies). The margin only needs to clear copy
+    # jitter: the flip MAGNITUDE cannot be read from mtime because the
+    # post-flight download delay offsets it (field data: a 12 h flip showed
+    # as just 28 min ahead after a ~10 h download delay). The 12-hour AM/PM
+    # flip is proposed as the known-fault default and the operator confirms
+    # it against the preview.
+    CLOCK_AHEAD_MIN_H = 0.1
+
     @staticmethod
     def _parse_offset_hours(raw) -> Optional[float]:
         """Parse an EXIF OffsetTime like '-06:00' into hours, or None."""
@@ -432,6 +467,10 @@ class WaldoMetadataService:
         sampled = paths[:self.AUDIT_SAMPLE_FILES]
         for path in sampled:
             name = os.path.basename(path)
+            if self.get_corrected_utc_stamp(path):
+                # An operator-confirmed clock correction is stamped on this
+                # image: the EXIF faults below are known and already repaired.
+                continue
             try:
                 exif = MetaDataHelper.get_exif_data_piexif(path)
                 exif_ifd = exif.get('Exif', {})
@@ -498,6 +537,213 @@ class WaldoMetadataService:
                 seen_kinds.add(kind)
                 deduped.append(w)
         return deduped
+
+    # ------------------------------------------------------------------
+    # Clock correction (operator-confirmed, non-destructive)
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def get_corrected_utc_stamp(image_path: str) -> Optional[str]:
+        """Return the stamped corrected-UTC string for an image, or None."""
+        try:
+            xmp = MetaDataHelper.get_xmp_data_merged(image_path) or {}
+        except Exception:
+            return None
+        for key in (f'waldo:{CLOCK_CORRECTED_UTC_XMP}', CLOCK_CORRECTED_UTC_XMP,
+                    f'XMP-waldo:{CLOCK_CORRECTED_UTC_XMP}'):
+            value = xmp.get(key)
+            if value:
+                return str(value)
+        return None
+
+    @staticmethod
+    def _parse_exif_face_time(exif: dict) -> Optional[datetime]:
+        """Raw DateTimeOriginal (+ subseconds) as a NAIVE datetime.
+
+        Unlike _parse_exif_timestamp this deliberately ignores OffsetTime:
+        the clock correction reinterprets the face reading from scratch, and
+        the stamped offset is part of what is broken.
+        """
+        exif_ifd = exif.get('Exif') or {}
+        dt_raw = exif_ifd.get(piexif.ExifIFD.DateTimeOriginal)
+        if dt_raw is None:
+            return None
+        try:
+            dt_str = dt_raw.decode('utf-8') if isinstance(dt_raw, bytes) else str(dt_raw)
+            dt = datetime.strptime(dt_str.strip(), "%Y:%m:%d %H:%M:%S")
+        except Exception:
+            return None
+        sub_raw = exif_ifd.get(piexif.ExifIFD.SubSecTimeOriginal)
+        if sub_raw is not None:
+            try:
+                sub_str = (sub_raw.decode('utf-8') if isinstance(sub_raw, bytes)
+                           else str(sub_raw)).strip()
+                if sub_str:
+                    dt = dt.replace(microsecond=int(round(float("0." + sub_str) * 1_000_000)))
+            except Exception:
+                pass
+        return dt
+
+    @staticmethod
+    def compute_corrected_utc(face_dt: datetime, face_shift_h: float,
+                              tz_name: Optional[str],
+                              fixed_offset_h: Optional[float]) -> datetime:
+        """Corrected capture time: shift the clock face, then localise.
+
+        The shifted face reading is interpreted in the TRUE timezone (IANA
+        zone when known - DST-correct for the date - else a fixed offset)
+        and converted to UTC. Raises ValueError when neither timezone form
+        is usable.
+        """
+        shifted = face_dt + timedelta(hours=face_shift_h)
+        if tz_name:
+            try:
+                return shifted.replace(tzinfo=ZoneInfo(tz_name)).astimezone(timezone.utc)
+            except Exception:
+                pass  # unknown zone / no tzdata: fall through to fixed offset
+        if fixed_offset_h is not None:
+            tz = timezone(timedelta(hours=fixed_offset_h))
+            return shifted.replace(tzinfo=tz).astimezone(timezone.utc)
+        raise ValueError("No usable timezone for clock correction")
+
+    def propose_clock_correction(self, paths: List[str]) -> Optional[ClockCorrectionProposal]:
+        """Detect the known clock-fault signature and build a correction offer.
+
+        Fires when a sampled image shows a PROVABLE clock symptom:
+        - the stamped timezone disagrees with the GPS longitude, and/or
+        - the claimed capture time is AFTER the file was written (a file
+          cannot predate its capture; mtime survives Windows copies).
+
+        The proposed face shift is the 12-hour AM/PM flip only when the
+        ahead-proof exists; a timezone mismatch alone proposes a pure zone
+        fix (face shift 0) and the operator adds the flip after checking
+        the preview against the real flight window - the flip magnitude is
+        not measurable from a zone mismatch. NOTE: any XMP write (including
+        the pre-pass itself) resets mtime and destroys the ahead-proof, so
+        detection must run on a folder BEFORE it is first stamped.
+
+        Images already carrying a corrected stamp never fire. Returns None
+        when no provable symptom is present (correcting an unknown fault
+        would be guessing).
+        """
+        for path in paths[:self.AUDIT_SAMPLE_FILES]:
+            name = os.path.basename(path)
+            try:
+                if self.get_corrected_utc_stamp(path):
+                    continue
+                exif = MetaDataHelper.get_exif_data_piexif(path)
+                face_dt = self._parse_exif_face_time(exif)
+                gps = LocationInfo.get_gps(exif_data=exif)
+                offset_h = self._parse_offset_hours(
+                    exif.get('Exif', {}).get(piexif.ExifIFD.OffsetTimeOriginal)
+                    or exif.get('Exif', {}).get(piexif.ExifIFD.OffsetTime))
+                if face_dt is None or gps is None or offset_h is None:
+                    continue
+
+                solar_offset = gps['longitude'] / 15.0
+                tz_mismatch = abs(offset_h - solar_offset) > self.AUDIT_TZ_TOLERANCE_H
+
+                claimed_utc = (face_dt.replace(tzinfo=timezone.utc)
+                               - timedelta(hours=offset_h))
+                mtime_utc = datetime.fromtimestamp(os.path.getmtime(path), tz=timezone.utc)
+                ahead_h = (claimed_utc - mtime_utc).total_seconds() / 3600.0
+                clock_ahead = ahead_h > self.CLOCK_AHEAD_MIN_H
+
+                if not (tz_mismatch or clock_ahead):
+                    continue
+
+                tz_name = timezone_name_for_position(gps['latitude'], gps['longitude'])
+                fixed_offset_h = round(solar_offset)
+                face_shift_h = -12 if clock_ahead else 0
+
+                evidence = []
+                if tz_mismatch:
+                    evidence.append(
+                        f"Stamped timezone is UTC{offset_h:+.0f} but the GPS "
+                        f"longitude implies about UTC{solar_offset:+.1f}.")
+                if clock_ahead:
+                    evidence.append(
+                        f"Claimed capture time is {ahead_h * 60.0:.0f} min AFTER the "
+                        f"file was written - impossible, so the clock runs ahead. A "
+                        f"12-hour AM/PM flip offset by the post-flight download delay "
+                        f"produces exactly this.")
+                else:
+                    evidence.append(
+                        "The clock face itself may additionally carry a 12-hour AM/PM "
+                        "error that cannot be proven from these files - check the "
+                        "corrected time below against when the flight actually flew "
+                        "and adjust the face error if needed.")
+
+                corrected = self.compute_corrected_utc(
+                    face_dt, face_shift_h, tz_name, fixed_offset_h)
+                return ClockCorrectionProposal(
+                    face_shift_h=face_shift_h,
+                    tz_name=tz_name,
+                    fixed_offset_h=fixed_offset_h,
+                    evidence=evidence,
+                    sample_name=name,
+                    sample_face=face_dt.strftime("%Y:%m:%d %H:%M:%S"),
+                    sample_corrected_utc=corrected.strftime("%Y-%m-%d %H:%M:%S UTC"),
+                )
+            except Exception as e:
+                self.logger.warning(f"Clock-correction detection failed for {name}: {e}")
+        return None
+
+    def apply_clock_correction(
+        self,
+        image_paths: List[str],
+        face_shift_h: float,
+        tz_name: Optional[str] = None,
+        fixed_offset_h: Optional[float] = None,
+        progress_cb: Optional[Callable[[int, int, str], None]] = None,
+        cancel_cb: Optional[Callable[[], bool]] = None,
+    ) -> WaldoProcessResult:
+        """Stamp a corrected capture UTC on every WALDO image.
+
+        Non-destructive: EXIF stays untouched; the correction lives in the
+        waldo XMP namespace and is preferred by resolve_capture_utc. Images
+        whose stamp already matches are skipped, so re-running is cheap and
+        idempotent.
+        """
+        result = WaldoProcessResult()
+        cancel_cb = cancel_cb or (lambda: False)
+        total = len(image_paths)
+        for i, path in enumerate(image_paths):
+            if cancel_cb():
+                result.cancelled = True
+                break
+            name = os.path.basename(path)
+            if progress_cb is not None:
+                try:
+                    progress_cb(i + 1, total, f"Correcting capture time {i + 1}/{total}: {name}")
+                except Exception:
+                    pass
+            if self.is_waldo_image(path) is None:
+                result.skipped += 1
+                continue
+            try:
+                exif = MetaDataHelper.get_exif_data_piexif(path)
+                face_dt = self._parse_exif_face_time(exif)
+                if face_dt is None:
+                    result.errors.append((name, "No DateTimeOriginal to correct"))
+                    continue
+                corrected = self.compute_corrected_utc(
+                    face_dt, face_shift_h, tz_name, fixed_offset_h)
+                corrected_str = corrected.strftime("%Y-%m-%dT%H:%M:%S+00:00")
+                existing = self.get_corrected_utc_stamp(path)
+                if existing == corrected_str:
+                    result.already_current += 1
+                    continue
+                MetaDataHelper.add_xmp_fields(path, [
+                    (WALDO_NAMESPACE_URI, CLOCK_CORRECTED_UTC_XMP, corrected_str),
+                    (WALDO_NAMESPACE_URI, CLOCK_FACE_SHIFT_XMP, f"{face_shift_h:+.0f}"),
+                    (WALDO_NAMESPACE_URI, CLOCK_TIMEZONE_XMP,
+                     tz_name or f"UTC{fixed_offset_h:+.1f}"),
+                ])
+                result.processed += 1
+            except Exception as e:
+                result.errors.append((name, f"Clock correction failed: {e}"))
+        return result
 
     def compute_relative_altitude_m(
         self, lat: float, lon: float, gps_alt_ellipsoidal_m: float

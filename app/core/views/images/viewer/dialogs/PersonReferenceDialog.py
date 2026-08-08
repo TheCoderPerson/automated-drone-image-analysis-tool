@@ -541,6 +541,9 @@ class PersonReferenceDialog(TranslationMixin, QDialog):
             if self.sun_time_source == 'exif_local_tz_from_gps':
                 text += " " + self.tr(
                     "Capture time zone estimated from GPS location.")
+            elif self.sun_time_source == 'waldo_corrected':
+                text += " " + self.tr(
+                    "Using repaired capture time (camera clock fault).")
             self.sun_label.setText(text)
             self.shadow_check.setEnabled(True)
         else:

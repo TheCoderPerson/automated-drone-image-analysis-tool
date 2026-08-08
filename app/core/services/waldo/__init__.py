@@ -14,6 +14,7 @@ from .WaldoMetadataService import (
     WaldoHeadingUnavailable,
     WaldoCoverageError,
     WaldoMissingGPSError,
+    ClockCorrectionProposal,
     WALDO_NAMESPACE_URI,
     WALDO_PROCESSOR_VERSION,
 )
@@ -29,6 +30,7 @@ __all__ = [
     'WaldoHeadingUnavailable',
     'WaldoCoverageError',
     'WaldoMissingGPSError',
+    'ClockCorrectionProposal',
     'WALDO_NAMESPACE_URI',
     'WALDO_PROCESSOR_VERSION',
     'WaldoTriggerLogService',
