@@ -53,30 +53,51 @@ def test_optical_axis_cam_0_fallback_yaw_and_flight_axis_roll():
 
 
 def test_optical_axis_cam_1_fallback_yaw_and_flight_axis_roll():
-    # `1_*` = LEFT pod: tilt to plane LEFT = positive roll about the
-    # forward flight axis.
+    # `1_*` = LEFT pod, body mounted opposed to cam 0: its stored image-top
+    # faces plane FORWARD (v9 fix - v5..v8 wrongly stamped it backward).
+    # Tilt to plane LEFT = positive roll about the forward flight axis.
     angles = WaldoMetadataService.compute_optical_axis_angles(0.0, 1)
     assert angles['pitch'] == -90.0
-    assert angles['yaw'] == 180.0
+    assert angles['yaw'] == 0.0  # image-top = heading for cam 1
     assert angles['roll'] == +OUTWARD_ROLL_DEG
 
 
+def test_optical_axis_cam_1_yaw_follows_heading():
+    angles = WaldoMetadataService.compute_optical_axis_angles(270.0, 1)
+    assert angles['yaw'] == 270.0
+    angles = WaldoMetadataService.compute_optical_axis_angles(319.67, 1)
+    assert pytest.approx(angles['yaw'], abs=1e-6) == 319.67
+
+
 def test_optical_axis_measured_orientation_wins_over_model():
-    # A measured image-top bearing overrides the mounting model entirely;
-    # the roll stays anchored to the flight axis so the physical tilt is
+    # A measured orientation overrides the mounting model entirely; the
+    # roll stays anchored to the flight axis so the physical tilt is
     # unchanged by whatever orientation the frames are stored in.
-    angles = WaldoMetadataService.compute_optical_axis_angles(45.0, 0, image_up_deg=1.5)
+    angles = WaldoMetadataService.compute_optical_axis_angles(
+        45.0, 0, measured_orientation=('absolute', 1.5))
     assert angles['yaw'] == 1.5
     assert angles['roll'] == -OUTWARD_ROLL_DEG
-    angles = WaldoMetadataService.compute_optical_axis_angles(45.0, 1, image_up_deg=359.0)
+    angles = WaldoMetadataService.compute_optical_axis_angles(
+        45.0, 1, measured_orientation=('absolute', 359.0))
     assert angles['yaw'] == 359.0
     assert angles['roll'] == +OUTWARD_ROLL_DEG
 
 
-def test_optical_axis_cam_1_yaw_wraps_past_360():
-    # heading 270°, cam 1 → 270 + 180 = 450 → 90° after mod-360 normalisation.
-    angles = WaldoMetadataService.compute_optical_axis_angles(270.0, 1)
-    assert angles['yaw'] == 90.0
+def test_optical_axis_measured_offset_is_track_relative():
+    # ('offset', d) stamps heading + d per image - serpentine-safe: the
+    # same offset yields opposite absolute yaws on opposite lanes.
+    angles = WaldoMetadataService.compute_optical_axis_angles(
+        10.0, 0, measured_orientation=('offset', 175.0))
+    assert pytest.approx(angles['yaw'], abs=1e-6) == 185.0
+    angles = WaldoMetadataService.compute_optical_axis_angles(
+        190.0, 0, measured_orientation=('offset', 175.0))
+    assert pytest.approx(angles['yaw'], abs=1e-6) == 5.0
+
+
+def test_optical_axis_invalid_orientation_mode_raises():
+    with pytest.raises(ValueError):
+        WaldoMetadataService.compute_optical_axis_angles(
+            0.0, 0, measured_orientation=('sideways', 1.0))
 
 
 def test_optical_axis_yaw_normalised_to_360():
@@ -278,7 +299,7 @@ def test_flight_axis_roll_reproduces_v5_tilt_direction():
 
         # v6: measured yaw (north-up here), roll about the flight axis
         angles = WaldoMetadataService.compute_optical_axis_angles(
-            heading, cam_idx, image_up_deg=0.0)
+            heading, cam_idx, measured_orientation=('absolute', 0.0))
         v6 = AOIService._calculate_ground_position(
             lat0, lon0, 2000.0, 1500.0,
             altitude_m=1000.0, pitch_deg=angles['pitch'],
@@ -366,24 +387,26 @@ def _motion_records(tmp_path, heading_deg):
 def test_measurement_overrides_model_only_on_clear_contradiction(tmp_path):
     """North-up frames with a model saying 'south-up' trip the override."""
     service = WaldoMetadataService()
-    # heading 0 -> model image-top = 180; measurement reads ~0 -> gap ~180
+    # heading 0 -> cam0 model offset = 180; measurement reads offset ~0
     records = _motion_records(tmp_path, heading_deg=0.0)
 
-    measured = service.measure_image_up_bearing(records, cam_idx=0)
+    measured = service.measure_image_up_orientation(records, cam_idx=0)
     assert measured is not None
-    assert min(measured, 360.0 - measured) < 8.0
+    mode, value = measured
+    assert mode == 'offset'
+    assert min(value, 360.0 - value) < 8.0
 
 
 def test_measurement_agreeing_with_model_defers_to_it(tmp_path):
     """When measurement and model roughly agree, the model is stamped."""
     service = WaldoMetadataService()
-    # heading 180 -> model image-top = 0; measurement reads ~0 -> gap ~0
+    # heading 180 -> frames read offset (0-180)=180 = cam0 model -> agree
     records = _motion_records(tmp_path, heading_deg=180.0)
 
-    assert service.measure_image_up_bearing(records, cam_idx=0) is None
+    assert service.measure_image_up_orientation(records, cam_idx=0) is None
 
 
-def test_measure_image_up_bearing_rejects_unmatchable(tmp_path):
+def test_measurement_rejects_unmatchable(tmp_path):
     """Unrelated noise frames must fail closed (fall back to the model)."""
     service = WaldoMetadataService()
     rng = np.random.default_rng(9)
@@ -393,10 +416,84 @@ def test_measure_image_up_bearing_rejects_unmatchable(tmp_path):
         p = str(tmp_path / f'0_000_00_{i:03d}.jpg')
         cv2.imwrite(p, rng.integers(0, 255, (400, 500), dtype=np.uint8))
         records.append(WaldoImageRecord(path=p, name=f'0_000_00_{i:03d}.jpg',
-                                        cam_idx=0, lat=lat, lon=-122.0))
+                                        cam_idx=0, lat=lat, lon=-122.0,
+                                        heading_deg=0.0))
         lat += 0.0018
 
-    assert service.measure_image_up_bearing(records, cam_idx=0) is None
+    assert service.measure_image_up_orientation(records, cam_idx=0) is None
+
+
+def _serpentine_records(tmp_path, cam, lane_specs, seed0=0):
+    """Records for a multi-lane flight; lane_specs = [(heading, north?, dy)].
+
+    Each lane contributes 3 synthetic frame pairs. dy is the crop shift of
+    the pair's second frame: +dy makes the camera appear to move toward the
+    image BOTTOM between frames, -dy toward the image TOP.
+    """
+    records = []
+    idx = 0
+    lat = 41.0
+    for lane_no, (heading, north, dy) in enumerate(lane_specs):
+        dlat = 0.0018 if north else -0.0018
+        for i in range(3):
+            pa, pb = _write_shifted_frames(
+                tmp_path / f'l{lane_no}p{i}', (0, dy), seed=seed0 + idx)
+            for p in (pa, pb):
+                records.append(WaldoImageRecord(
+                    path=p, name=f'{cam}_000_00_{idx:03d}.jpg', cam_idx=cam,
+                    lat=lat, lon=-122.0, heading_deg=heading))
+                lat += dlat
+                idx += 1
+    return records
+
+
+def test_measurement_serpentine_track_relative_defers_to_model(tmp_path):
+    """Serpentine cam0 storage (image-top follows the track) must NOT trip
+    the override, even though the ABSOLUTE orientations alternate 0/180.
+
+    This is the exact failure mode that hid the cam-1 bug in v5..v8: the
+    absolute circular mean of alternating lanes was garbage, so the
+    measurement returned None instead of validating the model.
+    """
+    service = WaldoMetadataService()
+    # cam0 stores image-top = heading+180. Northbound lane (heading 0):
+    # top faces south -> northward motion reads motion_img 180 -> dy +280.
+    # Southbound lane (heading 180): top faces north -> dy +280 as well.
+    records = _serpentine_records(tmp_path, 0, [
+        (0.0, True, +280),
+        (180.0, False, +280),
+    ])
+    assert service.measure_image_up_orientation(records, cam_idx=0) is None
+
+
+def test_measurement_detects_normalized_absolute_on_serpentine(tmp_path):
+    """North-up-normalized frames on a serpentine flight: the relative space
+    scrambles (offsets 0/180) but the absolute space is tight at ~0, and a
+    constant absolute orientation across mixed headings contradicts ANY
+    mounting model - the override must fire in absolute mode."""
+    service = WaldoMetadataService()
+    records = _serpentine_records(tmp_path, 0, [
+        (0.0, True, -280),    # northbound, north-up: motion toward image top
+        (180.0, False, +280),  # southbound, north-up: motion toward image bottom
+    ])
+    measured = service.measure_image_up_orientation(records, cam_idx=0)
+    assert measured is not None
+    mode, value = measured
+    assert mode == 'absolute'
+    assert min(value, 360.0 - value) < 8.0
+
+
+def test_measurement_cam1_forward_storage_matches_v9_model(tmp_path):
+    """cam1 frames stored image-top = plane FORWARD (the real WALDO output,
+    field-verified on two flights) must agree with the v9 model and stamp
+    it. Under the v5..v8 model (top = backward) this same data was a 180 deg
+    contradiction that the old absolute aggregation failed to report."""
+    service = WaldoMetadataService()
+    records = _serpentine_records(tmp_path, 1, [
+        (0.0, True, -280),     # northbound, top=forward(north): motion toward top
+        (180.0, False, -280),  # southbound, top=forward(south): motion toward top
+    ])
+    assert service.measure_image_up_orientation(records, cam_idx=1) is None
 
 
 # --------------------------------------------------------------------------

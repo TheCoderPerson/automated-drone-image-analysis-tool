@@ -13,17 +13,16 @@ non-destructive corrected capture time (stamped in the waldo XMP namespace).
 The per-folder decision is remembered in settings.
 """
 
-import json
 import os
 from typing import List, Optional
 
 from core.services.LoggerService import LoggerService
 from core.services.SettingsService import SettingsService
 from core.services.waldo import WaldoMetadataService
+from core.services.waldo import WaldoClockDecisions
+from core.services.waldo.WaldoClockDecisions import CLOCK_DECISIONS_SETTING
 from core.views.images.viewer.dialogs.WaldoPrePassDialog import WaldoPrePassDialog
 from core.views.images.viewer.dialogs.WaldoClockCorrectionDialog import WaldoClockCorrectionDialog
-
-CLOCK_DECISIONS_SETTING = 'WaldoClockCorrections'
 
 
 class WaldoPrePassController:
@@ -104,19 +103,10 @@ class WaldoPrePassController:
     # ------------------------------------------------------------------
 
     def _clock_decisions(self) -> dict:
-        raw = self.settings_service.get_setting(CLOCK_DECISIONS_SETTING)
-        if not raw:
-            return {}
-        try:
-            decisions = json.loads(raw)
-            return decisions if isinstance(decisions, dict) else {}
-        except (TypeError, ValueError):
-            return {}
+        return WaldoClockDecisions.get_decisions(self.settings_service)
 
     def _store_clock_decision(self, folder_key: str, decision: dict):
-        decisions = self._clock_decisions()
-        decisions[folder_key] = decision
-        self.settings_service.set_setting(CLOCK_DECISIONS_SETTING, json.dumps(decisions))
+        WaldoClockDecisions.store_decision(folder_key, decision, self.settings_service)
 
     def _offer_clock_correction(self, waldo_paths: List[str], proposal,
                                 service: Optional[WaldoMetadataService] = None):
@@ -127,22 +117,40 @@ class WaldoPrePassController:
         'declined' suppresses the offer; a remembered acceptance re-applies
         silently (progress only) so images added to the folder later get
         corrected without re-asking.
+
+        When no fault proposal exists but an APPLIED correction fails the
+        physical sanity check (sun below the horizon on daylight imagery),
+        an amendment prefilled from the stamped values is offered instead -
+        overriding any remembered decision, since the evidence contradicts
+        it.
         """
-        if not waldo_paths or proposal is None:
+        if not waldo_paths:
             return
         try:
             if service is None:
                 service = WaldoMetadataService(terrain_service=None)
 
+            amend_reason = None
+            if proposal is None:
+                amend_reason = service.stamped_correction_suspect(waldo_paths)
+                if amend_reason is None:
+                    return
+                proposal = service.propose_amendment(waldo_paths)
+                if proposal is None:
+                    return
+                proposal.evidence.insert(0, amend_reason)
+
             folder_key = os.path.normcase(os.path.abspath(os.path.dirname(waldo_paths[0])))
             decision = self._clock_decisions().get(folder_key)
-            if decision and decision.get('decision') == 'declined':
+            if amend_reason is None and decision and decision.get('decision') == 'declined':
                 self.logger.info(
                     "WaldoPrePassController: clock fault detected but correction "
                     "was previously declined for this folder.")
                 return
 
-            auto = bool(decision and decision.get('decision') == 'accepted')
+            # A failed sanity check always re-asks; never silently re-applies.
+            auto = (amend_reason is None
+                    and bool(decision and decision.get('decision') == 'accepted'))
             if auto:
                 proposal.face_shift_h = int(decision.get('face_shift_h', proposal.face_shift_h))
                 tz_text = decision.get('tz_text')
