@@ -12,13 +12,22 @@ from app.helpers.MetaDataHelper import MetaDataHelper
 
 
 @pytest.fixture
-def example_image_path():
-    return "app/tests/data/rgb/input/DJI_0082.JPG"
+def example_image_path(testData):
+    """Absolute path, via the shared testData fixture.
+
+    These were hardcoded as "app/tests/data/..." relative strings, which only
+    resolve when pytest's working directory happens to be the repo root -
+    running from app/ made every real read miss. The miss was silent:
+    _parse_xmp_direct answers {} for any IO failure (by design, to signal the
+    ExifTool fallback), so a missing file was indistinguishable from an image
+    with no XMP.
+    """
+    return testData['EXIF_Input_Path']
 
 
 @pytest.fixture
-def example_destination_path():
-    return "app/tests/data/rgb/output/ADIAT_Results/DJI_0082.JPG"
+def example_destination_path(testData):
+    return testData['EXIF_Output_Path']
 
 
 def test__get_exif_tool_path_windows():
@@ -306,6 +315,13 @@ def test_get_xmp_data_direct_delegates_to_parse_xmp_direct():
 def test_get_xmp_data_direct_matches_parse_on_real_image(example_image_path):
     """On a real testData image the public wrapper returns a dict identical to
     the private _parse_xmp_direct it wraps (no divergence between the two)."""
+    # Checked explicitly: _parse_xmp_direct returns {} for a missing file just
+    # as it does for an image without XMP, so without this the failure below
+    # is a bare "assert {}" that says nothing about the real cause.
+    assert path.isfile(example_image_path), (
+        f"test image missing: {example_image_path} (app/tests/data is gitignored - "
+        f"unpack app/tests/data.zip)")
+
     expected = MetaDataHelper._parse_xmp_direct(example_image_path)
     result = MetaDataHelper.get_xmp_data_direct(example_image_path)
 
