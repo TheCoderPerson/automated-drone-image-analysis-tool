@@ -38,6 +38,8 @@ from helpers.ThemeHelper import apply_theme
 from core.services.ConfigService import ConfigService
 from core.views.streaming.StreamViewerWindow_ui import Ui_StreamViewerWindow
 from core.services.LoggerService import LoggerService
+from helpers import BuildInfo
+from helpers.WidgetHelper import retire_widget
 from core.controllers.streaming.components import StreamCoordinator, DetectionRenderer, StreamStatistics
 from core.controllers.streaming.components.FrameProcessingWorker import FrameProcessingWorker
 from core.controllers.streaming.shared_widgets import DetectionThumbnailWidget, StreamControlWidget
@@ -101,7 +103,7 @@ class StreamViewerWindow(TranslationMixin, QMainWindow):
         self.setWindowTitle(
             self.tr(
                 "Automated Drone Image Analysis Tool v{version} - Sponsored by TEXSAR"
-            ).format(version=self.app_version)
+            ).format(version=BuildInfo.title_version(self.app_version))
         )
 
         # Setup tooltip stylesheet
@@ -862,8 +864,7 @@ class StreamViewerWindow(TranslationMixin, QMainWindow):
                     self.algorithm_widget.cleanup()
                 except Exception as e:
                     self.logger.warning(f"Algorithm cleanup failed for {self.current_algorithm_name}: {e}")
-                self.ui.algorithmControlLayout.removeWidget(self.algorithm_widget)
-                self.algorithm_widget.deleteLater()
+                retire_widget(self.algorithm_widget, self.ui.algorithmControlLayout)
                 self.algorithm_widget = None
                 self.algorithm_renders_frame = False
                 self.thumbnail_widget.clear_thumbnails()
