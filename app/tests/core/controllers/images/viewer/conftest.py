@@ -25,6 +25,10 @@ def wire_pending_zoom():
     """
     def wire(parent, loaded_idx=None):
         parent._pending_view_zoom = None
+        # The bound Viewer methods log; bare stand-ins (QObject) need one.
+        if not hasattr(parent, 'logger'):
+            from unittest.mock import MagicMock
+            parent.logger = MagicMock()
         parent.load_image_with_zoom = (
             lambda idx, cb: Viewer.load_image_with_zoom(parent, idx, cb))
         parent.take_pending_view_zoom = (

@@ -55,6 +55,9 @@ class _Slot:
     _pending_view_zoom = None
     current_image = 0
 
+    def __init__(self):
+        self.logger = MagicMock()  # the bound Viewer methods log
+
     def _load_image(self):
         pass
 

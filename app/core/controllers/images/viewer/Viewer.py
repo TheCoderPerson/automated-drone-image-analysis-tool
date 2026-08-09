@@ -11,6 +11,7 @@ from core.services.thermal.ThermalParserService import ThermalParserService
 from core.services.image.ImageService import ImageService
 from core.services.XmlService import XmlService
 from core.services.LoggerService import LoggerService
+from helpers import BuildInfo
 from core.controllers.images.viewer.GPSMapController import GPSMapController
 from core.controllers.images.viewer.TeamPlanningController import TeamPlanningController
 from core.controllers.images.viewer.status.StatusController import StatusController
@@ -130,7 +131,7 @@ class Viewer(TranslationMixin, QMainWindow, Ui_Viewer):
         self.setWindowTitle(
             self.tr(
                 "Automated Drone Image Analysis Tool v{version} - Sponsored by TEXSAR"
-            ).format(version=self.app_version)
+            ).format(version=BuildInfo.title_version(self.app_version))
         )
         self._add_Toggles()
         # self._adjust_ui_sizing()
@@ -1415,12 +1416,19 @@ class Viewer(TranslationMixin, QMainWindow, Ui_Viewer):
         """
         self.current_image = image_idx
         self._pending_view_zoom = (image_idx, apply_zoom)
+        self.logger.info(f"Zoom-after-load: armed for image {image_idx}")
         try:
             self._load_image()
         finally:
             # A successful load consumed the request already; dropping any
             # leftover covers failed and early-returning loads, so a stale
             # request can never fire on a later, unrelated load.
+            if self._pending_view_zoom is not None:
+                # WARNING so field builds (default log level WARNING) record
+                # the failure: the load never reached its consumption step.
+                self.logger.warning(
+                    f"Zoom-after-load: load of image {image_idx} ended without "
+                    f"consuming the zoom request (failed/early-returning load)")
             self._pending_view_zoom = None
 
     def take_pending_view_zoom(self, image_idx):
@@ -1437,7 +1445,14 @@ class Viewer(TranslationMixin, QMainWindow, Ui_Viewer):
         if pending is None:
             return None
         requested_idx, apply_zoom = pending
-        return apply_zoom if requested_idx == image_idx else None
+        if requested_idx != image_idx:
+            # WARNING so field builds record it: a reentrant navigation
+            # changed the image mid-load and the click's intent was dropped.
+            self.logger.warning(
+                f"Zoom-after-load: request for image {requested_idx} dropped - "
+                f"image {image_idx} loaded instead")
+            return None
+        return apply_zoom
 
     def _previousImageButton_clicked(self):
         """Navigates to the previous image in the list, skipping hidden images if applicable."""

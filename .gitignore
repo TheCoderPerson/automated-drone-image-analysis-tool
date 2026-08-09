@@ -9,7 +9,11 @@
 __pycache__/
 *.pyc
 dist/
-build*
+# Anchored to the repo root: the unanchored 'build*' also matched source files
+# at any depth whose name starts with "build" (git ignores are case-insensitive
+# on Windows/macOS by default), which silently excluded
+# app/helpers/BuildInfo.py from commits.
+/build*
 *.egg-info
 ADIAT/
 .coverage

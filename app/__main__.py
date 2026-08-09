@@ -190,6 +190,13 @@ def main():
     """
     app = QApplication(sys.argv)
 
+    # Identify the exact code every field log came from. Deliberately WARNING:
+    # packaged builds default to WARNING-level logging, and a log that cannot
+    # say which commit produced it has repeatedly proven undiagnosable.
+    from helpers import BuildInfo
+    LoggerService().warning(
+        f"ADIAT {version} starting (build {BuildInfo.get_build_stamp() or 'unknown'})")
+
     # Load translation. Priority: the saved Language preference, then the OS
     # locale, then English. Resolves the .qm location via sys._MEIPASS so it
     # works identically from source and from a PyInstaller build on Windows
