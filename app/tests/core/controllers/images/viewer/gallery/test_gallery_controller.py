@@ -404,96 +404,51 @@ def test_gallery_click_syncs_selection_with_unmapped_visible_index(controller):
 
 
 # ---------------------------------------------------------------------------
-# Deferred zoom re-assertion after a gallery AOI click (field report: the
-# first click switched image but landed un-zoomed; only a second click zoomed)
+# Event-driven zoom-after-load: a cross-image gallery click navigates via
+# parent.load_image_with_zoom and the load pipeline applies the zoom as its
+# final step. No transient viewChanged handlers, no settle-window timers
+# (field report lineage: first click landed un-zoomed).
 # ---------------------------------------------------------------------------
 
-def _main_image(zoom_stack=None, has_image=True):
-    main = MagicMock()
-    main._is_destroyed = False
-    main.hasImage.return_value = has_image
-    main.zoomStack = [] if zoom_stack is None else zoom_stack
-    return main
-
-
-def test_ensure_aoi_zoom_zooms_an_unzoomed_view(controller):
-    aoi = _aoi()
-    controller._pending_aoi_zoom = aoi
-    controller.parent.current_image = 3
-    controller.parent.main_image = _main_image()
-    controller._zoom_to_aoi = MagicMock()
-
-    controller._ensure_aoi_zoom(3, aoi)
-
-    controller._zoom_to_aoi.assert_called_once_with(aoi)
-
-
-def test_ensure_aoi_zoom_skips_when_already_zoomed(controller):
-    aoi = _aoi()
-    controller._pending_aoi_zoom = aoi
-    controller.parent.current_image = 3
-    controller.parent.main_image = _main_image(zoom_stack=[object()])
-    controller._zoom_to_aoi = MagicMock()
-
-    controller._ensure_aoi_zoom(3, aoi)
-
-    controller._zoom_to_aoi.assert_not_called()
-
-
-def test_ensure_aoi_zoom_skips_when_superseded_by_newer_click(controller):
-    controller._pending_aoi_zoom = _aoi(center=(1, 1))  # newer click owns it
-    controller.parent.current_image = 3
-    controller.parent.main_image = _main_image()
-    controller._zoom_to_aoi = MagicMock()
-
-    controller._ensure_aoi_zoom(3, _aoi(center=(2, 2)))
-
-    controller._zoom_to_aoi.assert_not_called()
-
-
-def test_ensure_aoi_zoom_skips_when_image_changed(controller):
-    aoi = _aoi()
-    controller._pending_aoi_zoom = aoi
-    controller.parent.current_image = 7  # user navigated away
-    controller.parent.main_image = _main_image()
-    controller._zoom_to_aoi = MagicMock()
-
-    controller._ensure_aoi_zoom(3, aoi)
-
-    controller._zoom_to_aoi.assert_not_called()
-
-
-def test_needs_load_click_schedules_the_deferred_zoom(controller):
-    """When the in-load zoom is missed (recursion guard active on every
-    emission), the deferred re-assertion zooms once the cascade settles."""
+def test_needs_load_click_zooms_via_the_load_pipeline(controller, wire_pending_zoom):
     parent = controller.parent
     parent.current_image = 0
     parent.aoi_controller.aoi_index_to_visible_index = {}
-    main = _main_image()
-    main._recursion_guard = True  # in-load zoom paths are all skipped
-    parent.main_image = main
+    wire_pending_zoom(parent, loaded_idx=1)  # pipeline consumes for image 1
     controller._zoom_to_aoi = MagicMock()
     aoi = _aoi()
 
-    captured = []
-    with patch(
-        "core.controllers.images.viewer.gallery.GalleryController.QTimer"
-    ) as timer:
-        timer.singleShot.side_effect = lambda delay, cb: captured.append(cb)
-        controller.on_aoi_clicked(1, 0, aoi)
+    controller.on_aoi_clicked(1, 0, aoi)
 
-    controller._zoom_to_aoi.assert_not_called()  # nothing zoomed in-load
-    # Several checkpoints across the settle window, not a single shot: the
-    # late zoom reset lands at unpredictable times on real hardware.
-    assert len(captured) == 3
-
-    # The cascade settles: guard released, image shown un-zoomed.
-    main._recursion_guard = False
-    captured[0]()
     controller._zoom_to_aoi.assert_called_once_with(aoi)
+    assert parent._pending_view_zoom is None  # consumed, nothing armed
 
-    # Once the zoom took effect, later checkpoints are no-ops.
-    main.zoomStack = [object()]
-    captured[1]()
-    captured[2]()
-    controller._zoom_to_aoi.assert_called_once_with(aoi)
+
+def test_failed_load_leaves_no_zoom_request_armed(controller, wire_pending_zoom):
+    parent = controller.parent
+    parent.current_image = 0
+    parent.aoi_controller.aoi_index_to_visible_index = {}
+    wire_pending_zoom(parent, loaded_idx=None)  # load never consumes
+    controller._zoom_to_aoi = MagicMock()
+
+    controller.on_aoi_clicked(1, 0, _aoi())
+
+    controller._zoom_to_aoi.assert_not_called()
+    # load_image_with_zoom dropped its own unconsumed request, so a later,
+    # unrelated load can never fire a stale zoom.
+    assert parent._pending_view_zoom is None
+
+
+def test_request_for_a_different_image_is_dropped_not_applied(controller, wire_pending_zoom):
+    parent = controller.parent
+    parent.current_image = 0
+    parent.aoi_controller.aoi_index_to_visible_index = {}
+    # Pipeline ends up loading image 5, not the requested image 1 (e.g. a
+    # reentrant navigation during the load).
+    wire_pending_zoom(parent, loaded_idx=5)
+    controller._zoom_to_aoi = MagicMock()
+
+    controller.on_aoi_clicked(1, 0, _aoi())
+
+    controller._zoom_to_aoi.assert_not_called()
+    assert parent._pending_view_zoom is None  # dropped as stale, not left armed

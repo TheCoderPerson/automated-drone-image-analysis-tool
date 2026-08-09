@@ -313,6 +313,14 @@ class Viewer(TranslationMixin, QMainWindow, Ui_Viewer):
         # Gallery loading overlay (will be created when needed)
         self.gallery_loading_overlay = None
 
+        # A zoom requested by the navigation that triggered the next image
+        # load (gallery AOI click, neighbor tracking). Applied by
+        # ImageLoadController as the pipeline's final step - after the load's
+        # own zoom reset and grid review's framing - so nothing later in the
+        # load can stomp it. Single slot, newest request wins, consumed (or
+        # cancelled by the requester) within the synchronous load call.
+        self._pending_view_zoom = None
+
         # ---- load everything ----
         self._loading_dialog.set_status(self.tr("Loading first image..."))
         self._load_images()
@@ -831,18 +839,10 @@ class Viewer(TranslationMixin, QMainWindow, Ui_Viewer):
             # The splitterMoved signal is emitted after sizes are set, so widget should be resized
             self.main_image.updateGeometry()
 
-            # Reset zoom to fit the image to the new viewport dimensions
-            if self.main_image.hasImage():
-                # Check if widget has valid size before resetting
-                if self.main_image.width() > 0 and self.main_image.height() > 0:
-                    # Clear zoom stack and fit image to viewport
-                    self.main_image.clearZoom()
-                    scene_rect = self.main_image._safe_scene_rect()
-                    if scene_rect and not scene_rect.isEmpty():
-                        self.main_image.fitInView(scene_rect, self.main_image.aspectRatioMode)
-                        self.main_image._emit_zoom_if_changed()
-            else:
-                self.main_image.updateViewer()
+            # A splitter drag is a geometry event: re-project the view onto
+            # the new pane size. reprojectView owns the policy (held zoom
+            # re-applied, un-zoomed view re-fit, never a discard).
+            self.main_image.reprojectView()
 
             # Reposition the overlay after image resize
             if hasattr(self, 'overlay'):
@@ -869,11 +869,12 @@ class Viewer(TranslationMixin, QMainWindow, Ui_Viewer):
         # Handle main image resizing (original functionality)
         if self.main_image is not None and not self.main_image._is_destroyed:
             if event.oldSize() != event.size():
-                # Ensure image is properly resized to fit the new dimensions
-                if self.main_image.hasImage():
-                    self.main_image.resetZoom()
-                else:
-                    self.main_image.updateViewer()
+                # A window resize is a geometry event: reprojectView owns
+                # the policy (held zoom re-applied, un-zoomed view re-fit).
+                # Unconditional resetZoom here used to discard the gallery's
+                # AOI zoom whenever a late resize settled after the click -
+                # the wipe the old settle-window timers existed to repair.
+                self.main_image.reprojectView()
 
     def keyPressEvent(self, e):
         """Handles key press events for navigation, hiding images, and adjustments.
@@ -1392,6 +1393,51 @@ class Viewer(TranslationMixin, QMainWindow, Ui_Viewer):
         """Loads the image at the current index along with areas of interest and GPS data."""
         # Delegate to ImageLoadController
         self.image_load_controller.load_image()
+
+    def load_image_with_zoom(self, image_idx, apply_zoom):
+        """Navigate to *image_idx* and end the load with *apply_zoom*.
+
+        Event-driven replacement for the transient viewChanged handlers and
+        settle-window timers that used to chase the load's zoom reset: the
+        navigation states its framing intent up front, and the load pipeline
+        applies it as its own final step (ImageLoadController's
+        _apply_pending_view_zoom, which consumes take_pending_view_zoom).
+
+        The single entry point is deliberate: request, load, and cleanup are
+        one operation, so no call site can forget the cleanup and leave a
+        stale request armed after a failed or early-returning load.
+
+        Args:
+            image_idx: Viewer index to navigate to; the pipeline drops the
+                request if a different image ends up loading.
+            apply_zoom: Zero-argument callable performing the zoom (and any
+                companion UI work, e.g. the AOI overlay badge).
+        """
+        self.current_image = image_idx
+        self._pending_view_zoom = (image_idx, apply_zoom)
+        try:
+            self._load_image()
+        finally:
+            # A successful load consumed the request already; dropping any
+            # leftover covers failed and early-returning loads, so a stale
+            # request can never fire on a later, unrelated load.
+            self._pending_view_zoom = None
+
+    def take_pending_view_zoom(self, image_idx):
+        """Consume and return the pending zoom callable for *image_idx*.
+
+        Any pending request is cleared regardless of match: a request for a
+        different image is stale by definition once another image loads.
+
+        Returns:
+            callable or None
+        """
+        pending = self._pending_view_zoom
+        self._pending_view_zoom = None
+        if pending is None:
+            return None
+        requested_idx, apply_zoom = pending
+        return apply_zoom if requested_idx == image_idx else None
 
     def _previousImageButton_clicked(self):
         """Navigates to the previous image in the list, skipping hidden images if applicable."""

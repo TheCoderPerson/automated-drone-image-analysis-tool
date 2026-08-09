@@ -523,75 +523,11 @@ class AOINeighborTrackingController(TranslationMixin, QObject):
             needs_load = (self.parent.current_image != viewer_idx)
 
             if needs_load and pixel_x is not None and pixel_y is not None:
-                # Set up zoom-after-load using viewChanged signal pattern
-                self.parent.current_image = viewer_idx
-
-                zoom_handler = None
-                zoom_executed = False
-
-                def zoom_when_ready():
-                    nonlocal zoom_executed
-                    if zoom_executed:
-                        return
-
-                    viewer = self.parent.main_image
-                    if not viewer or not viewer.hasImage():
-                        return
-
-                    # Check recursion guard
-                    if hasattr(viewer, '_recursion_guard') and viewer._recursion_guard:
-                        return
-
-                    # Check zoom stack is cleared (resetZoom has been called)
-                    if hasattr(viewer, 'zoomStack') and len(viewer.zoomStack) != 0:
-                        return
-
-                    zoom_executed = True
-                    # Zoom to the AOI location (scale 6 matches AOI click behavior)
-                    if hasattr(viewer, 'zoomToArea'):
-                        viewer.zoomToArea((pixel_x, pixel_y), 6)
-
-                    # Disconnect handler
-                    if zoom_handler:
-                        try:
-                            viewer.viewChanged.disconnect(zoom_handler)
-                        except Exception:
-                            pass
-
-                # Connect signal before loading
-                connected_viewer = None
-                if hasattr(self.parent, 'main_image') and self.parent.main_image:
-                    try:
-                        self.parent.main_image.viewChanged.connect(zoom_when_ready)
-                        zoom_handler = zoom_when_ready
-                        connected_viewer = self.parent.main_image
-                    except Exception:
-                        pass
-
-                try:
-                    # Load the image
-                    self.parent._load_image()
-
-                    # Fallback: if image already loaded and zoom not executed
-                    if not zoom_executed and hasattr(self.parent, 'main_image'):
-                        viewer = self.parent.main_image
-                        if viewer and viewer.hasImage():
-                            if not getattr(viewer, '_recursion_guard', False):
-                                if not viewer.zoomStack:
-                                    zoom_executed = True
-                                    if hasattr(viewer, 'zoomToArea'):
-                                        viewer.zoomToArea((pixel_x, pixel_y), 6)
-                finally:
-                    # _load_image() is synchronous, so any viewChanged it emits
-                    # has already fired. Unconditionally drop the transient
-                    # handler; a failed/early-returning load would otherwise
-                    # leave it armed on viewChanged, where a later wheel zoom
-                    # would re-enter zoomToArea against a stale location.
-                    if zoom_handler is not None and connected_viewer is not None:
-                        try:
-                            connected_viewer.viewChanged.disconnect(zoom_handler)
-                        except Exception:
-                            pass
+                # State the framing intent with the navigation; the load
+                # pipeline applies it as its own final step (same mechanism
+                # as the gallery's AOI click - Viewer.load_image_with_zoom).
+                self.parent.load_image_with_zoom(
+                    viewer_idx, lambda: self._zoom_main_image(pixel_x, pixel_y))
             else:
                 # Simple navigation without zoom, or same image
                 if needs_load:
@@ -600,9 +536,7 @@ class AOINeighborTrackingController(TranslationMixin, QObject):
 
                 # If same image, still zoom to location
                 if not needs_load and pixel_x is not None and pixel_y is not None:
-                    viewer = self.parent.main_image
-                    if viewer and hasattr(viewer, 'zoomToArea'):
-                        viewer.zoomToArea((pixel_x, pixel_y), 6)
+                    self._zoom_main_image(pixel_x, pixel_y)
 
             # Scroll thumbnail into view
             if hasattr(self.parent, 'thumbnail_controller') and self.parent.thumbnail_controller:
@@ -611,6 +545,12 @@ class AOINeighborTrackingController(TranslationMixin, QObject):
 
         except Exception as e:
             self.logger.error(f"Error navigating to image: {e}")
+
+    def _zoom_main_image(self, pixel_x, pixel_y):
+        """Zoom the main viewer to a pixel location (scale 6 matches AOI clicks)."""
+        viewer = getattr(self.parent, 'main_image', None)
+        if viewer and hasattr(viewer, 'zoomToArea'):
+            viewer.zoomToArea((pixel_x, pixel_y), 6)
 
     def cleanup(self):
         """Clean up resources."""
