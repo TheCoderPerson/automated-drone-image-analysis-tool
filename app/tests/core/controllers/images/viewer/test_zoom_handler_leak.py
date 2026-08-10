@@ -79,6 +79,23 @@ def test_load_with_zoom_slot_consumed_by_matching_load():
     assert slot._pending_view_zoom is None
 
 
+def test_armed_request_is_logged_at_warning_so_field_builds_record_it():
+    """Packaged builds log at WARNING; at INFO this line never reached a field
+    log, leaving a silent log unable to prove the click armed a request.
+
+    The load consumes the request so the only warning is the armed one (an
+    unconsumed request logs its own failure warning from the finally block).
+    """
+    slot = _Slot()
+    slot._load_image = lambda: Viewer.take_pending_view_zoom(slot, slot.current_image)
+
+    Viewer.load_image_with_zoom(slot, 7, MagicMock())
+
+    slot.logger.warning.assert_called_once()
+    assert 'armed for image 7' in slot.logger.warning.call_args[0][0]
+    slot.logger.info.assert_not_called()
+
+
 def test_take_for_mismatched_image_drops_request():
     slot = _Slot()
     slot._pending_view_zoom = (1, MagicMock())

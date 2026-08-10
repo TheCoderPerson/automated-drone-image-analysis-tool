@@ -357,7 +357,10 @@ class ImageLoadController(TranslationMixin):
             main = getattr(self.parent, 'main_image', None)
             zoomed = bool(getattr(main, 'zoomStack', None))
             if zoomed:
-                self.logger.info(
+                # WARNING to match the "armed" line: the armed/applied pair is
+                # the only way a field log can show the zoom succeeded, and
+                # packaged builds record nothing below WARNING.
+                self.logger.warning(
                     f"Zoom-after-load: applied for image {self.parent.current_image}")
             else:
                 # The requester's callable ran but the view holds no zoom -

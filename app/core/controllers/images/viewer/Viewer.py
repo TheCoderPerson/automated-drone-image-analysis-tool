@@ -1416,7 +1416,13 @@ class Viewer(TranslationMixin, QMainWindow, Ui_Viewer):
         """
         self.current_image = image_idx
         self._pending_view_zoom = (image_idx, apply_zoom)
-        self.logger.info(f"Zoom-after-load: armed for image {image_idx}")
+        # WARNING, not INFO: packaged builds log at WARNING, so at INFO this
+        # line was invisible in the field. Without it a clean log cannot
+        # distinguish "the zoom worked" from "the click never reached this
+        # path" from "it applied and something wiped it afterwards" - a
+        # silent log was the actual outcome of the first field build carrying
+        # these diagnostics, which told us nothing.
+        self.logger.warning(f"Zoom-after-load: armed for image {image_idx}")
         try:
             self._load_image()
         finally:
