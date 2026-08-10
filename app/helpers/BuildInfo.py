@@ -18,6 +18,8 @@ import os
 import subprocess
 import sys
 
+from helpers import FeatureFlags
+
 BUILD_INFO_FILENAME = 'build_info.txt'
 
 # Resolved once per process; the commit a running build was cut from cannot
@@ -40,9 +42,16 @@ def get_build_stamp():
 def title_version(app_version):
     """Version string for window titles: '2.1.4 (58ef930)' or '2.1.4'.
 
+    Gated by FeatureFlags.BUILD_STAMP_IN_TITLE, which is off for production
+    releases (end users should not see a commit hash) and flipped on when
+    cutting a build for field diagnosis. The startup log carries the stamp
+    either way, so a plain title never costs us the commit identity.
+
     The stamp rides the title rather than the persisted app_version setting,
     which must stay parseable by the version-comparison helpers.
     """
+    if not FeatureFlags.BUILD_STAMP_IN_TITLE:
+        return app_version
     stamp = get_build_stamp()
     return f"{app_version} ({stamp})" if stamp else app_version
 
