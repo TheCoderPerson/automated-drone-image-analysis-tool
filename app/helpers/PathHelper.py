@@ -72,6 +72,52 @@ def is_absolute_any_platform(path):
     return False
 
 
+def canonical_path(path):
+    """Return *path* with redundant separators and ``..`` segments collapsed.
+
+    ``get_images`` rebuilds a stored relative path by joining it onto the
+    result folder, and ``os.path.join`` does not normalize: a path stored as
+    ``../../input/DJI_0065.JPG`` resolves to
+    ``...\\output\\ADIAT_Results\\..\\..\\input\\DJI_0065.JPG``. That opens the
+    right file, so nothing looks wrong, but it never compares equal to the
+    ``...\\input\\DJI_0065.JPG`` that a directory scan produces for the same
+    capture. Normalizing once at the point of resolution keeps every
+    downstream ``==`` honest.
+
+    Args:
+        path (str): A resolved path.
+
+    Returns:
+        str: The normalized path, or '' when *path* is empty.
+    """
+    if not path:
+        return ''
+    return os.path.normpath(path)
+
+
+def path_match_key(path):
+    """Return a key that is equal for any two paths naming the same file.
+
+    Collapses the three ways one file acquires two spellings on a single
+    machine: unnormalized ``..`` segments, separator differences, and case
+    (``DJI_0042.JPG`` vs ``DJI_0042.jpg``, which name one file on Windows and
+    macOS). Unicode is composed for the same reason
+    :func:`normalize_filename_key` composes it.
+
+    For deciding identity only -- never store or open the value it returns,
+    since ``os.path.normcase`` is lossy on Windows.
+
+    Args:
+        path (str): A path, absolute or relative to the current directory.
+
+    Returns:
+        str: Comparison key, or '' when *path* is empty.
+    """
+    if not path:
+        return ''
+    return os.path.normcase(unicodedata.normalize('NFC', os.path.abspath(path)))
+
+
 def normalize_filename_key(filename):
     """Return a case- and Unicode-insensitive matching key for *filename*.
 

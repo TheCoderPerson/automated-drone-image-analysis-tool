@@ -13,6 +13,7 @@ from core.services.image.AOINeighborService import AOINeighborService
 from core.services.image.AOIService import AOIService
 from core.services.LoggerService import LoggerService
 from helpers.TranslationMixin import TranslationMixin
+from helpers.PathHelper import path_match_key
 
 
 class NeighborSearchWorker(QObject):
@@ -257,8 +258,9 @@ class AOINeighborTrackingController(TranslationMixin, QObject):
         current_path = current_image.get('path')
         source_images = getattr(self.parent, 'source_images', None)
         if source_images and current_path:
+            current_key = path_match_key(current_path)
             for idx, img in enumerate(source_images):
-                if img.get('path') == current_path:
+                if path_match_key(img.get('path')) == current_key:
                     return source_images, idx
         # Legacy viewers without source_images, or the current image is
         # missing from the source folder listing: search the AOI subset
@@ -455,9 +457,9 @@ class AOINeighborTrackingController(TranslationMixin, QObject):
 
             # Label results from captures outside the viewer's result set so a
             # reviewer understands why clicking them cannot navigate
-            viewer_paths = {img.get('path') for img in self.parent.images}
+            viewer_keys = {path_match_key(img.get('path')) for img in self.parent.images}
             for result in results:
-                if result.get('image_path') not in viewer_paths:
+                if path_match_key(result.get('image_path')) not in viewer_keys:
                     result['image_name'] = result.get('image_name', '') + self.tr(" (no detections)")
 
             # Close existing dialog if open
@@ -499,8 +501,10 @@ class AOINeighborTrackingController(TranslationMixin, QObject):
             viewer_idx = None
             result_path = result.get('image_path') if result else None
             if result_path:
+                result_key = path_match_key(result_path)
                 viewer_idx = next(
-                    (i for i, img in enumerate(self.parent.images) if img.get('path') == result_path),
+                    (i for i, img in enumerate(self.parent.images)
+                     if path_match_key(img.get('path')) == result_key),
                     None
                 )
             elif 0 <= image_idx < len(self.parent.images):

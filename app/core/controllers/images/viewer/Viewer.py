@@ -54,6 +54,7 @@ from core.views.images.viewer.widgets.ScaleBarWidget import ScaleBarWidget
 from core.views.images.viewer.dialogs.ImageAdjustmentDialog import ImageAdjustmentDialog
 from core.controllers.images.viewer.status.StatusDict import StatusDict
 from helpers.IconHelper import IconHelper
+from helpers.PathHelper import path_match_key
 from core.views.images.viewer.widgets.QtImageViewer import QtImageViewer
 from core.views.images.viewer.ui.Viewer_ui import Ui_Viewer
 from core.views.components.Toggle import Toggle
@@ -1079,11 +1080,35 @@ class Viewer(TranslationMixin, QMainWindow, Ui_Viewer):
         time). When that folder is missing or unreachable, falls back to the
         AOI subset so the viewer still loads cleanly on relocated projects.
 
-        Each entry: {'path', 'name', 'has_aoi'}.
+        Entries for captures that produced an AOI ARE the viewer's own image
+        dicts, with 'name' and 'has_aoi' added -- not copies. Anything that
+        needs the full camera model off a source entry ('bearing',
+        'fov_alignment', 'mask_path', 'width'/'height') therefore gets it, and
+        a runtime change to one list is visible in the other: the Align Image
+        tool writes 'fov_alignment' onto the viewer's dict, and a copy taken
+        here would have gone stale the moment the user aligned an image.
+
+        Captures with no detections have no viewer dict, so they keep the
+        minimal {'path', 'name', 'has_aoi'} shape.
         """
         IMAGE_EXTS = ('.jpg', '.jpeg', '.tif', '.tiff', '.png', '.dng')
-        aoi_paths = {img['path'] for img in self.images if img.get('path')}
+        # Keyed, not raw strings: the XML stores paths relative to the result
+        # folder, so a viewer path and the scan's path for one capture differ
+        # in spelling (and in case) while naming the same file.
+        aoi_by_key = {
+            path_match_key(img['path']): img
+            for img in self.images if img.get('path')
+        }
         input_dir = (self.settings or {}).get('input_dir', '') or ''
+
+        def aoi_subset_only():
+            """Fall back to the AOI images, keeping the same entry contract."""
+            subset = []
+            for img in aoi_by_key.values():
+                img['name'] = os.path.basename(img['path'])
+                img['has_aoi'] = True
+                subset.append(img)
+            return subset
 
         if not input_dir or not os.path.isdir(input_dir):
             if input_dir:
@@ -1091,39 +1116,44 @@ class Viewer(TranslationMixin, QMainWindow, Ui_Viewer):
                     f"Source folder unreachable ({input_dir}); map and coverage "
                     f"will use AOI subset only."
                 )
-            return [
-                {'path': img['path'], 'name': os.path.basename(img['path']), 'has_aoi': True}
-                for img in self.images if img.get('path')
-            ]
+            return aoi_subset_only()
 
         source_images = []
         try:
             entries = sorted(os.listdir(input_dir))
         except OSError as e:
             self.logger.warning(f"Cannot list source folder {input_dir}: {e}")
-            return [
-                {'path': img['path'], 'name': os.path.basename(img['path']), 'has_aoi': True}
-                for img in self.images if img.get('path')
-            ]
+            return aoi_subset_only()
 
+        matched_keys = set()
         for name in entries:
             if not name.lower().endswith(IMAGE_EXTS):
                 continue
             full_path = os.path.join(input_dir, name)
             if not os.path.isfile(full_path):
                 continue
-            source_images.append({
-                'path': full_path,
-                'name': name,
-                'has_aoi': full_path in aoi_paths,
-            })
+            key = path_match_key(full_path)
+            viewer_image = aoi_by_key.get(key)
+            if viewer_image is not None:
+                # Same object as self.images[i]: see the docstring.
+                matched_keys.add(key)
+                viewer_image['name'] = name
+                viewer_image['has_aoi'] = True
+                source_images.append(viewer_image)
+            else:
+                source_images.append({
+                    'path': full_path,
+                    'name': name,
+                    'has_aoi': False,
+                })
 
         # Append AOI images that aren't in the source folder (relocated/renamed).
-        source_paths = {entry['path'] for entry in source_images}
-        for img in self.images:
-            p = img.get('path')
-            if p and p not in source_paths:
-                source_images.append({'path': p, 'name': os.path.basename(p), 'has_aoi': True})
+        for key, img in aoi_by_key.items():
+            if key in matched_keys:
+                continue
+            img['name'] = os.path.basename(img['path'])
+            img['has_aoi'] = True
+            source_images.append(img)
 
         return source_images
 

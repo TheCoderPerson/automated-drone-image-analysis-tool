@@ -8,13 +8,64 @@ so filenames must be derived and matched identically everywhere.
 import os
 import unicodedata
 
+import pytest
+
 from helpers.PathHelper import (
+    canonical_path,
     cross_platform_basename,
     find_in_index,
     index_folder_by_filename,
     is_absolute_any_platform,
     normalize_filename_key,
+    path_match_key,
 )
+
+
+# ------------------------------ canonical_path ----------------------------- #
+
+
+def test_canonical_path_collapses_parent_segments():
+    """The ".." churn os.path.join leaves behind is removed.
+
+    This is the exact shape get_images produces for a path stored relative to
+    the result folder, and the reason a viewer path never compared equal to a
+    directory scan's path for the same capture.
+    """
+    joined = os.path.join("root", "output", "ADIAT_Results", "..", "..", "input", "a.JPG")
+    assert canonical_path(joined) == os.path.join("root", "input", "a.JPG")
+
+
+def test_canonical_path_empty_is_empty():
+    assert canonical_path("") == ""
+    assert canonical_path(None) == ""
+
+
+# ------------------------------ path_match_key ----------------------------- #
+
+
+def test_path_match_key_equates_unnormalized_and_scanned_forms(tmp_path):
+    """The two spellings one capture acquires must key identically."""
+    scanned = str(tmp_path / "input" / "DJI_0065.JPG")
+    resolved = str(tmp_path / "output" / "ADIAT_Results" / ".." / ".." / "input" / "DJI_0065.JPG")
+    assert path_match_key(scanned) == path_match_key(resolved)
+
+
+@pytest.mark.skipif(os.name != "nt", reason="case-insensitive match is a Windows/macOS rule")
+def test_path_match_key_is_case_insensitive_on_windows(tmp_path):
+    upper = str(tmp_path / "DJI_0042.JPG")
+    lower = str(tmp_path / "dji_0042.jpg")
+    assert path_match_key(upper) == path_match_key(lower)
+
+
+def test_path_match_key_separates_distinct_files(tmp_path):
+    a = str(tmp_path / "DJI_0042.JPG")
+    b = str(tmp_path / "DJI_0043.JPG")
+    assert path_match_key(a) != path_match_key(b)
+
+
+def test_path_match_key_empty_is_empty():
+    assert path_match_key("") == ""
+    assert path_match_key(None) == ""
 
 
 # --------------------------- cross_platform_basename ----------------------- #
