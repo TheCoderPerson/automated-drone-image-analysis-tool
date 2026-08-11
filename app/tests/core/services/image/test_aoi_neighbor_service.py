@@ -520,7 +520,7 @@ def test_find_aoi_in_neighbors_success(aoi_neighbor_service, sample_images):
             {'image_idx': 4, 'image_name': 'image_4.jpg', 'thumbnail': np.zeros((100, 100, 3))},
         ]
 
-        results = aoi_neighbor_service.find_aoi_in_neighbors(
+        results, _truncated = aoi_neighbor_service.find_aoi_in_neighbors(
             images=sample_images,
             current_image_idx=2,
             aoi_gps=(37.7749, -122.4194)
@@ -552,7 +552,7 @@ def test_find_aoi_in_neighbors_marks_current(aoi_neighbor_service, sample_images
             None,
         ]
 
-        results = aoi_neighbor_service.find_aoi_in_neighbors(
+        results, _truncated = aoi_neighbor_service.find_aoi_in_neighbors(
             images=sample_images,
             current_image_idx=2,
             aoi_gps=(37.7749, -122.4194)
@@ -609,7 +609,7 @@ def test_find_aoi_in_neighbors_max_results(aoi_neighbor_service, sample_images):
             'thumbnail': np.zeros((100, 100, 3)), 'is_current': False
         }
 
-        results = aoi_neighbor_service.find_aoi_in_neighbors(
+        results, _truncated = aoi_neighbor_service.find_aoi_in_neighbors(
             images=sample_images,
             current_image_idx=0,
             aoi_gps=(37.7749, -122.4194),

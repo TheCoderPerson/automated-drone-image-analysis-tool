@@ -13,6 +13,7 @@ the process. Two defects combined to do exactly that:
 """
 
 import inspect
+import sys
 from unittest.mock import MagicMock
 
 import pytest
@@ -238,35 +239,116 @@ class TestCancellation:
 #  Worker contract                                                            #
 # --------------------------------------------------------------------------- #
 
+AOI = {'center': (100, 100), 'radius': 20, 'area': 400}
+
+
+def _worker(service, **overrides):
+    """A worker whose AOI GPS step the caller stubs, to test the search itself.
+
+    The GPS calculation moved onto the worker -- it decodes the image and can
+    query a DEM, which froze the GUI before the progress dialog could paint.
+    """
+    kwargs = dict(
+        neighbor_service=service, images=[], current_image_idx=0,
+        current_image={'path': 'a.jpg'}, aoi_data=AOI,
+    )
+    kwargs.update(overrides)
+    return NeighborSearchWorker(**kwargs)
+
+
+def _stub_gps(monkeypatch, result):
+    """Point the worker's AOIService at a fixed estimate_aoi_gps result.
+
+    Reached through sys.modules because the package __init__ re-exports the
+    controller class under the module's own name, so a plain import of the
+    dotted path binds the class rather than the module.
+    """
+    mod = sys.modules[
+        'core.controllers.images.viewer.neighbor.AOINeighborTrackingController']
+    service = MagicMock()
+    service.estimate_aoi_gps.return_value = result
+    monkeypatch.setattr(mod, 'AOIService', lambda *a, **k: service)
+    return service
+
+
+class _GPS:
+    """Stand-in for AOIGPSResult."""
+
+    terrain_elevation_m = 250.0
+
+    def to_tuple(self):
+        return (32.0, -97.0)
+
+
 class TestWorker:
 
     def test_cancel_before_run_skips_the_service(self, app):
         service = MagicMock()
-        worker = NeighborSearchWorker(service, [], 0, (1.0, 2.0))
+        worker = _worker(service)
         finished = []
-        worker.finished.connect(finished.append)
+        worker.finished.connect(lambda r, t: finished.append((r, t)))
 
         worker.cancel()
         worker.run()
 
         service.find_aoi_in_neighbors.assert_not_called()
-        assert finished == [[]]
+        assert finished == [([], False)]
 
-    def test_run_emits_results(self, app):
+    def test_run_emits_results(self, app, monkeypatch):
+        _stub_gps(monkeypatch, _GPS())
         service = MagicMock()
-        service.find_aoi_in_neighbors.return_value = [{'image_idx': 1}]
-        worker = NeighborSearchWorker(service, [], 0, (1.0, 2.0))
+        service.find_aoi_in_neighbors.return_value = ([{'image_idx': 1}], False)
+        worker = _worker(service)
         finished = []
-        worker.finished.connect(finished.append)
+        worker.finished.connect(lambda r, t: finished.append((r, t)))
 
         worker.run()
 
-        assert finished == [[{'image_idx': 1}]]
+        assert finished == [([{'image_idx': 1}], False)]
 
-    def test_service_exception_emits_error(self, app):
+    def test_truncation_is_reported_to_the_controller(self, app, monkeypatch):
+        """A capped search must not present its cap as the answer."""
+        _stub_gps(monkeypatch, _GPS())
+        service = MagicMock()
+        service.find_aoi_in_neighbors.return_value = ([{'image_idx': 1}], True)
+        worker = _worker(service)
+        finished = []
+        worker.finished.connect(lambda r, t: finished.append((r, t)))
+
+        worker.run()
+
+        assert finished == [([{'image_idx': 1}], True)]
+
+    def test_unavailable_gps_is_reported_without_searching(self, app, monkeypatch):
+        """No AOI GPS means there is nothing to look for in the other images."""
+        _stub_gps(monkeypatch, None)
+        service = MagicMock()
+        worker = _worker(service)
+        unavailable = []
+        worker.gps_unavailable.connect(lambda: unavailable.append(True))
+
+        worker.run()
+
+        assert unavailable == [True]
+        service.find_aoi_in_neighbors.assert_not_called()
+
+    def test_the_aoi_gps_is_computed_on_the_worker(self, app, monkeypatch):
+        """Regression: this ran on the GUI thread, freezing the window before
+        the progress dialog could paint -- for seconds when a DEM tile had to
+        be fetched, with no sign the Z press had registered."""
+        gps_service = _stub_gps(monkeypatch, _GPS())
+        service = MagicMock()
+        service.find_aoi_in_neighbors.return_value = ([], False)
+
+        _worker(service).run()
+
+        gps_service.estimate_aoi_gps.assert_called_once()
+
+    def test_service_exception_emits_error(self, app, monkeypatch):
+        _stub_gps(monkeypatch, _GPS())
         service = MagicMock()
         service.find_aoi_in_neighbors.side_effect = RuntimeError("boom")
-        worker = NeighborSearchWorker(service, [], 0, (1.0, 2.0))
+        worker = _worker(service)
         errors = []
         worker.error.connect(errors.append)
 
@@ -365,12 +447,12 @@ class TestGalleryClickMapsToViewerIndex:
 
 
 # --------------------------------------------------------------------------- #
-#  Cancellation actually cancels                                              #
+#  Cancellation actually stops the work (not just the bookkeeping)            #
 # --------------------------------------------------------------------------- #
 
-class TestCancellation:
+class TestCancellationStopsTheSearch:
 
-    def test_worker_passes_a_cancel_hook_the_search_can_poll(self):
+    def test_worker_passes_a_cancel_hook_the_search_can_poll(self, app, monkeypatch):
         """Regression: cancel() set a flag find_aoi_in_neighbors never read.
 
         Qt cannot interrupt a Python slot mid-execution, so quit() and
@@ -378,11 +460,10 @@ class TestCancellation:
         hook the worker kept reading EXIF and decoding full-resolution images
         for the rest of the flight after the user cancelled.
         """
+        _stub_gps(monkeypatch, _GPS())
         service = MagicMock()
-        worker = NeighborSearchWorker(
-            neighbor_service=service, images=[], current_image_idx=0,
-            aoi_gps=(32.0, -97.0),
-        )
+        service.find_aoi_in_neighbors.return_value = ([], False)
+        worker = _worker(service)
         worker.run()
 
         should_cancel = service.find_aoi_in_neighbors.call_args.kwargs['should_cancel']
@@ -399,7 +480,7 @@ class TestCancellation:
         service._center_gps_cache = {}
         service._coverage_meta_cache = {}
 
-        results = service.find_aoi_in_neighbors(
+        results, truncated = service.find_aoi_in_neighbors(
             images=[{'path': f'img{i}.jpg'} for i in range(50)],
             current_image_idx=0,
             aoi_gps=(32.0, -97.0),
@@ -407,6 +488,7 @@ class TestCancellation:
         )
 
         assert results == []
+        assert truncated is False
 
 
 # --------------------------------------------------------------------------- #
@@ -429,7 +511,7 @@ class TestStaleWorkerIsIgnored:
         controller._thread = live_thread        # B is now running
         controller._gallery_dialog = None
 
-        controller._on_search_complete([], stale_generation)
+        controller._on_search_complete([], generation=stale_generation)
 
         assert controller._thread is live_thread, \
             "a stale finish must not tear down the running search"
@@ -449,9 +531,9 @@ class TestStaleWorkerIsIgnored:
         controller._thread = None
         controller._gallery_dialog = None
         shown = []
-        controller._show_gallery_dialog = lambda results: shown.append(results)
+        controller._show_gallery_dialog = lambda results, truncated=False: shown.append(results)
 
-        controller._on_search_complete([{'image_idx': 0}], controller._generation)
+        controller._on_search_complete([{'image_idx': 0}], generation=controller._generation)
 
         assert shown == [[{'image_idx': 0}]]
 
@@ -460,7 +542,7 @@ class TestStaleWorkerIsIgnored:
         controller._thread = None
         controller._gallery_dialog = None
         shown = []
-        controller._show_gallery_dialog = lambda results: shown.append(results)
+        controller._show_gallery_dialog = lambda results, truncated=False: shown.append(results)
 
         controller._on_search_complete([{'image_idx': 0}])
 

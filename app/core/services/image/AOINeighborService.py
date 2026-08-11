@@ -506,10 +506,14 @@ class AOINeighborService:
                 closed.
 
         Returns:
-            list: List of dicts with thumbnail info, sorted by image index.
-            Whatever was found so far when cancelled.
+            tuple: (results, truncated). Results are dicts with thumbnail info,
+            sorted by image index -- whatever was found so far when cancelled.
+            ``truncated`` is True when the max_results cap stopped the search
+            with candidates still unchecked, so the caller can say so rather
+            than presenting a capped count as the answer.
         """
         results = []
+        truncated = False
         target_lat, target_lon = aoi_gps
 
         if progress_callback:
@@ -524,7 +528,7 @@ class AOINeighborService:
         candidates = []
         for i, image in enumerate(images):
             if should_cancel and should_cancel():
-                return []
+                return [], False
             center_gps = self._get_image_center_gps(image)
             if center_gps:
                 center_lat, center_lon = center_gps
@@ -561,12 +565,13 @@ class AOINeighborService:
 
                 # Stop if we've hit the maximum
                 if len(results) >= max_results:
+                    truncated = idx + 1 < len(candidates)
                     break
 
         # Sort results by image index for consistent display order
         results.sort(key=lambda r: r['image_idx'])
 
-        return results
+        return results, truncated
 
     def _check_image_for_aoi(self, image, image_idx, target_lat, target_lon,
                              agl_override_m=None, thumbnail_radius=100,

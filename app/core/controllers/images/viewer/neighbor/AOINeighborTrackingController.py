@@ -17,23 +17,33 @@ from helpers.PathHelper import path_match_key
 
 
 class NeighborSearchWorker(QObject):
-    """Worker thread for searching neighbor images."""
+    """Worker thread for searching neighbor images.
 
-    progress = Signal(str)  # Progress message
-    finished = Signal(list)  # Results list
-    error = Signal(str)  # Error message
+    Owns the AOI's own GPS calculation as well as the search. That calculation
+    decodes the source image and can query a DEM over the network, so on the
+    GUI thread it froze the window for seconds -- and did so *before* the
+    progress dialog could paint, which is the worst place for it: the user has
+    pressed Z and has no indication anything is happening.
+    """
 
-    def __init__(self, neighbor_service, images, current_image_idx, aoi_gps,
-                 agl_override_m=None, thumbnail_radius=100,
-                 aoi_terrain_elevation_m=None):
+    progress = Signal(str)          # Progress message
+    finished = Signal(list, bool)   # Results list, whether the cap truncated it
+    error = Signal(str)             # Error message
+    gps_unavailable = Signal()      # The AOI's own GPS could not be computed
+
+    def __init__(self, neighbor_service, images, current_image_idx,
+                 current_image, aoi_data, img_array=None, use_terrain=True,
+                 agl_override_m=None, thumbnail_radius=100):
         super().__init__()
         self.neighbor_service = neighbor_service
         self.images = images
         self.current_image_idx = current_image_idx
-        self.aoi_gps = aoi_gps
+        self.current_image = current_image
+        self.aoi_data = aoi_data
+        self.img_array = img_array
+        self.use_terrain = use_terrain
         self.agl_override_m = agl_override_m
         self.thumbnail_radius = thumbnail_radius
-        self.aoi_terrain_elevation_m = aoi_terrain_elevation_m
         self._cancelled = False
 
     def cancel(self):
@@ -41,19 +51,36 @@ class NeighborSearchWorker(QObject):
         self._cancelled = True
 
     def run(self):
-        """Execute the neighbor search."""
+        """Compute the AOI's GPS, then find it in the other captures."""
         try:
             if self._cancelled:
-                self.finished.emit([])
+                self.finished.emit([], False)
                 return
 
-            results = self.neighbor_service.find_aoi_in_neighbors(
+            self.progress.emit(self.tr("Locating the selected AOI..."))
+            aoi_service = AOIService(self.current_image, self.img_array)
+            aoi_gps_result = aoi_service.estimate_aoi_gps(
+                self.current_image, self.aoi_data,
+                self.agl_override_m, self.use_terrain
+            )
+            if aoi_gps_result is None:
+                self.gps_unavailable.emit()
+                return
+
+            if self._cancelled:
+                self.finished.emit([], False)
+                return
+
+            results, truncated = self.neighbor_service.find_aoi_in_neighbors(
                 images=self.images,
                 current_image_idx=self.current_image_idx,
-                aoi_gps=self.aoi_gps,
+                aoi_gps=aoi_gps_result.to_tuple(),
                 agl_override_m=self.agl_override_m,
                 thumbnail_radius=self.thumbnail_radius,
-                aoi_terrain_elevation_m=self.aoi_terrain_elevation_m,
+                # The ground elevation the forward calculation settled on, so
+                # each candidate is projected from its height above THAT point
+                # rather than above its own.
+                aoi_terrain_elevation_m=aoi_gps_result.terrain_elevation_m,
                 # Actually stops the search. cancel() used to only set a flag
                 # that nothing read, so a cancelled search ran to completion.
                 should_cancel=lambda: self._cancelled,
@@ -61,9 +88,9 @@ class NeighborSearchWorker(QObject):
             )
 
             if self._cancelled:
-                self.finished.emit([])
+                self.finished.emit([], False)
             else:
-                self.finished.emit(results)
+                self.finished.emit(results, truncated)
 
         except Exception as e:
             self.error.emit(str(e))
@@ -172,26 +199,12 @@ class AOINeighborTrackingController(TranslationMixin, QObject):
             else:
                 img_array = None
 
-            # Calculate the GPS coordinates of the selected AOI.
-            # estimate_aoi_gps returns an AOIGPSResult dataclass; the neighbor
-            # service expects a plain (lat, lon) tuple, so convert here.
             # Honor the terrain-elevation preference like the AOI label does.
+            # The AOI's own GPS is computed on the worker thread (see
+            # NeighborSearchWorker.run): it decodes the source image and can
+            # query a DEM over the network, and doing that here froze the
+            # window before the progress dialog below could even paint.
             use_terrain = getattr(self.parent, 'use_terrain_elevation', True)
-            aoi_service = AOIService(current_image, img_array)
-            aoi_gps_result = aoi_service.estimate_aoi_gps(current_image, aoi_data, agl_override_m, use_terrain)
-
-            if not aoi_gps_result:
-                QMessageBox.warning(
-                    self.parent,
-                    self.tr("Cannot Calculate GPS"),
-                    self.tr(
-                        "Unable to calculate GPS coordinates for this AOI.\n\n"
-                        "This may be due to missing image metadata (GPS, altitude, or camera info)."
-                    )
-                )
-                return
-
-            aoi_gps = aoi_gps_result.to_tuple()
 
             # Show progress dialog
             self.progress_dialog = QProgressDialog(
@@ -225,15 +238,12 @@ class AOINeighborTrackingController(TranslationMixin, QObject):
                 neighbor_service=self.neighbor_service,
                 images=search_images,
                 current_image_idx=search_idx,
-                aoi_gps=aoi_gps,
+                current_image=current_image,
+                aoi_data=aoi_data,
+                img_array=img_array,
+                use_terrain=use_terrain,
                 agl_override_m=agl_override_m,
                 thumbnail_radius=thumbnail_radius,
-                # The ground elevation the forward calculation settled on. The
-                # search projects each candidate from its height above THIS
-                # point, so the inverse assumes the same terrain the AOI's own
-                # GPS was derived from. None on a flat/no-DEM result, which
-                # leaves the flat-earth behaviour unchanged.
-                aoi_terrain_elevation_m=aoi_gps_result.terrain_elevation_m
             )
             self._worker.moveToThread(self._thread)
 
@@ -244,9 +254,12 @@ class AOINeighborTrackingController(TranslationMixin, QObject):
             self._thread.started.connect(self._worker.run)
             self._worker.progress.connect(self._on_progress)
             self._worker.finished.connect(
-                lambda results, g=generation: self._on_search_complete(results, g))
+                lambda results, truncated, g=generation:
+                    self._on_search_complete(results, truncated, generation=g))
             self._worker.error.connect(
                 lambda message, g=generation: self._on_search_error(message, g))
+            self._worker.gps_unavailable.connect(
+                lambda g=generation: self._on_gps_unavailable(generation=g))
             self.progress_dialog.canceled.connect(self._on_cancelled)
 
             # Start the search
@@ -350,12 +363,35 @@ class AOINeighborTrackingController(TranslationMixin, QObject):
         """
         return generation is not None and generation != self._generation
 
-    def _on_search_complete(self, results, generation=None):
+    def _on_gps_unavailable(self, generation=None):
+        """The AOI's own GPS could not be computed, so there is nothing to find."""
+        if self._is_stale(generation):
+            return
+        if self._defer_while_pumping(
+                lambda: self._on_gps_unavailable(generation=generation)):
+            return
+        try:
+            self._cleanup_thread()
+            self._close_progress_dialog()
+            if self._cancelled:
+                return
+            QMessageBox.warning(
+                self.parent,
+                self.tr("Cannot Calculate GPS"),
+                self.tr(
+                    "Unable to calculate GPS coordinates for this AOI.\n\n"
+                    "This may be due to missing image metadata (GPS, altitude, or camera info)."
+                )
+            )
+        except Exception as e:
+            self.logger.error(f"Error reporting unavailable AOI GPS: {e}")
+
+    def _on_search_complete(self, results, truncated=False, generation=None):
         """Handle search completion."""
         if self._is_stale(generation):
             return
         if self._defer_while_pumping(
-                lambda: self._on_search_complete(results, generation)):
+                lambda: self._on_search_complete(results, truncated, generation=generation)):
             return
         try:
             # Clean up thread
@@ -379,7 +415,7 @@ class AOINeighborTrackingController(TranslationMixin, QObject):
                 return
 
             # Show the gallery dialog
-            self._show_gallery_dialog(results)
+            self._show_gallery_dialog(results, truncated)
 
             self.tracking_completed.emit(results)
 
@@ -500,12 +536,14 @@ class AOINeighborTrackingController(TranslationMixin, QObject):
             pass  # C++ object already gone
         self._retiring.pop(thread, None)
 
-    def _show_gallery_dialog(self, results):
+    def _show_gallery_dialog(self, results, truncated=False):
         """
         Show the gallery dialog with the found thumbnails.
 
         Args:
             results (list): List of neighbor results with thumbnails
+            truncated (bool): The result cap stopped the search early, so the
+                count shown is a floor rather than the answer.
         """
         try:
             # Import here to avoid circular imports
@@ -526,7 +564,7 @@ class AOINeighborTrackingController(TranslationMixin, QObject):
                 self._gallery_dialog.close()
 
             # Create and show new dialog
-            self._gallery_dialog = AOINeighborGalleryDialog(self.parent, results)
+            self._gallery_dialog = AOINeighborGalleryDialog(self.parent, results, truncated)
             self._gallery_dialog.image_clicked.connect(self._on_gallery_image_clicked)
             self._gallery_dialog.show()
 
