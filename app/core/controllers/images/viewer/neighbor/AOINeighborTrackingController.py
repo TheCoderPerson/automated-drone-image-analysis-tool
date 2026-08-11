@@ -111,6 +111,12 @@ class AOINeighborTrackingController(TranslationMixin, QObject):
     tracking_completed = Signal(list)  # List of neighbor results
     tracking_error = Signal(str)
 
+    # Half-width of the crop taken around the projected point, in pixels of
+    # the source image. Covers the inter-image metadata disagreement measured
+    # on real flights (see track_selected_aoi), so the AOI is inside the
+    # thumbnail even though the projected centre is off by metres.
+    UNCERTAINTY_RADIUS_PX = 400
+
     def __init__(self, parent):
         """
         Initialize the AOINeighborTrackingController.
@@ -229,9 +235,23 @@ class AOINeighborTrackingController(TranslationMixin, QObject):
             self.progress_dialog.setAutoReset(False)
             self.progress_dialog.setValue(0)
 
-            # Calculate thumbnail radius based on AOI size
+            # Size the crop to the POSITIONAL UNCERTAINTY, not to the AOI.
+            #
+            # The projection is only as good as each image's own gimbal/GPS
+            # metadata, and neighbouring captures disagree about where the same
+            # ground object is. Measured on a real DJI flight: the same tarp
+            # placed 1.5 m apart by adjacent frames, rising to ~4 m five frames
+            # out. At the 1.33 cm/px GSD of that flight, 4 m is ~300 px.
+            #
+            # A radius derived from the AOI (max(100, radius*2) = 100 px here)
+            # produced a 200 px crop covering 2.7 m of ground -- narrower than
+            # the error -- so the object sat just outside almost every
+            # thumbnail and the whole gallery looked like bare ground. The
+            # crop has to be wide enough that the AOI is inside it even when
+            # the metadata is off by metres; the red circle marks the
+            # projected point, and the reviewer's eye finds the object near it.
             aoi_radius = aoi_data.get('radius', 50)
-            thumbnail_radius = max(100, aoi_radius * 2)
+            thumbnail_radius = max(self.UNCERTAINTY_RADIUS_PX, aoi_radius * 2)
 
             # Search the full flight, not just the AOI-bearing subset from the
             # XML: an image that produced no detections of its own can still

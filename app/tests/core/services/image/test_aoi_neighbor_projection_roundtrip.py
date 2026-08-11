@@ -142,18 +142,34 @@ def test_inverse_rejects_a_point_behind_the_camera():
 
 
 class _Elevation:
-    def __init__(self, elevation_m, source='terrain'):
+    """Stands in for the DEM lookup result, including the resolution the
+    forward pass records on its AOIGPSResult."""
+
+    def __init__(self, elevation_m, source='terrain', resolution_m=30.0):
         self.elevation_m = elevation_m
         self.source = source
+        self.resolution_m = resolution_m
 
 
 class _TerrainService:
-    def __init__(self, elevation, enabled=True):
+    """Stands in for TerrainService, including the geoid the DEM path needs.
+
+    Both accessors matter: the altitude selection uses the DEM elevation AND
+    the geoid undulation, exactly as AOIService does. A stub with only
+    get_elevation makes the service degrade to the unadjusted altitude, which
+    looks like a passing test for the wrong reason.
+    """
+
+    def __init__(self, elevation, enabled=True, geoid=0.0):
         self._elevation = elevation
         self.enabled = enabled
+        self._geoid = geoid
 
     def get_elevation(self, lat, lon):
         return self._elevation
+
+    def get_geoid_undulation(self, lat, lon):
+        return self._geoid
 
 
 def _patch_terrain(monkeypatch, service):
@@ -206,3 +222,128 @@ def test_altitude_is_floored_above_zero(monkeypatch):
     coverage = _coverage_info(0.0, -90.0, 100.0)
 
     assert _service()._terrain_adjusted_altitude(coverage, 250.0) == 1.0
+
+
+# --------------------- the crop must survive metadata error ----------------- #
+
+def test_edge_margin_does_not_scale_with_the_crop():
+    """A wide crop must not start rejecting images that do show the AOI.
+
+    The margin answers "is the AOI really in this frame", which is unrelated
+    to how much context the thumbnail shows. It used to be thumbnail_radius//2,
+    so widening the crop to cover metadata error would have thrown away every
+    hit within half a crop of the edge.
+    """
+    service = _service()
+    service.logger = None
+    width, height = WIDTH, HEIGHT
+    margin = AOINeighborService.EDGE_MARGIN_PX
+
+    assert margin < 100, "the in-frame test must stay a small fixed margin"
+    # A point 120 px from the edge is in frame, whatever the crop width.
+    assert service.is_point_in_image(120, 120, width, height, margin)
+    assert not service.is_point_in_image(10, 10, width, height, margin)
+
+
+def test_crop_is_sized_to_positional_uncertainty_not_to_the_aoi():
+    """Regression: every thumbnail showed bare ground.
+
+    Adjacent captures disagree about where the same object is by 1.5-4 m of
+    real metadata error -- ~110-300 px at a typical 1.33 cm/px GSD. The crop
+    was max(100, aoi_radius*2), i.e. 200 px across for a small AOI, covering
+    2.7 m of ground: narrower than the error, so the object sat just outside
+    almost every thumbnail.
+    """
+    from core.controllers.images.viewer.neighbor.AOINeighborTrackingController import (
+        AOINeighborTrackingController,
+    )
+
+    radius = AOINeighborTrackingController.UNCERTAINTY_RADIUS_PX
+    gsd_m_per_px = 0.0133
+    covered_m = radius * gsd_m_per_px
+
+    assert covered_m >= 4.0, (
+        f"a {radius} px crop covers {covered_m:.1f} m; measured inter-image "
+        "disagreement reaches ~4 m, so the AOI would fall outside"
+    )
+
+
+# ------------- the two sides must AGREE on which AGL estimate wins ---------- #
+
+_DRONE_GROUND = 1180.0
+_AOI_GROUND = 1170.0
+_REPORTED_AGL = 100.0
+_DRONE_ORTHOMETRIC = 1290.0     # absolute_alt - geoid
+
+
+class _TwoCellTerrain:
+    """A DEM where the camera's cell and the AOI's cell differ by 10 m."""
+
+    enabled = True
+
+    def get_elevation(self, lat, lon):
+        at_camera = abs(lat - DRONE_LAT) < 1e-9 and abs(lon - DRONE_LON) < 1e-9
+        return _Elevation(_DRONE_GROUND if at_camera else _AOI_GROUND)
+
+    def get_geoid_undulation(self, lat, lon):
+        return 0.0
+
+
+def test_inverse_picks_the_same_agl_estimate_as_the_forward(monkeypatch):
+    """Regression: the two sides chose different altitudes on RTK data.
+
+    _select_effective_agl PREFERS the absolute-elevation chain whenever it
+    agrees with the terrain-relief chain within tolerance. The forward pass
+    therefore used agl_abs (120 m here) while the inverse rebuilt only agl_rel
+    (110 m) -- an 8% scale error that put a corner AOI ~300 px away, outside
+    the crop, on exactly the datasets whose metadata is most trustworthy.
+
+    On this repo's demo flight the two estimates DISAGREE (77.9 vs 46.5), so
+    the forward falls back to relief and the mismatch is invisible; it needs a
+    sound geoid/ASL to appear, which is why no real-data check caught it.
+    """
+    terrain = _TwoCellTerrain()
+    aoi_service = AOIService.__new__(AOIService)
+    aoi_service.logger = None
+
+    u, v = WIDTH - 10, HEIGHT - 10      # corner: worst case for a scale error
+    initial = AOIService._calculate_ground_position(
+        DRONE_LAT, DRONE_LON, u, v, WIDTH / 2.0, HEIGHT / 2.0, WIDTH, HEIGHT,
+        FOCAL_MM, SENSOR_W_MM, SENSOR_H_MM, _REPORTED_AGL, -90.0, 0.0, 0.0)
+
+    forward = aoi_service._calculate_with_terrain(
+        {'path': 'x.jpg'}, {'center': (u, v)}, DRONE_LAT, DRONE_LON,
+        initial[0], initial[1], u, v, WIDTH / 2.0, HEIGHT / 2.0, WIDTH, HEIGHT,
+        FOCAL_MM, SENSOR_W_MM, SENSOR_H_MM, _REPORTED_AGL, -90.0, 0.0, 0.0,
+        terrain, absolute_alt=_DRONE_ORTHOMETRIC, precomputed_geoid=0.0)
+
+    assert forward.effective_agl_m == pytest.approx(120.0), \
+        "precondition: the forward pass should prefer the absolute chain here"
+
+    _patch_terrain(monkeypatch, terrain)
+    service = _service()
+    service.logger = None
+    coverage = _coverage_info(0.0, -90.0, _REPORTED_AGL)
+    coverage['asl_altitude'] = _DRONE_ORTHOMETRIC
+    coverage['altitude'] = service._terrain_adjusted_altitude(
+        coverage, forward.terrain_elevation_m)
+
+    assert coverage['altitude'] == pytest.approx(forward.effective_agl_m), \
+        "the inverse must select the same AGL estimate as the forward"
+
+    back = service.gps_to_pixel(forward.latitude, forward.longitude, coverage)
+    assert back is not None
+    assert math.hypot(back[0] - u, back[1] - v) < TOLERANCE_PX
+
+
+def test_inverse_falls_back_to_relief_without_an_absolute_altitude(monkeypatch):
+    """No ASL in the metadata -> the datum-robust estimate, as before."""
+    _patch_terrain(monkeypatch, _TwoCellTerrain())
+    service = _service()
+    service.logger = None
+    coverage = _coverage_info(0.0, -90.0, _REPORTED_AGL)
+    coverage['asl_altitude'] = None
+
+    adjusted = service._terrain_adjusted_altitude(coverage, _AOI_GROUND)
+
+    assert adjusted == pytest.approx(110.0)

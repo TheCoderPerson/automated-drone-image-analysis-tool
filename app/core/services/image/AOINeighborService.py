@@ -24,11 +24,16 @@ from core.services.LoggerService import LoggerService
 # Reuse AOIService's lazy terrain accessor rather than building a second one:
 # it refreshes the singleton's offline floor from the app preference on every
 # fetch, and two accessors would mean two places to keep that behaviour.
-from core.services.image.AOIService import _get_terrain_service
+from core.services.image.AOIService import AOIService, _get_terrain_service
 
 
 class AOINeighborService:
     """Service for tracking AOI GPS coordinates across neighboring images."""
+
+    # How far inside the frame the projected point must fall for the image to
+    # count as showing the AOI. Small and fixed: it answers "is this really in
+    # frame", which has nothing to do with how much context the crop shows.
+    EDGE_MARGIN_PX = 50
 
     def __init__(self):
         """Initialize the AOINeighborService."""
@@ -184,6 +189,7 @@ class AOINeighborService:
                 'roll_axis_azimuth': roll_axis,
                 'tilt_angle': tilt_angle,
                 'altitude': altitude,
+                'asl_altitude': image_service.get_asl_altitude('m'),
                 'width': width,
                 'height': height,
                 'focal_mm': focal_mm,
@@ -312,10 +318,14 @@ class AOINeighborService:
         the two, so on real relief the AOI lands short or long -- 30 m of
         relief at 100 m AGL moves it ~625 px, several thumbnails' worth.
 
-        Uses the terrain-relief form (reported AGL, plus how much lower the
-        AOI's ground is than the camera's) rather than the absolute-elevation
-        form, for the reason given in AOIService._select_effective_agl: any
-        geoid or ASL datum offset cancels in a DEM difference.
+        Builds BOTH estimates the forward pass builds -- the absolute-elevation
+        chain and the terrain-relief chain -- and picks between them with
+        AOIService._select_effective_agl, the same function. Rebuilding only
+        the relief estimate here was wrong: the forward pass PREFERS the
+        absolute chain whenever the two agree within tolerance, so on a dataset
+        with a trustworthy geoid/ASL (RTK) the two sides silently chose
+        different altitudes. They can differ by the whole tolerance -- 15% or
+        8 m -- which at the frame corner is ~300 px, far outside the crop.
 
         Args:
             coverage_info (dict): This image's coverage metadata.
@@ -336,19 +346,36 @@ class AOINeighborService:
         if terrain_service is None or not terrain_service.enabled:
             return altitude
 
+        lat, lon = coverage_info['center_lat'], coverage_info['center_lon']
         try:
-            camera_ground = terrain_service.get_elevation(
-                coverage_info['center_lat'], coverage_info['center_lon']
-            )
+            camera_ground = terrain_service.get_elevation(lat, lon)
+            geoid = terrain_service.get_geoid_undulation(lat, lon)
         except Exception:
             return altitude
         if camera_ground.source != 'terrain' or camera_ground.elevation_m is None:
             return altitude
 
-        adjusted = altitude + (camera_ground.elevation_m - aoi_terrain_elevation_m)
+        # Terrain-relief estimate: robust to a bad geoid or a non-ellipsoidal
+        # ASL, because any datum offset cancels in the DEM difference.
+        agl_rel = altitude + (camera_ground.elevation_m - aoi_terrain_elevation_m)
+
+        # Absolute-elevation estimate: more precise when the datum is sound.
+        agl_abs = None
+        asl = coverage_info.get('asl_altitude')
+        if asl is not None and geoid is not None:
+            agl_abs = (asl - geoid) - aoi_terrain_elevation_m
+
+        # Called unbound with this service as `self`: the method reads nothing
+        # off the instance but `.logger`, which both services carry. Sharing
+        # the real selection matters more than the awkward call -- a
+        # reimplementation here is exactly how the two sides drifted apart.
+        effective = AOIService._select_effective_agl(
+            self, agl_abs, agl_rel, altitude, geoid, camera_ground,
+            aoi_terrain_elevation_m
+        )
         # Same floor as the forward path: a non-positive AGL has no ground
         # intersection at all, and would drop the image from the results.
-        return max(1.0, adjusted)
+        return max(1.0, effective)
 
     def is_point_in_image(self, pixel_x, pixel_y, width, height, margin=0):
         """
@@ -610,8 +637,14 @@ class AOINeighborService:
 
             pixel_x, pixel_y = pixel_coords
 
-            # Check if point is within image bounds (with some margin)
-            margin = thumbnail_radius // 2  # Use smaller margin for edge detection
+            # Is the AOI actually inside this frame? A small fixed margin, NOT
+            # one derived from the crop size: the crop is deliberately much
+            # wider than the AOI (it has to cover the metadata's positional
+            # error), and scaling the rejection margin with it would throw away
+            # images that genuinely show the AOI simply because it sits nearer
+            # the edge than half a crop. extract_thumbnail already clips the
+            # crop to the image bounds, so a near-edge hit is fine to keep.
+            margin = self.EDGE_MARGIN_PX
             if not self.is_point_in_image(
                 pixel_x, pixel_y,
                 coverage_info['width'], coverage_info['height'],
