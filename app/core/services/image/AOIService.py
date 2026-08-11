@@ -635,9 +635,14 @@ class AOIService:
             return agl_abs
 
         # Divergence: absolute chain is suspect (geoid/ASL datum). Use relief.
+        # DEBUG, not WARNING: this is evaluated per AOI, so on a real search
+        # (thousands of AOIs) a systematic datum mismatch wrote one identical
+        # line per AOI into the user's log. Packaged builds log at WARNING, so
+        # at DEBUG it stays out of field logs while remaining available via
+        # ADIAT_LOG_LEVEL=DEBUG when AOI coordinates are actually in doubt.
         if self.logger:
             drone_elev = drone_terrain.elevation_m if drone_terrain else None
-            self.logger.warning(
+            self.logger.debug(
                 "AOIService: effective-AGL estimates disagree "
                 f"(absolute={agl_abs:.1f}m, relief={agl_rel:.1f}m, geoid={geoid_undulation}, "
                 f"drone_ground={drone_elev}, aoi_ground={terrain_elevation:.1f}m); "
