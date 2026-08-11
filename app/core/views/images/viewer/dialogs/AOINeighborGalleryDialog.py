@@ -89,12 +89,45 @@ class NeighborGalleryView(QGraphicsView):
         usable = max(0, self.viewport().width() - self.thumbnail_spacing)
         return max(1, min(count, usable // cell if cell else 1))
 
-    def load_thumbnails(self, results):
+    def _centred_image_idx(self):
+        """image_idx of the thumbnail nearest the middle of the viewport.
+
+        Used to re-anchor after a reflow: the grid geometry changes, so the
+        scene coordinate the user was looking at means nothing afterwards --
+        the thumbnail they were looking at does.
+        """
+        if not self._thumbnail_rects:
+            return None
+        centre = self.mapToScene(self.viewport().rect()).boundingRect().center()
+        nearest, best = None, None
+        for rect, image_idx in self._thumbnail_rects:
+            offset = rect.center() - centre
+            distance = offset.x() ** 2 + offset.y() ** 2
+            if best is None or distance < best:
+                nearest, best = image_idx, distance
+        return nearest
+
+    def _restore_view(self, zoom, image_idx):
+        """Put the view back at *zoom*, centred on *image_idx*'s new cell."""
+        if zoom and zoom > 0:
+            self.resetTransform()
+            self.scale(zoom, zoom)
+            self._zoom = zoom
+        for rect, idx in self._thumbnail_rects:
+            if idx == image_idx:
+                self.centerOn(rect.center())
+                return
+
+    def load_thumbnails(self, results, reset_view=True):
         """
         Load thumbnails from neighbor search results.
 
         Args:
             results (list): List of dicts with thumbnail info
+            reset_view (bool): Reset zoom and re-centre on the originating
+                capture. False when re-flowing an existing layout, so merely
+                resizing the dialog does not throw away the zoom and position
+                the reviewer had set.
         """
         self.scene.clear()
         self._thumbnail_rects = []
@@ -230,7 +263,8 @@ class NeighborGalleryView(QGraphicsView):
         total_height = y + self.thumbnail_size + self.label_height + self.thumbnail_spacing
         self.scene.setSceneRect(0, 0, total_width, total_height)
 
-        self.reset_view()
+        if reset_view:
+            self.reset_view()
 
     def resizeEvent(self, event):
         """Re-flow the grid when the column count actually changes.
@@ -249,11 +283,15 @@ class NeighborGalleryView(QGraphicsView):
             return
         if self._columns_for_viewport(len(self._results)) == self._columns:
             return
+        # Carry the reviewer's zoom and place across the reflow: a resize is
+        # not a request to go back to the start.
+        zoom, anchor = self._zoom, self._centred_image_idx()
         self._laying_out = True
         try:
-            self.load_thumbnails(self._results)
+            self.load_thumbnails(self._results, reset_view=False)
         finally:
             self._laying_out = False
+        self._restore_view(zoom, anchor)
 
     def wheelEvent(self, event: QWheelEvent):
         """Handle mouse wheel for zooming.

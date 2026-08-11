@@ -592,3 +592,61 @@ class TestInfoText:
         dialog._apply_translations()
 
         assert '3' in dialog.info_label.text()
+
+
+class TestResizePreservesTheView:
+    """A resize is not a request to go back to the start.
+
+    load_thumbnails ends in reset_view(), and resizeEvent re-flows the grid by
+    calling load_thumbnails -- so merely widening the dialog threw away the
+    zoom and position the reviewer had set, dropping them back to 1:1 on the
+    originating capture.
+    """
+
+    def _dialog(self, sample_thumbnail, count=50, current=40):
+        results = [
+            {'image_idx': i, 'image_name': f'DJI_{i:04d}.JPG',
+             'image_path': f'/p/{i}.JPG', 'pixel_x': 1.0, 'pixel_y': 1.0,
+             'thumbnail': sample_thumbnail.copy(), 'is_current': (i == current)}
+            for i in range(count)
+        ]
+        return AOINeighborGalleryDialog(None, results)
+
+    def test_zoom_survives_a_reflow(self, app, sample_thumbnail, qtbot):
+        dialog = self._dialog(sample_thumbnail)
+        qtbot.addWidget(dialog)
+        dialog.show()
+        view = dialog.gallery_view
+        view.scale(2.0, 2.0)
+        view._zoom = 2.0
+
+        dialog.resize(1400, 600)
+        QApplication.processEvents()
+
+        assert view._columns > 3, "the grid should have re-flowed wider"
+        assert view.transform().m11() == pytest.approx(2.0)
+        assert view._zoom == pytest.approx(2.0)
+
+    def test_the_thumbnail_under_the_eye_stays_under_the_eye(self, app, sample_thumbnail, qtbot):
+        dialog = self._dialog(sample_thumbnail)
+        qtbot.addWidget(dialog)
+        dialog.show()
+        view = dialog.gallery_view
+        view.scale(2.0, 2.0)
+        view._zoom = 2.0
+        anchor = view._centred_image_idx()
+
+        dialog.resize(1400, 600)
+        QApplication.processEvents()
+
+        assert view._centred_image_idx() == anchor
+
+    def test_first_open_still_resets_onto_the_originating_capture(self, app, sample_thumbnail, qtbot):
+        dialog = self._dialog(sample_thumbnail)
+        qtbot.addWidget(dialog)
+        dialog.show()
+        view = dialog.gallery_view
+
+        assert view.transform().m11() == pytest.approx(1.0)
+        visible = view.mapToScene(view.viewport().rect()).boundingRect()
+        assert visible.contains(view._current_rect.center())
