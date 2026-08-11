@@ -35,6 +35,19 @@ class AOINeighborService:
     # frame", which has nothing to do with how much context the crop shows.
     EDGE_MARGIN_PX = 50
 
+    # Radius of the "the AOI is somewhere in here" ring, in METRES on the
+    # ground, converted to pixels per image via that image's GSD so it stays
+    # honest at any altitude.
+    #
+    # Measured on a real DJI flight by comparing where ADIAT's own detector
+    # found the same tarp in each capture: adjacent frames disagree by ~1.5 m,
+    # rising to ~3.9 m five frames out, mean 2.2 m. Most of that is a gimbal
+    # yaw stamped ~4.5 degrees off the aircraft's actual heading (it is held
+    # constant across a flight line while the heading wanders); the remainder
+    # is the aircraft's own GPS noise. 3 m covers the bulk of it without
+    # drawing a ring so large it stops meaning anything.
+    POSITION_UNCERTAINTY_M = 3.0
+
     def __init__(self):
         """Initialize the AOINeighborService."""
         self.logger = LoggerService()
@@ -377,6 +390,31 @@ class AOINeighborService:
         # intersection at all, and would drop the image from the results.
         return max(1.0, effective)
 
+    def _uncertainty_radius_px(self, coverage_info):
+        """POSITION_UNCERTAINTY_M expressed in this image's pixels.
+
+        Uses the same GSDService the rest of the app uses, so the ring means
+        the same ground distance whatever the altitude. Returns None when the
+        intrinsics are missing (a manually aligned image can reach here with
+        focal/sensor unset), which makes extract_thumbnail fall back to the
+        plain marker rather than draw a ring of invented radius.
+        """
+        try:
+            if not coverage_info.get('focal_mm') or not coverage_info.get('sensor_w_mm'):
+                return None
+            gsd_cm = GSDService(
+                focal_length=coverage_info['focal_mm'],
+                image_size=(coverage_info['width'], coverage_info['height']),
+                altitude=coverage_info['altitude'],
+                tilt_angle=coverage_info['tilt_angle'],
+                sensor=(coverage_info['sensor_w_mm'], coverage_info['sensor_h_mm'])
+            ).compute_average_gsd()
+            if not gsd_cm or gsd_cm <= 0:
+                return None
+            return self.POSITION_UNCERTAINTY_M / (gsd_cm / 100.0)
+        except Exception:
+            return None
+
     def is_point_in_image(self, pixel_x, pixel_y, width, height, margin=0):
         """
         Check if pixel coordinates are within the image bounds.
@@ -463,7 +501,8 @@ class AOINeighborService:
         # Add 20% buffer for safety, default to 500m if estimation fails
         return max_radius * 1.2 if max_radius > 0 else 500
 
-    def extract_thumbnail(self, image_service, pixel_x, pixel_y, radius=100):
+    def extract_thumbnail(self, image_service, pixel_x, pixel_y, radius=100,
+                          uncertainty_px=None):
         """
         Extract a thumbnail centered at the given pixel coordinates.
 
@@ -472,6 +511,9 @@ class AOINeighborService:
             pixel_x (float): X coordinate in pixels
             pixel_y (float): Y coordinate in pixels
             radius (int): Radius of the thumbnail in pixels
+            uncertainty_px (float, optional): Radius, in this image's pixels,
+                of the ring marking where the AOI may actually be. None or a
+                degenerate value falls back to the plain centre marker.
 
         Returns:
             np.ndarray or None: Thumbnail image array (RGB)
@@ -492,10 +534,31 @@ class AOINeighborService:
 
             thumbnail = img_array[y1:y2, x1:x2].copy()
 
-            # Draw a circle at the center to indicate the AOI location
             center_x = int(pixel_x - x1)
             center_y = int(pixel_y - y1)
-            cv2.circle(thumbnail, (center_x, center_y), 10, (255, 0, 0), 2)
+
+            # A ring at the real positional uncertainty, not a tight circle on
+            # the nominal point. The projection is only as good as each
+            # image's gimbal/GPS metadata, and neighbouring captures disagree
+            # about where the same ground object is by metres -- measured 1.5 m
+            # between adjacent frames of a real DJI flight, ~4 m five frames
+            # out, driven mostly by a gimbal-yaw bias against the actual
+            # heading. A 10 px circle asserted 13 cm precision it never had and
+            # pointed the reviewer confidently at bare ground. The ring says
+            # "the AOI is somewhere in here", which is the true claim and the
+            # one that makes the reviewer search rather than dismiss.
+            if uncertainty_px and uncertainty_px > 12:
+                cv2.circle(thumbnail, (center_x, center_y),
+                           int(uncertainty_px), (255, 0, 0), 2)
+                # Small tick at the nominal point so the ring's centre is
+                # readable without implying that is where the AOI is.
+                cv2.drawMarker(thumbnail, (center_x, center_y), (255, 0, 0),
+                               markerType=cv2.MARKER_CROSS, markerSize=14,
+                               thickness=1)
+            else:
+                # No usable scale (missing intrinsics): fall back to the plain
+                # marker rather than drawing a ring of meaningless radius.
+                cv2.circle(thumbnail, (center_x, center_y), 10, (255, 0, 0), 2)
 
             return thumbnail
 
@@ -659,7 +722,8 @@ class AOINeighborService:
                 calculated_bearing=image.get('bearing')
             )
             thumbnail = self.extract_thumbnail(
-                image_service, pixel_x, pixel_y, thumbnail_radius
+                image_service, pixel_x, pixel_y, thumbnail_radius,
+                uncertainty_px=self._uncertainty_radius_px(coverage_info)
             )
             if thumbnail is None:
                 return None

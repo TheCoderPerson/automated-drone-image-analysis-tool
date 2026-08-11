@@ -481,6 +481,62 @@ def test_extract_thumbnail_has_circle_marker(aoi_neighbor_service):
     assert red_pixels > 0
 
 
+def test_uncertainty_ring_is_drawn_at_the_real_error_radius(aoi_neighbor_service):
+    """Regression: a 10 px circle asserted precision the projection never had.
+
+    Neighbouring captures disagree about where the same ground object is by
+    metres -- mostly a gimbal yaw stamped ~4.5 degrees off the actual heading.
+    A tight circle pointed the reviewer confidently at bare ground; a ring at
+    the real uncertainty tells them where to search.
+    """
+    mock_service = MagicMock()
+    mock_service.img_array = np.zeros((2000, 2000, 3), dtype=np.uint8)
+
+    thumbnail = aoi_neighbor_service.extract_thumbnail(
+        mock_service, 1000, 1000, radius=400, uncertainty_px=224)
+
+    red = np.where((thumbnail[:, :, 0] == 255) & (thumbnail[:, :, 1] == 0))
+    assert len(red[0]) > 0, "the marker must be drawn"
+    # The ring reaches out to its radius, far beyond the old 10 px circle.
+    reach = max(abs(red[0].max() - 400), abs(red[1].max() - 400))
+    assert reach > 200, f"ring should reach ~224 px from centre, reached {reach}"
+
+
+def test_plain_marker_when_the_scale_is_unknown(aoi_neighbor_service):
+    """No intrinsics -> no honest radius, so do not invent one."""
+    mock_service = MagicMock()
+    mock_service.img_array = np.zeros((2000, 2000, 3), dtype=np.uint8)
+
+    thumbnail = aoi_neighbor_service.extract_thumbnail(
+        mock_service, 1000, 1000, radius=400, uncertainty_px=None)
+
+    red = np.where((thumbnail[:, :, 0] == 255) & (thumbnail[:, :, 1] == 0))
+    reach = max(abs(red[0].max() - 400), abs(red[1].max() - 400))
+    assert reach < 20, "expected the small fallback marker"
+
+
+def test_uncertainty_radius_scales_with_ground_sample_distance(aoi_neighbor_service):
+    """The ring means a fixed GROUND distance, so it must scale with altitude."""
+    def coverage(altitude):
+        return {'focal_mm': 8.8, 'sensor_w_mm': 13.2, 'sensor_h_mm': 8.8,
+                'width': 5472, 'height': 3648, 'altitude': altitude,
+                'tilt_angle': 0}
+
+    low = aoi_neighbor_service._uncertainty_radius_px(coverage(50.0))
+    high = aoi_neighbor_service._uncertainty_radius_px(coverage(100.0))
+
+    assert low is not None and high is not None
+    # Twice the altitude -> twice the ground per pixel -> half the pixel radius.
+    assert low / high == pytest.approx(2.0, rel=0.02)
+
+
+def test_uncertainty_radius_is_none_without_intrinsics(aoi_neighbor_service):
+    """A manually aligned image can reach here with focal/sensor unset."""
+    assert aoi_neighbor_service._uncertainty_radius_px(
+        {'focal_mm': None, 'sensor_w_mm': None, 'width': 100, 'height': 100,
+         'altitude': 50.0, 'tilt_angle': 0}) is None
+
+
 def test_extract_thumbnail_invalid_region(aoi_neighbor_service):
     """Test thumbnail extraction with invalid region."""
     mock_service = MagicMock()
