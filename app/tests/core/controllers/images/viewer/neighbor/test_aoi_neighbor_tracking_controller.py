@@ -362,3 +362,106 @@ class TestGalleryClickMapsToViewerIndex:
 
         assert results[0]['image_name'] == 'DJI_0001.JPG'
         assert 'no detections' in results[1]['image_name']
+
+
+# --------------------------------------------------------------------------- #
+#  Cancellation actually cancels                                              #
+# --------------------------------------------------------------------------- #
+
+class TestCancellation:
+
+    def test_worker_passes_a_cancel_hook_the_search_can_poll(self):
+        """Regression: cancel() set a flag find_aoi_in_neighbors never read.
+
+        Qt cannot interrupt a Python slot mid-execution, so quit() and
+        requestInterruption() do nothing to a running search. Without a polled
+        hook the worker kept reading EXIF and decoding full-resolution images
+        for the rest of the flight after the user cancelled.
+        """
+        service = MagicMock()
+        worker = NeighborSearchWorker(
+            neighbor_service=service, images=[], current_image_idx=0,
+            aoi_gps=(32.0, -97.0),
+        )
+        worker.run()
+
+        should_cancel = service.find_aoi_in_neighbors.call_args.kwargs['should_cancel']
+        assert should_cancel() is False
+        worker.cancel()
+        assert should_cancel() is True, "cancel() must be visible to the search"
+
+    def test_search_stops_at_the_next_image_once_cancelled(self):
+        """The hook is polled per image, so the search abandons promptly."""
+        from core.services.image.AOINeighborService import AOINeighborService
+
+        service = AOINeighborService.__new__(AOINeighborService)
+        service.logger = MagicMock()
+        service._center_gps_cache = {}
+        service._coverage_meta_cache = {}
+
+        results = service.find_aoi_in_neighbors(
+            images=[{'path': f'img{i}.jpg'} for i in range(50)],
+            current_image_idx=0,
+            aoi_gps=(32.0, -97.0),
+            should_cancel=lambda: True,
+        )
+
+        assert results == []
+
+
+# --------------------------------------------------------------------------- #
+#  A retired search must not act on the live one                              #
+# --------------------------------------------------------------------------- #
+
+class TestStaleWorkerIsIgnored:
+
+    def test_cancelled_workers_late_finish_does_not_touch_the_new_search(self, controller):
+        """The reachable sequence: cancel, press Z again, worker A finishes.
+
+        Worker A is still running and still connected. Its queued `finished`
+        lands after search B has started, and _cancelled has been reset to
+        False by then -- so the handler used to tear down B's thread and
+        report A's empty results as B's answer.
+        """
+        stale_generation = controller._generation
+        controller._cleanup_thread()            # retires A, bumps the generation
+        live_thread = MagicMock()
+        controller._thread = live_thread        # B is now running
+        controller._gallery_dialog = None
+
+        controller._on_search_complete([], stale_generation)
+
+        assert controller._thread is live_thread, \
+            "a stale finish must not tear down the running search"
+
+    def test_stale_error_is_ignored_too(self, controller):
+        stale_generation = controller._generation
+        controller._cleanup_thread()
+        live_thread = MagicMock()
+        controller._thread = live_thread
+
+        controller._on_search_error("boom", stale_generation)
+
+        assert controller._thread is live_thread
+
+    def test_current_generation_is_still_handled(self, controller):
+        """The guard must not swallow the search the user is waiting on."""
+        controller._thread = None
+        controller._gallery_dialog = None
+        shown = []
+        controller._show_gallery_dialog = lambda results: shown.append(results)
+
+        controller._on_search_complete([{'image_idx': 0}], controller._generation)
+
+        assert shown == [[{'image_idx': 0}]]
+
+    def test_unstamped_calls_are_handled(self, controller):
+        """Callers without a generation (tests, legacy) still work."""
+        controller._thread = None
+        controller._gallery_dialog = None
+        shown = []
+        controller._show_gallery_dialog = lambda results: shown.append(results)
+
+        controller._on_search_complete([{'image_idx': 0}])
+
+        assert shown == [[{'image_idx': 0}]]

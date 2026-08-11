@@ -8,7 +8,8 @@ from helpers.MetaDataHelper import MetaDataHelper
 from helpers.LocationInfo import LocationInfo
 from helpers.PhotogrammetryHelper import (
     FovHomography, validate_alignment, build_camera_matrix, recover_camera_pose,
-    camera_center_world, project_pixel_to_plane, gps_to_local_enu, local_enu_to_gps
+    camera_center_world, project_pixel_to_plane, gps_to_local_enu, local_enu_to_gps,
+    build_camera_to_ned
 )
 from core.services.image.ImageService import ImageService
 from core.services.LoggerService import LoggerService
@@ -506,60 +507,15 @@ class AOIService:
         ray_cam = np.array([x_cam, y_cam, z_cam])
         ray_cam = ray_cam / np.linalg.norm(ray_cam)
 
-        # Step 2: Build rotation matrix from camera frame to NED frame
-        # Camera pitch: angle from horizontal (-90° = nadir, 0° = horizontal)
-        # For the optical axis direction in NED:
-        #   elevation angle = pitch (negative means below horizontal)
-        #   azimuth = yaw (0° = North, 90° = East)
-
-        opt_elevation = math.radians(pitch_deg)
-        opt_azimuth = math.radians(yaw_deg)
-
-        # Optical axis (camera Z) direction in NED
-        opt_axis_ned = np.array([
-            math.cos(opt_elevation) * math.cos(opt_azimuth),  # North
-            math.cos(opt_elevation) * math.sin(opt_azimuth),  # East
-            -math.sin(opt_elevation)                           # Down
-        ])
-
-        # Camera Y direction (down in image) in NED
-        # This lies in the vertical plane containing the optical axis
-        # "Up" in camera frame points toward the horizon (opposite of gravity component)
-        up_ned = np.array([
-            -math.sin(opt_elevation) * math.cos(opt_azimuth),
-            -math.sin(opt_elevation) * math.sin(opt_azimuth),
-            -math.cos(opt_elevation)
-        ])
-        cam_y_ned = -up_ned  # Camera Y = down = negative up
-
-        # Camera X direction (right in image) in NED
-        # Perpendicular to both optical axis and up direction
-        cam_x_ned = np.cross(opt_axis_ned, up_ned)
-        cam_x_ned = cam_x_ned / np.linalg.norm(cam_x_ned)
-
-        # Rotation matrix: columns are camera axes expressed in NED
-        R_cam_to_ned = np.column_stack([cam_x_ned, cam_y_ned, opt_axis_ned])
-
-        # Apply gimbal roll about the heading axis. For a fixed-wing rig with
-        # outward-rolled cameras (WALDO ±22.5°), the optical axis is tilted
-        # in the cross-track direction. We post-multiply a Rodrigues rotation
-        # about the NED heading-axis unit vector so existing pitch/yaw
-        # behaviour is preserved at roll_deg = 0.
-        if roll_deg != 0.0:
-            roll_rad = math.radians(roll_deg)
-            if roll_axis_azimuth_deg is not None:
-                axis_azimuth = math.radians(roll_axis_azimuth_deg)
-            else:
-                axis_azimuth = opt_azimuth
-            heading_axis = np.array([math.cos(axis_azimuth), math.sin(axis_azimuth), 0.0])
-            kx, ky, kz = heading_axis
-            K = np.array([
-                [0.0, -kz, ky],
-                [kz, 0.0, -kx],
-                [-ky, kx, 0.0],
-            ])
-            R_roll = np.eye(3) + math.sin(roll_rad) * K + (1.0 - math.cos(roll_rad)) * (K @ K)
-            R_cam_to_ned = R_roll @ R_cam_to_ned
+        # Step 2: Build rotation matrix from camera frame to NED frame.
+        # Shared with the analytic inverse in AOINeighborService.gps_to_pixel:
+        # the two are only correct as a pair, so they must not each carry
+        # their own copy of the camera model.
+        R_cam_to_ned = build_camera_to_ned(
+            pitch_deg, yaw_deg, roll_deg, roll_axis_azimuth_deg
+        )
+        if R_cam_to_ned is None:
+            return None
 
         # Step 3: Transform ray from camera to NED frame
         ray_ned = R_cam_to_ned @ ray_cam

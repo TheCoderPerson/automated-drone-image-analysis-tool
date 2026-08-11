@@ -15,10 +15,16 @@ from PIL import Image
 from helpers.MetaDataHelper import MetaDataHelper
 from helpers.LocationInfo import LocationInfo
 from helpers.GeodesicHelper import GeodesicHelper
-from helpers.PhotogrammetryHelper import FovHomography, validate_alignment
+from helpers.PhotogrammetryHelper import (
+    FovHomography, validate_alignment, build_camera_to_ned
+)
 from core.services.image.ImageService import ImageService
 from core.services.GSDService import GSDService
 from core.services.LoggerService import LoggerService
+# Reuse AOIService's lazy terrain accessor rather than building a second one:
+# it refreshes the singleton's offline floor from the app preference on every
+# fetch, and two accessors would mean two places to keep that behaviour.
+from core.services.image.AOIService import _get_terrain_service
 
 
 class AOINeighborService:
@@ -112,11 +118,22 @@ class AOINeighborService:
             # header fallback below needs them
             image_service = self._make_deferred_service(image, exif_data=exif_data)
 
-            # Get camera orientation
+            # Get camera orientation. Read exactly what AOIService.estimate_aoi_gps
+            # reads, including roll: the AOI's GPS was produced by that method,
+            # and this method's job is to invert it. Any input one side honours
+            # and the other ignores lands the AOI somewhere it is not -- a
+            # WALDO +-22.5 degree pod tilt alone is worth ~1500 px.
             yaw = image_service.get_camera_yaw() or 0.0
             pitch = image_service.get_camera_pitch()
             if pitch is None:
                 pitch = -90  # assume nadir
+            roll = image_service.get_gimbal_roll() or 0.0
+            if abs(roll) > 90.0:
+                # DJI's "inverted gimbal" pattern; get_camera_yaw already
+                # compensates by flipping yaw 180, so honouring roll too would
+                # double-rotate. Same rule as AOIService.
+                roll = 0.0
+            roll_axis = image_service.get_roll_axis_azimuth() if roll else None
 
             # A manually aligned image can produce coverage info even when its
             # metadata (altitude, intrinsics) is missing or unreliable.
@@ -163,6 +180,8 @@ class AOINeighborService:
                 'center_lon': lon0,
                 'yaw': yaw,
                 'pitch': pitch,
+                'roll': roll,
+                'roll_axis_azimuth': roll_axis,
                 'tilt_angle': tilt_angle,
                 'altitude': altitude,
                 'width': width,
@@ -227,35 +246,18 @@ class AOINeighborService:
             north = dlat_rad * R_earth
             east = dlon_rad * R_earth * math.cos(math.radians(lat0))
 
-            # Build the same camera-to-NED rotation matrix as
-            # AOIService._calculate_ground_position
-            opt_elevation = math.radians(pitch)
-            opt_azimuth = math.radians(yaw)
-
-            cos_elev = math.cos(opt_elevation)
-            sin_elev = math.sin(opt_elevation)
-            cos_az = math.cos(opt_azimuth)
-            sin_az = math.sin(opt_azimuth)
-
-            # Optical axis (camera Z) in NED
-            r3 = [cos_elev * cos_az, cos_elev * sin_az, -sin_elev]
-
-            # Up direction in NED (for constructing camera frame)
-            up_ned = [-sin_elev * cos_az, -sin_elev * sin_az, -cos_elev]
-
-            # Camera Y (down in image) = -up_ned
-            r2 = [sin_elev * cos_az, sin_elev * sin_az, cos_elev]
-
-            # Camera X (right in image) = cross(opt_axis, up_ned), normalized
-            r1 = [
-                r3[1] * up_ned[2] - r3[2] * up_ned[1],
-                r3[2] * up_ned[0] - r3[0] * up_ned[2],
-                r3[0] * up_ned[1] - r3[1] * up_ned[0]
-            ]
-            norm = math.sqrt(r1[0] ** 2 + r1[1] ** 2 + r1[2] ** 2)
-            if norm < 1e-10:
+            # The exact rotation AOIService._calculate_ground_position used, by
+            # construction rather than by duplication -- including gimbal roll.
+            R = build_camera_to_ned(
+                pitch, yaw,
+                coverage_info.get('roll', 0.0) or 0.0,
+                coverage_info.get('roll_axis_azimuth')
+            )
+            if R is None:
                 return None
-            r1 = [c / norm for c in r1]
+            # Columns are the camera axes in NED, so R @ [a, b, 1] is
+            # a*r1 + b*r2 + r3.
+            r1, r2, r3 = R[:, 0], R[:, 1], R[:, 2]
 
             # Solve the inverse of the forward projection analytically.
             # Forward: ground = H * (R @ [a, b, 1]) / (R @ [a, b, 1])_z
@@ -300,6 +302,53 @@ class AOINeighborService:
         except Exception as e:
             self.logger.error(f"AOINeighborService: Failed to convert GPS to pixel - {e}")
             return None
+
+    def _terrain_adjusted_altitude(self, coverage_info, aoi_terrain_elevation_m):
+        """Height of this camera above the AOI's ground, not above its own.
+
+        The forward projection positions the AOI with a terrain-corrected
+        effective AGL (AOIService._calculate_with_terrain). Inverting it with
+        the neighbour's raw EXIF RelativeAltitude assumes flat ground between
+        the two, so on real relief the AOI lands short or long -- 30 m of
+        relief at 100 m AGL moves it ~625 px, several thumbnails' worth.
+
+        Uses the terrain-relief form (reported AGL, plus how much lower the
+        AOI's ground is than the camera's) rather than the absolute-elevation
+        form, for the reason given in AOIService._select_effective_agl: any
+        geoid or ASL datum offset cancels in a DEM difference.
+
+        Args:
+            coverage_info (dict): This image's coverage metadata.
+            aoi_terrain_elevation_m (float or None): Ground elevation at the
+                AOI, from the forward calculation. None disables the
+                adjustment.
+
+        Returns:
+            float: Altitude to project with. The unadjusted value whenever the
+            DEM cannot answer for this camera's position, so a terrain gap
+            degrades to today's flat-earth behaviour rather than to nothing.
+        """
+        altitude = coverage_info['altitude']
+        if aoi_terrain_elevation_m is None:
+            return altitude
+
+        terrain_service = _get_terrain_service()
+        if terrain_service is None or not terrain_service.enabled:
+            return altitude
+
+        try:
+            camera_ground = terrain_service.get_elevation(
+                coverage_info['center_lat'], coverage_info['center_lon']
+            )
+        except Exception:
+            return altitude
+        if camera_ground.source != 'terrain' or camera_ground.elevation_m is None:
+            return altitude
+
+        adjusted = altitude + (camera_ground.elevation_m - aoi_terrain_elevation_m)
+        # Same floor as the forward path: a non-positive AGL has no ground
+        # intersection at all, and would drop the image from the results.
+        return max(1.0, adjusted)
 
     def is_point_in_image(self, pixel_x, pixel_y, width, height, margin=0):
         """
@@ -428,7 +477,8 @@ class AOINeighborService:
             return None
 
     def find_aoi_in_neighbors(self, images, current_image_idx, aoi_gps, agl_override_m=None,
-                              thumbnail_radius=100, progress_callback=None, max_results=50):
+                              thumbnail_radius=100, progress_callback=None, max_results=50,
+                              aoi_terrain_elevation_m=None, should_cancel=None):
         """
         Find all images that contain the AOI GPS coordinate.
 
@@ -444,9 +494,20 @@ class AOINeighborService:
             thumbnail_radius (int): Radius of thumbnails to extract
             progress_callback (callable, optional): Callback for progress updates
             max_results (int): Maximum number of results to return (default 50)
+            aoi_terrain_elevation_m (float, optional): Ground elevation at the
+                AOI, from the forward calculation. Lets each candidate be
+                projected from its height above the AOI's ground rather than
+                above its own, which is what the forward pass assumed.
+            should_cancel (callable, optional): Polled between images; return
+                True to abandon the search. Without it Cancel was cosmetic --
+                the flag it set was never read here, so the worker kept reading
+                EXIF and decoding full-resolution images for the rest of the
+                flight while the user waited on a dialog that had already
+                closed.
 
         Returns:
-            list: List of dicts with thumbnail info, sorted by image index
+            list: List of dicts with thumbnail info, sorted by image index.
+            Whatever was found so far when cancelled.
         """
         results = []
         target_lat, target_lon = aoi_gps
@@ -457,9 +518,13 @@ class AOINeighborService:
         # Estimate maximum coverage radius for GPS-based pre-filtering
         max_coverage_radius = self._estimate_max_coverage_radius(images, agl_override_m)
 
-        # Build list of candidate images based on GPS proximity
+        # Build list of candidate images based on GPS proximity. Cancellable:
+        # this reads EXIF for every capture in the flight, which on a large
+        # sortie is itself a long operation.
         candidates = []
         for i, image in enumerate(images):
+            if should_cancel and should_cancel():
+                return []
             center_gps = self._get_image_center_gps(image)
             if center_gps:
                 center_lat, center_lon = center_gps
@@ -476,13 +541,17 @@ class AOINeighborService:
         if progress_callback:
             progress_callback(f"Checking {len(candidates)} candidate images...")
 
-        # Check each candidate image
+        # Check each candidate image. The per-image cost here is a full-
+        # resolution decode on a hit, so the cancel check goes before the work.
         for idx, (i, _) in enumerate(candidates):
+            if should_cancel and should_cancel():
+                break
             if progress_callback:
                 progress_callback(f"Checking image {idx + 1} of {len(candidates)}...")
 
             result = self._check_image_for_aoi(
-                images[i], i, target_lat, target_lon, agl_override_m, thumbnail_radius
+                images[i], i, target_lat, target_lon, agl_override_m, thumbnail_radius,
+                aoi_terrain_elevation_m
             )
             if result:
                 # Mark if this is the current/originating image
@@ -500,7 +569,8 @@ class AOINeighborService:
         return results
 
     def _check_image_for_aoi(self, image, image_idx, target_lat, target_lon,
-                             agl_override_m=None, thumbnail_radius=100):
+                             agl_override_m=None, thumbnail_radius=100,
+                             aoi_terrain_elevation_m=None):
         """
         Check if an AOI GPS coordinate is visible in an image and extract thumbnail.
 
@@ -521,6 +591,12 @@ class AOINeighborService:
             coverage_info = self.get_image_coverage_info(image, agl_override_m, include_service=False)
             if not coverage_info:
                 return None
+
+            # Safe to mutate: get_image_coverage_info returns a copy, so the
+            # cached metadata keeps its unadjusted altitude.
+            coverage_info['altitude'] = self._terrain_adjusted_altitude(
+                coverage_info, aoi_terrain_elevation_m
+            )
 
             # Convert GPS to pixel coordinates
             pixel_coords = self.gps_to_pixel(target_lat, target_lon, coverage_info)

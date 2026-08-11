@@ -24,7 +24,8 @@ class NeighborSearchWorker(QObject):
     error = Signal(str)  # Error message
 
     def __init__(self, neighbor_service, images, current_image_idx, aoi_gps,
-                 agl_override_m=None, thumbnail_radius=100):
+                 agl_override_m=None, thumbnail_radius=100,
+                 aoi_terrain_elevation_m=None):
         super().__init__()
         self.neighbor_service = neighbor_service
         self.images = images
@@ -32,6 +33,7 @@ class NeighborSearchWorker(QObject):
         self.aoi_gps = aoi_gps
         self.agl_override_m = agl_override_m
         self.thumbnail_radius = thumbnail_radius
+        self.aoi_terrain_elevation_m = aoi_terrain_elevation_m
         self._cancelled = False
 
     def cancel(self):
@@ -51,6 +53,10 @@ class NeighborSearchWorker(QObject):
                 aoi_gps=self.aoi_gps,
                 agl_override_m=self.agl_override_m,
                 thumbnail_radius=self.thumbnail_radius,
+                aoi_terrain_elevation_m=self.aoi_terrain_elevation_m,
+                # Actually stops the search. cancel() used to only set a flag
+                # that nothing read, so a cancelled search ran to completion.
+                should_cancel=lambda: self._cancelled,
                 progress_callback=lambda msg: self.progress.emit(msg) if not self._cancelled else None
             )
 
@@ -86,6 +92,12 @@ class AOINeighborTrackingController(TranslationMixin, QObject):
         self._worker = None
         self._thread = None
         self._cancelled = False
+        # Bumped whenever a search is retired. A cancelled worker is still
+        # running and still connected, and its queued `finished` arrives after
+        # the next search has started; without a generation stamp that late
+        # signal tore down the NEW thread and reported "No Neighbors Found"
+        # for a search that was still running.
+        self._generation = 0
         # Threads still winding down, kept alive until Qt reports them
         # stopped. See _cleanup_thread for why this must not be skipped.
         self._retiring = {}
@@ -215,15 +227,26 @@ class AOINeighborTrackingController(TranslationMixin, QObject):
                 current_image_idx=search_idx,
                 aoi_gps=aoi_gps,
                 agl_override_m=agl_override_m,
-                thumbnail_radius=thumbnail_radius
+                thumbnail_radius=thumbnail_radius,
+                # The ground elevation the forward calculation settled on. The
+                # search projects each candidate from its height above THIS
+                # point, so the inverse assumes the same terrain the AOI's own
+                # GPS was derived from. None on a flat/no-DEM result, which
+                # leaves the flat-earth behaviour unchanged.
+                aoi_terrain_elevation_m=aoi_gps_result.terrain_elevation_m
             )
             self._worker.moveToThread(self._thread)
 
-            # Connect signals
+            # Connect signals. The terminal handlers carry the generation this
+            # search was started with, so a previous worker's late signal is
+            # recognised as stale instead of acting on the current search.
+            generation = self._generation
             self._thread.started.connect(self._worker.run)
             self._worker.progress.connect(self._on_progress)
-            self._worker.finished.connect(self._on_search_complete)
-            self._worker.error.connect(self._on_search_error)
+            self._worker.finished.connect(
+                lambda results, g=generation: self._on_search_complete(results, g))
+            self._worker.error.connect(
+                lambda message, g=generation: self._on_search_error(message, g))
             self.progress_dialog.canceled.connect(self._on_cancelled)
 
             # Start the search
@@ -296,26 +319,43 @@ class AOINeighborTrackingController(TranslationMixin, QObject):
         self._deferred = None
         if deferred is None:
             return
-        handler, payload = deferred
-        handler(payload)
+        deferred()
 
-    def _defer_while_pumping(self, handler, payload):
-        """True if *handler* was deferred because a progress update is active.
+    def _defer_while_pumping(self, run):
+        """True if *run* was deferred because a progress update is active.
 
         Terminal handlers must never run nested inside _on_progress: they close
         the progress dialog that _on_progress is still using, and they open
         another dialog inside its modal session, which macOS reports as
         "modalSession has been exited prematurely".
+
+        Takes a zero-argument callable so the deferred replay carries every
+        argument the handler was called with, including which search it belongs
+        to.
         """
         if not self._in_progress_update:
             return False
         # Last one wins: only one terminal event can be meaningful per search.
-        self._deferred = (handler, payload)
+        self._deferred = run
         return True
 
-    def _on_search_complete(self, results):
+    def _is_stale(self, generation):
+        """True when *generation* belongs to a search that has been retired.
+
+        A cancelled worker keeps running -- Qt cannot interrupt a Python slot
+        mid-execution -- and stays connected to these handlers. Its `finished`
+        is queued, so it lands after the user has started the next search.
+        Acting on it tore down the live thread and reported the cancelled
+        search's (empty) results as the new search's answer.
+        """
+        return generation is not None and generation != self._generation
+
+    def _on_search_complete(self, results, generation=None):
         """Handle search completion."""
-        if self._defer_while_pumping(self._on_search_complete, results):
+        if self._is_stale(generation):
+            return
+        if self._defer_while_pumping(
+                lambda: self._on_search_complete(results, generation)):
             return
         try:
             # Clean up thread
@@ -346,9 +386,12 @@ class AOINeighborTrackingController(TranslationMixin, QObject):
         except Exception as e:
             self.logger.error(f"Error handling search completion: {e}")
 
-    def _on_search_error(self, error_msg):
+    def _on_search_error(self, error_msg, generation=None):
         """Handle search error."""
-        if self._defer_while_pumping(self._on_search_error, error_msg):
+        if self._is_stale(generation):
+            return
+        if self._defer_while_pumping(
+                lambda: self._on_search_error(error_msg, generation)):
             return
         try:
             # Clean up thread
@@ -376,6 +419,11 @@ class AOINeighborTrackingController(TranslationMixin, QObject):
         """Handle cancellation."""
         self._cancelled = True
         self._cleanup_thread()
+        # Close it here rather than leaving it to the worker's `finished`:
+        # that signal is now correctly ignored as stale, so nothing else would
+        # release the dialog, and the next search would overwrite the
+        # reference and strand this one as a child of the viewer.
+        self._close_progress_dialog()
 
     def _close_progress_dialog(self):
         """Close the progress dialog without triggering a spurious cancellation.
@@ -390,6 +438,12 @@ class AOINeighborTrackingController(TranslationMixin, QObject):
             except (RuntimeError, TypeError):
                 pass
             self.progress_dialog.close()
+            # Parented to the viewer, so Qt owns it: without this each search
+            # strands a QProgressDialog alive for the session.
+            try:
+                self.progress_dialog.deleteLater()
+            except RuntimeError:
+                pass  # C++ object already gone
             self.progress_dialog = None
 
     def _cleanup_thread(self):
@@ -416,6 +470,11 @@ class AOINeighborTrackingController(TranslationMixin, QObject):
         thread, worker = self._thread, self._worker
         self._thread = None
         self._worker = None
+        # Anything still connected from this search is now stale by definition.
+        # Bumping here (rather than only when a new search starts) means a
+        # cancelled worker's late signals are ignored even if the user never
+        # presses Z again.
+        self._generation += 1
         if thread is None:
             return
 
