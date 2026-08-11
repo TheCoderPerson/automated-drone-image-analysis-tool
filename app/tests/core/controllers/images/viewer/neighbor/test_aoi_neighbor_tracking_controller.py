@@ -17,6 +17,7 @@ import sys
 from unittest.mock import MagicMock
 
 import pytest
+from PySide6.QtCore import QThread
 from PySide6.QtWidgets import QApplication, QWidget
 
 from core.controllers.images.viewer.neighbor.AOINeighborTrackingController import (
@@ -186,7 +187,10 @@ class TestCancellation:
         results = [{'image_idx': 1, 'pixel_x': 5, 'pixel_y': 5}]
         controller._on_search_complete(results)
 
-        shown.assert_called_once_with(results)
+        # The gallery is told whether the result cap truncated the search, so
+        # it can say "there are more" instead of presenting the cap as the
+        # answer. A complete search reports False.
+        shown.assert_called_once_with(results, False)
 
     def test_closing_progress_dialog_does_not_read_as_cancelled(self, controller,
                                                                 monkeypatch):
@@ -286,7 +290,7 @@ class TestWorker:
         service = MagicMock()
         worker = _worker(service)
         finished = []
-        worker.finished.connect(lambda r, t: finished.append((r, t)))
+        worker.finished.connect(lambda r, t, g: finished.append((r, t)))
 
         worker.cancel()
         worker.run()
@@ -300,7 +304,7 @@ class TestWorker:
         service.find_aoi_in_neighbors.return_value = ([{'image_idx': 1}], False)
         worker = _worker(service)
         finished = []
-        worker.finished.connect(lambda r, t: finished.append((r, t)))
+        worker.finished.connect(lambda r, t, g: finished.append((r, t)))
 
         worker.run()
 
@@ -313,7 +317,7 @@ class TestWorker:
         service.find_aoi_in_neighbors.return_value = ([{'image_idx': 1}], True)
         worker = _worker(service)
         finished = []
-        worker.finished.connect(lambda r, t: finished.append((r, t)))
+        worker.finished.connect(lambda r, t, g: finished.append((r, t)))
 
         worker.run()
 
@@ -325,7 +329,7 @@ class TestWorker:
         service = MagicMock()
         worker = _worker(service)
         unavailable = []
-        worker.gps_unavailable.connect(lambda: unavailable.append(True))
+        worker.gps_unavailable.connect(lambda g: unavailable.append(True))
 
         worker.run()
 
@@ -350,7 +354,7 @@ class TestWorker:
         service.find_aoi_in_neighbors.side_effect = RuntimeError("boom")
         worker = _worker(service)
         errors = []
-        worker.error.connect(errors.append)
+        worker.error.connect(lambda message, g: errors.append(message))
 
         worker.run()
 
@@ -547,3 +551,59 @@ class TestStaleWorkerIsIgnored:
         controller._on_search_complete([{'image_idx': 0}])
 
         assert shown == [[{'image_idx': 0}]]
+
+
+# --------------------------------------------------------------------------- #
+#  The search must complete on a REAL thread, with handlers on the GUI thread  #
+# --------------------------------------------------------------------------- #
+
+class TestRealThreadedRun:
+    """Regression: the app froze at the last image of every search.
+
+    The terminal signals were connected via lambdas. A lambda has no receiver
+    QObject, so Qt cannot use the controller's thread affinity and resolves the
+    connection as Direct -- the completion handler then ran ON THE WORKER
+    THREAD, where _cleanup_thread waits on the very thread it is running on and
+    the dialog calls touch GUI objects from the wrong thread. Deadlock, with
+    the progress dialog stuck on "Checking image N of N".
+
+    Every other test in this file drives the handlers by direct call, which
+    cannot see a connection-type defect. This one runs the real thread.
+    """
+
+    def _run(self, controller, viewer, qtbot, monkeypatch, results, truncated=False):
+        service = MagicMock()
+        service.find_aoi_in_neighbors.return_value = (results, truncated)
+        controller.neighbor_service = service
+        _stub_gps(monkeypatch, _GPS())
+
+        seen = {}
+        monkeypatch.setattr(
+            controller, '_show_gallery_dialog',
+            lambda r, t=False: seen.update(
+                results=r, truncated=t, thread=QThread.currentThread()))
+
+        with qtbot.waitSignal(controller.tracking_completed, timeout=10000):
+            controller.track_selected_aoi(image_idx=0, aoi_idx=0)
+        return seen
+
+    def test_search_completes_and_tears_down(self, controller, viewer, qtbot, monkeypatch):
+        seen = self._run(controller, viewer, qtbot, monkeypatch,
+                         [{'image_idx': 1, 'pixel_x': 5, 'pixel_y': 5}])
+
+        assert seen['results'] == [{'image_idx': 1, 'pixel_x': 5, 'pixel_y': 5}]
+        assert controller._thread is None, "the thread must be retired"
+        assert controller.progress_dialog is None, "the progress dialog must close"
+
+    def test_completion_runs_on_the_gui_thread(self, controller, viewer, qtbot, monkeypatch):
+        """The actual defect: a Direct connection ran this on the worker."""
+        seen = self._run(controller, viewer, qtbot, monkeypatch,
+                         [{'image_idx': 1, 'pixel_x': 5, 'pixel_y': 5}])
+
+        assert seen['thread'] is QApplication.instance().thread(),             "terminal handlers must be queued to the GUI thread"
+
+    def test_truncation_reaches_the_gallery(self, controller, viewer, qtbot, monkeypatch):
+        seen = self._run(controller, viewer, qtbot, monkeypatch,
+                         [{'image_idx': 1, 'pixel_x': 5, 'pixel_y': 5}], truncated=True)
+
+        assert seen['truncated'] is True

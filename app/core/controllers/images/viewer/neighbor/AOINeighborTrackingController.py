@@ -26,15 +26,23 @@ class NeighborSearchWorker(QObject):
     pressed Z and has no indication anything is happening.
     """
 
-    progress = Signal(str)          # Progress message
-    finished = Signal(list, bool)   # Results list, whether the cap truncated it
-    error = Signal(str)             # Error message
-    gps_unavailable = Signal()      # The AOI's own GPS could not be computed
+    # The generation rides in the signal rather than being bound into a lambda
+    # at connect time. A lambda has no receiver QObject, so Qt cannot use the
+    # controller's thread affinity and resolves the connection as Direct: the
+    # handler then ran ON THE WORKER THREAD, where _cleanup_thread waits on the
+    # very thread it is running on and the dialog calls touch GUI objects from
+    # the wrong thread. That deadlocked the app at the last image of the search.
+    # Bound methods of the controller keep the connection queued to the GUI thread.
+    progress = Signal(str)               # Progress message
+    finished = Signal(list, bool, int)   # Results, cap-truncated, generation
+    error = Signal(str, int)             # Error message, generation
+    gps_unavailable = Signal(int)        # The AOI's own GPS is not computable
 
     def __init__(self, neighbor_service, images, current_image_idx,
                  current_image, aoi_data, img_array=None, use_terrain=True,
-                 agl_override_m=None, thumbnail_radius=100):
+                 agl_override_m=None, thumbnail_radius=100, generation=0):
         super().__init__()
+        self.generation = generation
         self.neighbor_service = neighbor_service
         self.images = images
         self.current_image_idx = current_image_idx
@@ -54,7 +62,7 @@ class NeighborSearchWorker(QObject):
         """Compute the AOI's GPS, then find it in the other captures."""
         try:
             if self._cancelled:
-                self.finished.emit([], False)
+                self.finished.emit([], False, self.generation)
                 return
 
             self.progress.emit(self.tr("Locating the selected AOI..."))
@@ -64,11 +72,11 @@ class NeighborSearchWorker(QObject):
                 self.agl_override_m, self.use_terrain
             )
             if aoi_gps_result is None:
-                self.gps_unavailable.emit()
+                self.gps_unavailable.emit(self.generation)
                 return
 
             if self._cancelled:
-                self.finished.emit([], False)
+                self.finished.emit([], False, self.generation)
                 return
 
             results, truncated = self.neighbor_service.find_aoi_in_neighbors(
@@ -88,12 +96,12 @@ class NeighborSearchWorker(QObject):
             )
 
             if self._cancelled:
-                self.finished.emit([], False)
+                self.finished.emit([], False, self.generation)
             else:
-                self.finished.emit(results, truncated)
+                self.finished.emit(results, truncated, self.generation)
 
         except Exception as e:
-            self.error.emit(str(e))
+            self.error.emit(str(e), self.generation)
 
 
 class AOINeighborTrackingController(TranslationMixin, QObject):
@@ -244,22 +252,18 @@ class AOINeighborTrackingController(TranslationMixin, QObject):
                 use_terrain=use_terrain,
                 agl_override_m=agl_override_m,
                 thumbnail_radius=thumbnail_radius,
+                generation=self._generation,
             )
             self._worker.moveToThread(self._thread)
 
             # Connect signals. The terminal handlers carry the generation this
             # search was started with, so a previous worker's late signal is
             # recognised as stale instead of acting on the current search.
-            generation = self._generation
             self._thread.started.connect(self._worker.run)
             self._worker.progress.connect(self._on_progress)
-            self._worker.finished.connect(
-                lambda results, truncated, g=generation:
-                    self._on_search_complete(results, truncated, generation=g))
-            self._worker.error.connect(
-                lambda message, g=generation: self._on_search_error(message, g))
-            self._worker.gps_unavailable.connect(
-                lambda g=generation: self._on_gps_unavailable(generation=g))
+            self._worker.finished.connect(self._on_search_complete)
+            self._worker.error.connect(self._on_search_error)
+            self._worker.gps_unavailable.connect(self._on_gps_unavailable)
             self.progress_dialog.canceled.connect(self._on_cancelled)
 
             # Start the search
