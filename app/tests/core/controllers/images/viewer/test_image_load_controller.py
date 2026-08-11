@@ -61,10 +61,13 @@ def test_apply_pending_view_zoom_invokes_the_consumed_request():
     apply_zoom.assert_called_once_with()
 
 
-def test_applied_zoom_is_logged_at_warning_so_field_builds_record_it():
-    """Packaged builds log at WARNING. At INFO this line was invisible, and a
-    silent field log could not distinguish success from the click never
-    reaching this path."""
+def test_applied_zoom_is_not_logged_at_warning():
+    """Success path: one line per gallery AOI click, so DEBUG, not WARNING.
+
+    It was raised to WARNING to prove the zoom fired on an unreproducible
+    field machine. It did; the fault was elsewhere (relink drift in the
+    results file). At WARNING this buries real warnings in every log.
+    """
     controller, parent = _controller()
     parent.current_image = 4
     parent.main_image.zoomStack = [object()]        # the zoom took effect
@@ -73,9 +76,22 @@ def test_applied_zoom_is_logged_at_warning_so_field_builds_record_it():
 
     controller._apply_pending_view_zoom()
 
+    controller.logger.warning.assert_not_called()
+    assert 'applied for image 4' in controller.logger.debug.call_args[0][0]
+
+
+def test_unzoomed_landing_still_warns():
+    """The anomaly path keeps its WARNING: the request ran and nothing zoomed."""
+    controller, parent = _controller()
+    parent.current_image = 4
+    parent.main_image.zoomStack = []                # the zoom did NOT take
+    parent.take_pending_view_zoom = MagicMock(return_value=MagicMock())
+    controller.logger = MagicMock()
+
+    controller._apply_pending_view_zoom()
+
     controller.logger.warning.assert_called_once()
-    assert 'applied for image 4' in controller.logger.warning.call_args[0][0]
-    controller.logger.info.assert_not_called()
+    assert 'not zoomed' in controller.logger.warning.call_args[0][0]
 
 
 def test_apply_pending_view_zoom_noop_when_nothing_pending():

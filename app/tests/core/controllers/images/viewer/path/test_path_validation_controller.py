@@ -191,6 +191,38 @@ def test_windows_authored_path_recovers_from_chosen_folder(controller, tmp_path)
     assert image["path"] == str(tmp_path / "DJI_0042.JPG")
 
 
+def test_same_named_images_relink_to_their_own_sortie(controller, tmp_path):
+    """The wrong-photo regression, end to end.
+
+    WALDO restarts its counter per sortie, so the same filename exists in
+    every sortie folder. Recovery used to collapse them onto whichever copy
+    the walk reached first AND persist that into the result XML, so an AOI
+    kept its correct coordinates but was reattached to another photo - a
+    circle on empty ground beside a gallery thumbnail of the real detection.
+    """
+    for sortie in ("Sortie1", "Sortie2"):
+        folder = tmp_path / sortie
+        folder.mkdir()
+        (folder / "0_000_00_022.jpg").write_text(sortie)
+
+    images = [
+        {"path": r"D:\Capture\Sortie1\0_000_00_022.jpg", "mask_path": ""},
+        {"path": r"D:\Capture\Sortie2\0_000_00_022.jpg", "mask_path": ""},
+    ]
+
+    with patch(f"{_MODULE}.QMessageBox") as MockMsgBox, \
+            patch(f"{_MODULE}.QFileDialog") as MockFileDialog:
+        _mock_msgbox(MockMsgBox)
+        MockFileDialog.getExistingDirectory.return_value = str(tmp_path)
+        assert controller.validate_and_fix_paths(images) is True
+
+    assert images[0]["path"] == str(tmp_path / "Sortie1" / "0_000_00_022.jpg")
+    assert images[1]["path"] == str(tmp_path / "Sortie2" / "0_000_00_022.jpg")
+    # The collapse fingerprint the audit script looks for: two entries on one
+    # path. It must not be reintroduced.
+    assert images[0]["path"] != images[1]["path"]
+
+
 def test_recovery_finds_images_in_subfolders(controller, tmp_path):
     """Drone media is normally nested; the old flat join never looked deeper."""
     nested = tmp_path / "DCIM" / "100MEDIA"
@@ -377,22 +409,43 @@ def test_remembered_folder_auto_resolves_without_prompt(controller, tmp_path):
 def test_partial_auto_resolve_prompts_only_for_remainder(controller, tmp_path):
     """Auto-relink applies what it finds; only the rest goes to the prompt."""
     folder = tmp_path / "root"
-    folder.mkdir()
-    (folder / "found.jpg").write_text("fake")
+    (folder / "batch").mkdir(parents=True)
+    (folder / "batch" / "found.jpg").write_text("fake")
     _remember(controller, str(folder))
 
     images = [
-        {"path": r"C:\old\found.jpg", "mask_path": ""},
-        {"path": r"C:\old\gone.jpg", "mask_path": ""},
+        {"path": r"C:\old\batch\found.jpg", "mask_path": ""},
+        {"path": r"C:\old\batch\gone.jpg", "mask_path": ""},
     ]
 
     with patch.object(controller, "_prompt_for_source_folder", return_value=True) as mock_prompt:
         result = controller.validate_and_fix_paths(images)
 
     assert result is True
-    assert images[0]["path"] == str(folder / "found.jpg")
+    assert images[0]["path"] == str(folder / "batch" / "found.jpg")
     remaining = mock_prompt.call_args.args[0]
     assert [item["filename"] for item in remaining] == ["gone.jpg"]
+
+
+def test_unattended_relink_will_not_take_a_lone_unrelated_match(controller, tmp_path):
+    """Silent relink must not move a result set onto another flight line.
+
+    This branch shows no dialog. A remembered folder holding one same-named
+    file from a different capture is not evidence that it is the same photo,
+    so it goes to the prompt instead of being taken on trust.
+    """
+    other = tmp_path / "Road1 North-South"
+    other.mkdir()
+    (other / "0_000_00_022.jpg").write_text("wrong flight line")
+    _remember(controller, str(tmp_path))
+
+    images = [{"path": r"E:\Cap\Road2 South-North\0_000_00_022.jpg", "mask_path": ""}]
+
+    with patch.object(controller, "_prompt_for_source_folder", return_value=True) as mock_prompt:
+        assert controller.validate_and_fix_paths(images) is True
+
+    assert images[0]["path"] == r"E:\Cap\Road2 South-North\0_000_00_022.jpg"
+    assert [i["filename"] for i in mock_prompt.call_args.args[0]] == ["0_000_00_022.jpg"]
 
 
 def test_unplugged_remembered_folder_is_skipped_but_kept(controller, tmp_path):

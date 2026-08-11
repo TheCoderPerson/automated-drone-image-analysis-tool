@@ -16,6 +16,7 @@ from helpers.PathHelper import (
     cross_platform_basename,
     index_folder_by_filename,
     find_in_index,
+    normalize_filename_key,
 )
 
 
@@ -70,16 +71,26 @@ class PathValidationController(TranslationMixin):
             # "filename". Joining it onto the folder the user picks can never
             # match, so recovery reported every image as still missing no
             # matter how correct the chosen folder was.
+            # 'stored_path' rides along with the display name: when several
+            # files under the chosen folder share this basename (WALDO sortie
+            # counters restart, so the name repeats per sortie), the enclosing
+            # folders in the original path are the only thing that says WHICH
+            # one this entry means. Matching on the bare filename relinked
+            # every same-named entry to one file and persisted that into the
+            # XML, so AOIs drew at their correct coordinates on the wrong
+            # photo.
             if image_path and not os.path.exists(image_path):
                 missing_images.append({
                     'image': image,
-                    'filename': cross_platform_basename(image_path)
+                    'filename': cross_platform_basename(image_path),
+                    'stored_path': image_path,
                 })
 
             if mask_path and not os.path.exists(mask_path):
                 missing_masks.append({
                     'image': image,
-                    'filename': cross_platform_basename(mask_path)
+                    'filename': cross_platform_basename(mask_path),
+                    'stored_path': mask_path,
                 })
 
         # Folders that fixed earlier batches usually fix this one too; try
@@ -240,7 +251,14 @@ class PathValidationController(TranslationMixin):
             resolved = {}
             next_remaining = []
             for item in remaining:
-                located = find_in_index(item['filename'], index)
+                # require_folder_agreement: this branch relinks with no dialog
+                # and no confirmation, so a lone same-named file in a
+                # remembered folder must not be taken on trust - that is how a
+                # whole result set silently moves to another flight line. When
+                # it declines, the user is prompted instead of misled.
+                located = find_in_index(
+                    item.get('stored_path') or item['filename'], index,
+                    require_folder_agreement=True)
                 if located:
                     resolved[id(item)] = located
                 else:
@@ -306,14 +324,29 @@ class PathValidationController(TranslationMixin):
             start_dir = folder
 
             index = index_folder_by_filename(folder)
+            if getattr(index, 'truncated', False):
+                # Too many files to index fully: a name's duplicate may never
+                # have been reached, so "unique" is not trustworthy here.
+                self.logger.warning(
+                    f"Indexing of {folder} hit its file limit; duplicate "
+                    f"filenames may not have been detected")
             resolved = {}
             still_missing = []
+            ambiguous = []
             for item in missing:
-                located = find_in_index(item['filename'], index)
+                stored = item.get('stored_path') or item['filename']
+                located = find_in_index(stored, index)
                 if located:
                     resolved[id(item)] = located
                 else:
                     still_missing.append(item['filename'])
+                    # "Not found" and "found several and cannot tell which"
+                    # need different advice: the second is fixed by pointing
+                    # at one flight-line folder instead of a shared parent.
+                    if len(index.get(
+                            normalize_filename_key(
+                                cross_platform_basename(stored)), [])) > 1:
+                        ambiguous.append(item['filename'])
 
             if not still_missing:
                 self._apply_resolved(missing, resolved, path_key, folder)
@@ -334,7 +367,7 @@ class PathValidationController(TranslationMixin):
             )
 
             if not self._ask_retry_or_continue(
-                missing, still_missing, len(resolved), labels
+                missing, still_missing, len(resolved), labels, ambiguous
             ):
                 return self._continued
 
@@ -351,8 +384,16 @@ class PathValidationController(TranslationMixin):
         msg_box.setDefaultButton(QMessageBox.Ok)
         return msg_box.exec() == QMessageBox.Ok
 
-    def _ask_retry_or_continue(self, missing, still_missing, found_count, labels):
+    def _ask_retry_or_continue(self, missing, still_missing, found_count, labels,
+                               ambiguous=None):
         """Offer another folder, continuing partially, or cancelling.
+
+        Args:
+            ambiguous (list): Filenames that WERE present but matched several
+                files. Without calling these out the dialog says the files
+                were not found while they are sitting in the folder, and the
+                user has no way to guess that the fix is to pick one
+                flight-line folder rather than a shared parent.
 
         Returns:
             bool: True to loop and pick another folder. False to stop, with
@@ -364,6 +405,13 @@ class PathValidationController(TranslationMixin):
         text = template.format(
             found=found_count, total=len(missing), missing=missing_list
         )
+        if ambiguous:
+            text += self.tr(
+                "\n\n{count} of these appear more than once in that folder, so "
+                "which capture they belong to cannot be determined:\n{files}\n\n"
+                "Choose the specific flight/sortie folder rather than a folder "
+                "containing several of them."
+            ).format(count=len(ambiguous), files=self._format_file_list(ambiguous, limit=5))
 
         msg_box = QMessageBox(self.parent)
         msg_box.setIcon(QMessageBox.Warning)

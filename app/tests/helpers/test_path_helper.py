@@ -124,13 +124,143 @@ def test_index_matches_case_insensitively(tmp_path):
     assert find_in_index("DJI_0042.JPG", index) == str(tmp_path / "DJI_0042.jpg")
 
 
-def test_index_prefers_shallowest_duplicate(tmp_path):
-    (tmp_path / "dup.jpg").write_text("x")
-    deep = tmp_path / "sub"
-    deep.mkdir()
-    (deep / "dup.jpg").write_text("x")
+# --------------------------- duplicate basenames -------------------------- #
+#
+# Field report lineage: a WALDO dataset whose per-sortie counters restart has
+# the same filename in every sortie folder. Recovery kept one path per name
+# and matched on the bare filename, so all same-named entries relinked to one
+# file - and _apply_resolved persisted that into the result XML. AOIs then
+# drew at their recorded (correct) coordinates on the wrong photo: a circle
+# on bare ground next to a gallery thumbnail showing the real detection,
+# which had been cropped at analysis time from the right file.
+
+
+def _two_sorties(tmp_path, name="0_000_00_022.jpg"):
+    """Same filename under Sortie1 and Sortie2, as WALDO produces."""
+    paths = {}
+    for sortie in ("Sortie1", "Sortie2"):
+        folder = tmp_path / sortie
+        folder.mkdir()
+        (folder / name).write_text(sortie)
+        paths[sortie] = str(folder / name)
+    return paths
+
+
+def test_index_keeps_every_duplicate_candidate(tmp_path):
+    _two_sorties(tmp_path)
     index = index_folder_by_filename(str(tmp_path))
-    assert find_in_index("dup.jpg", index) == str(tmp_path / "dup.jpg")
+    assert len(index[normalize_filename_key("0_000_00_022.jpg")]) == 2
+
+
+def test_duplicate_basenames_resolve_by_enclosing_folder(tmp_path):
+    paths = _two_sorties(tmp_path)
+    index = index_folder_by_filename(str(tmp_path))
+
+    # Each stored path finds its OWN sortie, not whichever the walk hit first.
+    assert find_in_index(r"D:\Flights\Sortie2\0_000_00_022.jpg", index) == paths["Sortie2"]
+    assert find_in_index(r"D:\Flights\Sortie1\0_000_00_022.jpg", index) == paths["Sortie1"]
+
+
+def test_ambiguous_duplicate_refuses_to_guess(tmp_path):
+    """No distinguishing context: report missing rather than poison the XML.
+
+    A wrong answer here is persisted into the result file and silently
+    reassigns an AOI to another photo; "still missing" is recoverable.
+    """
+    _two_sorties(tmp_path)
+    index = index_folder_by_filename(str(tmp_path))
+
+    # Bare filename, and a stored path whose folders match neither candidate.
+    assert find_in_index("0_000_00_022.jpg", index) is None
+    assert find_in_index(r"D:\Elsewhere\Batch9\0_000_00_022.jpg", index) is None
+
+
+def test_unique_basename_still_resolves_without_folder_context(tmp_path):
+    """The ordinary moved-folder case must keep working unchanged."""
+    nested = tmp_path / "DCIM" / "100MEDIA"
+    nested.mkdir(parents=True)
+    (nested / "DJI_0042.JPG").write_text("x")
+    index = index_folder_by_filename(str(tmp_path))
+
+    assert find_in_index("DJI_0042.JPG", index) == str(nested / "DJI_0042.JPG")
+
+
+def test_sibling_flight_lines_do_not_cross_contaminate(tmp_path):
+    """The shipped failure, reproduced from the customer's actual tree.
+
+    One capture folder holds two flight lines whose files are named
+    identically (0_000_00_NNN.jpg), plus loose copies one level up. The
+    analysis ran on Road2; recovery relinked 364 of 370 entries to Road1's
+    same-named files and 16 to the loose copies. Every path stayed unique,
+    so this is invisible to a duplicate/collapse check - the only tell is
+    that the folder no longer matches the one the analysis ran on.
+    """
+    for rel in ("Source",
+                "Source/Images/Road1 North-South",
+                "Source/Images/Road2 South-North"):
+        folder = tmp_path.joinpath(*rel.split('/'))
+        folder.mkdir(parents=True, exist_ok=True)
+        (folder / "0_000_00_022.jpg").write_text(rel)
+
+    index = index_folder_by_filename(str(tmp_path))
+    located = find_in_index(
+        r"E:\SAR\Inyo\Source\Images\Road2 South-North\0_000_00_022.jpg", index)
+
+    assert located == str(
+        tmp_path / "Source" / "Images" / "Road2 South-North" / "0_000_00_022.jpg")
+
+
+def test_sole_candidate_is_trusted_by_default(tmp_path):
+    """Interactive recovery: the user just pointed at this folder."""
+    (tmp_path / "moved").mkdir()
+    (tmp_path / "moved" / "DJI_9.JPG").write_text("x")
+    index = index_folder_by_filename(str(tmp_path))
+
+    assert find_in_index(r"D:\Old\Sortie2\DJI_9.JPG", index) is not None
+
+
+def test_sole_candidate_refused_when_folder_agreement_required(tmp_path):
+    """Unattended relink: a lone same-named file is not evidence.
+
+    _resolve_from_remembered_folders relinks with no dialog, so one stray
+    same-named file in a remembered folder could move a whole result set to
+    another flight line with nobody watching.
+    """
+    (tmp_path / "Sortie1").mkdir()
+    (tmp_path / "Sortie1" / "DJI_9.JPG").write_text("x")
+    index = index_folder_by_filename(str(tmp_path))
+
+    assert find_in_index(r"D:\Old\Sortie2\DJI_9.JPG", index,
+                         require_folder_agreement=True) is None
+    # ... but the matching sortie still resolves unattended.
+    assert find_in_index(r"D:\Old\Sortie1\DJI_9.JPG", index,
+                         require_folder_agreement=True) is not None
+
+
+def test_truncated_index_is_flagged(tmp_path):
+    """A cut-short walk can hide a duplicate, making it look unique."""
+    for i in range(10):
+        (tmp_path / f"f{i}.jpg").write_text("x")
+
+    full = index_folder_by_filename(str(tmp_path))
+    partial = index_folder_by_filename(str(tmp_path), max_entries=3)
+
+    assert full.truncated is False
+    assert partial.truncated is True
+
+
+def test_deeper_folder_agreement_wins(tmp_path):
+    """More matching enclosing folders beats fewer."""
+    shallow = tmp_path / "Sortie2"
+    shallow.mkdir()
+    (shallow / "img.jpg").write_text("x")
+    deep = tmp_path / "Day2" / "Sortie2"
+    deep.mkdir(parents=True)
+    (deep / "img.jpg").write_text("x")
+    index = index_folder_by_filename(str(tmp_path))
+
+    located = find_in_index(r"E:\Capture\Day2\Sortie2\img.jpg", index)
+    assert located == str(deep / "img.jpg")
 
 
 def test_index_of_missing_folder_is_empty():
@@ -166,4 +296,4 @@ def test_find_in_index_miss_returns_none(tmp_path):
 def test_index_uses_os_sep_paths(tmp_path):
     (tmp_path / "a.jpg").write_text("x")
     index = index_folder_by_filename(str(tmp_path))
-    assert os.path.isabs(index[normalize_filename_key("a.jpg")])
+    assert all(os.path.isabs(p) for p in index[normalize_filename_key("a.jpg")])

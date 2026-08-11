@@ -757,23 +757,35 @@ class GalleryController:
 
             viewer = self.parent.main_image
 
-            # First, make sure AOI overlays are visible
-            if hasattr(self.parent, 'showOverlayToggle'):
-                if not self.parent.showOverlayToggle.isChecked():
-                    # self.logger.info("Enabling AOI overlay visibility")
-                    self.parent.showOverlayToggle.setChecked(True)
-                    # Trigger the overlay update
-                    if hasattr(self.parent, '_show_overlay_change'):
-                        self.parent._show_overlay_change()
-
-            # Use the same zoom method as single-image view
+            # The zoom is the click's whole point, so it goes first: the
+            # companion overlay work below is decoration, and when it ran
+            # first any failure in it took the zoom down with it (the
+            # user landed on the right image, un-zoomed, with only an
+            # "Error zooming to AOI" line to show for it).
+            #
             # zoomToArea(center_xy, scale) where scale 6 = 6x zoom
             if hasattr(viewer, 'zoomToArea'):
-                # self.logger.info(f"Calling zoomToArea with center={center}, scale=6")
                 viewer.zoomToArea(center, 6)
-                # self.logger.info(f"Successfully zoomed to AOI at {center}")
             else:
                 self.logger.warning("Viewer does not have zoomToArea method")
+
+            # Make the compass/GSD overlay visible if the user had it off.
+            # Contained separately: this is the least important of the three
+            # things a click does, and sharing one try with the badge below
+            # let a failure here cost that too.
+            try:
+                if hasattr(self.parent, 'showOverlayToggle'):
+                    if not self.parent.showOverlayToggle.isChecked():
+                        self.parent.showOverlayToggle.setChecked(True)
+                        # setChecked does not emit clicked, so the handler is
+                        # driven directly - and it takes the new state as an
+                        # argument. Omitting it raised TypeError on every
+                        # gallery AOI click made with the overlay toggled off,
+                        # which the outer except swallowed along with the zoom.
+                        if hasattr(self.parent, '_show_overlay_change'):
+                            self.parent._show_overlay_change(True)
+            except Exception as e:
+                self.logger.error(f"Could not show the compass/GSD overlay: {e}")
 
             # Show the on-image number badge + ruler for this AOI.
             overlay = getattr(self.parent, 'aoi_overlay_controller', None)

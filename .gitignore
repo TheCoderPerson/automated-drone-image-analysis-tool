@@ -71,3 +71,4 @@ COMMIT_MESSAGE.txt
 AI_CODEBASE_GUIDE.md
 RELEASE_AUDIT_v2.1.0.md
 TODO.md
+scripts/repair_relinked_paths.py
