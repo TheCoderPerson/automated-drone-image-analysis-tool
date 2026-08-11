@@ -68,8 +68,6 @@ class NeighborGalleryView(QGraphicsView):
         self._border_items = []  # List of (image_idx, border_rect) for updating borders
         self._results = []  # Store results for reference
         self._current_rect = None  # Cell of the originating capture, if shown
-        self._columns = 0  # Column count the current layout was built for
-        self._laying_out = False  # Re-entrancy guard for relayout-on-resize
 
         # Style settings
         self.thumbnail_spacing = 20
@@ -77,57 +75,16 @@ class NeighborGalleryView(QGraphicsView):
         self.label_height = 25
         self.current_highlight_width = 4
 
-    def _columns_for_viewport(self, count):
-        """How many thumbnails fit across the viewport at 1:1.
-
-        A single row was unusable the moment a search returned more than a
-        handful: 50 results laid out horizontally is an ~11,000 px strip in a
-        900 px dialog, so the reviewer scrolled sideways past dozens of
-        thumbnails and 'Reset View' shrank them all to ~16 px to fit.
-        """
-        cell = self.thumbnail_size + self.thumbnail_spacing
-        usable = max(0, self.viewport().width() - self.thumbnail_spacing)
-        return max(1, min(count, usable // cell if cell else 1))
-
-    def _centred_image_idx(self):
-        """image_idx of the thumbnail nearest the middle of the viewport.
-
-        Used to re-anchor after a reflow: the grid geometry changes, so the
-        scene coordinate the user was looking at means nothing afterwards --
-        the thumbnail they were looking at does.
-        """
-        if not self._thumbnail_rects:
-            return None
-        centre = self.mapToScene(self.viewport().rect()).boundingRect().center()
-        nearest, best = None, None
-        for rect, image_idx in self._thumbnail_rects:
-            offset = rect.center() - centre
-            distance = offset.x() ** 2 + offset.y() ** 2
-            if best is None or distance < best:
-                nearest, best = image_idx, distance
-        return nearest
-
-    def _restore_view(self, zoom, image_idx):
-        """Put the view back at *zoom*, centred on *image_idx*'s new cell."""
-        if zoom and zoom > 0:
-            self.resetTransform()
-            self.scale(zoom, zoom)
-            self._zoom = zoom
-        for rect, idx in self._thumbnail_rects:
-            if idx == image_idx:
-                self.centerOn(rect.center())
-                return
-
-    def load_thumbnails(self, results, reset_view=True):
+    def load_thumbnails(self, results):
         """
         Load thumbnails from neighbor search results.
 
+        Laid out as a single horizontal strip, scrolled sideways. This is the
+        established shape of this gallery and reviewers navigate it by
+        position along the flight; a wrapping grid was tried and reverted.
+
         Args:
             results (list): List of dicts with thumbnail info
-            reset_view (bool): Reset zoom and re-centre on the originating
-                capture. False when re-flowing an existing layout, so merely
-                resizing the dialog does not throw away the zoom and position
-                the reviewer had set.
         """
         self.scene.clear()
         self._thumbnail_rects = []
@@ -139,14 +96,8 @@ class NeighborGalleryView(QGraphicsView):
         if not results:
             return
 
-        # Grid layout, wrapping at the viewport width.
-        columns = self._columns_for_viewport(len(results))
-        self._columns = columns
-        row_height = self.thumbnail_size + self.label_height + self.thumbnail_spacing
-        column = 0
         x = self.thumbnail_spacing
         y = self.thumbnail_spacing
-        max_x = x
 
         for result in results:
             try:
@@ -234,64 +185,21 @@ class NeighborGalleryView(QGraphicsView):
                 text_item.setPos(text_x, y + self.thumbnail_size + 5)
                 self.scene.addItem(text_item)
 
-                # Move to next cell, wrapping at the column count
-                max_x = max(max_x, x + self.thumbnail_size)
-                column += 1
-                if column >= columns:
-                    column = 0
-                    x = self.thumbnail_spacing
-                    y += row_height
-                else:
-                    x += self.thumbnail_size + self.thumbnail_spacing
+                # Move to next position
+                x += self.thumbnail_size + self.thumbnail_spacing
 
             except Exception as e:
-                # Advance regardless: leaving x/y put stacked the next
-                # thumbnail on top of this one and mis-routed its clicks.
+                # Advance regardless: leaving x put stacked the next thumbnail
+                # on top of this one and mis-routed its clicks.
                 self.logger.error(f"Error loading thumbnail: {e}")
-                column += 1
-                if column >= columns:
-                    column = 0
-                    x = self.thumbnail_spacing
-                    y += row_height
-                else:
-                    x += self.thumbnail_size + self.thumbnail_spacing
+                x += self.thumbnail_size + self.thumbnail_spacing
                 continue
 
-        # Set scene rect. The last row may be partly filled, so the height
-        # comes from where the layout ended rather than from a single row.
-        total_width = max_x + self.thumbnail_spacing
-        total_height = y + self.thumbnail_size + self.label_height + self.thumbnail_spacing
+        total_width = x + self.thumbnail_spacing
+        total_height = self.thumbnail_size + self.label_height + 2 * self.thumbnail_spacing
         self.scene.setSceneRect(0, 0, total_width, total_height)
 
-        if reset_view:
-            self.reset_view()
-
-    def resizeEvent(self, event):
-        """Re-flow the grid when the column count actually changes.
-
-        Also the mechanism that replaces the old settle timer: the first real
-        viewport size arrives as a resize, so a layout built against a
-        not-yet-sized viewport corrects itself here rather than being guessed
-        at after a fixed delay.
-
-        Guarded twice over -- only on a column-count change, and against
-        re-entrancy -- because re-laying out alters the scene rect, which can
-        toggle a scrollbar and produce another resize.
-        """
-        super().resizeEvent(event)
-        if self._laying_out or not self._results:
-            return
-        if self._columns_for_viewport(len(self._results)) == self._columns:
-            return
-        # Carry the reviewer's zoom and place across the reflow: a resize is
-        # not a request to go back to the start.
-        zoom, anchor = self._zoom, self._centred_image_idx()
-        self._laying_out = True
-        try:
-            self.load_thumbnails(self._results, reset_view=False)
-        finally:
-            self._laying_out = False
-        self._restore_view(zoom, anchor)
+        self.reset_view()
 
     def wheelEvent(self, event: QWheelEvent):
         """Handle mouse wheel for zooming.
@@ -366,7 +274,7 @@ class NeighborGalleryView(QGraphicsView):
 
         Deliberately NOT fitInView on the whole scene: with a capped 50
         results that scales every thumbnail to roughly 16 px, which is not a
-        view of anything. 1:1 keeps them legible and the grid scrolls.
+        view of anything. 1:1 keeps them legible and the strip scrolls.
 
         The originating capture is the one the reviewer is oriented by, so it
         is what the view lands on -- previously it could be anywhere in the
@@ -446,10 +354,11 @@ class AOINeighborGalleryDialog(TranslationMixin, QDialog):
     def showEvent(self, event):
         """Load thumbnails when the dialog is shown.
 
-        Loads directly rather than after a settle timer (CLAUDE.md 2.9): the
-        grid re-flows from NeighborGalleryView.resizeEvent, so a layout built
-        before the viewport has its final width is corrected by the event that
-        gives it one, instead of by a guess about how long that takes.
+        Loads directly rather than after a settle timer (CLAUDE.md 2.9). The
+        strip's geometry does not depend on the viewport width -- it is one
+        row, scrolled sideways -- so there is nothing to wait for; the timer
+        only ever created a window in which a closed dialog still received the
+        callback and cleared an already-deleted scene.
         """
         super().showEvent(event)
         if not self._thumbnails_loaded and self.results:

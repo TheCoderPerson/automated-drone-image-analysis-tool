@@ -486,54 +486,6 @@ def _many_results(sample_thumbnail, count, current_index=None):
     ]
 
 
-class TestGridLayout:
-    """Regression: 50 results were laid out in one ~11,000 px horizontal strip.
-
-    In a 900 px dialog that meant scrolling sideways past dozens of thumbnails,
-    and 'Reset View' fitted the whole strip into the viewport -- scaling every
-    thumbnail to roughly 16 px, which is a view of nothing.
-    """
-
-    def test_thumbnails_wrap_instead_of_forming_one_row(self, app, sample_thumbnail):
-        view = NeighborGalleryView()
-        view.resize(900, 400)
-        view.load_thumbnails(_many_results(sample_thumbnail, 50))
-
-        rect = view.scene.sceneRect()
-        assert rect.width() <= 900, "content must not exceed the viewport width"
-        assert rect.height() > view.thumbnail_size * 2, "expected multiple rows"
-
-    def test_every_thumbnail_gets_its_own_click_target(self, app, sample_thumbnail):
-        view = NeighborGalleryView()
-        view.resize(900, 400)
-        view.load_thumbnails(_many_results(sample_thumbnail, 50))
-
-        rects = [r for r, _ in view._thumbnail_rects]
-        assert len(rects) == 50
-        assert len({(r.x(), r.y()) for r in rects}) == 50, "cells must not overlap"
-
-    def test_reset_view_keeps_thumbnails_at_full_size(self, app, sample_thumbnail):
-        view = NeighborGalleryView()
-        view.resize(900, 400)
-        view.load_thumbnails(_many_results(sample_thumbnail, 50))
-
-        view.reset_view()
-
-        assert view.transform().m11() == pytest.approx(1.0),             "reset must not shrink 50 thumbnails to fit them all on screen"
-
-    def test_view_lands_on_the_originating_capture(self, app, sample_thumbnail):
-        """The reviewer orients by the image the AOI came from."""
-        view = NeighborGalleryView()
-        view.resize(900, 400)
-        results = _many_results(sample_thumbnail, 50, current_index=40)
-
-        view.load_thumbnails(results)
-
-        assert view._current_rect is not None
-        visible = view.mapToScene(view.viewport().rect()).boundingRect()
-        assert visible.contains(view._current_rect.center())
-
-
 class TestZoomBounds:
 
     def test_zoom_out_stops_at_the_floor(self, app, sample_results):
@@ -594,59 +546,67 @@ class TestInfoText:
         assert '3' in dialog.info_label.text()
 
 
-class TestResizePreservesTheView:
-    """A resize is not a request to go back to the start.
+class TestHorizontalStrip:
+    """The gallery is one horizontal row, scrolled sideways.
 
-    load_thumbnails ends in reset_view(), and resizeEvent re-flows the grid by
-    calling load_thumbnails -- so merely widening the dialog threw away the
-    zoom and position the reviewer had set, dropping them back to 1:1 on the
-    originating capture.
+    A wrapping grid was tried and reverted: reviewers navigate this gallery by
+    position along the flight, and the strip is the shape that reads that way.
     """
 
-    def _dialog(self, sample_thumbnail, count=50, current=40):
-        results = [
+    def _results(self, sample_thumbnail, count=50, current=40):
+        return [
             {'image_idx': i, 'image_name': f'DJI_{i:04d}.JPG',
              'image_path': f'/p/{i}.JPG', 'pixel_x': 1.0, 'pixel_y': 1.0,
              'thumbnail': sample_thumbnail.copy(), 'is_current': (i == current)}
             for i in range(count)
         ]
-        return AOINeighborGalleryDialog(None, results)
 
-    def test_zoom_survives_a_reflow(self, app, sample_thumbnail, qtbot):
-        dialog = self._dialog(sample_thumbnail)
-        qtbot.addWidget(dialog)
-        dialog.show()
-        view = dialog.gallery_view
-        view.scale(2.0, 2.0)
-        view._zoom = 2.0
+    def test_thumbnails_lie_on_one_row(self, app, sample_thumbnail):
+        view = NeighborGalleryView()
+        view.resize(900, 400)
+        view.load_thumbnails(self._results(sample_thumbnail))
 
-        dialog.resize(1400, 600)
-        QApplication.processEvents()
+        tops = {rect.y() for rect, _ in view._thumbnail_rects}
+        assert len(tops) == 1, "every thumbnail shares one row"
+        assert view.scene.sceneRect().width() > 900, "the strip scrolls sideways"
 
-        assert view._columns > 3, "the grid should have re-flowed wider"
-        assert view.transform().m11() == pytest.approx(2.0)
-        assert view._zoom == pytest.approx(2.0)
+    def test_every_thumbnail_gets_its_own_click_target(self, app, sample_thumbnail):
+        view = NeighborGalleryView()
+        view.resize(900, 400)
+        view.load_thumbnails(self._results(sample_thumbnail))
 
-    def test_the_thumbnail_under_the_eye_stays_under_the_eye(self, app, sample_thumbnail, qtbot):
-        dialog = self._dialog(sample_thumbnail)
-        qtbot.addWidget(dialog)
-        dialog.show()
-        view = dialog.gallery_view
-        view.scale(2.0, 2.0)
-        view._zoom = 2.0
-        anchor = view._centred_image_idx()
+        rects = [r for r, _ in view._thumbnail_rects]
+        assert len(rects) == 50
+        assert len({r.x() for r in rects}) == 50, "cells must not overlap"
 
-        dialog.resize(1400, 600)
-        QApplication.processEvents()
+    def test_the_originating_capture_is_scrolled_into_view(self, app, sample_thumbnail):
+        """It can sit anywhere along a 50-wide strip; the eye needs leading to it."""
+        view = NeighborGalleryView()
+        view.resize(900, 400)
+        view.load_thumbnails(self._results(sample_thumbnail, current=40))
 
-        assert view._centred_image_idx() == anchor
-
-    def test_first_open_still_resets_onto_the_originating_capture(self, app, sample_thumbnail, qtbot):
-        dialog = self._dialog(sample_thumbnail)
-        qtbot.addWidget(dialog)
-        dialog.show()
-        view = dialog.gallery_view
-
-        assert view.transform().m11() == pytest.approx(1.0)
+        assert view._current_rect is not None
         visible = view.mapToScene(view.viewport().rect()).boundingRect()
         assert visible.contains(view._current_rect.center())
+
+    def test_reset_view_keeps_thumbnails_at_full_size(self, app, sample_thumbnail):
+        """fitInView on 50 thumbnails scales them to ~16 px: a view of nothing."""
+        view = NeighborGalleryView()
+        view.resize(900, 400)
+        view.load_thumbnails(self._results(sample_thumbnail))
+
+        view.reset_view()
+
+        assert view.transform().m11() == pytest.approx(1.0)
+
+    def test_a_failed_thumbnail_does_not_stack_the_next_one_on_it(self, app, sample_thumbnail):
+        """A mid-strip render failure must not mis-route every later click."""
+        results = self._results(sample_thumbnail, count=4, current=0)
+        results[1]['thumbnail'] = np.zeros((0, 0, 3), dtype=np.uint8)  # unrenderable
+        view = NeighborGalleryView()
+        view.resize(900, 400)
+
+        view.load_thumbnails(results)
+
+        xs = [r.x() for r, _ in view._thumbnail_rects]
+        assert len(xs) == len(set(xs)), "cells must remain distinct"
