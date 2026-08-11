@@ -354,21 +354,6 @@ class ImageLoadController(TranslationMixin):
             return
         try:
             apply_zoom()
-            main = getattr(self.parent, 'main_image', None)
-            zoomed = bool(getattr(main, 'zoomStack', None))
-            if zoomed:
-                # DEBUG, matching the "armed" line: success-path traffic, one
-                # per gallery AOI click. The un-zoomed landing below stays at
-                # WARNING because that one is an anomaly worth a field log.
-                self.logger.debug(
-                    f"Zoom-after-load: applied for image {self.parent.current_image}")
-            else:
-                # The requester's callable ran but the view holds no zoom -
-                # zoomToArea declined silently (it logs its own reason).
-                # WARNING so field builds record the un-zoomed landing.
-                self.logger.warning(
-                    f"Zoom-after-load: request for image {self.parent.current_image} "
-                    f"ran but the view is not zoomed")
         except Exception as e:
             self.logger.error(f"Post-load zoom request failed: {e}")
 

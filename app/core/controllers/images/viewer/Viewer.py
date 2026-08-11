@@ -1416,26 +1416,12 @@ class Viewer(TranslationMixin, QMainWindow, Ui_Viewer):
         """
         self.current_image = image_idx
         self._pending_view_zoom = (image_idx, apply_zoom)
-        # DEBUG: this is the success path, one line per gallery AOI click. It
-        # was briefly raised to WARNING to prove the mechanism fired on a
-        # field machine we could not reproduce on; it did fire, and the
-        # actual fault turned out to be relink drift in the results file
-        # (see scripts/audit_thumbnail_keys.py). Leaving it at WARNING would
-        # now bury real warnings in every reviewer's log. The failure paths
-        # below stay at WARNING - those are anomalies, not traffic.
-        self.logger.debug(f"Zoom-after-load: armed for image {image_idx}")
         try:
             self._load_image()
         finally:
             # A successful load consumed the request already; dropping any
             # leftover covers failed and early-returning loads, so a stale
             # request can never fire on a later, unrelated load.
-            if self._pending_view_zoom is not None:
-                # WARNING so field builds (default log level WARNING) record
-                # the failure: the load never reached its consumption step.
-                self.logger.warning(
-                    f"Zoom-after-load: load of image {image_idx} ended without "
-                    f"consuming the zoom request (failed/early-returning load)")
             self._pending_view_zoom = None
 
     def take_pending_view_zoom(self, image_idx):
@@ -1453,11 +1439,9 @@ class Viewer(TranslationMixin, QMainWindow, Ui_Viewer):
             return None
         requested_idx, apply_zoom = pending
         if requested_idx != image_idx:
-            # WARNING so field builds record it: a reentrant navigation
-            # changed the image mid-load and the click's intent was dropped.
-            self.logger.warning(
-                f"Zoom-after-load: request for image {requested_idx} dropped - "
-                f"image {image_idx} loaded instead")
+            # A reentrant navigation changed the image mid-load: the click's
+            # intent is stale, so it is dropped rather than applied to
+            # whatever happens to be loaded now.
             return None
         return apply_zoom
 

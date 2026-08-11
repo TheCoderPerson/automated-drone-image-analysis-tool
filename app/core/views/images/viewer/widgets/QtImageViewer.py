@@ -24,7 +24,6 @@ from PySide6.QtWidgets import (
     QGraphicsItem, QGraphicsEllipseItem, QGraphicsRectItem,
     QGraphicsLineItem, QGraphicsPolygonItem, QApplication
 )
-from core.services.LoggerService import LoggerService
 from core.views.images.viewer.dialogs.AOICreationDialog import AOICreationDialog
 from helpers.TranslationMixin import TranslationMixin
 
@@ -83,7 +82,6 @@ class QtImageViewer(TranslationMixin, QGraphicsView):
         self._zoom = 1.0                # current view‑to‑scene scale
         self._recursion_guard = False   # Prevent infinite recursion
         self._is_destroyed = False      # Flag to prevent operations after destruction
-        self._logger = LoggerService()  # declined-zoom diagnostics (field logs)
 
         # ---- interaction state
         self.zoomStack = []          # list[QRectF] – manual zoom rectangles
@@ -464,15 +462,7 @@ class QtImageViewer(TranslationMixin, QGraphicsView):
             self.zoomStack.clear()
 
     def zoomToArea(self, center_xy, scale):
-        # Every declined zoom is logged at WARNING (field builds default to
-        # WARNING-level logging): a silent early return here is exactly the
-        # "clicked the thumbnail, landed un-zoomed" field failure, and the
-        # log line is the only way to tell WHICH guard declined on a machine
-        # the developers cannot reproduce on.
         if not self.hasImage() or self._recursion_guard or self._is_destroyed:
-            self._logger.warning(
-                f"zoomToArea({center_xy}) declined: hasImage={self.hasImage()} "
-                f"recursion_guard={self._recursion_guard} destroyed={self._is_destroyed}")
             return
 
         # Clamp scale
@@ -481,7 +471,6 @@ class QtImageViewer(TranslationMixin, QGraphicsView):
         self.clearZoom()
         scene_rect = self._safe_scene_rect()
         if not scene_rect:
-            self._logger.warning(f"zoomToArea({center_xy}) declined: no valid scene rect")
             return
         self.zoomStack.append(scene_rect)
         zr = QRectF(self.zoomStack[-1])
@@ -491,9 +480,6 @@ class QtImageViewer(TranslationMixin, QGraphicsView):
         # Check minimum size
         if new_width < MIN_ZOOM_RECT_SIZE or new_height < MIN_ZOOM_RECT_SIZE:
             self.zoomStack.clear()
-            self._logger.warning(
-                f"zoomToArea({center_xy}) declined: rect {new_width:.0f}x{new_height:.0f} "
-                f"below minimum {MIN_ZOOM_RECT_SIZE}")
             return
 
         zr.setWidth(new_width)
@@ -506,8 +492,6 @@ class QtImageViewer(TranslationMixin, QGraphicsView):
             self.updateViewer()
         else:
             self.zoomStack.clear()
-            self._logger.warning(
-                f"zoomToArea({center_xy}) declined: rect failed scene validation")
 
     def zoomToRect(self, rect):
         """Zoom/pan so *rect* (scene coordinates) fills the view.
@@ -643,7 +627,6 @@ class QtImageViewer(TranslationMixin, QGraphicsView):
         if self._is_destroyed:
             return
         if self.zoomStack:
-            self._logger.debug("reprojectView: re-projecting held zoom")
             self.updateViewer()
         else:
             self.resetZoom()

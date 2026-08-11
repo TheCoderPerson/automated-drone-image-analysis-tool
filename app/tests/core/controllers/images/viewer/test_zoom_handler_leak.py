@@ -79,13 +79,12 @@ def test_load_with_zoom_slot_consumed_by_matching_load():
     assert slot._pending_view_zoom is None
 
 
-def test_successful_arming_is_not_logged_at_warning():
-    """The success path must not warn: it runs on every gallery AOI click.
+def test_arming_and_consuming_logs_nothing():
+    """No log traffic on the normal path: this runs on every gallery AOI click.
 
-    It was raised to WARNING to prove the mechanism fired on an
+    The armed/applied pair existed only to prove the mechanism fired on an
     unreproducible field machine. It did - the fault was relink drift in the
-    results file, not this path - so the line went back to DEBUG. At WARNING
-    it buries real warnings in every reviewer's log.
+    results file - so the instrumentation came out before the prod build.
     """
     slot = _Slot()
     slot._load_image = lambda: Viewer.take_pending_view_zoom(slot, slot.current_image)
@@ -93,19 +92,19 @@ def test_successful_arming_is_not_logged_at_warning():
     Viewer.load_image_with_zoom(slot, 7, MagicMock())
 
     slot.logger.warning.assert_not_called()
-    slot.logger.debug.assert_called_once()
-    assert 'armed for image 7' in slot.logger.debug.call_args[0][0]
+    slot.logger.debug.assert_not_called()
+    slot.logger.info.assert_not_called()
 
 
-def test_unconsumed_request_still_warns():
-    """The failure path stays at WARNING - that one is an anomaly."""
+def test_unconsumed_request_is_disarmed_silently():
+    """A load that never consumes still leaves nothing armed behind it."""
     slot = _Slot()
     slot._load_image = lambda: None  # never consumes the armed request
 
     Viewer.load_image_with_zoom(slot, 7, MagicMock())
 
-    slot.logger.warning.assert_called_once()
-    assert 'without consuming' in slot.logger.warning.call_args[0][0]
+    assert slot._pending_view_zoom is None
+    slot.logger.warning.assert_not_called()
 
 
 def test_take_for_mismatched_image_drops_request():
