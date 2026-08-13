@@ -891,6 +891,80 @@ class TestStreamViewerWindow:
             window.close()
             QApplication.processEvents()
 
+    def test_connect_keeps_the_control_panel_where_the_user_left_it(self, qapp, qtbot):
+        """Field report: every Connect/Disconnect scrolled the controls to the bottom.
+
+        Disabling the button that was just clicked makes Qt hand focus to the
+        next widget in creation order - the Recording buttons, at the foot of
+        the panel - and a scroll area follows focus. The panel must hold still
+        and focus must land on the counterpart button.
+        """
+        window = StreamViewerWindow(algorithm_name='', theme='dark')
+        try:
+            window.show()
+            qtbot.waitExposed(window)
+            scroll = window.ui.splitter.widget(1)
+            # Force the overflow the field machines have; the window itself has
+            # a 600px minimum height that a resize() cannot go under.
+            scroll.setFixedHeight(200)
+            QApplication.processEvents()
+            assert scroll.verticalScrollBar().maximum() > 0
+
+            window.stream_controls.connect_button.setFocus(Qt.OtherFocusReason)
+            window.on_connection_changed(True, "test source")
+
+            assert scroll.verticalScrollBar().value() == 0
+            assert window.focusWidget() is window.stream_controls.disconnect_button
+
+            window.on_connection_changed(False, "closed")
+
+            assert scroll.verticalScrollBar().value() == 0
+            assert window.focusWidget() is window.stream_controls.connect_button
+        finally:
+            window.close()
+            QApplication.processEvents()
+
+    def test_connect_returns_to_live_view_from_the_gallery(self, qapp):
+        """A new source is there to be watched: connecting leaves the Gallery."""
+        window = StreamViewerWindow(algorithm_name='', theme='dark')
+        try:
+            gallery_index = window.tab_widget.indexOf(window.gallery_widget)
+            window.tab_widget.setCurrentIndex(gallery_index)
+
+            window.on_connection_changed(True, "test source")
+
+            assert window.tab_widget.currentIndex() == 0
+        finally:
+            window.close()
+            QApplication.processEvents()
+
+    def test_connect_does_not_disturb_the_live_view_tab(self, qapp):
+        """Already on Live View: nothing to switch."""
+        window = StreamViewerWindow(algorithm_name='', theme='dark')
+        try:
+            window.tab_widget.setCurrentIndex(0)
+
+            window.on_connection_changed(True, "test source")
+
+            assert window.tab_widget.currentIndex() == 0
+        finally:
+            window.close()
+            QApplication.processEvents()
+
+    def test_disconnect_leaves_the_gallery_open(self, qapp):
+        """Reviewing tracks after a stream ends must not be interrupted."""
+        window = StreamViewerWindow(algorithm_name='', theme='dark')
+        try:
+            gallery_index = window.tab_widget.indexOf(window.gallery_widget)
+            window.tab_widget.setCurrentIndex(gallery_index)
+
+            window.on_connection_changed(False, "closed")
+
+            assert window.tab_widget.currentIndex() == gallery_index
+        finally:
+            window.close()
+            QApplication.processEvents()
+
     def test_resolution_changing_sought_frame_keeps_focus(self, qapp):
         """A sought frame that changes resolution must retain its pending focus.
 
