@@ -100,7 +100,7 @@ class ImageLoadController(TranslationMixin):
                 return
 
             self.parent.main_image.setImage(img)
-            self.parent.fileNameLabel.setText(image['name'])
+            self._show_image_name(image['name'])
 
             # Load AOIs
             self.parent.aoi_controller.load_areas_of_interest(image_service.img_array, image['areas_of_interest'])
@@ -356,6 +356,20 @@ class ImageLoadController(TranslationMixin):
             apply_zoom()
         except Exception as e:
             self.logger.error(f"Post-load zoom request failed: {e}")
+
+    def _show_image_name(self, name):
+        """Put the image name in the header, with the full name on hover.
+
+        The header label is clipped by the space the toolbar leaves it, and the
+        names that suffer most are the ones that differ only in their tail -
+        frames pulled from a video ("..._262.5s.jpg") are identical up to the
+        offset that tells them apart. The tooltip gives the whole name back.
+
+        Args:
+            name (str): The image's file name.
+        """
+        self.parent.fileNameLabel.setText(name)
+        self.parent.fileNameLabel.setToolTip(name)
 
     def _update_metadata_displays(self, image_service):
         """Update metadata displays in status bar."""

@@ -119,3 +119,16 @@ def test_apply_pending_view_zoom_requires_the_viewer_api():
 
     with pytest.raises(AttributeError):
         controller._apply_pending_view_zoom()
+
+
+def test_image_name_is_shown_with_the_full_name_on_hover():
+    """The header clips the name, and video frames differ only in the tail
+    ("..._262.5s.jpg") - the part that gets cut off is the part that
+    identifies the image, so hovering has to give the whole name back."""
+    controller, parent = _controller()
+    name = 'DJI_20260815165537_0001_Z.MP4_262.5s.jpg'
+
+    controller._show_image_name(name)
+
+    parent.fileNameLabel.setText.assert_called_once_with(name)
+    parent.fileNameLabel.setToolTip.assert_called_once_with(name)
