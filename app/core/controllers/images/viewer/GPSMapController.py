@@ -500,23 +500,11 @@ class GPSMapController(QObject):
             datetime object or None if timestamp not found
         """
         try:
-
-            if exif_data and 'Exif' in exif_data:
-                # Try to get DateTimeOriginal
-                datetime_original = exif_data['Exif'].get(piexif.ExifIFD.DateTimeOriginal)
-                if datetime_original:
-                    if isinstance(datetime_original, bytes):
-                        datetime_str = datetime_original.decode('utf-8')
-                    else:
-                        datetime_str = datetime_original
-                    return datetime.strptime(datetime_str, '%Y:%m:%d %H:%M:%S')
-
-                # Fallback to DateTime
-                datetime_tag = exif_data['Exif'].get(piexif.ExifIFD.DateTime)
-                if datetime_tag:
-                    datetime_str = datetime_tag.decode('utf-8') if isinstance(datetime_tag, bytes) else datetime_tag
-                    return datetime.strptime(datetime_str, '%Y:%m:%d %H:%M:%S')
-
+            # Tag resolution (including the Exif-vs-0th split for the DateTime
+            # fallback) lives in MetaDataHelper so this and the bearing service
+            # read the same tags. An image with no timestamp - every frame cut
+            # from a video - returns None here rather than raising.
+            return MetaDataHelper.get_exif_timestamp(exif_data)
         except Exception as e:
             self.logger.error(f"Could not extract timestamp: {str(e)}")
 
