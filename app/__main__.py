@@ -429,16 +429,20 @@ if __name__ == "__main__":
     # default, so any earlier log line is already at the right level.)
     LoggerService.set_level()
 
-    # Headless batch mode: "python app batch --input <parent> --output <root>"
-    # (or "ADIAT.exe batch ..." in the packaged build).
-    # Falls through to the normal GUI startup when no batch subcommand is given.
-    if len(sys.argv) > 1 and sys.argv[1] == 'batch':
+    # Headless subcommands (or "ADIAT.exe <subcommand> ..." in the packaged
+    # build). Falls through to the normal GUI startup when none is given:
+    #   python app batch --input <parent> --output <root>
+    #   python app parse-video --video <file> --output <dir>
+    if len(sys.argv) > 1 and sys.argv[1] in ('batch', 'parse-video'):
         # The packaged Windows exe is windowed (console=False): attach to the
         # calling terminal so CLI progress/errors are visible. No-op for GUI
         # launches and on macOS/Linux.
         from helpers.ConsoleHelper import attach_parent_console
         attach_parent_console()
-        from core.services.cli.BatchCLI import run_batch_cli
-        sys.exit(run_batch_cli(sys.argv[2:]))
+        if sys.argv[1] == 'batch':
+            from core.services.cli.BatchCLI import run_batch_cli
+            sys.exit(run_batch_cli(sys.argv[2:]))
+        from core.services.cli.VideoParserCLI import run_video_parser_cli
+        sys.exit(run_video_parser_cli(sys.argv[2:]))
 
     main()
