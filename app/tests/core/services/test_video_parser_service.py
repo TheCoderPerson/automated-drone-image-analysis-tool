@@ -7,6 +7,7 @@ Tests video parsing and frame extraction functionality.
 import pytest
 import tempfile
 import os
+from datetime import datetime, timedelta, timezone
 from unittest.mock import patch, MagicMock
 from PySide6.QtCore import QObject
 from core.services.VideoParserService import VideoParserService
@@ -170,3 +171,174 @@ def test_unparseable_position_does_not_abandon_the_file(video_parser_service, tm
 
     assert entry['latitude'] is None
     assert entry['longitude'] == 2.0
+
+
+# --- frame capture times ----------------------------------------------------
+#
+# Frames carry no date of their own, so nothing downstream could order them:
+# the GPS map traces its path by timestamp and auto-bearing sorts by it. Three
+# sources, in priority order - the SRT's own wall clock, and otherwise the
+# container's creation_time (which the CSV path already reads) plus the frame's
+# offset into the video.
+
+def test_srt_entries_carry_their_wall_clock(video_parser_service, tmp_path):
+    entry = parse(video_parser_service, tmp_path, MODERN_PAYLOAD)
+
+    assert entry['timestamp'] == datetime(2026, 8, 15, 12, 9, 26, 2000)
+
+
+@pytest.mark.parametrize('line, expected', [
+    ('2026-08-15 12:09:26.002', datetime(2026, 8, 15, 12, 9, 26, 2000)),
+    ('2026-08-15 12:09:26', datetime(2026, 8, 15, 12, 9, 26)),
+    ('2023-05-01 12:00:00,000,000', datetime(2023, 5, 1, 12, 0, 0)),
+    ('  2026-08-15 12:09:26  ', datetime(2026, 8, 15, 12, 9, 26)),
+])
+def test_srt_timestamp_formats(line, expected):
+    assert VideoParserService._parse_srt_timestamp(line) == expected
+
+
+@pytest.mark.parametrize('line', ['FrameCnt: 1, DiffTime: 33ms', '', None])
+def test_srt_timestamp_rejects_non_dates(line):
+    assert VideoParserService._parse_srt_timestamp(line) is None
+
+
+def _drive_process_video(service, *, srt_text=None, creation_time=None, seconds=4.0):
+    """Run process_video against a stubbed 30 fps capture.
+
+    Returns:
+        (patched MetaDataHelper mock, emitted messages)
+    """
+    import cv2
+
+    fps = 30.0
+    position = {'ms': 0.0}
+    cap = MagicMock()
+    cap.isOpened.return_value = True
+    cap.read.return_value = (True, 'frame')
+
+    def _get(prop):
+        if prop == cv2.CAP_PROP_FPS:
+            return fps
+        if prop == cv2.CAP_PROP_FRAME_COUNT:
+            return int(seconds * fps)
+        if prop == cv2.CAP_PROP_POS_MSEC:
+            return position['ms']
+        return 0
+
+    def _set(prop, value):
+        if prop == cv2.CAP_PROP_POS_FRAMES:
+            position['ms'] = (value / fps) * 1000.0
+
+    cap.get.side_effect = _get
+    cap.set.side_effect = _set
+
+    if srt_text is not None:
+        with open(service.metadata_path, 'w') as handle:
+            handle.write(srt_text)
+    else:
+        service.metadata_path = ''
+
+    messages = []
+    service.sig_msg.connect(messages.append)
+
+    with patch('cv2.VideoCapture', return_value=cap), \
+         patch('cv2.imwrite'), \
+         patch('core.services.VideoParserService.detect_thumbnail_track', return_value=False), \
+         patch('core.services.VideoParserService.get_video_creation_time', return_value=creation_time), \
+         patch('core.services.VideoParserService.MetaDataHelper') as helper:
+        service.process_video()
+
+    return helper, messages
+
+
+def test_frames_are_stamped_with_the_srt_wall_clock(video_parser_service):
+    """The SRT knows exactly when each frame was taken; nothing to reconstruct."""
+    entry = _srt_entry(MODERN_PAYLOAD).replace(
+        '00:00:00,000 --> 00:00:01,000', '00:00:00,000 --> 00:00:10,000')
+
+    helper, messages = _drive_process_video(video_parser_service, srt_text=entry)
+    add_gps, add_time = helper.add_gps_data, helper.add_capture_time
+
+    assert add_gps.call_args_list, "GPS-bearing frames should go through add_gps_data"
+    for call in add_gps.call_args_list:
+        assert call.kwargs['timestamp'] == datetime(2026, 8, 15, 12, 9, 26, 2000)
+    add_time.assert_not_called()
+    assert any('from the SRT' in m for m in messages)
+
+
+def test_frames_without_a_log_are_stamped_from_the_video_start(video_parser_service):
+    """No flight log at all: the container's creation_time plus the offset."""
+    start = datetime(2026, 8, 15, 3, 17, 4, tzinfo=timezone.utc)
+
+    helper, messages = _drive_process_video(
+        video_parser_service, creation_time=start, seconds=4.0)
+    add_gps, add_time = helper.add_gps_data, helper.add_capture_time
+
+    stamped = [call.args[1] for call in add_time.call_args_list]
+    assert stamped, "frames with no GPS still need a capture time"
+    # interval is 1.0 s in the fixture, so each frame advances one second.
+    assert stamped[0] == start
+    assert stamped[1] == start + timedelta(seconds=1)
+    add_gps.assert_not_called()
+    assert any('video start' in m for m in messages)
+
+
+def test_no_clock_anywhere_leaves_frames_unstamped_and_says_so(video_parser_service):
+    """ffprobe missing or creation_time absent: extract anyway, but be explicit."""
+    helper, messages = _drive_process_video(video_parser_service, creation_time=None)
+    add_gps, add_time = helper.add_gps_data, helper.add_capture_time
+
+    add_time.assert_not_called()
+    add_gps.assert_not_called()
+    assert any('no timestamp' in m for m in messages)
+
+
+# --- height above takeoff ---------------------------------------------------
+#
+# EXIF has no relative-altitude tag, so the SRT's rel_alt had nowhere to live
+# and every AGL-based calculation downstream fell back or failed. ADIAT reads
+# AGL from drone-dji:RelativeAltitude regardless of airframe.
+
+def test_srt_frames_record_height_above_takeoff_as_xmp(video_parser_service):
+    entry = _srt_entry(MODERN_PAYLOAD).replace(
+        '00:00:00,000 --> 00:00:01,000', '00:00:00,000 --> 00:00:10,000')
+
+    helper, _messages = _drive_process_video(video_parser_service, srt_text=entry)
+
+    assert helper.add_xmp_fields.called
+    _path, fields = helper.add_xmp_fields.call_args.args
+    written = {tag: value for _ns, tag, value in fields}
+    assert written['RelativeAltitude'] == '+561.7450'
+    assert written['AbsoluteAltitude'] == '+4563.5710'
+    # Readers will not look up XMP attributes without a make on the image.
+    assert helper.add_gps_data.call_args.kwargs['make'] == 'DJI'
+
+
+def test_frames_without_a_reported_agl_claim_no_make(video_parser_service):
+    """The legacy layout has no rel_alt; nothing is synthesized for it."""
+    entry = _srt_entry(LEGACY_PAYLOAD).replace(
+        '00:00:00,000 --> 00:00:01,000', '00:00:00,000 --> 00:00:10,000')
+
+    helper, _messages = _drive_process_video(video_parser_service, srt_text=entry)
+
+    helper.add_xmp_fields.assert_not_called()
+    assert helper.add_gps_data.call_args.kwargs['make'] is None
+
+
+def test_a_failed_xmp_write_does_not_lose_the_frame(video_parser_service):
+    """A frame with no XMP is still a usable frame."""
+    video_parser_service.logger = MagicMock()
+
+    with patch('core.services.VideoParserService.MetaDataHelper.add_xmp_fields',
+               side_effect=OSError('locked')):
+        video_parser_service._stamp_relative_altitude('frame.jpg', 100.0, 900.0)
+
+    video_parser_service.logger.warning.assert_called_once()
+
+
+def test_no_reported_agl_writes_nothing(video_parser_service):
+    """Nothing to record is not a failure path."""
+    with patch('core.services.VideoParserService.MetaDataHelper.add_xmp_fields') as write:
+        video_parser_service._stamp_relative_altitude('frame.jpg', None, 900.0)
+
+    write.assert_not_called()
