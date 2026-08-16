@@ -30,6 +30,20 @@ class VideoParserService(QObject):
     sig_msg = Signal(str)
     sig_done = Signal(int, int)
 
+    # One "[key: value]" group of a DJI subtitle payload may hold more than one
+    # pair. Firmware from the Mavic 3 era on writes altitude as a single group:
+    #
+    #     [rel_alt: 561.745 abs_alt: 4563.571]
+    #
+    # Splitting a group on its first colon reads that value as
+    # "561.745 abs_alt" and drops the second number; worse, those files carry
+    # no "altitude" key at all, so every extracted frame was stamped with
+    # altitude 0 while the real height sat unread in the file. Matching pairs
+    # *inside* each group reads the newer layout and the older one-pair-per-
+    # group layout alike.
+    _SRT_FIELD = re.compile(r'(\w+)\s*:\s*([^\s\]]+)')
+    _SRT_GROUP = re.compile(r'(?<=\[).+?(?=\])')
+
     def __init__(self, id, video, metadata_path, output, interval):
         """Initialize the VideoParserService with parameters for video processing.
 
@@ -215,23 +229,59 @@ class VideoParserService(QObject):
                     start_time = datetime.strptime(times[0], '%H:%M:%S,%f')
                     end_time = datetime.strptime(times[1], '%H:%M:%S,%f')
 
-                    uav_data = re.findall(r'(?<=\[).+?(?=\])', data[4])
-                    uav_dict = {split[0]: split[1] for entry in uav_data for split in [re.split(r"\s*:\s*", entry)]}
-                    longitude = float(uav_dict.get('longitude')) if 'longitude' in uav_dict else None
-                    # Extra logic for longitude misspelling in some SRT files
-                    if longitude is None:
-                        longitude = float(uav_dict.get('longtitude')) if 'longtitude' in uav_dict else None
+                    uav_dict = self._parse_srt_fields(data[4])
                     srt_list.append({
                         "start": start_time,
                         "end": end_time,
-                        "latitude": float(uav_dict.get('latitude')) if 'latitude' in uav_dict else None,
-                        "longitude": longitude,
-                        "altitude": float(uav_dict.get('altitude', 0))
+                        "latitude": self._srt_float(uav_dict, 'latitude', default=None),
+                        # 'longtitude' is a misspelling seen in some SRT files.
+                        "longitude": self._srt_float(uav_dict, 'longitude', 'longtitude', default=None),
+                        # Height above sea level: 'abs_alt' on newer firmware,
+                        # 'altitude' on older files.
+                        "altitude": self._srt_float(uav_dict, 'abs_alt', 'altitude'),
+                        # Height above the takeoff point, when the file has it.
+                        "relative_altitude": self._srt_float(uav_dict, 'rel_alt', default=None),
                     })
             return srt_list
         except Exception as e:
             self.sig_msg.emit(f"Error parsing SRT file: {str(e)}")
             return None
+
+    @classmethod
+    def _parse_srt_fields(cls, payload):
+        """Collect the telemetry key/value pairs in one subtitle payload line.
+
+        Args:
+            payload: The bracketed telemetry line of an SRT entry.
+
+        Returns:
+            dict: Every 'key: value' pair found inside the brackets, as strings.
+        """
+        fields = {}
+        for group in cls._SRT_GROUP.findall(payload):
+            fields.update(cls._SRT_FIELD.findall(group))
+        return fields
+
+    @staticmethod
+    def _srt_float(fields, *names, default=0.0):
+        """Read the first of *names* present in *fields* as a float.
+
+        Args:
+            fields: Parsed SRT key/value pairs.
+            *names: Candidate keys, most specific first.
+            default: Returned when no candidate is present or parseable, so a
+                single malformed value cannot abandon the whole file.
+
+        Returns:
+            float: The parsed value, or default.
+        """
+        for name in names:
+            if name in fields:
+                try:
+                    return float(fields[name])
+                except (TypeError, ValueError):
+                    continue
+        return default
 
     def _parse_csv_flight_log(self, csv_path, video_path):
         """Parse a Skydio CSV flight log for GPS metadata.
