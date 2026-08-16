@@ -619,32 +619,32 @@ permisivo</translation>
 <context>
     <name>AOINeighborGalleryDialog</name>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/AOINeighborGalleryDialog.py" line="368"/>
+        <location filename="../app/core/views/images/viewer/dialogs/AOINeighborGalleryDialog.py" line="341"/>
         <source>AOI in Neighboring Images</source>
         <translation>AOI en imágenes vecinas</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/AOINeighborGalleryDialog.py" line="402"/>
+        <location filename="../app/core/views/images/viewer/dialogs/AOINeighborGalleryDialog.py" line="380"/>
         <source>Showing the {count} nearest images containing this AOI; there are more. Use mouse wheel to zoom, right-click drag to pan. Click a thumbnail to navigate to that image.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/AOINeighborGalleryDialog.py" line="407"/>
+        <location filename="../app/core/views/images/viewer/dialogs/AOINeighborGalleryDialog.py" line="385"/>
         <source>Found AOI in {count} image(s). Use mouse wheel to zoom, right-click drag to pan. Click a thumbnail to navigate to that image.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/AOINeighborGalleryDialog.py" line="436"/>
+        <location filename="../app/core/views/images/viewer/dialogs/AOINeighborGalleryDialog.py" line="414"/>
         <source>Reset View</source>
         <translation>Restablecer vista</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/AOINeighborGalleryDialog.py" line="439"/>
+        <location filename="../app/core/views/images/viewer/dialogs/AOINeighborGalleryDialog.py" line="417"/>
         <source>Reset zoom and fit all thumbnails in view</source>
         <translation>Restablecer el zoom y ajustar todas las miniaturas a la vista</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/AOINeighborGalleryDialog.py" line="446"/>
+        <location filename="../app/core/views/images/viewer/dialogs/AOINeighborGalleryDialog.py" line="424"/>
         <source>Close</source>
         <translation>Cerrar</translation>
     </message>
@@ -652,22 +652,22 @@ permisivo</translation>
 <context>
     <name>AOINeighborTrackingController</name>
     <message>
-        <location filename="../app/core/controllers/images/viewer/neighbor/AOINeighborTrackingController.py" line="178"/>
+        <location filename="../app/core/controllers/images/viewer/neighbor/AOINeighborTrackingController.py" line="192"/>
         <source>No AOI Selected</source>
         <translation>Ningún AOI seleccionado</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/neighbor/AOINeighborTrackingController.py" line="179"/>
+        <location filename="../app/core/controllers/images/viewer/neighbor/AOINeighborTrackingController.py" line="193"/>
         <source>Please select an AOI first by clicking on it in the thumbnail panel.</source>
         <translation>Primero seleccione un AOI haciendo clic sobre él en el panel de miniaturas.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/neighbor/AOINeighborTrackingController.py" line="380"/>
+        <location filename="../app/core/controllers/images/viewer/neighbor/AOINeighborTrackingController.py" line="404"/>
         <source>Cannot Calculate GPS</source>
         <translation>No se puede calcular GPS</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/neighbor/AOINeighborTrackingController.py" line="382"/>
+        <location filename="../app/core/controllers/images/viewer/neighbor/AOINeighborTrackingController.py" line="406"/>
         <source>Unable to calculate GPS coordinates for this AOI.
 
 This may be due to missing image metadata (GPS, altitude, or camera info).</source>
@@ -676,66 +676,66 @@ This may be due to missing image metadata (GPS, altitude, or camera info).</sour
 Puede deberse a la falta de metadatos de imagen (GPS, altitud o información de cámara).</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/neighbor/AOINeighborTrackingController.py" line="211"/>
+        <location filename="../app/core/controllers/images/viewer/neighbor/AOINeighborTrackingController.py" line="225"/>
         <source>Searching for AOI in neighboring images...</source>
         <translation>Buscando AOI en imágenes vecinas...</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/neighbor/AOINeighborTrackingController.py" line="212"/>
+        <location filename="../app/core/controllers/images/viewer/neighbor/AOINeighborTrackingController.py" line="226"/>
         <source>Cancel</source>
         <translation>Cancelar</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/neighbor/AOINeighborTrackingController.py" line="216"/>
+        <location filename="../app/core/controllers/images/viewer/neighbor/AOINeighborTrackingController.py" line="230"/>
         <source>Tracking AOI</source>
         <translation>Rastreando AOI</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/neighbor/AOINeighborTrackingController.py" line="273"/>
+        <location filename="../app/core/controllers/images/viewer/neighbor/AOINeighborTrackingController.py" line="297"/>
         <source>Tracking Error</source>
         <translation>Error de rastreo</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/neighbor/AOINeighborTrackingController.py" line="274"/>
+        <location filename="../app/core/controllers/images/viewer/neighbor/AOINeighborTrackingController.py" line="298"/>
         <source>An error occurred while tracking the AOI:
 {error}</source>
         <translation>Se produjo un error al rastrear el AOI:
 {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/neighbor/AOINeighborTrackingController.py" line="412"/>
+        <location filename="../app/core/controllers/images/viewer/neighbor/AOINeighborTrackingController.py" line="436"/>
         <source>No Neighbors Found</source>
         <translation>No se encontraron imágenes vecinas</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/neighbor/AOINeighborTrackingController.py" line="413"/>
+        <location filename="../app/core/controllers/images/viewer/neighbor/AOINeighborTrackingController.py" line="437"/>
         <source>The AOI was not found in any neighboring images.</source>
         <translation>El AOI no se encontró en ninguna imagen vecina.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/neighbor/AOINeighborTrackingController.py" line="443"/>
+        <location filename="../app/core/controllers/images/viewer/neighbor/AOINeighborTrackingController.py" line="467"/>
         <source>Search Error</source>
         <translation>Error de búsqueda</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/neighbor/AOINeighborTrackingController.py" line="444"/>
+        <location filename="../app/core/controllers/images/viewer/neighbor/AOINeighborTrackingController.py" line="468"/>
         <source>An error occurred during the search:
 {error}</source>
         <translation>Se produjo un error durante la búsqueda:
 {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/neighbor/AOINeighborTrackingController.py" line="560"/>
+        <location filename="../app/core/controllers/images/viewer/neighbor/AOINeighborTrackingController.py" line="584"/>
         <source> (no detections)</source>
         <translation> (sin detecciones)</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/neighbor/AOINeighborTrackingController.py" line="575"/>
+        <location filename="../app/core/controllers/images/viewer/neighbor/AOINeighborTrackingController.py" line="599"/>
         <source>Display Error</source>
         <translation>Error de visualización</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/neighbor/AOINeighborTrackingController.py" line="576"/>
+        <location filename="../app/core/controllers/images/viewer/neighbor/AOINeighborTrackingController.py" line="600"/>
         <source>An error occurred while displaying results:
 {error}</source>
         <translation>Se produjo un error al mostrar los resultados:
@@ -845,78 +845,78 @@ Puede deberse a la falta de metadatos de imagen (GPS, altitud o información de 
         <translation>AOI similares</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/AOISimilarityResultsDialog.py" line="470"/>
+        <location filename="../app/core/views/images/viewer/dialogs/AOISimilarityResultsDialog.py" line="479"/>
         <source>Top {shown} of {total} AOIs ranked by similarity to {reference}. Use mouse wheel to zoom, right-click drag to pan. Click a thumbnail to jump to that AOI.</source>
         <translation>Los {shown} primeros de {total} AOI ordenados por similitud con {reference}. Use la rueda del ratón para hacer zoom, arrastre con clic derecho para desplazar la vista. Haga clic en una miniatura para ir a ese AOI.</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/AOISimilarityResultsDialog.py" line="491"/>
+        <location filename="../app/core/views/images/viewer/dialogs/AOISimilarityResultsDialog.py" line="500"/>
         <source>Select All</source>
         <translation>Seleccionar todo</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/AOISimilarityResultsDialog.py" line="495"/>
+        <location filename="../app/core/views/images/viewer/dialogs/AOISimilarityResultsDialog.py" line="504"/>
         <source>Clear Selection</source>
         <translation>Borrar selección</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/AOISimilarityResultsDialog.py" line="499"/>
-        <location filename="../app/core/views/images/viewer/dialogs/AOISimilarityResultsDialog.py" line="547"/>
+        <location filename="../app/core/views/images/viewer/dialogs/AOISimilarityResultsDialog.py" line="508"/>
+        <location filename="../app/core/views/images/viewer/dialogs/AOISimilarityResultsDialog.py" line="556"/>
         <source>{count} selected</source>
         <translation>{count} seleccionados</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/AOISimilarityResultsDialog.py" line="505"/>
+        <location filename="../app/core/views/images/viewer/dialogs/AOISimilarityResultsDialog.py" line="514"/>
         <source>Flag</source>
         <translation>Marcar</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/AOISimilarityResultsDialog.py" line="506"/>
+        <location filename="../app/core/views/images/viewer/dialogs/AOISimilarityResultsDialog.py" line="515"/>
         <source>Flag all checked AOIs</source>
         <translation>Marcar todos los AOI seleccionados</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/AOISimilarityResultsDialog.py" line="511"/>
+        <location filename="../app/core/views/images/viewer/dialogs/AOISimilarityResultsDialog.py" line="520"/>
         <source>Unflag</source>
         <translation>Desmarcar</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/AOISimilarityResultsDialog.py" line="512"/>
+        <location filename="../app/core/views/images/viewer/dialogs/AOISimilarityResultsDialog.py" line="521"/>
         <source>Remove the flag from all checked AOIs</source>
         <translation>Quitar la marca de todos los AOI seleccionados</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/AOISimilarityResultsDialog.py" line="517"/>
+        <location filename="../app/core/views/images/viewer/dialogs/AOISimilarityResultsDialog.py" line="526"/>
         <source>Comment...</source>
         <translation>Comentario...</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/AOISimilarityResultsDialog.py" line="518"/>
+        <location filename="../app/core/views/images/viewer/dialogs/AOISimilarityResultsDialog.py" line="527"/>
         <source>Add or edit the comment on all checked AOIs</source>
         <translation>Añadir o editar el comentario en todos los AOI seleccionados</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/AOISimilarityResultsDialog.py" line="529"/>
+        <location filename="../app/core/views/images/viewer/dialogs/AOISimilarityResultsDialog.py" line="538"/>
         <source>Reset View</source>
         <translation>Restablecer vista</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/AOISimilarityResultsDialog.py" line="532"/>
+        <location filename="../app/core/views/images/viewer/dialogs/AOISimilarityResultsDialog.py" line="541"/>
         <source>Reset zoom and fit all thumbnails in view</source>
         <translation>Restablecer el zoom y ajustar todas las miniaturas a la vista</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/AOISimilarityResultsDialog.py" line="537"/>
+        <location filename="../app/core/views/images/viewer/dialogs/AOISimilarityResultsDialog.py" line="546"/>
         <source>Close</source>
         <translation>Cerrar</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/AOISimilarityResultsDialog.py" line="572"/>
+        <location filename="../app/core/views/images/viewer/dialogs/AOISimilarityResultsDialog.py" line="581"/>
         <source>AOI #{number}</source>
         <translation>AOI #{number}</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/AOISimilarityResultsDialog.py" line="573"/>
+        <location filename="../app/core/views/images/viewer/dialogs/AOISimilarityResultsDialog.py" line="582"/>
         <source>the selected AOI</source>
         <translation>el AOI seleccionado</translation>
     </message>
@@ -5573,49 +5573,69 @@ Esto descarga la altura del dosel Meta/WRI (1 m) y la establece como fuente de d
         <translation>Desconocido</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="765"/>
+        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="603"/>
+        <source>{value} ft</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="605"/>
+        <source>{value} m</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="606"/>
+        <source>Altitude basis: takeoff elevation {elev}</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="608"/>
+        <source>Altitude basis: reported AGL (approximate over terrain)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="789"/>
         <source>Building canopy overlay...</source>
         <translation>Generando superposición de dosel...</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="791"/>
+        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="815"/>
         <source>No canopy data covers this area</source>
         <translation>Ningún dato de dosel cubre esta área</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="851"/>
+        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="875"/>
         <source>POD: {pod}% (beta)   Looks: {looks}</source>
         <translation>POD: {pod}% (beta)   Vistas: {looks}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="854"/>
+        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="878"/>
         <source>Limiting factor: {factor}</source>
         <translation>Factor limitante: {factor}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="889"/>
-        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="902"/>
+        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="917"/>
+        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="930"/>
         <source>Image {n}</source>
         <translation>Imagen {n}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="890"/>
-        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="905"/>
+        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="918"/>
+        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="933"/>
         <source>View {name}</source>
         <translation>Vista {name}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="862"/>
+        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="890"/>
         <source>Find location in images</source>
         <translation>Buscar ubicación en las imágenes</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="909"/>
+        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="937"/>
         <source>{name} (no flagged AOIs)</source>
         <translation>{name} (sin AOI marcados)</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="1044"/>
+        <location filename="../app/core/controllers/images/viewer/GPSMapController.py" line="1072"/>
         <source>GPS coordinate not in any images</source>
         <translation>La coordenada GPS no está en ninguna imagen</translation>
     </message>
@@ -9977,12 +9997,12 @@ y luego vuelva a hacer clic para colocar el segundo punto.</translation>
 <context>
     <name>NeighborGalleryView</name>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/AOINeighborGalleryDialog.py" line="184"/>
+        <location filename="../app/core/views/images/viewer/dialogs/AOINeighborGalleryDialog.py" line="172"/>
         <source>Unknown</source>
         <translation type="unfinished">Desconocido</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/AOINeighborGalleryDialog.py" line="187"/>
+        <location filename="../app/core/views/images/viewer/dialogs/AOINeighborGalleryDialog.py" line="175"/>
         <source> (Current)</source>
         <translation type="unfinished"></translation>
     </message>
@@ -9990,7 +10010,7 @@ y luego vuelva a hacer clic para colocar el segundo punto.</translation>
 <context>
     <name>NeighborSearchWorker</name>
     <message>
-        <location filename="../app/core/controllers/images/viewer/neighbor/AOINeighborTrackingController.py" line="60"/>
+        <location filename="../app/core/controllers/images/viewer/neighbor/AOINeighborTrackingController.py" line="68"/>
         <source>Locating the selected AOI...</source>
         <translation type="unfinished"></translation>
     </message>
@@ -12050,37 +12070,37 @@ Recomendación secundaria: {secondary}</translation>
 <context>
     <name>StreamControlWidget</name>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="837"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="838"/>
         <source>Stream Connection</source>
         <translation>Conexión de transmisión</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="839"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="840"/>
         <source>Configure and connect to video source (file, HDMI capture, or RTMP stream)</source>
         <translation>Configurar y conectar a la fuente de vídeo (archivo, captura HDMI o transmisión RTMP)</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="844"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="845"/>
         <source>Stream Type:</source>
         <translation>Tipo de transmisión:</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="846"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="847"/>
         <source>File</source>
         <translation>Archivo</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="847"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="848"/>
         <source>HDMI Capture</source>
         <translation>Captura HDMI</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="848"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="849"/>
         <source>RTMP Stream</source>
         <translation>Transmisión RTMP</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="851"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="852"/>
         <source>Select the type of video source:
 • File: Pre-recorded video file with timeline controls
 • HDMI Capture: Live capture from HDMI capture device
@@ -12091,18 +12111,18 @@ Recomendación secundaria: {secondary}</translation>
 • Transmisión RTMP: Transmisión en tiempo real desde fuente RTMP/HTTP</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="860"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="861"/>
         <source>Stream URL/Path:</source>
         <translation>URL/ruta de transmisión:</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="867"/>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1066"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="868"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1067"/>
         <source>Click to browse for video file...</source>
         <translation>Haga clic para buscar un archivo de vídeo...</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="871"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="872"/>
         <source>Enter or browse for the video source:
 • File: Click to browse for video file (MP4, AVI, MOV, etc.)
 • RTMP Stream: Enter RTMP URL (rtmp://server:port/app/stream)</source>
@@ -12111,344 +12131,344 @@ Recomendación secundaria: {secondary}</translation>
 • Transmisión RTMP: Introduzca la URL RTMP (rtmp://servidor:puerto/app/transmisión)</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="880"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="881"/>
         <source>Select HDMI capture device</source>
         <translation>Seleccionar dispositivo de captura HDMI</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="882"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="883"/>
         <source>Scanning for devices...</source>
         <translation>Escaneando en busca de dispositivos...</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="886"/>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1018"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="887"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1019"/>
         <source>Browse...</source>
         <translation>Examinar...</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="890"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="891"/>
         <source>Open file browser to select a video file for analysis.
 Supported formats: MP4, AVI, MOV, MKV, FLV, WMV, M4V, 3GP, WebM</source>
         <translation>Abrir el explorador de archivos para seleccionar un archivo de vídeo para analizar.
 Formatos compatibles: MP4, AVI, MOV, MKV, FLV, WMV, M4V, 3GP, WebM</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="897"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="898"/>
         <source>Scan...</source>
         <translation>Escanear...</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="899"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="900"/>
         <source>Scan for available HDMI capture devices</source>
         <translation>Escanear en busca de dispositivos de captura HDMI disponibles</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="906"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="907"/>
         <source>Connect</source>
         <translation>Conectar</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="909"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="910"/>
         <source>Connect to the specified video source and begin processing.</source>
         <translation>Conectar a la fuente de vídeo especificada e iniciar el procesamiento.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="911"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="912"/>
         <source>Disconnect</source>
         <translation>Desconectar</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="915"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="916"/>
         <source>Disconnect from the current video source and stop processing.</source>
         <translation>Desconectar de la fuente de vídeo actual y detener el procesamiento.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="922"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="923"/>
         <source>Status: Disconnected</source>
         <translation>Estado: Desconectado</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="924"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="925"/>
         <source>Current connection status</source>
         <translation>Estado de conexión actual</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="927"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="928"/>
         <source>Performance</source>
         <translation>Rendimiento</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="928"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="929"/>
         <source>Real-time performance metrics</source>
         <translation>Métricas de rendimiento en tiempo real</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="932"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="933"/>
         <source>Video: --</source>
         <translation>Vídeo: --</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="933"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="934"/>
         <source>Original video resolution</source>
         <translation>Resolución original del vídeo</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="934"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="935"/>
         <source>Processing: --</source>
         <translation>Procesando: --</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="936"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="937"/>
         <source>Resolution used for detection processing</source>
         <translation>Resolución usada para el procesamiento de detección</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="940"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="941"/>
         <source>Source FPS: --</source>
         <translation>FPS de origen: --</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="941"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="942"/>
         <source>Source frame rate and the applied processing cadence</source>
         <translation>Tasa de fotogramas de origen y cadencia de procesamiento aplicada</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="942"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="943"/>
         <source>Proc FPS: --</source>
         <translation>FPS de proc.: --</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="944"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="945"/>
         <source>Actual frames per second being processed</source>
         <translation>Fotogramas por segundo reales que se están procesando</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="948"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="949"/>
         <source>Time: -- ms</source>
         <translation>Tiempo: -- ms</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="950"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="951"/>
         <source>Time in milliseconds to process each frame</source>
         <translation>Tiempo en milisegundos para procesar cada fotograma</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="952"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="953"/>
         <source>Latency: -- ms</source>
         <translation>Latencia: -- ms</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="954"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="955"/>
         <source>End-to-end latency from frame capture to display</source>
         <translation>Latencia de extremo a extremo desde la captura del fotograma hasta la visualización</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="958"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="959"/>
         <source>Frames: --</source>
         <translation>Fotogramas: --</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="959"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="960"/>
         <source>Total number of frames processed</source>
         <translation>Número total de fotogramas procesados</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="960"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="961"/>
         <source>Detections: --</source>
         <translation>Detecciones: --</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="961"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="962"/>
         <source>Number of detections in current frame</source>
         <translation>Número de detecciones en el fotograma actual</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="975"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="976"/>
         <source>Recording</source>
         <translation>Grabando</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="980"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="981"/>
         <source>Start Recording</source>
         <translation>Iniciar grabación</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="983"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="984"/>
         <source>Start recording the video stream with detection overlays.</source>
         <translation>Iniciar la grabación de la transmisión de vídeo con superposiciones de detección.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="985"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="986"/>
         <source>Stop Recording</source>
         <translation>Detener grabación</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="988"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="989"/>
         <source>Stop the current recording and save to file.</source>
         <translation>Detener la grabación actual y guardarla en un archivo.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="995"/>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1183"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="996"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1195"/>
         <source>Status: Not Recording</source>
         <translation>Estado: No se está grabando</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="998"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="999"/>
         <source>Current recording status and output file path</source>
         <translation>Estado de grabación actual y ruta del archivo de salida</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1002"/>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1190"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1003"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1202"/>
         <source>Duration: --</source>
         <translation>Duración: --</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1004"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1005"/>
         <source>Recording statistics: Duration, FPS, Frames</source>
         <translation>Estadísticas de grabación: Duración, FPS, fotogramas</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1013"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1014"/>
         <source>Save to:</source>
         <translation>Guardar en:</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1016"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1017"/>
         <source>Directory where video recordings will be saved.</source>
         <translation>Directorio donde se guardarán las grabaciones de vídeo.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1020"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1021"/>
         <source>Choose a folder to store recordings.</source>
         <translation>Elija una carpeta para almacenar las grabaciones.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1074"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1075"/>
         <source>rtmp://server:port/app/stream</source>
         <translation>rtmp://servidor:puerto/app/transmisión</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1091"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1092"/>
         <source>Invalid Device</source>
         <translation>Dispositivo no válido</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1092"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1093"/>
         <source>Please select a valid HDMI capture device.</source>
         <translation>Seleccione un dispositivo de captura HDMI válido.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1104"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1105"/>
         <source>Invalid URL</source>
         <translation>URL no válida</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1105"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1106"/>
         <source>Please enter a valid stream URL.</source>
         <translation>Introduzca una URL de transmisión válida.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1122"/>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1135"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1123"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1144"/>
         <source>Status: {message}</source>
         <translation>Estado: {message}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1171"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1182"/>
         <source>Status: Recording</source>
         <translation>Estado: Grabando</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1175"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1186"/>
         <source>Output: {value}</source>
         <translation>Salida: {value}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1187"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1199"/>
         <source>Duration: {value}</source>
         <translation>Duración: {value}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1216"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1228"/>
         <source>Select Recording Directory</source>
         <translation>Seleccionar directorio de grabación</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1227"/>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1230"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1239"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1242"/>
         <source>Scanning...</source>
         <translation>Escaneando...</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1254"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1266"/>
         <source>Scan</source>
         <translation>Escanear</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1260"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1272"/>
         <source>No capture devices found</source>
         <translation>No se encontraron dispositivos de captura</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1267"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1279"/>
         <source>Device {index} ({backend})</source>
         <translation>Dispositivo {index} ({backend})</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1297"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1309"/>
         <source>Video: {width}x{height}</source>
         <translation>Vídeo: {width}x{height}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1304"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1316"/>
         <source>Processing: {width}x{height}</source>
         <translation>Procesando: {width}x{height}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1320"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1332"/>
         <source>Source FPS: {source:.1f} (Applied {applied:.1f})</source>
         <translation>FPS de origen: {source:.1f} (Aplicado {applied:.1f})</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1327"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1339"/>
         <source>Source FPS: {fps:.1f}</source>
         <translation>FPS de origen: {fps:.1f}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1330"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1342"/>
         <source>Proc FPS: {fps:.1f}</source>
         <translation>FPS de proc.: {fps:.1f}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1338"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1350"/>
         <source>Time: {time:.1f} ms</source>
         <translation>Tiempo: {time:.1f} ms</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1341"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1353"/>
         <source>Latency: {latency:.1f} ms</source>
         <translation>Latencia: {latency:.1f} ms</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1349"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1361"/>
         <source>Frames: {count}</source>
         <translation>Fotogramas: {count}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1352"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1364"/>
         <source>Detections: {count}</source>
         <translation>Detecciones: {count}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1359"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1371"/>
         <source>Select Video File</source>
         <translation>Seleccionar archivo de vídeo</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1362"/>
+        <location filename="../app/core/controllers/streaming/shared_widgets.py" line="1374"/>
         <source>Video Files (*.mp4 *.avi *.mov *.mkv *.flv *.wmv *.m4v *.3gp *.webm *.mpg *.mpeg *.ts *.mts *.m2ts);;All Files (*)</source>
         <translation>Archivos de vídeo (*.mp4 *.avi *.mov *.mkv *.flv *.wmv *.m4v *.3gp *.webm *.mpg *.mpeg *.ts *.mts *.m2ts);;Todos los archivos (*)</translation>
     </message>
@@ -12658,7 +12678,7 @@ Formatos compatibles: MP4, AVI, MOV, MKV, FLV, WMV, M4V, 3GP, WebM</translation>
     </message>
     <message>
         <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="324"/>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1896"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1908"/>
         <source>Status: Not Recording</source>
         <translation>Estado: No se está grabando</translation>
     </message>
@@ -12669,7 +12689,7 @@ Formatos compatibles: MP4, AVI, MOV, MKV, FLV, WMV, M4V, 3GP, WebM</translation>
     </message>
     <message>
         <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="331"/>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1898"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1910"/>
         <source>Duration: --</source>
         <translation>Duración: --</translation>
     </message>
@@ -12759,7 +12779,7 @@ los falsos positivos, pero retrasan la aparición de la detección.</translation
         <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="798"/>
         <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="812"/>
         <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="826"/>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1932"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1944"/>
         <source>Error</source>
         <translation>Error</translation>
     </message>
@@ -12834,7 +12854,7 @@ los falsos positivos, pero retrasan la aparición de la detección.</translation
     </message>
     <message>
         <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1515"/>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1592"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1598"/>
         <source>No Stream Connected</source>
         <translation>No hay ninguna transmisión conectada</translation>
     </message>
@@ -12859,67 +12879,67 @@ los falsos positivos, pero retrasan la aparición de la detección.</translation
         <translation>✓ Conectado: {message}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1574"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1580"/>
         <source>✗ Disconnected: {message}</source>
         <translation>✗ Desconectado: {message}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1795"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1801"/>
         <source>No detections found.</source>
         <translation>No se encontraron detecciones.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1799"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1805"/>
         <source>Detection Results ({count} found):</source>
         <translation>Resultados de detección ({count} encontrados):</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1811"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1817"/>
         <source>#{index}: Type({cls}) Pos({x},{y}) Size({w}x{h})</source>
         <translation>n.º{index}: Tipo({cls}) Pos({x},{y}) Tamaño({w}x{h})</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1821"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1827"/>
         <source>#{index}: Type({cls})</source>
         <translation>n.º{index}: Tipo({cls})</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1826"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1832"/>
         <source> Conf({confidence:.2f})</source>
         <translation> Conf({confidence:.2f})</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1871"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1877"/>
         <source>Recording started: {path}</source>
         <translation>Grabación iniciada: {path}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1878"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1884"/>
         <source>Recording stopped</source>
         <translation>Grabación detenida</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1892"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1901"/>
         <source>Status: Recording to {path}</source>
         <translation>Estado: Grabando a {path}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1912"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1924"/>
         <source>Duration: {duration:.1f}s | FPS: {fps:.1f} | Frames: {frames} | Queue: {queue}</source>
         <translation>Duración: {duration:.1f}s | FPS: {fps:.1f} | Fotogramas: {frames} | Cola: {queue}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1930"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1942"/>
         <source>✗ Error: {error}</source>
         <translation>✗ Error: {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1997"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="2009"/>
         <source>Live Stream</source>
         <translation>Transmisión en vivo</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1999"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="2011"/>
         <source>Cannot seek in live stream.
 
 Detection was first seen at frame {frame}.</source>
@@ -14600,9 +14620,9 @@ Register the downloaded Meta/WRI canopy tiles instead? (Your LANDFIRE files stay
     <message>
         <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="478"/>
         <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="585"/>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="865"/>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="903"/>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="948"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="886"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="924"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="969"/>
         <source>Export Error</source>
         <translation>Error de exportación</translation>
     </message>
@@ -14632,7 +14652,7 @@ Register the downloaded Meta/WRI canopy tiles instead? (Your LANDFIRE files stay
     </message>
     <message>
         <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="653"/>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="824"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="845"/>
         <source>POD Error</source>
         <translation>Error de POD</translation>
     </message>
@@ -14670,27 +14690,47 @@ Register the downloaded Meta/WRI canopy tiles instead? (Your LANDFIRE files stay
         <translation>(los datos de dosel cubrieron el {pct}% del área buscada)</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="787"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="743"/>
+        <source>(takeoff elevation {elev})</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="747"/>
+        <source>(no takeoff elevation — POD is approximate over changing terrain)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="754"/>
+        <source>{value} ft</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="755"/>
+        <source>{value} m</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="808"/>
         <source>Terrain and canopy aware probability-of-detection heatmap.</source>
         <translation>Mapa de calor de probabilidad de detección consciente del terreno y del dosel.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="791"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="812"/>
         <source>Mean POD over covered area: {pod}%</source>
         <translation>POD media sobre el área cubierta: {pod}%</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="794"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="815"/>
         <source>POD Coverage</source>
         <translation>Cobertura POD</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="802"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="823"/>
         <source>POD Overlay</source>
         <translation>Superposición POD</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="803"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="824"/>
         <source>The POD coverage was computed, but embedding it into the exported file failed:
 {error}
 
@@ -14701,37 +14741,37 @@ The POD GeoTIFF products were still written next to the export.</source>
 Los productos GeoTIFF de POD se escribieron igualmente junto a la exportación.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="816"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="837"/>
         <source>POD calculation cancelled</source>
         <translation>Cálculo de POD cancelado</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="825"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="846"/>
         <source>POD calculation failed:
 {error}</source>
         <translation>El cálculo de POD falló:
 {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="866"/>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="904"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="887"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="925"/>
         <source>Failed to export to CalTopo:
 {error}</source>
         <translation>Error al exportar a CalTopo:
 {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="920"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="941"/>
         <source>Map export completed successfully!</source>
         <translation>¡Exportación de mapa completada correctamente!</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="935"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="956"/>
         <source>Map export cancelled</source>
         <translation>Exportación de mapa cancelada</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="949"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="970"/>
         <source>Map export failed:
 {error}</source>
         <translation>Error en la exportación de mapa:

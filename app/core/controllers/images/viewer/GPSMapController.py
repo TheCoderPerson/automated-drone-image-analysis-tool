@@ -584,6 +584,30 @@ class GPSMapController(QObject):
             }
         return self._limit_labels.get(code, self.tr("Unknown"))
 
+    def _altitude_basis_label(self):
+        """What the cached POD run used for camera elevation, or None.
+
+        The takeoff elevation is the one number that reveals a GPS-altitude
+        datum mismatch, which the pipeline cannot detect on its own (a constant
+        offset is indistinguishable from a genuine launch elevation). The
+        completion toast is transient, so it is repeated here where it stays
+        checkable against the known launch point for as long as the overlay is up.
+        """
+        cache = self._pod_cache()
+        result = cache.get_result() if (cache and cache.has_result()) else None
+        if result is None:
+            return None
+        anchor = getattr(result, 'altitude_anchor_m', None)
+        if anchor is not None:
+            if getattr(self.parent, 'distance_unit', 'ft') == 'ft':
+                elev = self.tr("{value} ft").format(value=int(round(anchor * 3.28084)))
+            else:
+                elev = self.tr("{value} m").format(value=int(round(anchor)))
+            return self.tr("Altitude basis: takeoff elevation {elev}").format(elev=elev)
+        if (getattr(result, 'altitude_source_counts', None) or {}).get('agl_nadir'):
+            return self.tr("Altitude basis: reported AGL (approximate over terrain)")
+        return None
+
     def _rgba_to_pixmap(self, rgba, transform):
         """(QPixmap, transform6) from an RGBA grid, downsampled to a display cap."""
         import numpy as np
@@ -854,6 +878,10 @@ class GPSMapController(QObject):
         lim = menu.addAction(self.tr("Limiting factor: {factor}").format(
             factor=self._limit_label(sample['limiting_factor'])))
         lim.setEnabled(False)
+        basis = self._altitude_basis_label()
+        if basis:
+            act = menu.addAction(basis)
+            act.setEnabled(False)
         frames = sample.get('frames', [])
         if frames:
             menu.addSeparator()
