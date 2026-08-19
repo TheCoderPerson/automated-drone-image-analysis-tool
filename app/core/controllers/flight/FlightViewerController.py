@@ -27,6 +27,51 @@ from core.controllers.flight.MissionGalleryController import MissionGalleryContr
 from core.views.flight.FlightViewerWindow import FlightViewerWindow
 
 
+# The warmup runs at most once per process, and the thread doing it stays
+# reachable so it can be joined. Both properties matter: a fresh thread per
+# controller re-imported modules already in sys.modules for no gain, and a
+# thread running *native* imports that outlives its starter crashed the
+# interpreter (0x80000003 during GC) rather than failing cleanly.
+# Generous next to a ~1s warmup, short enough that a wedged import cannot
+# make the app look hung on exit.
+_PREWARM_JOIN_TIMEOUT_S = 10.0
+
+_PREWARM_LOCK = threading.Lock()
+_prewarm_thread: Optional[threading.Thread] = None
+
+
+def start_webrtc_prewarm() -> Optional[threading.Thread]:
+    """Begin the WebRTC warmup, or return the run already in progress.
+
+    Idempotent per process. Returns the thread doing the work so callers
+    can join it; see :func:`wait_for_webrtc_prewarm`.
+    """
+    global _prewarm_thread
+    with _PREWARM_LOCK:
+        if _prewarm_thread is None:
+            _prewarm_thread = threading.Thread(
+                target=_prewarm_webrtc_imports,
+                name="adiat-webrtc-prewarm",
+                daemon=True,
+            )
+            _prewarm_thread.start()
+        return _prewarm_thread
+
+
+def wait_for_webrtc_prewarm(timeout: Optional[float] = None) -> bool:
+    """Block until the warmup finishes.
+
+    Returns True when no warmup thread is still running. Callers pass a
+    timeout so a stuck native import cannot hang application shutdown.
+    """
+    with _PREWARM_LOCK:
+        thread = _prewarm_thread
+    if thread is None:
+        return True
+    thread.join(timeout)
+    return not thread.is_alive()
+
+
 def _prewarm_webrtc_imports() -> None:
     """Force the heavy WebRTC native libraries to load on a worker thread.
 
@@ -128,12 +173,9 @@ class FlightViewerController(QObject):
 
         # Kick off the WebRTC import warmup on a daemon thread so the
         # first Connect click doesn't pay ~1s of native-library load
-        # time. Daemon = won't keep the process alive on shutdown.
-        threading.Thread(
-            target=_prewarm_webrtc_imports,
-            name="adiat-webrtc-prewarm",
-            daemon=True,
-        ).start()
+        # time. Guarded so a second viewer does not start a second run;
+        # shutdown() joins whatever this returns.
+        start_webrtc_prewarm()
 
     # ------------------------------------------------------------------
     # window lifecycle
@@ -348,6 +390,13 @@ class FlightViewerController(QObject):
             loop.close()
         except Exception:  # pragma: no cover - best effort
             pass
+        # Let the import warmup finish before the caller moves on. Bounded
+        # so a wedged native import delays exit rather than blocking it.
+        if not wait_for_webrtc_prewarm(timeout=_PREWARM_JOIN_TIMEOUT_S):
+            self.logger.warning(
+                "WebRTC import warmup still running after "
+                f"{_PREWARM_JOIN_TIMEOUT_S}s; leaving it to the daemon thread."
+            )
 
     # ------------------------------------------------------------------
     # pairing flow
