@@ -619,6 +619,24 @@ class QtImageViewer(TranslationMixin, QGraphicsView):
             if not self._is_destroyed:
                 self._safe_emit_view_changed()
 
+    def reprojectView(self):
+        """Re-project the current view state onto the (changed) viewport.
+
+        The single home of the geometry-event policy: a held zoom
+        (zoomStack non-empty - a gallery AOI click, a grid cell, a user
+        zoom) is re-applied to the new viewport; only an un-zoomed view is
+        fit to it. Geometry and visibility handlers (resize, splitter
+        drags, hide/show cycles) call this so such events never change
+        what the user is looking at - they have no authority to discard a
+        held zoom, only navigation or an explicit zoom-out does.
+        """
+        if self._is_destroyed:
+            return
+        if self.zoomStack:
+            self.updateViewer()
+        else:
+            self.resetZoom()
+
     # ===================================================================== #
     #  Qt events that might change zoom                                      #
     # ===================================================================== #
@@ -645,7 +663,11 @@ class QtImageViewer(TranslationMixin, QGraphicsView):
             self._is_destroyed = True
             return
         if not self._is_destroyed:
-            self.resetZoom()
+            # Being (re-)shown is a visibility event, not a navigation:
+            # resetting here used to wipe the gallery's AOI zoom whenever a
+            # hide/show cycle (splitter churn, window state changes, macOS
+            # occlusion) landed after the click.
+            self.reprojectView()
 
     # ------------------- wheel / trackpad / pinch nav ------------------- #
     def wheelEvent(self, ev):

@@ -13,9 +13,11 @@ the process. Two defects combined to do exactly that:
 """
 
 import inspect
+import sys
 from unittest.mock import MagicMock
 
 import pytest
+from PySide6.QtCore import QThread
 from PySide6.QtWidgets import QApplication, QWidget
 
 from core.controllers.images.viewer.neighbor.AOINeighborTrackingController import (
@@ -185,7 +187,10 @@ class TestCancellation:
         results = [{'image_idx': 1, 'pixel_x': 5, 'pixel_y': 5}]
         controller._on_search_complete(results)
 
-        shown.assert_called_once_with(results)
+        # The gallery is told whether the result cap truncated the search, so
+        # it can say "there are more" instead of presenting the cap as the
+        # answer. A complete search reports False.
+        shown.assert_called_once_with(results, False)
 
     def test_closing_progress_dialog_does_not_read_as_cancelled(self, controller,
                                                                 monkeypatch):
@@ -238,37 +243,118 @@ class TestCancellation:
 #  Worker contract                                                            #
 # --------------------------------------------------------------------------- #
 
+AOI = {'center': (100, 100), 'radius': 20, 'area': 400}
+
+
+def _worker(service, **overrides):
+    """A worker whose AOI GPS step the caller stubs, to test the search itself.
+
+    The GPS calculation moved onto the worker -- it decodes the image and can
+    query a DEM, which froze the GUI before the progress dialog could paint.
+    """
+    kwargs = dict(
+        neighbor_service=service, images=[], current_image_idx=0,
+        current_image={'path': 'a.jpg'}, aoi_data=AOI,
+    )
+    kwargs.update(overrides)
+    return NeighborSearchWorker(**kwargs)
+
+
+def _stub_gps(monkeypatch, result):
+    """Point the worker's AOIService at a fixed estimate_aoi_gps result.
+
+    Reached through sys.modules because the package __init__ re-exports the
+    controller class under the module's own name, so a plain import of the
+    dotted path binds the class rather than the module.
+    """
+    mod = sys.modules[
+        'core.controllers.images.viewer.neighbor.AOINeighborTrackingController']
+    service = MagicMock()
+    service.estimate_aoi_gps.return_value = result
+    monkeypatch.setattr(mod, 'AOIService', lambda *a, **k: service)
+    return service
+
+
+class _GPS:
+    """Stand-in for AOIGPSResult."""
+
+    terrain_elevation_m = 250.0
+
+    def to_tuple(self):
+        return (32.0, -97.0)
+
+
 class TestWorker:
 
     def test_cancel_before_run_skips_the_service(self, app):
         service = MagicMock()
-        worker = NeighborSearchWorker(service, [], 0, (1.0, 2.0))
+        worker = _worker(service)
         finished = []
-        worker.finished.connect(finished.append)
+        worker.finished.connect(lambda r, t, g: finished.append((r, t)))
 
         worker.cancel()
         worker.run()
 
         service.find_aoi_in_neighbors.assert_not_called()
-        assert finished == [[]]
+        assert finished == [([], False)]
 
-    def test_run_emits_results(self, app):
+    def test_run_emits_results(self, app, monkeypatch):
+        _stub_gps(monkeypatch, _GPS())
         service = MagicMock()
-        service.find_aoi_in_neighbors.return_value = [{'image_idx': 1}]
-        worker = NeighborSearchWorker(service, [], 0, (1.0, 2.0))
+        service.find_aoi_in_neighbors.return_value = ([{'image_idx': 1}], False)
+        worker = _worker(service)
         finished = []
-        worker.finished.connect(finished.append)
+        worker.finished.connect(lambda r, t, g: finished.append((r, t)))
 
         worker.run()
 
-        assert finished == [[{'image_idx': 1}]]
+        assert finished == [([{'image_idx': 1}], False)]
 
-    def test_service_exception_emits_error(self, app):
+    def test_truncation_is_reported_to_the_controller(self, app, monkeypatch):
+        """A capped search must not present its cap as the answer."""
+        _stub_gps(monkeypatch, _GPS())
+        service = MagicMock()
+        service.find_aoi_in_neighbors.return_value = ([{'image_idx': 1}], True)
+        worker = _worker(service)
+        finished = []
+        worker.finished.connect(lambda r, t, g: finished.append((r, t)))
+
+        worker.run()
+
+        assert finished == [([{'image_idx': 1}], True)]
+
+    def test_unavailable_gps_is_reported_without_searching(self, app, monkeypatch):
+        """No AOI GPS means there is nothing to look for in the other images."""
+        _stub_gps(monkeypatch, None)
+        service = MagicMock()
+        worker = _worker(service)
+        unavailable = []
+        worker.gps_unavailable.connect(lambda g: unavailable.append(True))
+
+        worker.run()
+
+        assert unavailable == [True]
+        service.find_aoi_in_neighbors.assert_not_called()
+
+    def test_the_aoi_gps_is_computed_on_the_worker(self, app, monkeypatch):
+        """Regression: this ran on the GUI thread, freezing the window before
+        the progress dialog could paint -- for seconds when a DEM tile had to
+        be fetched, with no sign the Z press had registered."""
+        gps_service = _stub_gps(monkeypatch, _GPS())
+        service = MagicMock()
+        service.find_aoi_in_neighbors.return_value = ([], False)
+
+        _worker(service).run()
+
+        gps_service.estimate_aoi_gps.assert_called_once()
+
+    def test_service_exception_emits_error(self, app, monkeypatch):
+        _stub_gps(monkeypatch, _GPS())
         service = MagicMock()
         service.find_aoi_in_neighbors.side_effect = RuntimeError("boom")
-        worker = NeighborSearchWorker(service, [], 0, (1.0, 2.0))
+        worker = _worker(service)
         errors = []
-        worker.error.connect(errors.append)
+        worker.error.connect(lambda message, g: errors.append(message))
 
         worker.run()
 
@@ -362,3 +448,162 @@ class TestGalleryClickMapsToViewerIndex:
 
         assert results[0]['image_name'] == 'DJI_0001.JPG'
         assert 'no detections' in results[1]['image_name']
+
+
+# --------------------------------------------------------------------------- #
+#  Cancellation actually stops the work (not just the bookkeeping)            #
+# --------------------------------------------------------------------------- #
+
+class TestCancellationStopsTheSearch:
+
+    def test_worker_passes_a_cancel_hook_the_search_can_poll(self, app, monkeypatch):
+        """Regression: cancel() set a flag find_aoi_in_neighbors never read.
+
+        Qt cannot interrupt a Python slot mid-execution, so quit() and
+        requestInterruption() do nothing to a running search. Without a polled
+        hook the worker kept reading EXIF and decoding full-resolution images
+        for the rest of the flight after the user cancelled.
+        """
+        _stub_gps(monkeypatch, _GPS())
+        service = MagicMock()
+        service.find_aoi_in_neighbors.return_value = ([], False)
+        worker = _worker(service)
+        worker.run()
+
+        should_cancel = service.find_aoi_in_neighbors.call_args.kwargs['should_cancel']
+        assert should_cancel() is False
+        worker.cancel()
+        assert should_cancel() is True, "cancel() must be visible to the search"
+
+    def test_search_stops_at_the_next_image_once_cancelled(self):
+        """The hook is polled per image, so the search abandons promptly."""
+        from core.services.image.AOINeighborService import AOINeighborService
+
+        service = AOINeighborService.__new__(AOINeighborService)
+        service.logger = MagicMock()
+        service._center_gps_cache = {}
+        service._coverage_meta_cache = {}
+
+        results, truncated = service.find_aoi_in_neighbors(
+            images=[{'path': f'img{i}.jpg'} for i in range(50)],
+            current_image_idx=0,
+            aoi_gps=(32.0, -97.0),
+            should_cancel=lambda: True,
+        )
+
+        assert results == []
+        assert truncated is False
+
+
+# --------------------------------------------------------------------------- #
+#  A retired search must not act on the live one                              #
+# --------------------------------------------------------------------------- #
+
+class TestStaleWorkerIsIgnored:
+
+    def test_cancelled_workers_late_finish_does_not_touch_the_new_search(self, controller):
+        """The reachable sequence: cancel, press Z again, worker A finishes.
+
+        Worker A is still running and still connected. Its queued `finished`
+        lands after search B has started, and _cancelled has been reset to
+        False by then -- so the handler used to tear down B's thread and
+        report A's empty results as B's answer.
+        """
+        stale_generation = controller._generation
+        controller._cleanup_thread()            # retires A, bumps the generation
+        live_thread = MagicMock()
+        controller._thread = live_thread        # B is now running
+        controller._gallery_dialog = None
+
+        controller._on_search_complete([], generation=stale_generation)
+
+        assert controller._thread is live_thread, \
+            "a stale finish must not tear down the running search"
+
+    def test_stale_error_is_ignored_too(self, controller):
+        stale_generation = controller._generation
+        controller._cleanup_thread()
+        live_thread = MagicMock()
+        controller._thread = live_thread
+
+        controller._on_search_error("boom", stale_generation)
+
+        assert controller._thread is live_thread
+
+    def test_current_generation_is_still_handled(self, controller):
+        """The guard must not swallow the search the user is waiting on."""
+        controller._thread = None
+        controller._gallery_dialog = None
+        shown = []
+        controller._show_gallery_dialog = lambda results, truncated=False: shown.append(results)
+
+        controller._on_search_complete([{'image_idx': 0}], generation=controller._generation)
+
+        assert shown == [[{'image_idx': 0}]]
+
+    def test_unstamped_calls_are_handled(self, controller):
+        """Callers without a generation (tests, legacy) still work."""
+        controller._thread = None
+        controller._gallery_dialog = None
+        shown = []
+        controller._show_gallery_dialog = lambda results, truncated=False: shown.append(results)
+
+        controller._on_search_complete([{'image_idx': 0}])
+
+        assert shown == [[{'image_idx': 0}]]
+
+
+# --------------------------------------------------------------------------- #
+#  The search must complete on a REAL thread, with handlers on the GUI thread  #
+# --------------------------------------------------------------------------- #
+
+class TestRealThreadedRun:
+    """Regression: the app froze at the last image of every search.
+
+    The terminal signals were connected via lambdas. A lambda has no receiver
+    QObject, so Qt cannot use the controller's thread affinity and resolves the
+    connection as Direct -- the completion handler then ran ON THE WORKER
+    THREAD, where _cleanup_thread waits on the very thread it is running on and
+    the dialog calls touch GUI objects from the wrong thread. Deadlock, with
+    the progress dialog stuck on "Checking image N of N".
+
+    Every other test in this file drives the handlers by direct call, which
+    cannot see a connection-type defect. This one runs the real thread.
+    """
+
+    def _run(self, controller, viewer, qtbot, monkeypatch, results, truncated=False):
+        service = MagicMock()
+        service.find_aoi_in_neighbors.return_value = (results, truncated)
+        controller.neighbor_service = service
+        _stub_gps(monkeypatch, _GPS())
+
+        seen = {}
+        monkeypatch.setattr(
+            controller, '_show_gallery_dialog',
+            lambda r, t=False: seen.update(
+                results=r, truncated=t, thread=QThread.currentThread()))
+
+        with qtbot.waitSignal(controller.tracking_completed, timeout=10000):
+            controller.track_selected_aoi(image_idx=0, aoi_idx=0)
+        return seen
+
+    def test_search_completes_and_tears_down(self, controller, viewer, qtbot, monkeypatch):
+        seen = self._run(controller, viewer, qtbot, monkeypatch,
+                         [{'image_idx': 1, 'pixel_x': 5, 'pixel_y': 5}])
+
+        assert seen['results'] == [{'image_idx': 1, 'pixel_x': 5, 'pixel_y': 5}]
+        assert controller._thread is None, "the thread must be retired"
+        assert controller.progress_dialog is None, "the progress dialog must close"
+
+    def test_completion_runs_on_the_gui_thread(self, controller, viewer, qtbot, monkeypatch):
+        """The actual defect: a Direct connection ran this on the worker."""
+        seen = self._run(controller, viewer, qtbot, monkeypatch,
+                         [{'image_idx': 1, 'pixel_x': 5, 'pixel_y': 5}])
+
+        assert seen['thread'] is QApplication.instance().thread(),             "terminal handlers must be queued to the GUI thread"
+
+    def test_truncation_reaches_the_gallery(self, controller, viewer, qtbot, monkeypatch):
+        seen = self._run(controller, viewer, qtbot, monkeypatch,
+                         [{'image_idx': 1, 'pixel_x': 5, 'pixel_y': 5}], truncated=True)
+
+        assert seen['truncated'] is True

@@ -21,6 +21,7 @@ from __future__ import annotations
 import math
 from bisect import bisect_left
 from dataclasses import dataclass
+from datetime import datetime
 from typing import Dict, List, Optional, Sequence
 
 from core.services.telemetry.DjiSrtParser import DjiSrtSample
@@ -63,6 +64,11 @@ class TelemetryPoint:
     yaw_deg: Optional[float]
     horizontal_speed_ms: Optional[float]
     vertical_speed_ms: Optional[float]
+    # The aircraft's own wall clock for this fix, in drone local time,
+    # where the source carried one. This is what the frame-extraction
+    # path stamps as EXIF capture time; time_seconds is only an offset
+    # into the video and cannot date a frame on its own.
+    captured_at: Optional[datetime] = None
 
     def to_envelope(self) -> Dict[str, object]:
         """Render in the shape ``TelemetryHud.apply_envelope`` expects.
@@ -191,6 +197,11 @@ FlightLogSample`) both qualify, so every source gets identical speed
                 yaw_deg=sample.yaw_deg,
                 horizontal_speed_ms=horizontal,
                 vertical_speed_ms=vertical,
+                # from_samples is structural, not nominal: DJI SRT cues
+                # carry a wall clock, CSV flight-log rows do not, and
+                # the CSV path dates its frames from the container's
+                # start instead.
+                captured_at=getattr(sample, "captured_at", None),
             ))
 
         return cls(points, source=source, max_gap_seconds=max_gap_seconds)
@@ -225,6 +236,19 @@ FlightLogSample`) both qualify, so every source gets identical speed
     @property
     def points(self) -> List[TelemetryPoint]:
         return list(self._points)
+
+    @property
+    def has_wall_clock(self) -> bool:
+        """True when the source dated its fixes with the aircraft's clock.
+
+        The frame-extraction path uses this to choose a timestamp datum for
+        the whole video: the SRT's own drone-local clock when it has one,
+        otherwise the MP4 container's UTC start plus each frame's offset.
+        The two are never mixed within one video, so a frame landing in a
+        telemetry dropout is left undated rather than stamped hours off its
+        neighbours.
+        """
+        return any(p.captured_at is not None for p in self._points)
 
     @property
     def duration_seconds(self) -> float:

@@ -31,6 +31,7 @@ from core.services.telemetry.DjiSrtParser import (
     extract_fields,
     parse_dji_srt,
     parse_timecode,
+    parse_wall_clock,
 )
 from core.services.telemetry.FlightLogCsvParser import (
     CANONICAL_COLUMNS,
@@ -102,6 +103,7 @@ __all__ = [
     "profile_for_video",
     "profiles_for_device_tag",
     "parse_timecode",
+    "parse_wall_clock",
     "read_flight_log_rows",
     "read_flight_log_track",
     "read_srt_track",

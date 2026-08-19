@@ -267,6 +267,73 @@ def test_resize_refits_synchronously(app, qtbot):
     assert calls, "resizeEvent must refit synchronously (no deferred timer)"
 
 
+def test_show_event_preserves_held_zoom(app, qtbot):
+    """Regression (field: gallery AOI zoom wiped): show is not a navigation.
+
+    A hide/show cycle (splitter churn, window state changes, macOS occlusion)
+    used to resetZoom unconditionally, discarding a zoom the gallery click
+    had just applied — at whatever late moment the cycle landed. A held zoom
+    must be re-projected on show, not discarded; only an un-zoomed view is
+    fit to the viewport.
+    """
+    viewer = _viewer_with_image(qtbot)
+    viewer.show()
+    qtbot.waitExposed(viewer)
+
+    viewer.zoomToArea((200, 150), 6)
+    assert len(viewer.zoomStack) == 1
+    held_rect = viewer.zoomStack[-1]
+
+    viewer.hide()
+    viewer.show()
+
+    assert viewer.zoomStack, "show wiped the held zoom"
+    assert viewer.zoomStack[-1] == held_rect
+
+
+def test_show_event_still_fits_unzoomed_view(app, qtbot):
+    """The fit-on-show behavior is unchanged when no zoom is held."""
+    viewer = _viewer_with_image(qtbot)
+    viewer.show()
+    qtbot.waitExposed(viewer)
+    assert viewer.zoomStack == []
+
+    viewer.hide()
+    viewer.show()
+
+    assert viewer.zoomStack == []  # still un-zoomed, fit path ran without error
+
+
+def test_reproject_view_preserves_held_zoom(app, qtbot):
+    """reprojectView owns the geometry-event policy: a held zoom is
+    re-applied to the viewport, never discarded. Every geometry/visibility
+    handler (showEvent, Viewer.resizeEvent, the splitter path) delegates
+    here, so this is the single pin for all of them."""
+    viewer = _viewer_with_image(qtbot)
+    viewer.show()
+    qtbot.waitExposed(viewer)
+
+    viewer.zoomToArea((200, 150), 6)
+    held_rect = viewer.zoomStack[-1]
+
+    viewer.resize(viewer.width() + 60, viewer.height() + 40)
+    viewer.reprojectView()
+
+    assert viewer.zoomStack == [held_rect]
+
+
+def test_reproject_view_fits_unzoomed_view(app, qtbot):
+    """Without a held zoom, reprojectView fits the image (resetZoom path)."""
+    viewer = _viewer_with_image(qtbot)
+    viewer.show()
+    qtbot.waitExposed(viewer)
+    assert viewer.zoomStack == []
+
+    viewer.reprojectView()
+
+    assert viewer.zoomStack == []  # fit ran, no zoom invented
+
+
 def test_scrollbars_disabled(app, qtbot):
     """Regression (hard lock): the main viewer must disable both scrollbars.
 

@@ -7,12 +7,15 @@ samples for the embedded variant and dropped altitude for the
 ``rel_alt``/``abs_alt`` pair.
 """
 
+from datetime import datetime
+
 import pytest
 
 from core.services.telemetry.DjiSrtParser import (
     extract_fields,
     parse_dji_srt,
     parse_timecode,
+    parse_wall_clock,
 )
 
 # Newer firmware / embedded subtitle track: 4 lines, FrameCnt and the wall
@@ -250,3 +253,45 @@ class TestRobustness:
 
     def test_tolerates_crlf_line_endings(self):
         assert len(parse_dji_srt(EMBEDDED_SRT.replace("\n", "\r\n"))) == 2
+
+
+class TestWallClock:
+    """The aircraft's own clock, which dates an extracted frame.
+
+    ``start_seconds`` is only an offset into the video, so without this a
+    frame has no capture time and nothing downstream can order the images
+    (the GPS map traces its path by timestamp; auto-bearing sorts by it).
+    Both SRT layouts must yield one: the classic sidecar puts the stamp on
+    its own line, the embedded variant folds it onto the FrameCnt line.
+    """
+
+    def test_embedded_layout_yields_the_wall_clock(self):
+        samples = parse_dji_srt(EMBEDDED_SRT)
+        assert samples[0].captured_at == datetime(2026, 7, 25, 14, 38, 26, 477000)
+        assert samples[1].captured_at == datetime(2026, 7, 25, 14, 38, 26, 511000)
+
+    def test_classic_layout_yields_the_wall_clock(self):
+        assert parse_dji_srt(CLASSIC_SRT)[0].captured_at == datetime(2023, 5, 1, 10, 0, 0)
+
+    def test_a_cue_without_a_stamp_has_none(self):
+        text = "1\n00:00:00,000 --> 00:00:00,033\n[latitude: 1.0] [longitude: 1.0]\n"
+        assert parse_dji_srt(text)[0].captured_at is None
+
+    @pytest.mark.parametrize('text, expected', [
+        ('2026-08-15 12:09:26.002', datetime(2026, 8, 15, 12, 9, 26, 2000)),
+        ('2026-08-15 12:09:26,002', datetime(2026, 8, 15, 12, 9, 26, 2000)),
+        ('2026-08-15 12:09:26', datetime(2026, 8, 15, 12, 9, 26)),
+        # DJI has written comma-grouped sub-seconds; the whole second still reads.
+        ('2023-05-01 12:00:00,000,000', datetime(2023, 5, 1, 12, 0, 0)),
+        ('  2026-08-15 12:09:26  ', datetime(2026, 8, 15, 12, 9, 26)),
+        # ISO-style separator, seen in some embedded tracks.
+        ('2026-08-15T12:09:26', datetime(2026, 8, 15, 12, 9, 26)),
+        # Found anywhere in the line, not at a fixed offset.
+        ('FrameCnt: 1, DiffTime: 33ms 2026-08-15 12:09:26', datetime(2026, 8, 15, 12, 9, 26)),
+    ])
+    def test_formats(self, text, expected):
+        assert parse_wall_clock(text) == expected
+
+    @pytest.mark.parametrize('text', ['FrameCnt: 1, DiffTime: 33ms', 'not a date', '', None])
+    def test_rejects_non_dates(self, text):
+        assert parse_wall_clock(text) is None

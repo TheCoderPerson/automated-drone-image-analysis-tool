@@ -50,6 +50,7 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
+from datetime import datetime
 from typing import List, Optional
 
 from core.services.telemetry.VideoProfileService import DATUM_MSL, DATUM_RELATIVE
@@ -70,6 +71,21 @@ _TIMECODE_RE = re.compile(
 
 # Entries are separated by one or more blank lines.
 _ENTRY_SPLIT_RE = re.compile(r"(?:\r?\n){2,}")
+
+# DJI stamps each cue with the aircraft's own wall clock, e.g.
+# ``2026-08-15 12:09:26,347`` on its own line in the classic sidecar, or
+# folded onto the FrameCnt line in the embedded variant. Found by scanning
+# the whole block so either placement works.
+_WALL_CLOCK_RE = re.compile(
+    r"(\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}:\d{2}(?:[.,]\d+)?)"
+)
+
+# Tried in order against the matched wall-clock text.
+_WALL_CLOCK_FORMATS = (
+    "%Y-%m-%d %H:%M:%S.%f",
+    "%Y-%m-%d %H:%M:%S,%f",
+    "%Y-%m-%d %H:%M:%S",
+)
 
 # Below this, a legacy ``altitude`` track is read as takeoff-relative rather
 # than MSL. See _resolve_legacy_altitude for why the threshold is safe.
@@ -94,6 +110,10 @@ class DjiSrtSample:
     altitude_agl_m: Optional[float] = None   # rel_alt — above takeoff point
     yaw_deg: Optional[float] = None          # gimbal yaw; see module note below
     frame_index: Optional[int] = None
+    # The aircraft's own wall clock for this cue, in drone local time.
+    # Distinct from start_seconds, which is an offset into the video:
+    # this is the datum a frame's EXIF capture time is written from.
+    captured_at: Optional[datetime] = None
     # True when the altitude came from the legacy single ``altitude`` key,
     # whose datum varies by aircraft. See _resolve_legacy_altitude.
     altitude_datum_unknown: bool = False
@@ -121,6 +141,32 @@ def parse_timecode(value: str) -> Optional[float]:
         + int(seconds)
         + int(millis_padded) / 1000.0
     )
+
+
+def parse_wall_clock(text: str) -> Optional[datetime]:
+    """Absolute capture time from a cue's date stamp, or None.
+
+    Returns drone *local* time — DJI writes the aircraft's clock, not UTC.
+    Callers must not mix it with times derived from the MP4 container,
+    which are UTC.
+    """
+    if not text:
+        return None
+    match = _WALL_CLOCK_RE.search(text)
+    if not match:
+        return None
+    stamp = match.group(1).replace("T", " ")
+    for time_format in _WALL_CLOCK_FORMATS:
+        try:
+            return datetime.strptime(stamp, time_format)
+        except ValueError:
+            continue
+    # Sub-second field present but unparseable (DJI has written 6+ digits
+    # and comma-grouped triples); the whole-second prefix is still good.
+    try:
+        return datetime.strptime(stamp[:19], "%Y-%m-%d %H:%M:%S")
+    except ValueError:
+        return None
 
 
 def _to_float(value: Optional[str]) -> Optional[float]:
@@ -215,6 +261,9 @@ def _parse_entry(block: str) -> Optional[DjiSrtSample]:
         yaw_deg=_to_float(fields.get("gb_yaw")),
         frame_index=frame_index,
         altitude_datum_unknown=datum_unknown,
+        # Scanned from the whole block, not a fixed line index, so the
+        # sidecar and embedded layouts both yield a time.
+        captured_at=parse_wall_clock(block),
     )
 
 

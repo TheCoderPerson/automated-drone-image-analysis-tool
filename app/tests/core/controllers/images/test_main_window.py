@@ -660,3 +660,131 @@ def testOpenResultsForReviewRoutesToFolderScan(main_window):
     with patch.object(main_window, '_open_load_results_folder') as mock_open:
         main_window.open_results_for_review()
     mock_open.assert_called_once()
+
+
+# ---------------------------------------------------------------------------
+# Algorithm widget swap hygiene (field screenshot: outgoing ColorRange panel
+# stayed painted under the incoming MRMap panel while a long synchronous load
+# blocked the event loop; deleteLater alone does not hide the removed widget)
+# ---------------------------------------------------------------------------
+
+def test_algorithm_swap_hides_the_outgoing_widget(main_window):
+    outgoing = main_window.algorithmWidget
+    assert outgoing is not None
+
+    current = main_window.algorithmComboBox.currentText()
+    other = next(a['label'] for a in main_window.algorithms if a['label'] != current)
+    main_window.algorithmComboBox.setCurrentText(other)
+
+    assert main_window.algorithmWidget is not outgoing
+    # The outgoing widget must be invisible immediately - not merely queued
+    # for deletion - so a blocked event loop can never paint both panels.
+    assert outgoing.isHidden()
+
+
+def test_algorithm_swap_ignores_unknown_label(main_window):
+    """A label that matches no algorithm (group header, stale text) must not
+    tear down the current widget; the old unguarded next() raised
+    StopIteration after the removal, leaving the swap half-done."""
+    before = main_window.algorithmWidget
+    with patch.object(main_window.algorithmComboBox, 'currentText', return_value='No Such Algorithm'):
+        main_window._algorithmComboBox_changed()
+
+    assert main_window.algorithmWidget is before
+    assert not before.isHidden()
+
+
+def test_startup_leaves_algorithm_state_consistent(main_window):
+    """activeAlgorithm and algorithmWidget always agree after construction.
+
+    The swap derives activeAlgorithm from the combobox, so the two cannot
+    drift; the startup check in __init__ guarantees both are set (a corrupt
+    or fully platform-filtered algorithms.conf raises there instead of
+    failing later at Start with an AttributeError)."""
+    assert main_window.activeAlgorithm is not None
+    assert main_window.algorithmWidget is not None
+    assert main_window.activeAlgorithm['label'] == main_window.algorithmComboBox.currentText()
+
+
+def test_algorithm_combobox_is_managed_by_a_layout(main_window):
+    """The grouped selector must be laid out, not floating.
+
+    replaceWidget silently no-ops when the placeholder is missing from the
+    layout, and an unmanaged widget floats at its parent's top-left over
+    whatever is there (field screenshot: stray dropdown over the Input
+    Folder row). The fallback adds it to the layout regardless."""
+    layout = main_window.algorithmSelectorlLayout
+    assert layout.indexOf(main_window.algorithmComboBox) != -1
+
+
+# ---------------------------------------------------------------------------
+# populate_from_wizard_data: the combobox is the single source of truth for
+# activeAlgorithm, so an algorithm the wizard names but this platform cannot
+# select must not half-apply (options landing on the previous widget, or
+# auto-start running one algorithm with another's parameters).
+# ---------------------------------------------------------------------------
+
+def test_wizard_applies_an_available_algorithm(main_window):
+    current = main_window.algorithmComboBox.currentText()
+    target = next(a['label'] for a in main_window.algorithms
+                  if a['label'] != current
+                  and main_window.algorithmComboBox.findText(a['label']) != -1)
+
+    main_window.populate_from_wizard_data({'algorithm': target})
+
+    assert main_window.algorithmComboBox.currentText() == target
+    assert main_window.activeAlgorithm['label'] == target
+
+
+def test_wizard_unavailable_algorithm_does_not_half_apply(main_window):
+    """The regression: a label in self.algorithms but NOT selectable here.
+
+    self.algorithms is unfiltered while the combobox holds only labels for
+    this platform (algorithms.conf marks the Temperature algorithms
+    Windows-only), so on the other platform setCurrentText silently no-ops on
+    the non-editable combobox. Windows cannot produce that state naturally,
+    so the no-op is simulated - patching setCurrentText is exactly what an
+    absent label does.
+
+    Previously activeAlgorithm was assigned from self.algorithms BEFORE
+    setCurrentText, so it drifted to an algorithm whose widget was never
+    built: load_options wrote to the previous widget and auto-start ran one
+    algorithm with another's parameters.
+    """
+    before_label = main_window.algorithmComboBox.currentText()
+    before_widget = main_window.algorithmWidget
+    unavailable = next(a['label'] for a in main_window.algorithms
+                       if a['label'] != before_label)
+    loaded = []
+    before_widget.load_options = lambda opts: loaded.append(opts)
+
+    with patch.object(main_window.algorithmComboBox, 'setCurrentText'):
+        main_window.populate_from_wizard_data({
+            'algorithm': unavailable,
+            'algorithm_options': {'some': 'value'},
+        })
+
+    # activeAlgorithm tracked the combobox, not the wizard's request.
+    assert main_window.algorithmComboBox.currentText() == before_label
+    assert main_window.activeAlgorithm['label'] == before_label
+    assert main_window.algorithmWidget is before_widget
+    # And nothing was written into the wrong algorithm's widget.
+    assert loaded == []
+
+
+def test_wizard_options_load_into_the_selected_algorithms_widget(main_window):
+    current = main_window.algorithmComboBox.currentText()
+    target = next(a['label'] for a in main_window.algorithms
+                  if a['label'] != current
+                  and main_window.algorithmComboBox.findText(a['label']) != -1)
+
+    main_window.populate_from_wizard_data({
+        'algorithm': target,
+        'algorithm_options': {'some': 'value'},
+    })
+
+    # The widget that received the options is the one for the selected
+    # algorithm - the pairing the old manual activeAlgorithm assignment
+    # could break.
+    assert main_window.activeAlgorithm['label'] == target
+    assert main_window.algorithmWidget is not None

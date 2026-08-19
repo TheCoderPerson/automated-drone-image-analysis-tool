@@ -1,5 +1,7 @@
 """Tests for time-indexed telemetry sampling and derived motion."""
 
+from datetime import datetime
+
 import pytest
 
 from core.services.telemetry.DjiSrtParser import DjiSrtSample
@@ -9,7 +11,7 @@ from core.services.telemetry.TelemetryTrack import (
 )
 
 
-def _sample(t, lat=30.0, lon=-97.0, msl=200.0, agl=15.0, yaw=90.0):
+def _sample(t, lat=30.0, lon=-97.0, msl=200.0, agl=15.0, yaw=90.0, captured_at=None):
     return DjiSrtSample(
         start_seconds=t,
         end_seconds=t + 0.033,
@@ -18,6 +20,7 @@ def _sample(t, lat=30.0, lon=-97.0, msl=200.0, agl=15.0, yaw=90.0):
         altitude_msl_m=msl,
         altitude_agl_m=agl,
         yaw_deg=yaw,
+        captured_at=captured_at,
     )
 
 
@@ -160,3 +163,56 @@ class TestPath:
     def test_path_until_before_start_is_empty(self):
         track = TelemetryTrack.from_dji_samples([_sample(5.0)])
         assert track.path_until(0.0) == []
+
+
+class TestWallClock:
+    """The wall clock has to survive the trip from cue to sampled point.
+
+    ``VideoParserService`` reads ``point.captured_at`` to stamp a frame's
+    EXIF capture time, and ``has_wall_clock`` to choose the datum for the
+    whole video: the SRT's drone-local clock where it has one, otherwise the
+    container's UTC start plus each frame's offset. The two are never mixed
+    within one video, so this flag decides between them.
+    """
+
+    def test_captured_at_reaches_the_sampled_point(self):
+        stamp = datetime(2026, 7, 25, 14, 38, 26)
+        track = TelemetryTrack.from_dji_samples([_sample(0.0, captured_at=stamp)])
+        assert track.point_at(0.0).captured_at == stamp
+
+    def test_has_wall_clock_when_the_source_dated_its_fixes(self):
+        track = TelemetryTrack.from_dji_samples([
+            _sample(0.0, captured_at=datetime(2026, 7, 25, 14, 38, 26)),
+        ])
+        assert track.has_wall_clock is True
+
+    def test_no_wall_clock_when_no_cue_carried_one(self):
+        track = TelemetryTrack.from_dji_samples([_sample(0.0), _sample(1.0)])
+        assert track.has_wall_clock is False
+
+    def test_a_partially_dated_track_still_counts_as_dated(self):
+        """One dated cue is enough to make the SRT the timestamp source."""
+        track = TelemetryTrack.from_dji_samples([
+            _sample(0.0),
+            _sample(1.0, captured_at=datetime(2026, 7, 25, 14, 38, 27)),
+        ])
+        assert track.has_wall_clock is True
+
+    def test_an_empty_track_has_no_wall_clock(self):
+        assert TelemetryTrack([]).has_wall_clock is False
+
+    def test_samples_without_the_attribute_are_tolerated(self):
+        """from_samples is structural: CSV rows carry no wall clock."""
+        class _Row:
+            has_position = True
+            start_seconds = 0.0
+            latitude = 30.0
+            longitude = -97.0
+            altitude_msl_m = 200.0
+            altitude_agl_m = None
+            yaw_deg = None
+
+        track = TelemetryTrack.from_samples([_Row()])
+        assert len(track) == 1
+        assert track.point_at(0.0).captured_at is None
+        assert track.has_wall_clock is False

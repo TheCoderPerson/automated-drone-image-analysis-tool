@@ -447,6 +447,31 @@ def test_relative_stored_path_still_resolves_against_xml_dir(tmp_path):
     assert images[0]["path"] == os.path.join(str(tmp_path), "sub", "DJI_0042.JPG")
 
 
+def test_relative_stored_path_is_normalized_not_left_with_parent_segments(tmp_path):
+    """Regression: the resolved path must be comparable, not merely openable.
+
+    add_image_to_xml stores the source image relative to the result folder, so
+    a real file reads back as "../../input/DJI_0065.JPG". Joining that onto the
+    XML directory produced ".../ADIAT_Results/../../input/DJI_0065.JPG", which
+    opens the correct file -- so the viewer looked healthy -- but never
+    compared equal to the ".../input/DJI_0065.JPG" that a scan of
+    settings['input_dir'] produces for the same capture. Viewer's source-image
+    list compares those two strings, so every AOI image was reported as having
+    no detections and was appended to the list a second time.
+    """
+    results_dir = tmp_path / "output" / "ADIAT_Results"
+    results_dir.mkdir(parents=True)
+    xml_path = _xml_with_image_path(results_dir, "../../input/DJI_0065.JPG")
+
+    images = XmlService(str(xml_path)).get_images()
+
+    expected = os.path.join(str(tmp_path), "input", "DJI_0065.JPG")
+    assert images[0]["path"] == expected
+    assert ".." not in images[0]["path"]
+    # The original spelling stays available for legacy cache lookups.
+    assert images[0]["xml_path"] == "../../input/DJI_0065.JPG"
+
+
 def test_posix_absolute_stored_path_is_unchanged(tmp_path):
     """Regression: "/Volumes/SD/a.jpg" was separator-rewritten on Windows.
 

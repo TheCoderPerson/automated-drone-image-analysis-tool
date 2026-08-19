@@ -412,6 +412,26 @@ class PdfGeneratorService:
                 total_aois += len(img.get('areas_of_interest', []))
         return total_aois
 
+    @staticmethod
+    def _report_value(value, unit):
+        """Format a metadata value for the report, or "N/A" when there isn't one.
+
+        A report that prints "Noneft" or a substituted 0 is worse than one that
+        says nothing: the first is noise and the second is indistinguishable
+        from a real reading. Video-derived imagery carries no camera
+        intrinsics, so several of these are legitimately absent.
+
+        Args:
+            value: The measurement, or None when the image does not carry it.
+            unit (str): Unit suffix to append when there is a value.
+
+        Returns:
+            str: "<value><unit>", or "N/A".
+        """
+        if value is None or value == "":
+            return "N/A"
+        return f"{value}{unit}"
+
     def _add_image_details(self, progress_callback=None, cancel_check=None):
         """
         Add detailed AOI pages to the report.
@@ -472,10 +492,17 @@ class PdfGeneratorService:
 
             # Get GPS and other metadata from original image
             # ImageService now uses original_path, so GPS should be available
+            # Anything the image does not carry reads "N/A". Formatting a
+            # missing value with its unit produced "AGL: Noneft" and
+            # "Nonecm/px" in the report, and a missing yaw fell back to 0,
+            # which reads as a real due-north heading rather than an absence.
             position_str = image_service.get_position(self.viewer.position_format) or "N/A"
-            agl_str = f"{image_service.get_relative_altitude(self.viewer.distance_unit)}{self.viewer.distance_unit}"
-            orientation_str = f"{bearing}°"
-            gsd_str = f"{image_service.get_average_gsd()}cm/px"
+            agl_str = self._report_value(
+                image_service.get_relative_altitude(self.viewer.distance_unit),
+                self.viewer.distance_unit
+            )
+            orientation_str = self._report_value(image_service.get_camera_yaw(), "°")
+            gsd_str = self._report_value(image_service.get_average_gsd(), "cm/px")
 
             # Add image header once per image (not per AOI)
             self.story.append(Paragraph(img['name'], self.h3))

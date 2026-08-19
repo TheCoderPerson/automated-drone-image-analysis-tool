@@ -731,7 +731,28 @@ class UnifiedMapExportController(TranslationMixin):
             msg += " " + self.tr(
                 "(canopy data covered {pct}% of the searched area)").format(
                     pct=int(round(frac * 100)))
+
+        # Camera elevation basis. The takeoff elevation is the one number that
+        # reveals a GPS-altitude datum mismatch (which the pipeline cannot detect
+        # on its own), so it is shown for the user to check against the launch
+        # point; falling back to reported AGL skews POD wherever the ground is
+        # not at launch elevation, which is a warning.
+        anchor = getattr(result, 'altitude_anchor_m', None)
+        sources = getattr(result, 'altitude_source_counts', None) or {}
+        if anchor is not None:
+            msg += " " + self.tr("(takeoff elevation {elev})").format(
+                elev=self._format_elevation(anchor))
+        elif sources.get('agl_nadir'):
+            msg += " " + self.tr(
+                "(no takeoff elevation — POD is approximate over changing terrain)")
+            color = "#FFA726"
         return msg, color
+
+    def _format_elevation(self, elevation_m):
+        """Elevation in the viewer's distance unit, for display only."""
+        if getattr(self.parent, 'distance_unit', 'ft') == 'ft':
+            return self.tr("{value} ft").format(value=int(round(elevation_m * 3.28084)))
+        return self.tr("{value} m").format(value=int(round(elevation_m)))
 
     def _on_pod_finished(self):
         if self.pod_progress_dialog:

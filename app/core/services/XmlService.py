@@ -6,7 +6,7 @@ import uuid
 import xml.etree.ElementTree as ET
 from core.services.GridReviewService import GridReviewService
 from core.services.LoggerService import LoggerService
-from helpers.PathHelper import is_absolute_any_platform
+from helpers.PathHelper import is_absolute_any_platform, canonical_path
 
 
 class XmlService:
@@ -136,6 +136,25 @@ class XmlService:
                         # If relative, make it relative to XML location
                         dir = os.path.dirname(self.xml_path)
                         path = os.path.join(dir, path)
+                        # Collapse the ".." segments join leaves behind:
+                        # "../../input/DJI_0065.JPG" resolved to
+                        # "<results>/ADIAT_Results/../../input/DJI_0065.JPG",
+                        # which opens the right file -- so nothing looked
+                        # wrong -- but never compared equal to the path a scan
+                        # of settings['input_dir'] produces for that same
+                        # capture. That made every source image look like it
+                        # had no detections and duplicated every AOI image in
+                        # Viewer._build_source_images.
+                        #
+                        # Only this branch normalizes. An absolute stored path
+                        # is left byte-for-byte alone, because normpath also
+                        # rewrites separators: it would turn a Mac-authored
+                        # "/Volumes/SD/DJI_0042.JPG" into
+                        # "\Volumes\SD\DJI_0042.JPG" on a Windows review
+                        # station, which is the bug the branch above exists to
+                        # avoid. Nothing is lost -- an absolute path has no
+                        # ".." to collapse in the first place.
+                        path = canonical_path(path)
 
                 image = {
                     'xml': image_xml,

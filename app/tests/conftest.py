@@ -36,6 +36,31 @@ QSETTINGS_TEST_DIR = tempfile.mkdtemp(prefix="adiat-test-qsettings-")
 # the app fight over one profile.
 QStandardPaths.setTestModeEnabled(True)
 
+# ...but test mode is a SINGLE shared location, so it only separates the tests
+# from the app, not one test process from another. Two pytest processes -- a
+# split/parallel run, a bisect alongside a full run, or simply a second suite
+# started while the first is going -- then fight over the same Chromium lock
+# files. Chromium reports "Unable to move the cache: Access is denied", its GPU
+# cache fails to initialise, and the process later dies with a native access
+# violation inside QtWebEngine teardown: no Python frame, no failing test, just
+# exit 139 partway through app/tests/core/views. Two concurrent runs of that
+# directory reproduced it every time; serial runs mostly survive, which is what
+# made it look like a random flake.
+#
+# Give each process its own cache directory, and keep Chromium off the GPU
+# entirely -- these tests never render a page, and the GPU shader cache is a
+# second shared-state hazard with no upside here.
+#
+# Must be set before QtWebEngine initialises, hence module scope in conftest.
+_WEBENGINE_CACHE_DIR = tempfile.mkdtemp(prefix="adiat-test-webengine-")
+os.environ["QTWEBENGINE_CHROMIUM_FLAGS"] = " ".join(part for part in (
+    os.environ.get("QTWEBENGINE_CHROMIUM_FLAGS", ""),
+    f"--disk-cache-dir={_WEBENGINE_CACHE_DIR}",
+    "--disable-gpu",
+    "--disable-gpu-shader-disk-cache",
+    "--disable-software-rasterizer",
+) if part)
+
 
 @pytest.fixture
 def isolated_qsettings(request):

@@ -10,7 +10,7 @@ import math
 import numpy as np
 import os
 import traceback
-from PySide6.QtCore import QThread, QTimer
+from PySide6.QtCore import QThread
 from PySide6.QtWidgets import QProgressDialog, QApplication
 from PySide6.QtCore import Qt
 from core.services.LoggerService import LoggerService
@@ -50,11 +50,6 @@ class GalleryController:
             self.model.set_dataset_directory(parent_viewer.xml_path)
 
         self.ui_component = GalleryUIComponent(self)
-
-        # The most recent gallery AOI click; the deferred zoom re-assertion
-        # (_ensure_aoi_zoom) only acts for the newest click so a stale timer
-        # can never zoom to a superseded AOI.
-        self._pending_aoi_zoom = None
 
         # Filter and sort state (shared with AOI controller logic)
         self.sort_method = None
@@ -660,154 +655,19 @@ class GalleryController:
         """
         try:
             # self.logger.info(f"Gallery AOI clicked: Image {image_idx}, AOI {aoi_idx}")
-            self._pending_aoi_zoom = aoi_data
 
             # Stay in gallery mode - just load the image with the clicked AOI
-            # 1. Load the parent image if it's not already loaded
             needs_load = (self.parent.current_image != image_idx)
             if needs_load:
-                self.parent.current_image = image_idx
-
-                # Connect to viewChanged signal BEFORE loading to avoid missing the signal
-                # Note: viewChanged fires twice during load_image():
-                # 1. From setImage() -> updateViewer() (zoom stack not reset yet)
-                # 2. From resetZoom() -> updateViewer() (zoom stack cleared)
-                # We need to wait for the second one (after resetZoom) to ensure zoom stack is clear
-                zoom_handler = None
-                zoom_executed = False
-                zoom_disconnected = False
-                view_changed_count = 0
-
-                def zoom_when_ready():
-                    nonlocal zoom_executed, zoom_disconnected, view_changed_count
-                    view_changed_count += 1
-
-                    # Check if _recursion_guard is set - if so, updateViewer() is still running
-                    # and zoomToArea() will return early. We need to wait for it to complete.
-                    recursion_guard_active = False
-                    if (hasattr(self.parent, 'main_image') and
-                            self.parent.main_image and
-                            hasattr(self.parent.main_image, '_recursion_guard')):
-                        recursion_guard_active = self.parent.main_image._recursion_guard
-
-                    # Don't try to zoom if recursion guard is active - zoomToArea() will return early
-                    if recursion_guard_active:
-                        return
-
-                    # Check if zoom stack is empty (meaning resetZoom has been called)
-                    # This ensures we only zoom after the resetZoom viewChanged signal
-                    zoom_stack_cleared = False
-                    if (hasattr(self.parent, 'main_image') and
-                            self.parent.main_image and
-                            hasattr(self.parent.main_image, 'zoomStack')):
-                        zoom_stack_cleared = len(self.parent.main_image.zoomStack) == 0
-
-                    # Only zoom if:
-                    # 1. We haven't zoomed yet
-                    # 2. Image is loaded
-                    # 3. Recursion guard is not active (updateViewer completed)
-                    # 4. Zoom stack is cleared (resetZoom has been called)
-                    if (not zoom_executed and
-                            hasattr(self.parent, 'main_image') and
-                            self.parent.main_image and
-                            self.parent.main_image.hasImage() and
-                            not recursion_guard_active and
-                            zoom_stack_cleared):
-                        zoom_executed = True
-                        self._zoom_to_aoi(aoi_data)
-                        # Disconnect after first call
-                        if zoom_handler:
-                            try:
-                                self.parent.main_image.viewChanged.disconnect(zoom_handler)
-                                zoom_disconnected = True
-                            except Exception:
-                                pass
-
-                # Connect to viewChanged signal BEFORE loading (critical for race condition)
-                connected_viewer = None
-                if hasattr(self.parent, 'main_image') and self.parent.main_image:
-                    try:
-                        self.parent.main_image.viewChanged.connect(zoom_when_ready)
-                        zoom_handler = zoom_when_ready
-                        connected_viewer = self.parent.main_image
-                    except Exception:
-                        # self.logger.debug(f"Could not connect to viewChanged: {e}")
-                        pass
-
-                try:
-                    # Now load the image - this will emit viewChanged signals which our handler will catch
-                    if hasattr(self.parent, '_load_image'):
-                        self.parent._load_image()
-
-                    # Check if image is ready and zoom stack is cleared but signal handler hasn't executed
-                    # Only check if zoom hasn't already executed via the signal
-                    if (not zoom_executed and
-                            hasattr(self.parent, 'main_image') and
-                            self.parent.main_image and
-                            self.parent.main_image.hasImage()):
-                        # Check if recursion guard is active - if so, wait for signal handler
-                        recursion_guard_active = False
-                        if hasattr(self.parent.main_image, '_recursion_guard'):
-                            recursion_guard_active = self.parent.main_image._recursion_guard
-
-                        # Check if zoom stack is cleared (resetZoom has been called)
-                        zoom_stack_cleared = False
-                        if hasattr(self.parent.main_image, 'zoomStack'):
-                            zoom_stack_cleared = len(self.parent.main_image.zoomStack) == 0
-
-                        # Only zoom if recursion guard is not active and zoom stack is cleared
-                        if not recursion_guard_active and zoom_stack_cleared:
-                            # Zoom directly since image is ready and zoom is reset
-                            zoom_executed = True
-                            self._zoom_to_aoi(aoi_data)
-                    elif not zoom_handler:
-                        # Couldn't connect to signal, try zooming directly if image is ready and zoom is reset
-                        if (hasattr(self.parent, 'main_image') and
-                                self.parent.main_image and
-                                self.parent.main_image.hasImage()):
-                            # Check if recursion guard is active
-                            recursion_guard_active = False
-                            if hasattr(self.parent.main_image, '_recursion_guard'):
-                                recursion_guard_active = self.parent.main_image._recursion_guard
-
-                            # Check if zoom stack is cleared before zooming
-                            zoom_stack_cleared = False
-                            if hasattr(self.parent.main_image, 'zoomStack'):
-                                zoom_stack_cleared = len(self.parent.main_image.zoomStack) == 0
-
-                            if not recursion_guard_active and zoom_stack_cleared:
-                                self._zoom_to_aoi(aoi_data)
-                finally:
-                    # _load_image() is synchronous, so every viewChanged it can
-                    # emit has already fired by now. Unconditionally drop the
-                    # transient handler: a failed or early-returning load (missing
-                    # file, destroyed viewer) otherwise leaves it armed on the
-                    # viewChanged signal, where a later wheel zoom would re-enter
-                    # zoomToArea against a stale AOI. Disconnect from the exact
-                    # viewer we connected to. Skip if the handler already
-                    # disconnected itself on success, otherwise PySide6 warns
-                    # about a failed disconnect from an already-severed slot.
-                    if (zoom_handler is not None and connected_viewer is not None
-                            and not zoom_disconnected):
-                        try:
-                            connected_viewer.viewChanged.disconnect(zoom_handler)
-                        except Exception:
-                            pass
-
-                # Trailing guarantee: the in-load zoom can be missed (the
-                # recursion guard active on every viewChanged emission) or
-                # undone by layout/resize events that settle after the click
-                # (field report: the first click switched image but landed
-                # un-zoomed; only a second click - no load - zoomed). The
-                # wipe lands at unpredictable times relative to the click on
-                # real hardware, so the guarantee re-checks at several points
-                # across the settle window. Each check is a strict no-op
-                # unless this is still the newest click, the image still
-                # matches, and the view is sitting un-zoomed.
-                for delay_ms in (150, 600, 1600):
-                    QTimer.singleShot(
-                        delay_ms,
-                        lambda: self._ensure_aoi_zoom(image_idx, aoi_data))
+                # State the framing intent with the navigation; the load
+                # pipeline applies it as its own final step (after its zoom
+                # reset and grid review's framing), so no listener has to
+                # guess when the load's event cascade is done. Any geometry
+                # or visibility event that arrives later re-projects the
+                # held zoom instead of discarding it (reprojectView), so
+                # there is nothing left for settle-window timers to repair.
+                self.parent.load_image_with_zoom(
+                    image_idx, lambda: self._zoom_to_aoi(aoi_data))
             else:
                 # Same image - zoom immediately
                 self._zoom_to_aoi(aoi_data)
@@ -879,28 +739,6 @@ class GalleryController:
             image_idx, aoi_idx, aoi_data = aoi_info
             self.on_aoi_clicked(image_idx, aoi_idx, aoi_data)
 
-    def _ensure_aoi_zoom(self, image_idx, aoi_data):
-        """Deferred re-assertion of the zoom for a gallery AOI click.
-
-        Fires after the click's event cascade has settled. A no-op when the
-        click was superseded, the image changed again, or the view is
-        already zoomed (the in-load zoom survived, or the user zoomed).
-        """
-        if aoi_data is not self._pending_aoi_zoom:
-            return  # a newer click owns the zoom now
-        if self.parent.current_image != image_idx:
-            return  # the user navigated elsewhere in the meantime
-        main = getattr(self.parent, 'main_image', None)
-        if (main is None or getattr(main, '_is_destroyed', False)
-                or not main.hasImage()):
-            return
-        if getattr(main, 'zoomStack', None):
-            return  # already zoomed
-        # Logged so field sessions show when (and how late) the in-load
-        # zoom needed repair - evidence for chasing the underlying reset.
-        self.logger.info("Gallery: re-asserting AOI zoom after a late zoom reset")
-        self._zoom_to_aoi(aoi_data)
-
     def _zoom_to_aoi(self, aoi_data):
         """Zoom to an AOI in the image viewer and highlight it."""
         try:
@@ -919,23 +757,35 @@ class GalleryController:
 
             viewer = self.parent.main_image
 
-            # First, make sure AOI overlays are visible
-            if hasattr(self.parent, 'showOverlayToggle'):
-                if not self.parent.showOverlayToggle.isChecked():
-                    # self.logger.info("Enabling AOI overlay visibility")
-                    self.parent.showOverlayToggle.setChecked(True)
-                    # Trigger the overlay update
-                    if hasattr(self.parent, '_show_overlay_change'):
-                        self.parent._show_overlay_change()
-
-            # Use the same zoom method as single-image view
+            # The zoom is the click's whole point, so it goes first: the
+            # companion overlay work below is decoration, and when it ran
+            # first any failure in it took the zoom down with it (the
+            # user landed on the right image, un-zoomed, with only an
+            # "Error zooming to AOI" line to show for it).
+            #
             # zoomToArea(center_xy, scale) where scale 6 = 6x zoom
             if hasattr(viewer, 'zoomToArea'):
-                # self.logger.info(f"Calling zoomToArea with center={center}, scale=6")
                 viewer.zoomToArea(center, 6)
-                # self.logger.info(f"Successfully zoomed to AOI at {center}")
             else:
                 self.logger.warning("Viewer does not have zoomToArea method")
+
+            # Make the compass/GSD overlay visible if the user had it off.
+            # Contained separately: this is the least important of the three
+            # things a click does, and sharing one try with the badge below
+            # let a failure here cost that too.
+            try:
+                if hasattr(self.parent, 'showOverlayToggle'):
+                    if not self.parent.showOverlayToggle.isChecked():
+                        self.parent.showOverlayToggle.setChecked(True)
+                        # setChecked does not emit clicked, so the handler is
+                        # driven directly - and it takes the new state as an
+                        # argument. Omitting it raised TypeError on every
+                        # gallery AOI click made with the overlay toggled off,
+                        # which the outer except swallowed along with the zoom.
+                        if hasattr(self.parent, '_show_overlay_change'):
+                            self.parent._show_overlay_change(True)
+            except Exception as e:
+                self.logger.error(f"Could not show the compass/GSD overlay: {e}")
 
             # Show the on-image number badge + ruler for this AOI.
             overlay = getattr(self.parent, 'aoi_overlay_controller', None)

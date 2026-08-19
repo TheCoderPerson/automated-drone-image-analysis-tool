@@ -93,6 +93,8 @@ def test_get_image_coverage_info_success(aoi_neighbor_service, sample_image):
         mock_service = MagicMock()
         mock_service.get_camera_yaw.return_value = 90.0
         mock_service.get_camera_pitch.return_value = -90.0
+        mock_service.get_gimbal_roll.return_value = None
+        mock_service.get_roll_axis_azimuth.return_value = None
         mock_service.get_relative_altitude.return_value = 100.0
         mock_service.get_camera_intrinsics.return_value = {
             'focal_length_mm': 24.0,
@@ -126,6 +128,8 @@ def test_get_image_coverage_info_with_agl_override(aoi_neighbor_service, sample_
         mock_service = MagicMock()
         mock_service.get_camera_yaw.return_value = 90.0
         mock_service.get_camera_pitch.return_value = -90.0
+        mock_service.get_gimbal_roll.return_value = None
+        mock_service.get_roll_axis_azimuth.return_value = None
         mock_service.get_relative_altitude.return_value = 100.0  # Original altitude
         mock_service.get_camera_intrinsics.return_value = {
             'focal_length_mm': 24.0,
@@ -166,6 +170,8 @@ def test_get_image_coverage_info_zero_altitude(aoi_neighbor_service, sample_imag
         mock_service = MagicMock()
         mock_service.get_camera_yaw.return_value = 90.0
         mock_service.get_camera_pitch.return_value = -90.0
+        mock_service.get_gimbal_roll.return_value = None
+        mock_service.get_roll_axis_azimuth.return_value = None
         mock_service.get_relative_altitude.return_value = 0  # Zero altitude
         mock_service.get_camera_intrinsics.return_value = {
             'focal_length_mm': 24.0,
@@ -191,6 +197,8 @@ def test_get_image_coverage_info_no_intrinsics(aoi_neighbor_service, sample_imag
         mock_service = MagicMock()
         mock_service.get_camera_yaw.return_value = 90.0
         mock_service.get_camera_pitch.return_value = -90.0
+        mock_service.get_gimbal_roll.return_value = None
+        mock_service.get_roll_axis_azimuth.return_value = None
         mock_service.get_relative_altitude.return_value = 100.0
         mock_service.get_camera_intrinsics.return_value = None
         mock_service.img_array = np.zeros((1000, 1500, 3), dtype=np.uint8)
@@ -212,6 +220,8 @@ def test_get_image_coverage_info_default_pitch(aoi_neighbor_service, sample_imag
         mock_service = MagicMock()
         mock_service.get_camera_yaw.return_value = None  # No yaw
         mock_service.get_camera_pitch.return_value = None  # No pitch
+        mock_service.get_gimbal_roll.return_value = None
+        mock_service.get_roll_axis_azimuth.return_value = None
         mock_service.get_relative_altitude.return_value = 100.0
         mock_service.get_camera_intrinsics.return_value = {
             'focal_length_mm': 24.0,
@@ -471,6 +481,62 @@ def test_extract_thumbnail_has_circle_marker(aoi_neighbor_service):
     assert red_pixels > 0
 
 
+def test_uncertainty_ring_is_drawn_at_the_real_error_radius(aoi_neighbor_service):
+    """Regression: a 10 px circle asserted precision the projection never had.
+
+    Neighbouring captures disagree about where the same ground object is by
+    metres -- mostly a gimbal yaw stamped ~4.5 degrees off the actual heading.
+    A tight circle pointed the reviewer confidently at bare ground; a ring at
+    the real uncertainty tells them where to search.
+    """
+    mock_service = MagicMock()
+    mock_service.img_array = np.zeros((2000, 2000, 3), dtype=np.uint8)
+
+    thumbnail = aoi_neighbor_service.extract_thumbnail(
+        mock_service, 1000, 1000, radius=400, uncertainty_px=224)
+
+    red = np.where((thumbnail[:, :, 0] == 255) & (thumbnail[:, :, 1] == 0))
+    assert len(red[0]) > 0, "the marker must be drawn"
+    # The ring reaches out to its radius, far beyond the old 10 px circle.
+    reach = max(abs(red[0].max() - 400), abs(red[1].max() - 400))
+    assert reach > 200, f"ring should reach ~224 px from centre, reached {reach}"
+
+
+def test_plain_marker_when_the_scale_is_unknown(aoi_neighbor_service):
+    """No intrinsics -> no honest radius, so do not invent one."""
+    mock_service = MagicMock()
+    mock_service.img_array = np.zeros((2000, 2000, 3), dtype=np.uint8)
+
+    thumbnail = aoi_neighbor_service.extract_thumbnail(
+        mock_service, 1000, 1000, radius=400, uncertainty_px=None)
+
+    red = np.where((thumbnail[:, :, 0] == 255) & (thumbnail[:, :, 1] == 0))
+    reach = max(abs(red[0].max() - 400), abs(red[1].max() - 400))
+    assert reach < 20, "expected the small fallback marker"
+
+
+def test_uncertainty_radius_scales_with_ground_sample_distance(aoi_neighbor_service):
+    """The ring means a fixed GROUND distance, so it must scale with altitude."""
+    def coverage(altitude):
+        return {'focal_mm': 8.8, 'sensor_w_mm': 13.2, 'sensor_h_mm': 8.8,
+                'width': 5472, 'height': 3648, 'altitude': altitude,
+                'tilt_angle': 0}
+
+    low = aoi_neighbor_service._uncertainty_radius_px(coverage(50.0))
+    high = aoi_neighbor_service._uncertainty_radius_px(coverage(100.0))
+
+    assert low is not None and high is not None
+    # Twice the altitude -> twice the ground per pixel -> half the pixel radius.
+    assert low / high == pytest.approx(2.0, rel=0.02)
+
+
+def test_uncertainty_radius_is_none_without_intrinsics(aoi_neighbor_service):
+    """A manually aligned image can reach here with focal/sensor unset."""
+    assert aoi_neighbor_service._uncertainty_radius_px(
+        {'focal_mm': None, 'sensor_w_mm': None, 'width': 100, 'height': 100,
+         'altitude': 50.0, 'tilt_angle': 0}) is None
+
+
 def test_extract_thumbnail_invalid_region(aoi_neighbor_service):
     """Test thumbnail extraction with invalid region."""
     mock_service = MagicMock()
@@ -510,7 +576,7 @@ def test_find_aoi_in_neighbors_success(aoi_neighbor_service, sample_images):
             {'image_idx': 4, 'image_name': 'image_4.jpg', 'thumbnail': np.zeros((100, 100, 3))},
         ]
 
-        results = aoi_neighbor_service.find_aoi_in_neighbors(
+        results, _truncated = aoi_neighbor_service.find_aoi_in_neighbors(
             images=sample_images,
             current_image_idx=2,
             aoi_gps=(37.7749, -122.4194)
@@ -542,7 +608,7 @@ def test_find_aoi_in_neighbors_marks_current(aoi_neighbor_service, sample_images
             None,
         ]
 
-        results = aoi_neighbor_service.find_aoi_in_neighbors(
+        results, _truncated = aoi_neighbor_service.find_aoi_in_neighbors(
             images=sample_images,
             current_image_idx=2,
             aoi_gps=(37.7749, -122.4194)
@@ -599,7 +665,7 @@ def test_find_aoi_in_neighbors_max_results(aoi_neighbor_service, sample_images):
             'thumbnail': np.zeros((100, 100, 3)), 'is_current': False
         }
 
-        results = aoi_neighbor_service.find_aoi_in_neighbors(
+        results, _truncated = aoi_neighbor_service.find_aoi_in_neighbors(
             images=sample_images,
             current_image_idx=0,
             aoi_gps=(37.7749, -122.4194),
@@ -649,7 +715,12 @@ def test_check_image_for_aoi_success(aoi_neighbor_service, sample_image):
             patch.object(aoi_neighbor_service, 'extract_thumbnail') as mock_thumbnail, \
             patch('core.services.image.AOINeighborService.ImageService') as MockImageService:
 
-        mock_coverage.return_value = {'width': 1500, 'height': 1000}
+        # The shape get_image_coverage_info actually returns: altitude and the
+        # camera centre are read on the way to a terrain-consistent AGL.
+        mock_coverage.return_value = {
+            'width': 1500, 'height': 1000, 'altitude': 100.0,
+            'center_lat': 37.7749, 'center_lon': -122.4194,
+        }
         mock_gps2pixel.return_value = (750, 500)
         mock_in_image.return_value = True
         mock_thumbnail.return_value = np.zeros((200, 200, 3), dtype=np.uint8)
@@ -676,7 +747,12 @@ def test_check_image_rejected_candidate_never_decodes(aoi_neighbor_service, samp
             patch.object(aoi_neighbor_service, 'is_point_in_image') as mock_in_image, \
             patch('core.services.image.AOINeighborService.ImageService') as MockImageService:
 
-        mock_coverage.return_value = {'width': 1500, 'height': 1000}
+        # The shape get_image_coverage_info actually returns: altitude and the
+        # camera centre are read on the way to a terrain-consistent AGL.
+        mock_coverage.return_value = {
+            'width': 1500, 'height': 1000, 'altitude': 100.0,
+            'center_lat': 37.7749, 'center_lon': -122.4194,
+        }
         mock_gps2pixel.return_value = (5000, 5000)
         mock_in_image.return_value = False
 
@@ -705,7 +781,12 @@ def test_check_image_for_aoi_gps_conversion_fails(aoi_neighbor_service, sample_i
     with patch.object(aoi_neighbor_service, 'get_image_coverage_info') as mock_coverage, \
             patch.object(aoi_neighbor_service, 'gps_to_pixel') as mock_gps2pixel:
 
-        mock_coverage.return_value = {'width': 1500, 'height': 1000}
+        # The shape get_image_coverage_info actually returns: altitude and the
+        # camera centre are read on the way to a terrain-consistent AGL.
+        mock_coverage.return_value = {
+            'width': 1500, 'height': 1000, 'altitude': 100.0,
+            'center_lat': 37.7749, 'center_lon': -122.4194,
+        }
         mock_gps2pixel.return_value = None
 
         result = aoi_neighbor_service._check_image_for_aoi(
@@ -721,7 +802,12 @@ def test_check_image_for_aoi_point_outside(aoi_neighbor_service, sample_image):
             patch.object(aoi_neighbor_service, 'gps_to_pixel') as mock_gps2pixel, \
             patch.object(aoi_neighbor_service, 'is_point_in_image') as mock_in_image:
 
-        mock_coverage.return_value = {'width': 1500, 'height': 1000}
+        # The shape get_image_coverage_info actually returns: altitude and the
+        # camera centre are read on the way to a terrain-consistent AGL.
+        mock_coverage.return_value = {
+            'width': 1500, 'height': 1000, 'altitude': 100.0,
+            'center_lat': 37.7749, 'center_lon': -122.4194,
+        }
         mock_gps2pixel.return_value = (2000, 500)  # Outside image
         mock_in_image.return_value = False
 
@@ -770,6 +856,8 @@ def _patch_coverage_metadata(exif_calls):
     mock_service = MagicMock()
     mock_service.get_camera_yaw.return_value = 90.0
     mock_service.get_camera_pitch.return_value = -90.0
+    mock_service.get_gimbal_roll.return_value = None
+    mock_service.get_roll_axis_azimuth.return_value = None
     mock_service.get_relative_altitude.return_value = 100.0
     mock_service.get_camera_intrinsics.return_value = {
         'focal_length_mm': 24.0,
