@@ -15,7 +15,7 @@ It provides:
 from PySide6.QtWidgets import (QMainWindow, QMessageBox, QLabel, QComboBox, QHBoxLayout,
                                QVBoxLayout, QPushButton, QLineEdit, QGroupBox, QWidget,
                                QFileDialog, QApplication, QDialog, QTabWidget, QSpinBox,
-                               QSplitter)
+                               QSplitter, QCheckBox)
 from PySide6.QtCore import Qt, QTimer, Slot, QSettings, QUrl, QThread, QObject, QEvent
 from PySide6.QtGui import QAction, QDesktopServices
 from typing import Optional, Dict, Any, List, Callable, Tuple
@@ -62,6 +62,7 @@ from core.services.streaming.RTMPStreamService import (
     stream_type_from_source_label,
 )
 from core.services.streaming.contracts import FocusTarget
+from core.services.streaming.RecordingSessionService import DetectionRecord
 from helpers.TranslationMixin import TranslationMixin
 
 
@@ -105,6 +106,9 @@ class StreamViewerWindow(TranslationMixin, QMainWindow):
         self._initial_algorithm_name = algorithm_name if algorithm_name is not None else "ColorAnomalyAndMotionDetection"
         self._pending_auto_record = False
         self._pending_record_dir = None
+        # Bundle directory of the last finished recording, for the panel's
+        # "Open Recording Folder" button.
+        self._last_recording_bundle: Optional[str] = None
         self._pending_algorithm_options = None
         self._pending_processing_resolution = None  # Desired resolution from wizard (to be capped to native)
         self._active_stream_fps_limit: Optional[int] = None
@@ -268,6 +272,9 @@ class StreamViewerWindow(TranslationMixin, QMainWindow):
         self.thumbnail_widget.tracker.track_confirmed.connect(self.gallery_widget.add_track)
         # ...and pin it on the map at the aircraft's position for that frame.
         self.thumbnail_widget.tracker.track_confirmed.connect(self._on_track_confirmed_for_map)
+        self.thumbnail_widget.tracker.track_confirmed.connect(
+            self._on_track_confirmed_for_recording
+        )
 
         # Replace the placeholder widgets with the tab widget
         # Get the left panel layout and replace videoLabel with tab widget
@@ -411,10 +418,39 @@ class StreamViewerWindow(TranslationMixin, QMainWindow):
         dir_layout.addWidget(self.recording_dir_edit, 1)
         dir_layout.addWidget(self.recording_dir_browse)
 
+        # What gets saved beside the video. A recording is a folder, not a
+        # bare file: these decide whether the detections the operator was
+        # watching, and the flight the aircraft flew, are kept with it.
+        self.save_detections_check = QCheckBox(self.tr("Save detections"))
+        self.save_detections_check.setToolTip(
+            self.tr(
+                "Save each confirmed detection with the recording: a thumbnail, its "
+                "position, and a results file that opens in the Image Analysis window."
+            )
+        )
+        self.save_map_check = QCheckBox(self.tr("Save flight map"))
+        self.save_map_check.setToolTip(
+            self.tr(
+                "Save the flight path and detection locations as a map and a KML file. "
+                "Requires location data from the video or a live ADIAT Flight feed."
+            )
+        )
+
+        # Shown once a recording has been saved, so the operator can get to
+        # the folder without hunting for it.
+        self.open_recording_btn = QPushButton(self.tr("Open Recording Folder"))
+        self.open_recording_btn.setVisible(False)
+        self.open_recording_btn.setToolTip(
+            self.tr("Open the folder holding the last recording and its detections.")
+        )
+
         recording_layout.addLayout(button_layout)
         recording_layout.addWidget(self.recording_status)
         recording_layout.addWidget(self.recording_info)
         recording_layout.addLayout(dir_layout)
+        recording_layout.addWidget(self.save_detections_check)
+        recording_layout.addWidget(self.save_map_check)
+        recording_layout.addWidget(self.open_recording_btn)
 
         # Replace placeholder with recording widget
         self.ui.recordingLayout.replaceWidget(self.ui.recordingPlaceholder, recording_widget)
@@ -439,11 +475,77 @@ class StreamViewerWindow(TranslationMixin, QMainWindow):
             self.settings.sync()
         self.recording_dir_edit.setText(saved_dir)
 
+        # Both default on: an operator who records a search flight almost
+        # always wants the record of what was found with it. Restoring is not
+        # a user action, so the writes-back stay blocked for it.
+        for check, key in (
+            (self.save_detections_check, "recording/save_detections"),
+            (self.save_map_check, "recording/save_map"),
+        ):
+            was_blocked = check.blockSignals(True)
+            check.setChecked(self._settings_bool(key, True))
+            check.blockSignals(was_blocked)
+        self._update_map_option_hint()
+
         # Connect signals
         self.start_recording_btn.clicked.connect(self._emit_start_recording)
         self.stop_recording_btn.clicked.connect(self.on_stop_recording_requested)
         self.recording_dir_browse.clicked.connect(self._browse_recording_directory)
         self.recording_dir_edit.textChanged.connect(self._on_recording_directory_changed)
+        self.save_detections_check.toggled.connect(
+            lambda checked: self.settings.setValue("recording/save_detections", checked)
+        )
+        self.save_map_check.toggled.connect(
+            lambda checked: self.settings.setValue("recording/save_map", checked)
+        )
+        self.open_recording_btn.clicked.connect(self._open_last_recording_folder)
+
+    def _settings_bool(self, key: str, default: bool) -> bool:
+        """Read a boolean setting. QSettings returns strings on some platforms."""
+        value = self.settings.value(key, default)
+        if isinstance(value, bool):
+            return value
+        if isinstance(value, str):
+            return value.strip().lower() in ("1", "true", "yes")
+        return bool(value)
+
+    def _update_map_option_hint(self) -> None:
+        """Say, in the flight-map option's tooltip, whether location data is here.
+
+        The option stays enabled whatever the source is doing. It is a
+        standing preference, not a live capability: a live ADIAT Flight feed
+        only counts as "available" once its first telemetry envelope lands,
+        so disabling the option - or reading its enabled state at recording
+        start - would silently drop the whole flight of a recording that
+        began a moment before that envelope arrived.
+
+        Whether a map is actually produced is decided at the end, from the
+        fixes that were captured (see
+        :func:`~core.services.streaming.RecordingBundleService.\
+finalize_bundle`).
+        """
+        if not hasattr(self, "save_map_check"):
+            return
+        if self.telemetry_coordinator.is_available:
+            self.save_map_check.setToolTip(
+                self.tr(
+                    "Save the flight path and detection locations as a map and a KML file. "
+                    "Location data is available for this source."
+                )
+            )
+        else:
+            self.save_map_check.setToolTip(
+                self.tr(
+                    "Save the flight path and detection locations as a map and a KML file. "
+                    "Nothing is saved unless location data arrives while recording."
+                )
+            )
+
+    def _open_last_recording_folder(self) -> None:
+        """Reveal the last saved recording bundle in the file manager."""
+        folder = getattr(self, "_last_recording_bundle", None)
+        if folder and os.path.isdir(folder):
+            QDesktopServices.openUrl(QUrl.fromLocalFile(folder))
 
     def _emit_start_recording(self):
         """Emit start recording signal with directory."""
@@ -552,6 +654,7 @@ class StreamViewerWindow(TranslationMixin, QMainWindow):
         self.stream_coordinator.frameReceived.connect(self.on_frame_received)
         self.stream_coordinator.recordingStateChanged.connect(self.on_recording_state_changed)
         self.stream_coordinator.recordingStatsUpdated.connect(self.on_recording_stats_updated)
+        self.stream_coordinator.recordingBundleReady.connect(self.on_recording_bundle_ready)
         self.stream_coordinator.errorOccurred.connect(self.on_error)
         self.stream_coordinator.streamInfoUpdated.connect(self.on_stream_info_updated)
         self.stream_coordinator.seekCompleted.connect(self._on_seek_completed)
@@ -565,6 +668,11 @@ class StreamViewerWindow(TranslationMixin, QMainWindow):
         self.telemetry_coordinator.telemetryUpdated.connect(self.on_telemetry_updated)
         self.telemetry_coordinator.trackUpdated.connect(self._on_flight_path_updated)
         self.telemetry_coordinator.telemetryStatus.connect(self._on_telemetry_status)
+        # A source with no location data cannot produce a flight map, so the
+        # option follows availability rather than being offered and ignored.
+        self.telemetry_coordinator.availabilityChanged.connect(
+            self._on_telemetry_availability_changed
+        )
 
         # Stream controls signals
         self.stream_controls.connectRequested.connect(self.on_connect_requested)
@@ -1418,7 +1526,10 @@ class StreamViewerWindow(TranslationMixin, QMainWindow):
 
                 # Record exactly what is displayed.
                 if self.stream_coordinator.is_recording:
-                    self.stream_coordinator.record_frame(rendered_frame, detections)
+                    self.stream_coordinator.record_frame(
+                        rendered_frame, detections,
+                        self._video_time_for_frame(video_frame_pos),
+                    )
             else:
                 self._discard_original_frame(timestamp)
 
@@ -2028,7 +2139,10 @@ class StreamViewerWindow(TranslationMixin, QMainWindow):
                     if self.stream_coordinator.is_recording and not self.algorithm_renders_frame:
                         if rendered_frame is None:
                             rendered_frame = frame
-                        self.stream_coordinator.record_frame(rendered_frame, detections)
+                        self.stream_coordinator.record_frame(
+                            rendered_frame, detections,
+                            self._video_time_for_frame(video_frame_pos),
+                        )
 
                 except Exception as e:
                     self.logger.error(f"Error processing frame: {str(e)}")
@@ -2043,7 +2157,9 @@ class StreamViewerWindow(TranslationMixin, QMainWindow):
             self._present_frame(display_frame, video_frame_pos, 'raw')
             self._discard_original_frame(timestamp)
             if self.stream_coordinator.is_recording:
-                self.stream_coordinator.record_frame(display_frame, [])
+                self.stream_coordinator.record_frame(
+                    display_frame, [], self._video_time_for_frame(video_frame_pos)
+                )
 
     @Slot(np.ndarray)
     def on_algorithm_frame_processed(self, annotated_frame: np.ndarray):
@@ -2063,7 +2179,10 @@ class StreamViewerWindow(TranslationMixin, QMainWindow):
         if self._present_frame(annotated_frame, self._current_video_frame_pos, 'custom'):
             if self.stream_coordinator.is_recording:
                 detections = getattr(self, "_latest_detections_for_rendering", [])
-                self.stream_coordinator.record_frame(annotated_frame, detections)
+                self.stream_coordinator.record_frame(
+                    annotated_frame, detections,
+                    self._video_time_for_frame(self._current_video_frame_pos),
+                )
 
     @Slot(list)
     def on_detections_ready(self, detections: list):
@@ -2114,7 +2233,83 @@ class StreamViewerWindow(TranslationMixin, QMainWindow):
         output_dir = directory or default_recording_dir
         self.settings.setValue("recording/output_dir", output_dir)
         self.settings.sync()
-        self.stream_coordinator.start_recording(output_dir)
+        self.stream_coordinator.start_recording(output_dir, self._recording_metadata())
+
+    def _recording_metadata(self) -> Dict[str, Any]:
+        """Describe what this recording should capture, and in what context."""
+        # Deliberately not gated on telemetry being available *yet*: a live
+        # feed reports its first fix after the stream is up, so gating here
+        # would discard the flight of any recording started before it.
+        # Capturing costs nothing when no fix ever arrives.
+        save_map = (
+            not hasattr(self, "save_map_check")
+            or self.save_map_check.isChecked()
+        )
+        # StreamAlgorithmController's configuration accessor is get_config;
+        # recorded purely as provenance, so a controller that cannot report
+        # its settings costs the manifest a field, not the recording.
+        options: Dict[str, Any] = {}
+        if self.algorithm_widget is not None and hasattr(self.algorithm_widget, "get_config"):
+            try:
+                options = self.algorithm_widget.get_config() or {}
+            except Exception as exc:  # noqa: BLE001 - context is optional
+                self.logger.error(f"Could not read algorithm options for recording: {exc}")
+        return {
+            "save_detections": (
+                not hasattr(self, "save_detections_check")
+                or self.save_detections_check.isChecked()
+            ),
+            "save_flight_map": save_map,
+            "frame_level_detections": self._settings_bool(
+                "recording/frame_level_detections", False
+            ),
+            "algorithm": self.current_algorithm_name or "",
+            "algorithm_options": options,
+        }
+
+    @Slot(dict)
+    def on_recording_bundle_ready(self, result: dict):
+        """Report the finished recording bundle and offer to open it."""
+        if not isinstance(result, dict):
+            return
+        bundle_dir = result.get("bundle_dir")
+        if not bundle_dir:
+            return
+
+        self._last_recording_bundle = bundle_dir
+        if hasattr(self, "open_recording_btn"):
+            self.open_recording_btn.setVisible(True)
+
+        counts = result.get("counts") or {}
+        detections = int(counts.get("detections_stored") or 0)
+        fixes = int(counts.get("telemetry_fixes") or 0)
+        self.ui.infoPanel.append(
+            self.tr("Recording saved to {folder}").format(folder=bundle_dir)
+        )
+        self.ui.infoPanel.append(
+            self.tr("Stored {detections} detections and {fixes} location fixes.").format(
+                detections=detections, fixes=fixes
+            )
+        )
+        artifacts = result.get("artifacts") or {}
+        if artifacts.get("flight_map_html"):
+            self.ui.infoPanel.append(
+                self.tr("Flight map saved as {name}").format(
+                    name=artifacts["flight_map_html"]
+                )
+            )
+        for message in result.get("errors") or []:
+            self.logger.error(f"Recording bundle warning: {message}")
+            self.ui.infoPanel.append(
+                self.tr("Could not save part of the recording: {reason}").format(
+                    reason=message
+                )
+            )
+
+    @Slot(bool)
+    def _on_telemetry_availability_changed(self, available: bool):
+        """Follow telemetry availability with the flight-map option."""
+        self._update_map_option_hint()
 
     @Slot()
     def on_stop_recording_requested(self):
@@ -2553,6 +2748,10 @@ class StreamViewerWindow(TranslationMixin, QMainWindow):
         is_live = self.stream_coordinator.current_stream_type != StreamType.FILE
         self.map_view.update_aircraft(envelope, extend_track=is_live)
 
+        # An active recording gets the same fixes, which is what bounds its
+        # flight map to the window that was actually recorded.
+        self.stream_coordinator.append_telemetry(envelope)
+
     @Slot(list)
     def _on_flight_path_updated(self, path: list):
         """Replace the plotted flight path (file playback)."""
@@ -2564,17 +2763,20 @@ class StreamViewerWindow(TranslationMixin, QMainWindow):
         if message:
             self.ui.infoPanel.append(message)
 
-    def _on_track_confirmed_for_map(self, track):
-        """Pin a confirmed detection at the aircraft position of its frame.
+    def _resolve_track_position(self, track) -> Optional[Tuple[float, float]]:
+        """``(lat, lon)`` for a confirmed detection, or None when unknown.
 
         Detections carry no coordinates of their own — the aircraft's
         position when the detection was captured is the best available
         geotag, which is the same approximation the image-analysis AOI
-        pipeline starts from. Silently skipped when the source has no
-        location data, so non-telemetry videos behave exactly as before.
+        pipeline starts from.
+
+        Single source of truth on purpose: the live map pin and the stored
+        detection record must agree about where a detection was, so both
+        ask this rather than each resolving a position of their own.
         """
         if track is None or not self.telemetry_coordinator.is_available:
-            return
+            return None
 
         position = None
         # For a file we can look up the exact frame time; for a live feed the
@@ -2585,6 +2787,15 @@ class StreamViewerWindow(TranslationMixin, QMainWindow):
                 position = self.telemetry_coordinator.position_at(seconds)
         if position is None:
             position = self.telemetry_coordinator.current_position()
+        return position
+
+    def _on_track_confirmed_for_map(self, track):
+        """Pin a confirmed detection at the aircraft position of its frame.
+
+        Silently skipped when the source has no location data, so
+        non-telemetry videos behave exactly as before.
+        """
+        position = self._resolve_track_position(track)
         if position is None:
             return
 
@@ -2596,6 +2807,48 @@ class StreamViewerWindow(TranslationMixin, QMainWindow):
             "class_name": getattr(track, "detection_type", "detection"),
             "confidence": getattr(track, "confidence", 0.0),
         })
+
+    def _on_track_confirmed_for_recording(self, track):
+        """Store a confirmed detection in the active recording's bundle.
+
+        The confirmed track is the unit of record: it is what the Detection
+        Gallery shows and what the operator reviews, where a per-frame log
+        would mostly re-report the same blob. Nothing happens when no
+        recording is running.
+        """
+        if track is None or not self.stream_coordinator.is_recording:
+            return
+
+        position = self._resolve_track_position(track)
+        thumbnail = getattr(track, "thumbnail", None)
+        record = DetectionRecord(
+            track_id=int(getattr(track, "track_id", 0) or 0),
+            bbox=tuple(getattr(track, "bbox", (0, 0, 0, 0)) or (0, 0, 0, 0)),
+            centroid=getattr(track, "centroid", None),
+            confidence=float(getattr(track, "confidence", 0.0) or 0.0),
+            detection_type=str(getattr(track, "detection_type", "detection") or "detection"),
+            pixel_area=float(getattr(track, "pixel_area", 0.0) or 0.0),
+            frame_resolution=tuple(getattr(track, "frame_resolution", (0, 0)) or (0, 0)),
+            first_frame_index=getattr(track, "first_frame_index", None),
+            # Derived from the frame index, NOT from Track.first_timestamp:
+            # that field carries the frame's time.perf_counter() reading,
+            # which is an arbitrary origin rather than a position in the
+            # video. Using it produced clock times that meant nothing and
+            # could not be joined against telemetry.csv.
+            video_time_seconds=self._video_time_for_frame(
+                getattr(track, "first_frame_index", None)
+            ),
+            recorded_frame_index=self.stream_coordinator.recorded_frame_index(),
+            latitude=position[0] if position else None,
+            longitude=position[1] if position else None,
+            detection_color=getattr(track, "detection_color", None),
+            # The tracker already holds a private copy of this crop, but it
+            # stays alive in the gallery for the whole session - copy so the
+            # writer thread can never see it mutated or freed.
+            thumbnail=thumbnail.copy() if thumbnail is not None and thumbnail.size else None,
+            thumbnail_origin=tuple(getattr(track, "thumbnail_origin", (0, 0)) or (0, 0)),
+        )
+        self.stream_coordinator.append_detection_record(record)
 
     def _video_time_for_frame(self, frame_index) -> Optional[float]:
         """Convert a video frame index to seconds using the source FPS."""

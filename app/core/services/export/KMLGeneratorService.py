@@ -92,6 +92,55 @@ class KMLGeneratorService:
         # Assign StyleMap to placemark
         pnt.stylemap = style_map
 
+    def add_flight_path(self, coordinates, name="Flight Path", description=None,
+                        color_rgb=(0, 229, 255), width=3, mark_endpoints=True):
+        """
+        Adds the aircraft's flight path as a LineString.
+
+        Used by streaming recording bundles to record where the aircraft
+        actually flew while a recording was running, so the detections in
+        the same document can be read against the track that produced them.
+
+        Args:
+            coordinates (list): Ordered ``(lat, lon)`` fixes. Fewer than two
+                usable points draws nothing - a single fix is a position,
+                not a path.
+            name (str): Name shown in the KML tree.
+            description (str): Optional description text.
+            color_rgb (tuple): RGB line color, defaulting to the same cyan
+                the live map draws the track in.
+            width (int): Line width in pixels.
+            mark_endpoints (bool): Also drop Start/End placemarks, so the
+                direction of travel is readable without animating the path.
+
+        Returns:
+            The created LineString, or None when there was nothing to draw.
+        """
+        points = [
+            (float(lon), float(lat))
+            for lat, lon in (coordinates or [])
+            if isinstance(lat, (int, float)) and isinstance(lon, (int, float))
+        ]
+        if len(points) < 2:
+            return None
+
+        line = self.kml.newlinestring(name=name, coords=points)
+        if description:
+            line.description = description
+        r, g, b = color_rgb
+        # KML colors are ABGR hex, not RGB.
+        line.style.linestyle.color = f'ff{b:02x}{g:02x}{r:02x}'
+        line.style.linestyle.width = width
+        line.tessellate = 1
+
+        if mark_endpoints:
+            start_lon, start_lat = points[0]
+            end_lon, end_lat = points[-1]
+            self.kml.newpoint(name=f'{name} - Start', coords=[(start_lon, start_lat)])
+            self.kml.newpoint(name=f'{name} - End', coords=[(end_lon, end_lat)])
+
+        return line
+
     def add_pod_overlay(self, image_path, box, name="POD Coverage",
                         description=None, packed=False, href=None):
         """

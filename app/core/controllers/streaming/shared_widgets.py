@@ -141,6 +141,13 @@ class Track:
     # Frame resolution when detection was captured (for coordinate scaling)
     frame_resolution: Tuple[int, int] = (0, 0)  # (width, height)
 
+    # Top-left corner of the thumbnail crop within that frame. The crop is
+    # centered on the detection but clamped at the frame edges, so the
+    # detection is not necessarily at the thumbnail's center. Anything that
+    # re-projects the detection onto the saved thumbnail (the recording
+    # bundle's exported AOIs) needs this origin to place it correctly.
+    thumbnail_origin: Tuple[int, int] = (0, 0)  # (x, y)
+
     # Tracking state
     frames_seen: int = 1
     is_confirmed: bool = False
@@ -523,6 +530,7 @@ class DetectionTracker(QObject):
                 first_frame_index=frame_index,
                 first_timestamp=timestamp,
                 frame_resolution=(frame_w, frame_h),  # Store resolution for coordinate scaling
+                thumbnail_origin=(x1, y1),  # Where the crop started, for AOI re-projection
                 detection_type=getattr(detection, 'detection_type', 'detection'),
                 confidence=det_confidence,
                 detection_color=det_color,
