@@ -196,30 +196,6 @@ def _prime_qt_and_qtawesome():
     return application
 
 
-@pytest.fixture(autouse=True)
-def _join_webrtc_prewarm():
-    """Never let the WebRTC import warmup outlive the test that started it.
-
-    FlightViewerController starts a daemon thread that imports aiortc and its
-    native dependencies (PyAV, cryptography, dns). Tests that build a
-    controller without calling ``shutdown()`` leaked that thread into
-    whatever ran next, and a *native* import racing the interpreter from a
-    thread nothing joins took the whole run down with "Windows fatal
-    exception: code 0x80000003" raised while garbage-collecting, roughly 80%
-    through the suite. Joining here makes the suite independent of test
-    order. Once the warmup has completed for the process this returns
-    immediately, so the cost is paid once.
-    """
-    yield
-    try:
-        from core.controllers.flight.FlightViewerController import (
-            wait_for_webrtc_prewarm,
-        )
-    except Exception:  # flight viewer deps absent - nothing to join
-        return
-    wait_for_webrtc_prewarm(timeout=30.0)
-
-
 @pytest.fixture(scope='function')
 def main_window(qtbot):
     if not _MAIN_WINDOW_AVAILABLE:

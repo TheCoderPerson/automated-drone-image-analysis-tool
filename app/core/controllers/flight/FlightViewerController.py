@@ -27,71 +27,70 @@ from core.controllers.flight.MissionGalleryController import MissionGalleryContr
 from core.views.flight.FlightViewerWindow import FlightViewerWindow
 
 
-# The warmup runs at most once per process, and the thread doing it stays
-# reachable so it can be joined. Both properties matter: a fresh thread per
-# controller re-imported modules already in sys.modules for no gain, and a
-# thread running *native* imports that outlives its starter crashed the
-# interpreter (0x80000003 during GC) rather than failing cleanly.
-# Generous next to a ~1s warmup, short enough that a wedged import cannot
-# make the app look hung on exit.
-_PREWARM_JOIN_TIMEOUT_S = 10.0
-
-_PREWARM_LOCK = threading.Lock()
-_prewarm_thread: Optional[threading.Thread] = None
+# Guards the once-per-process import below. Cheap: contended only if two
+# viewer windows are constructed at the same moment, and the work inside is
+# a no-op after the first call.
+_IMPORT_LOCK = threading.Lock()
+_webrtc_imports_loaded: Optional[bool] = None
 
 
-def start_webrtc_prewarm() -> Optional[threading.Thread]:
-    """Begin the WebRTC warmup, or return the run already in progress.
+def ensure_webrtc_imports() -> bool:
+    """Load aiortc and its native dependencies, on the calling thread.
 
-    Idempotent per process. Returns the thread doing the work so callers
-    can join it; see :func:`wait_for_webrtc_prewarm`.
+    Returns True once the imports are resident (or were already), False
+    when aiortc is not installed in this environment.
+
+    **This must stay on the Qt main thread.** It used to run on a daemon
+    thread so the first Connect click did not pay ~1s of native-library
+    load time, and that cost the interpreter roughly 40% of full test runs
+    with ``Windows fatal exception: code 0x80000003``.
+
+    The mechanism, from the faulthandler dumps: importing ``aiortc`` pulls
+    in PyAV (FFmpeg bindings), ``cryptography`` (a Rust extension),
+    ``aioice`` and ``dnspython`` — hundreds of modules, allocating enough
+    to guarantee a cyclic-GC pass mid-import. PySide6 installs its own
+    ``__feature_import__`` as ``builtins.__import__`` process-wide, so all
+    of that runs inside Qt's import hook, while the Qt main thread is in
+    C++ with the GIL released destroying QObjects. Both dumps put
+    ``Garbage-collecting`` directly above the import machinery — with
+    different frames beneath it (shiboken's ``feature_import`` in one,
+    ``dataclasses._create_fn`` in the other), so the site is wherever the
+    collector landed rather than the fault itself.
+
+    Note what this is *not*: a rule that worker threads may not allocate.
+    :class:`~core.services.streaming.VideoRecordingService.VideoRecorder`
+    copies and encodes frames on a ``QThread`` at 30 fps without trouble.
+    The hazard is specifically **module import** off the main thread —
+    Qt's import hook plus native extension initialisation on the stack
+    while Qt mutates its own object graph elsewhere.
+
+    Joining the thread earlier only narrows the window: there is no safe
+    moment to be part-way through a native import on one thread while Qt
+    tears down objects on another. Importing here removes the second
+    thread, and with it the class of failure. The ~1s is paid once, when
+    the Flight Viewer window opens, where a brief hitch reads as the
+    window loading.
+
+    It also protects :meth:`WebRTCStreamService.run`, which imports aiortc
+    on its own ``QThread``: once these modules are in ``sys.modules`` that
+    call is a dict lookup, with no native init and no allocation storm.
     """
-    global _prewarm_thread
-    with _PREWARM_LOCK:
-        if _prewarm_thread is None:
-            _prewarm_thread = threading.Thread(
-                target=_prewarm_webrtc_imports,
-                name="adiat-webrtc-prewarm",
-                daemon=True,
-            )
-            _prewarm_thread.start()
-        return _prewarm_thread
-
-
-def wait_for_webrtc_prewarm(timeout: Optional[float] = None) -> bool:
-    """Block until the warmup finishes.
-
-    Returns True when no warmup thread is still running. Callers pass a
-    timeout so a stuck native import cannot hang application shutdown.
-    """
-    with _PREWARM_LOCK:
-        thread = _prewarm_thread
-    if thread is None:
+    global _webrtc_imports_loaded
+    with _IMPORT_LOCK:
+        if _webrtc_imports_loaded is not None:
+            return _webrtc_imports_loaded
+        try:
+            import aiortc  # noqa: F401
+            from aiortc.sdp import candidate_from_sdp  # noqa: F401
+        except ImportError:
+            # aiortc isn't installed in this environment — the first
+            # Connect will surface the same ImportError via the service's
+            # normal ``_require_aiortc`` path. Don't fail the viewer
+            # window over missing deps.
+            _webrtc_imports_loaded = False
+            return False
+        _webrtc_imports_loaded = True
         return True
-    thread.join(timeout)
-    return not thread.is_alive()
-
-
-def _prewarm_webrtc_imports() -> None:
-    """Force the heavy WebRTC native libraries to load on a worker thread.
-
-    First-time import of ``aiortc`` pulls in PyAV (FFmpeg native bindings),
-    ``cryptography`` (a Rust extension), ``aioice``, and ``pyee``. Each
-    module's init runs with the GIL held, so loading them on demand inside
-    :meth:`WebRTCStreamService.run` competes with the Qt main thread the
-    moment the operator clicks Connect — visible as a ~1s UI freeze.
-    Doing it ahead of time on a background thread amortises the cost
-    while the operator is reading the pairing dialog.
-    """
-    try:
-        import aiortc  # noqa: F401
-        from aiortc.sdp import candidate_from_sdp  # noqa: F401
-    except ImportError:
-        # aiortc isn't installed in this environment — first Connect
-        # will surface the same ImportError via the service's normal
-        # ``_require_aiortc`` path. Don't crash the viewer window over
-        # missing deps; just skip the warmup.
-        return
 
 
 # Plan §19.4.1: ``state`` / ``geometry`` under a versioned key. The ``v1``
@@ -171,11 +170,10 @@ class FlightViewerController(QObject):
         # Apply any persisted layout on construction (plan §15 M3).
         self.restore_layout()
 
-        # Kick off the WebRTC import warmup on a daemon thread so the
-        # first Connect click doesn't pay ~1s of native-library load
-        # time. Guarded so a second viewer does not start a second run;
-        # shutdown() joins whatever this returns.
-        start_webrtc_prewarm()
+        # Load the WebRTC native libraries now, on this (main) thread, so
+        # the first Connect click doesn't pay ~1s of load time. Must not be
+        # moved to a worker thread - see ensure_webrtc_imports().
+        ensure_webrtc_imports()
 
     # ------------------------------------------------------------------
     # window lifecycle
@@ -390,13 +388,6 @@ class FlightViewerController(QObject):
             loop.close()
         except Exception:  # pragma: no cover - best effort
             pass
-        # Let the import warmup finish before the caller moves on. Bounded
-        # so a wedged native import delays exit rather than blocking it.
-        if not wait_for_webrtc_prewarm(timeout=_PREWARM_JOIN_TIMEOUT_S):
-            self.logger.warning(
-                "WebRTC import warmup still running after "
-                f"{_PREWARM_JOIN_TIMEOUT_S}s; leaving it to the daemon thread."
-            )
 
     # ------------------------------------------------------------------
     # pairing flow
