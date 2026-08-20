@@ -1,9 +1,11 @@
 """Pytest fixtures for streaming algorithm tests."""
 
+import importlib
 import sys
 import os
 import pytest
 import numpy as np
+from PySide6.QtCore import QSettings
 from PySide6.QtWidgets import QApplication, QDialog
 from unittest.mock import Mock, MagicMock, patch
 
@@ -22,6 +24,53 @@ def qapp():
     if app is None:
         app = QApplication([])
     yield app
+
+
+@pytest.fixture(autouse=True)
+def isolated_stream_settings(tmp_path_factory, request, monkeypatch):
+    """Keep StreamViewerWindow's settings out of the user's real store.
+
+    On Windows ``QSettings("ADIAT", "StreamViewer")`` resolves to
+    ``HKCU\\Software\\ADIAT``, so any test that builds the window edits the
+    developer's own configuration - the recording panel persists its
+    options, and ``apply_wizard_data`` writes the recording directory. An
+    operator with a custom "Save to" folder would find it replaced by their
+    home directory after a test run.
+
+    Neither ``QSettings.setDefaultFormat`` nor ``setPath`` can prevent this:
+    the first does not apply to the ``(organization, application)``
+    constructor and the second does nothing for NativeFormat on Windows
+    (see the note at the top of ``app/tests/conftest.py``). The workable fix
+    is to intercept the constructor the module itself calls, before the
+    window is built - the recording panel reads settings inside
+    ``__init__``.
+
+    Autouse so a new streaming test cannot reintroduce the leak by
+    forgetting to ask for isolation.
+    """
+    try:
+        module = importlib.import_module(
+            "core.controllers.streaming.StreamViewerWindow"
+        )
+    except Exception:  # streaming deps absent - nothing to isolate
+        yield None
+        return
+
+    QSettings.setPath(
+        QSettings.IniFormat,
+        QSettings.UserScope,
+        str(tmp_path_factory.mktemp("qsettings")),
+    )
+    store = QSettings(
+        QSettings.IniFormat,
+        QSettings.UserScope,
+        "ADIAT-Tests",
+        request.node.name[:64],
+    )
+    monkeypatch.setattr(module, "QSettings", lambda *a, **k: store)
+    yield store
+    store.clear()
+    store.sync()
 
 
 @pytest.fixture
