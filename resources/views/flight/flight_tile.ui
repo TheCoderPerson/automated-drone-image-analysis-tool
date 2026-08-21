@@ -140,6 +140,13 @@
        </widget>
       </item>
       <item>
+       <widget class="QPushButton" name="replayButton">
+        <property name="toolTip">
+         <string>Watch this feed's last recording.</string>
+        </property>
+       </widget>
+      </item>
+      <item>
        <widget class="QPushButton" name="recordButton">
         <property name="toolTip">
          <string>Record this feed: video, detections, telemetry and map.</string>

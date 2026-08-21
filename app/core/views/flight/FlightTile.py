@@ -35,6 +35,7 @@ from core.views.flight.DetectionOverlayWidget import DetectionOverlayWidget
 from core.views.flight.flight_tile_ui import Ui_FlightTileContents
 from core.views.flight.TelemetryHud import TelemetryHud
 from core.views.streaming.components.RecordButton import (
+    configure_play_button,
     configure_record_button,
     set_record_button_state,
 )
@@ -158,6 +159,15 @@ class FlightTile(TranslationMixin, QFrame):
         # stays - both emit the same requests.
         configure_record_button(self.ui.recordButton, size=_TILE_RECORD_PX)
         self.ui.recordButton.clicked.connect(self._on_record_clicked)
+
+        # Play sits beside Record and appears only once this feed has a
+        # recording to watch - an always-visible button that usually does
+        # nothing is worse than no button.
+        configure_play_button(self.ui.replayButton, size=_TILE_RECORD_PX)
+        self.ui.replayButton.setVisible(False)
+        self.ui.replayButton.clicked.connect(
+            lambda: self.replayRequested.emit(self)
+        )
 
         self._build_context_menu()
 
@@ -343,8 +353,9 @@ class FlightTile(TranslationMixin, QFrame):
         self.ui.statusBadgeLabel.setToolTip(bundle_dir or "")
 
     def set_replay_available(self, available: bool) -> None:
-        """Offer (or stop offering) "Replay Recording" in the context menu."""
+        """Reveal the play button, and the context menu's replay entry."""
         self._replay_available = bool(available)
+        self.ui.replayButton.setVisible(self._replay_available)
 
     # ------------------------------------------------------------------
     # status strip

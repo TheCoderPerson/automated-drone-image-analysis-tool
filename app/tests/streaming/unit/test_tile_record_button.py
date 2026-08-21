@@ -19,6 +19,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..",
 from core.views.flight.FlightTile import FlightTile  # noqa: E402
 from core.views.flight.TelemetryHud import TelemetryHud  # noqa: E402
 from core.views.streaming.components.RecordButton import (  # noqa: E402
+    configure_play_button,
     configure_record_button,
     set_record_button_state,
 )
@@ -38,17 +39,24 @@ def tile(qapp):
 
 
 def _centroid(button):
-    """Centre of mass of the painted glyph, in icon pixels."""
+    """Alpha-weighted centre of mass of the painted glyph, in icon pixels.
+
+    Weighted rather than thresholded because a diagonal edge (the play
+    triangle) spreads its coverage across partially-opaque pixels; a
+    threshold would bias the answer toward whichever side happened to
+    round up.
+    """
     image = button.icon().pixmap(button.iconSize()).toImage()
-    xs = ys = count = 0
+    total = xs = ys = 0
     for y in range(image.height()):
         for x in range(image.width()):
-            if image.pixelColor(x, y).alpha() > 40:
-                xs += x
-                ys += y
-                count += 1
-    assert count, "the glyph painted nothing"
-    return xs / count, ys / count, image.width()
+            alpha = image.pixelColor(x, y).alpha()
+            if alpha:
+                total += alpha
+                xs += x * alpha
+                ys += y * alpha
+    assert total, "the glyph painted nothing"
+    return xs / total, ys / total, image.width()
 
 
 class TestSharedRecordButton:
@@ -91,6 +99,79 @@ class TestSharedRecordButton:
         for recording in (True, False, True):
             set_record_button_state(button, recording)
             assert button.isEnabled() is True
+
+
+class TestPlayButton:
+    """The grey triangle that appears once a feed has a recording."""
+
+    def test_it_paints_a_centred_triangle(self, qapp):
+        """A triangle's centroid is not its box centre; the eye reads the
+        centroid, so a box-centred triangle looks left-heavy."""
+        button = QPushButton()
+        configure_play_button(button)
+
+        assert button.text() == ""
+        assert button.icon().isNull() is False
+        x, y, width = _centroid(button)
+        expected = (width - 1) / 2
+        assert abs(x - expected) < 0.1
+        assert abs(y - expected) < 0.1
+
+    def test_it_shares_the_record_glyphs_centre(self, qapp):
+        """Side by side, the two must not look half a pixel apart."""
+        play, record = QPushButton(), QPushButton()
+        configure_play_button(play)
+        configure_record_button(record)
+
+        px, py, _ = _centroid(play)
+        rx, ry, _ = _centroid(record)
+
+        assert abs(px - rx) < 0.1
+        assert abs(py - ry) < 0.1
+
+    def test_a_cramped_host_can_size_it_down(self, qapp):
+        button = QPushButton()
+        configure_play_button(button, size=24)
+
+        assert button.width() == button.height() == 24
+
+
+class TestTilePlayButton:
+    def test_it_is_hidden_until_there_is_a_recording(self, tile):
+        """An always-visible button that usually does nothing is worse
+        than no button."""
+        assert tile.ui.replayButton.isHidden() is True
+
+    def test_a_finished_recording_reveals_it(self, tile):
+        tile.set_replay_available(True)
+
+        assert tile.ui.replayButton.isHidden() is False
+        assert tile.ui.replayButton.width() == 24
+
+    def test_click_requests_replay(self, tile):
+        requested = []
+        tile.replayRequested.connect(lambda t: requested.append(t.pairing_code))
+        tile.set_replay_available(True)
+
+        tile.ui.replayButton.click()
+
+        assert requested == ["K3F9PM"]
+
+    def test_it_hides_again_when_replay_is_withdrawn(self, tile):
+        tile.set_replay_available(True)
+        tile.set_replay_available(False)
+
+        assert tile.ui.replayButton.isHidden() is True
+
+    def test_it_sits_beside_the_record_toggle(self, tile):
+        """Both live on the status strip, play before record."""
+        strip = tile.ui.statusLayout
+        indexes = {
+            strip.indexOf(tile.ui.replayButton),
+            strip.indexOf(tile.ui.recordButton),
+        }
+        assert -1 not in indexes
+        assert strip.indexOf(tile.ui.replayButton) < strip.indexOf(tile.ui.recordButton)
 
 
 class TestTileRecordButton:

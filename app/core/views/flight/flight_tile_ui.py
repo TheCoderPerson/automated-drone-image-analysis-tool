@@ -88,6 +88,11 @@ class Ui_FlightTileContents(object):
 
         self.statusLayout.addWidget(self.statusBadgeLabel)
 
+        self.replayButton = QPushButton(self.statusStrip)
+        self.replayButton.setObjectName(u"replayButton")
+
+        self.statusLayout.addWidget(self.replayButton)
+
         self.recordButton = QPushButton(self.statusStrip)
         self.recordButton.setObjectName(u"recordButton")
 
@@ -110,6 +115,9 @@ class Ui_FlightTileContents(object):
         self.bitrateLabel.setText(QCoreApplication.translate("FlightTileContents", u"0 kbps", None))
         self.latencyLabel.setText(QCoreApplication.translate("FlightTileContents", u"latency: --", None))
         self.statusBadgeLabel.setText("")
+#if QT_CONFIG(tooltip)
+        self.replayButton.setToolTip(QCoreApplication.translate("FlightTileContents", u"Watch this feed's last recording.", None))
+#endif // QT_CONFIG(tooltip)
 #if QT_CONFIG(tooltip)
         self.recordButton.setToolTip(QCoreApplication.translate("FlightTileContents", u"Record this feed: video, detections, telemetry and map.", None))
 #endif // QT_CONFIG(tooltip)

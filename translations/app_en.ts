@@ -4955,124 +4955,124 @@ thumb</translation>
 <context>
     <name>FlightTile</name>
     <message>
-        <location filename="../app/core/views/flight/FlightTile.py" line="451"/>
+        <location filename="../app/core/views/flight/FlightTile.py" line="462"/>
         <source>Feed {code}</source>
         <translation>Feed {code}</translation>
     </message>
     <message>
-        <location filename="../app/core/views/flight/FlightTile.py" line="355"/>
-        <location filename="../app/core/views/flight/FlightTile.py" line="374"/>
+        <location filename="../app/core/views/flight/FlightTile.py" line="366"/>
+        <location filename="../app/core/views/flight/FlightTile.py" line="385"/>
         <source>Network: {state}</source>
         <translation>Network: {state}</translation>
     </message>
     <message>
-        <location filename="../app/core/views/flight/FlightTile.py" line="368"/>
+        <location filename="../app/core/views/flight/FlightTile.py" line="379"/>
         <source>latency: {ms:.0f}ms</source>
         <translation>latency: {ms:.0f}ms</translation>
     </message>
     <message>
-        <location filename="../app/core/views/flight/FlightTile.py" line="370"/>
+        <location filename="../app/core/views/flight/FlightTile.py" line="381"/>
         <source>latency: --</source>
         <translation>latency: --</translation>
     </message>
     <message>
-        <location filename="../app/core/views/flight/FlightTile.py" line="448"/>
+        <location filename="../app/core/views/flight/FlightTile.py" line="459"/>
         <source>{name} · {code}</source>
         <translation>{name} · {code}</translation>
     </message>
     <message>
-        <location filename="../app/core/views/flight/FlightTile.py" line="473"/>
+        <location filename="../app/core/views/flight/FlightTile.py" line="484"/>
         <source>Aircraft serial: {sn}</source>
         <translation>Aircraft serial: {sn}</translation>
     </message>
     <message>
-        <location filename="../app/core/views/flight/FlightTile.py" line="511"/>
+        <location filename="../app/core/views/flight/FlightTile.py" line="522"/>
         <source>Rename Feed</source>
         <translation>Rename Feed</translation>
     </message>
     <message>
-        <location filename="../app/core/views/flight/FlightTile.py" line="515"/>
+        <location filename="../app/core/views/flight/FlightTile.py" line="526"/>
         <source>Nickname for this drone (persists across new pairing codes via the aircraft serial number). Leave blank to clear.</source>
         <translation>Nickname for this drone (persists across new pairing codes via the aircraft serial number). Leave blank to clear.</translation>
     </message>
     <message>
-        <location filename="../app/core/views/flight/FlightTile.py" line="545"/>
+        <location filename="../app/core/views/flight/FlightTile.py" line="556"/>
         <source>Initializing</source>
         <translation>Initializing</translation>
     </message>
     <message>
-        <location filename="../app/core/views/flight/FlightTile.py" line="546"/>
+        <location filename="../app/core/views/flight/FlightTile.py" line="557"/>
         <source>Connecting</source>
         <translation>Connecting</translation>
     </message>
     <message>
-        <location filename="../app/core/views/flight/FlightTile.py" line="547"/>
-        <location filename="../app/core/views/flight/FlightTile.py" line="548"/>
+        <location filename="../app/core/views/flight/FlightTile.py" line="558"/>
+        <location filename="../app/core/views/flight/FlightTile.py" line="559"/>
         <source>Connected</source>
         <translation>Connected</translation>
     </message>
     <message>
-        <location filename="../app/core/views/flight/FlightTile.py" line="549"/>
+        <location filename="../app/core/views/flight/FlightTile.py" line="560"/>
         <source>Disconnected</source>
         <translation>Disconnected</translation>
     </message>
     <message>
-        <location filename="../app/core/views/flight/FlightTile.py" line="550"/>
+        <location filename="../app/core/views/flight/FlightTile.py" line="561"/>
         <source>Failed</source>
         <translation>Failed</translation>
     </message>
     <message>
-        <location filename="../app/core/views/flight/FlightTile.py" line="551"/>
+        <location filename="../app/core/views/flight/FlightTile.py" line="562"/>
         <source>Closed</source>
         <translation>Closed</translation>
     </message>
     <message>
-        <location filename="../app/core/views/flight/FlightTile.py" line="565"/>
+        <location filename="../app/core/views/flight/FlightTile.py" line="576"/>
         <source>Rename Feed...</source>
         <translation>Rename Feed...</translation>
     </message>
     <message>
-        <location filename="../app/core/views/flight/FlightTile.py" line="582"/>
+        <location filename="../app/core/views/flight/FlightTile.py" line="593"/>
         <source>Restore</source>
         <translation>Restore</translation>
     </message>
     <message>
-        <location filename="../app/core/views/flight/FlightTile.py" line="586"/>
+        <location filename="../app/core/views/flight/FlightTile.py" line="597"/>
         <source>Maximize</source>
         <translation>Maximize</translation>
     </message>
     <message>
-        <location filename="../app/core/views/flight/FlightTile.py" line="571"/>
+        <location filename="../app/core/views/flight/FlightTile.py" line="582"/>
         <source>Full Screen</source>
         <translation>Full Screen</translation>
     </message>
     <message>
-        <location filename="../app/core/views/flight/FlightTile.py" line="592"/>
+        <location filename="../app/core/views/flight/FlightTile.py" line="603"/>
         <source>Mute Detections in Gallery</source>
         <translation>Mute Detections in Gallery</translation>
     </message>
     <message>
-        <location filename="../app/core/views/flight/FlightTile.py" line="608"/>
+        <location filename="../app/core/views/flight/FlightTile.py" line="619"/>
         <source>Stop Recording</source>
         <translation>Stop Recording</translation>
     </message>
     <message>
-        <location filename="../app/core/views/flight/FlightTile.py" line="614"/>
+        <location filename="../app/core/views/flight/FlightTile.py" line="625"/>
         <source>Start Recording…</source>
         <translation>Start Recording…</translation>
     </message>
     <message>
-        <location filename="../app/core/views/flight/FlightTile.py" line="621"/>
+        <location filename="../app/core/views/flight/FlightTile.py" line="632"/>
         <source>Replay Recording</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/core/views/flight/FlightTile.py" line="627"/>
+        <location filename="../app/core/views/flight/FlightTile.py" line="638"/>
         <source>Reconnect</source>
         <translation>Reconnect</translation>
     </message>
     <message>
-        <location filename="../app/core/views/flight/FlightTile.py" line="633"/>
+        <location filename="../app/core/views/flight/FlightTile.py" line="644"/>
         <source>Close</source>
         <translation>Close</translation>
     </message>
@@ -5111,6 +5111,11 @@ thumb</translation>
     </message>
     <message>
         <location filename="../resources/views/flight/flight_tile.ui" line="145"/>
+        <source>Watch this feed&apos;s last recording.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../resources/views/flight/flight_tile.ui" line="152"/>
         <source>Record this feed: video, detections, telemetry and map.</source>
         <translation type="unfinished"></translation>
     </message>

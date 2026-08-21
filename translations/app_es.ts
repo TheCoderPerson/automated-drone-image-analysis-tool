@@ -4955,124 +4955,124 @@ inválida</translation>
 <context>
     <name>FlightTile</name>
     <message>
-        <location filename="../app/core/views/flight/FlightTile.py" line="451"/>
+        <location filename="../app/core/views/flight/FlightTile.py" line="462"/>
         <source>Feed {code}</source>
         <translation>Transmisión {code}</translation>
     </message>
     <message>
-        <location filename="../app/core/views/flight/FlightTile.py" line="355"/>
-        <location filename="../app/core/views/flight/FlightTile.py" line="374"/>
+        <location filename="../app/core/views/flight/FlightTile.py" line="366"/>
+        <location filename="../app/core/views/flight/FlightTile.py" line="385"/>
         <source>Network: {state}</source>
         <translation>Red: {state}</translation>
     </message>
     <message>
-        <location filename="../app/core/views/flight/FlightTile.py" line="368"/>
+        <location filename="../app/core/views/flight/FlightTile.py" line="379"/>
         <source>latency: {ms:.0f}ms</source>
         <translation>latencia: {ms:.0f} ms</translation>
     </message>
     <message>
-        <location filename="../app/core/views/flight/FlightTile.py" line="370"/>
+        <location filename="../app/core/views/flight/FlightTile.py" line="381"/>
         <source>latency: --</source>
         <translation>latencia: --</translation>
     </message>
     <message>
-        <location filename="../app/core/views/flight/FlightTile.py" line="448"/>
+        <location filename="../app/core/views/flight/FlightTile.py" line="459"/>
         <source>{name} · {code}</source>
         <translation>{name} · {code}</translation>
     </message>
     <message>
-        <location filename="../app/core/views/flight/FlightTile.py" line="473"/>
+        <location filename="../app/core/views/flight/FlightTile.py" line="484"/>
         <source>Aircraft serial: {sn}</source>
         <translation>Serie de la aeronave: {sn}</translation>
     </message>
     <message>
-        <location filename="../app/core/views/flight/FlightTile.py" line="511"/>
+        <location filename="../app/core/views/flight/FlightTile.py" line="522"/>
         <source>Rename Feed</source>
         <translation>Cambiar nombre de transmisión</translation>
     </message>
     <message>
-        <location filename="../app/core/views/flight/FlightTile.py" line="515"/>
+        <location filename="../app/core/views/flight/FlightTile.py" line="526"/>
         <source>Nickname for this drone (persists across new pairing codes via the aircraft serial number). Leave blank to clear.</source>
         <translation>Alias de este dron (se conserva aunque cambie el código de emparejamiento, mediante el número de serie de la aeronave). Déjelo en blanco para borrarlo.</translation>
     </message>
     <message>
-        <location filename="../app/core/views/flight/FlightTile.py" line="545"/>
+        <location filename="../app/core/views/flight/FlightTile.py" line="556"/>
         <source>Initializing</source>
         <translation>Inicializando</translation>
     </message>
     <message>
-        <location filename="../app/core/views/flight/FlightTile.py" line="546"/>
+        <location filename="../app/core/views/flight/FlightTile.py" line="557"/>
         <source>Connecting</source>
         <translation>Conectando</translation>
     </message>
     <message>
-        <location filename="../app/core/views/flight/FlightTile.py" line="547"/>
-        <location filename="../app/core/views/flight/FlightTile.py" line="548"/>
+        <location filename="../app/core/views/flight/FlightTile.py" line="558"/>
+        <location filename="../app/core/views/flight/FlightTile.py" line="559"/>
         <source>Connected</source>
         <translation>Conectado</translation>
     </message>
     <message>
-        <location filename="../app/core/views/flight/FlightTile.py" line="549"/>
+        <location filename="../app/core/views/flight/FlightTile.py" line="560"/>
         <source>Disconnected</source>
         <translation>Desconectado</translation>
     </message>
     <message>
-        <location filename="../app/core/views/flight/FlightTile.py" line="550"/>
+        <location filename="../app/core/views/flight/FlightTile.py" line="561"/>
         <source>Failed</source>
         <translation>Fallido</translation>
     </message>
     <message>
-        <location filename="../app/core/views/flight/FlightTile.py" line="551"/>
+        <location filename="../app/core/views/flight/FlightTile.py" line="562"/>
         <source>Closed</source>
         <translation>Cerrado</translation>
     </message>
     <message>
-        <location filename="../app/core/views/flight/FlightTile.py" line="565"/>
+        <location filename="../app/core/views/flight/FlightTile.py" line="576"/>
         <source>Rename Feed...</source>
         <translation>Cambiar nombre de transmisión...</translation>
     </message>
     <message>
-        <location filename="../app/core/views/flight/FlightTile.py" line="582"/>
+        <location filename="../app/core/views/flight/FlightTile.py" line="593"/>
         <source>Restore</source>
         <translation>Restaurar</translation>
     </message>
     <message>
-        <location filename="../app/core/views/flight/FlightTile.py" line="586"/>
+        <location filename="../app/core/views/flight/FlightTile.py" line="597"/>
         <source>Maximize</source>
         <translation>Maximizar</translation>
     </message>
     <message>
-        <location filename="../app/core/views/flight/FlightTile.py" line="571"/>
+        <location filename="../app/core/views/flight/FlightTile.py" line="582"/>
         <source>Full Screen</source>
         <translation>Pantalla completa</translation>
     </message>
     <message>
-        <location filename="../app/core/views/flight/FlightTile.py" line="592"/>
+        <location filename="../app/core/views/flight/FlightTile.py" line="603"/>
         <source>Mute Detections in Gallery</source>
         <translation>Ocultar detecciones en la galería</translation>
     </message>
     <message>
-        <location filename="../app/core/views/flight/FlightTile.py" line="608"/>
+        <location filename="../app/core/views/flight/FlightTile.py" line="619"/>
         <source>Stop Recording</source>
         <translation>Detener grabación</translation>
     </message>
     <message>
-        <location filename="../app/core/views/flight/FlightTile.py" line="614"/>
+        <location filename="../app/core/views/flight/FlightTile.py" line="625"/>
         <source>Start Recording…</source>
         <translation>Iniciar grabación…</translation>
     </message>
     <message>
-        <location filename="../app/core/views/flight/FlightTile.py" line="621"/>
+        <location filename="../app/core/views/flight/FlightTile.py" line="632"/>
         <source>Replay Recording</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/core/views/flight/FlightTile.py" line="627"/>
+        <location filename="../app/core/views/flight/FlightTile.py" line="638"/>
         <source>Reconnect</source>
         <translation>Reconectar</translation>
     </message>
     <message>
-        <location filename="../app/core/views/flight/FlightTile.py" line="633"/>
+        <location filename="../app/core/views/flight/FlightTile.py" line="644"/>
         <source>Close</source>
         <translation>Cerrar</translation>
     </message>
@@ -5111,6 +5111,11 @@ inválida</translation>
     </message>
     <message>
         <location filename="../resources/views/flight/flight_tile.ui" line="145"/>
+        <source>Watch this feed&apos;s last recording.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../resources/views/flight/flight_tile.ui" line="152"/>
         <source>Record this feed: video, detections, telemetry and map.</source>
         <translation type="unfinished"></translation>
     </message>

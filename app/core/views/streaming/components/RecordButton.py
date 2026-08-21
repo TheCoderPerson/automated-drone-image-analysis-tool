@@ -1,9 +1,11 @@
-"""The app's record toggle: one look, wherever recording is offered.
+"""Compact media controls: the record toggle, and the play button.
 
-A compact camera-idiom control — a red dot when idle, a white stop square
-on a red field while recording. Used by the streaming window's playback
-bar and by each Flight Viewer tile's status strip, so "start recording"
-looks and behaves the same wherever the operator finds it.
+The record toggle is a camera-idiom control — a red dot when idle, a white
+stop square on a red field while recording — and the play button is the
+grey triangle that appears beside it once a feed has a recording worth
+watching. Both are used by the streaming window's playback bar and by each
+Flight Viewer tile's status strip, so a control means the same thing
+wherever the operator finds it.
 
 Exposed as functions applied to an ordinary ``QPushButton`` rather than a
 QPushButton subclass, so a button declared in a ``.ui`` file can adopt it
@@ -20,13 +22,16 @@ centred in an even canvas.
 from __future__ import annotations
 
 from PySide6.QtCore import QCoreApplication, QRectF, QSize, Qt
-from PySide6.QtGui import QColor, QIcon, QPainter, QPixmap
+from PySide6.QtGui import QColor, QIcon, QPainter, QPainterPath, QPixmap
 from PySide6.QtWidgets import QPushButton
 
 BUTTON_PX = 34
 ICON_PX = 20
 DOT_PX = 12
 SQUARE_PX = 12  # even: see module docstring
+PLAY_W_PX = 11
+PLAY_H_PX = 12
+PLAY_GREY = "#d6d6d6"
 RECORD_RED = "#e53935"
 RECORD_RED_HOVER = "#b71c1c"
 
@@ -66,6 +71,61 @@ def _square_icon(side: int, color: str) -> QIcon:
     finally:
         painter.end()
     return QIcon(pixmap)
+
+
+def _play_icon(width: int, height: int, color: str) -> QIcon:
+    """A right-pointing triangle whose centroid is the canvas centre.
+
+    A triangle's centroid is not its bounding box's centre, and the eye
+    reads the centroid - so the vertices are solved for it rather than the
+    box being centred (which looks left-heavy). For a triangle with two
+    vertices on the left edge and one at the right point, centroid_x is
+    ``(2*left + right) / 3``; putting that at the centre means the left
+    edge sits a third of the width to the left of it.
+
+    The centre is ``ICON_PX / 2`` in *coordinate* space, not
+    ``(ICON_PX - 1) / 2``: Qt fills the pixel at index x across
+    coordinates [x, x+1), so that is what puts the glyph on the same
+    centre the dot and square already use.
+    """
+    pixmap = QPixmap(ICON_PX, ICON_PX)
+    pixmap.fill(Qt.transparent)
+    painter = QPainter(pixmap)
+    try:
+        painter.setRenderHint(QPainter.Antialiasing)
+        painter.setPen(Qt.NoPen)
+        painter.setBrush(QColor(color))
+        centre = ICON_PX / 2.0
+        left = centre - width / 3.0
+        right = centre + 2.0 * width / 3.0
+        top = centre - height / 2.0
+        bottom = centre + height / 2.0
+        path = QPainterPath()
+        path.moveTo(left, top)
+        path.lineTo(left, bottom)
+        path.lineTo(right, centre)
+        path.closeSubpath()
+        painter.drawPath(path)
+    finally:
+        painter.end()
+    return QIcon(pixmap)
+
+
+def configure_play_button(button: QPushButton, *, size: int = BUTTON_PX) -> None:
+    """Turn ``button`` into a play control for a finished recording."""
+    button.setFixedSize(size, size)
+    button.setIconSize(QSize(ICON_PX, ICON_PX))
+    button.setFlat(True)
+    button.setText("")
+    button.setIcon(_play_icon(PLAY_W_PX, PLAY_H_PX, PLAY_GREY))
+    button.setStyleSheet(
+        "QPushButton {"
+        " background-color: transparent;"
+        " border: none; border-radius: 4px; padding: 0px;"
+        "}"
+        "QPushButton:hover { background-color: rgba(255, 255, 255, 0.14); }"
+    )
+    button.setToolTip(_tr("Watch this feed's last recording."))
 
 
 def configure_record_button(button: QPushButton, *, size: int = BUTTON_PX) -> None:
@@ -114,6 +174,7 @@ __all__ = [
     "BUTTON_PX",
     "ICON_PX",
     "RECORD_RED",
+    "configure_play_button",
     "configure_record_button",
     "set_record_button_state",
 ]
