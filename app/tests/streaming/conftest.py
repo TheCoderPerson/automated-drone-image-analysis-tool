@@ -48,11 +48,19 @@ def isolated_stream_settings(tmp_path_factory, request, monkeypatch):
     Autouse so a new streaming test cannot reintroduce the leak by
     forgetting to ask for isolation.
     """
-    try:
-        module = importlib.import_module(
-            "core.controllers.streaming.StreamViewerWindow"
-        )
-    except Exception:  # streaming deps absent - nothing to isolate
+    # Both windows persist settings: the streaming window's recording
+    # panel, and each Flight Viewer tile's recording folder. Isolate every
+    # module that constructs QSettings for either.
+    modules = []
+    for name in (
+        "core.controllers.streaming.StreamViewerWindow",
+        "core.controllers.flight.FlightTileController",
+    ):
+        try:
+            modules.append(importlib.import_module(name))
+        except Exception:  # deps absent - nothing to isolate for that one
+            continue
+    if not modules:
         yield None
         return
 
@@ -67,7 +75,8 @@ def isolated_stream_settings(tmp_path_factory, request, monkeypatch):
         "ADIAT-Tests",
         request.node.name[:64],
     )
-    monkeypatch.setattr(module, "QSettings", lambda *a, **k: store)
+    for module in modules:
+        monkeypatch.setattr(module, "QSettings", lambda *a, **k: store)
     yield store
     store.clear()
     store.sync()

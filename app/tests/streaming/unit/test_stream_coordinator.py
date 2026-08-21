@@ -96,21 +96,20 @@ class TestStreamCoordinator:
         # Set connected state (required for recording)
         coordinator.is_connected = True
 
-        # Patch both RecordingConfig and RecordingManager to handle the coordinator's usage
-        with patch('core.controllers.streaming.components.StreamCoordinator.RecordingConfig'):
-            with patch('core.controllers.streaming.components.StreamCoordinator.RecordingManager', return_value=mock_recording_manager):
-                # Mock start_recording to return a path string (accepts any arguments)
-                # The coordinator calls it without arguments, but actual method requires resolution
-                mock_recording_manager.start_recording = Mock(return_value="/tmp/test.mp4")
+        # Patch the manager where the recording service creates it.
+        with patch('core.services.streaming.RecordingService.RecordingManager', return_value=mock_recording_manager):
+            # Mock start_recording to return a path string (accepts any arguments)
+            # The coordinator calls it without arguments, but actual method requires resolution
+            mock_recording_manager.start_recording = Mock(return_value="/tmp/test.mp4")
 
-                success = coordinator.start_recording(str(tmp_path))
+            success = coordinator.start_recording(str(tmp_path))
 
-                assert success is True
-                assert coordinator.recording_manager is not None
-                # Verify start_recording was called (even if with wrong signature, mock handles it)
-                mock_recording_manager.start_recording.assert_called_once()
+            assert success is True
+            assert coordinator.recording_manager is not None
+            # Verify start_recording was called (even if with wrong signature, mock handles it)
+            mock_recording_manager.start_recording.assert_called_once()
 
-                coordinator.stop_recording()
+            coordinator.stop_recording()
 
     def test_start_recording_creates_a_session_bundle(self, mock_logger,
                                                       mock_recording_manager, tmp_path):
@@ -118,7 +117,7 @@ class TestStreamCoordinator:
         coordinator = StreamCoordinator(mock_logger)
         coordinator.is_connected = True
 
-        with patch('core.controllers.streaming.components.StreamCoordinator.RecordingManager',
+        with patch('core.services.streaming.RecordingService.RecordingManager',
                    return_value=mock_recording_manager) as manager_cls:
             assert coordinator.start_recording(str(tmp_path)) is True
 
@@ -140,7 +139,7 @@ class TestStreamCoordinator:
         coordinator.current_stream_url = "rtmp://example/live"
         coordinator.stream_info["resolution"] = (1920, 1080)
 
-        with patch('core.controllers.streaming.components.StreamCoordinator.RecordingManager',
+        with patch('core.services.streaming.RecordingService.RecordingManager',
                    return_value=mock_recording_manager):
             coordinator.start_recording(str(tmp_path), {
                 "save_detections": True,
@@ -164,7 +163,7 @@ class TestStreamCoordinator:
         coordinator.is_connected = True
         mock_recording_manager.start_recording = Mock(return_value=False)
 
-        with patch('core.controllers.streaming.components.StreamCoordinator.RecordingManager',
+        with patch('core.services.streaming.RecordingService.RecordingManager',
                    return_value=mock_recording_manager):
             assert coordinator.start_recording(str(tmp_path)) is False
 
@@ -182,7 +181,7 @@ class TestStreamCoordinator:
         errors = []
         coordinator.errorOccurred.connect(errors.append)
 
-        with patch('core.controllers.streaming.components.StreamCoordinator.RecordingManager',
+        with patch('core.services.streaming.RecordingService.RecordingManager',
                    return_value=mock_recording_manager) as manager_cls:
             assert coordinator.start_recording(target) is True
 
@@ -198,26 +197,25 @@ class TestStreamCoordinator:
         # Set connected state (required for recording)
         coordinator.is_connected = True
 
-        # Patch both RecordingConfig and RecordingManager to handle the coordinator's usage
-        with patch('core.controllers.streaming.components.StreamCoordinator.RecordingConfig'):
-            with patch('core.controllers.streaming.components.StreamCoordinator.RecordingManager', return_value=mock_recording_manager):
-                # Mock start_recording to return a path string (accepts any arguments)
-                mock_recording_manager.start_recording = Mock(return_value="/tmp/test.mp4")
-                # Mock stop_recording to return a path string
-                mock_recording_manager.stop_recording = Mock(return_value="/tmp/test.mp4")
+        # Patch the manager where the recording service creates it.
+        with patch('core.services.streaming.RecordingService.RecordingManager', return_value=mock_recording_manager):
+            # Mock start_recording to return a path string (accepts any arguments)
+            mock_recording_manager.start_recording = Mock(return_value="/tmp/test.mp4")
+            # Mock stop_recording to return a path string
+            mock_recording_manager.stop_recording = Mock(return_value="/tmp/test.mp4")
 
-                # Start recording first
-                coordinator.start_recording(str(tmp_path))
-                # Verify it was started
-                assert coordinator.recording_manager is not None
-                assert coordinator.is_recording is True
+            # Start recording first
+            coordinator.start_recording(str(tmp_path))
+            # Verify it was started
+            assert coordinator.recording_manager is not None
+            assert coordinator.is_recording is True
 
-                # Now stop it
-                coordinator.stop_recording()
+            # Now stop it
+            coordinator.stop_recording()
 
-                # Recording manager should still exist (not cleared until disconnect)
-                assert coordinator.recording_manager is not None
-                mock_recording_manager.stop_recording.assert_called_once()
+            # Recording manager should still exist (not cleared until disconnect)
+            assert coordinator.recording_manager is not None
+            mock_recording_manager.stop_recording.assert_called_once()
 
     def test_stop_recording_finalizes_the_bundle(self, mock_logger,
                                                  mock_recording_manager, tmp_path, qapp):
@@ -227,7 +225,7 @@ class TestStreamCoordinator:
         results = []
         coordinator.recordingBundleReady.connect(results.append)
 
-        with patch('core.controllers.streaming.components.StreamCoordinator.RecordingManager',
+        with patch('core.services.streaming.RecordingService.RecordingManager',
                    return_value=mock_recording_manager):
             coordinator.start_recording(str(tmp_path))
             coordinator.append_detection_record(_detection_record())
@@ -259,7 +257,7 @@ class TestStreamCoordinator:
         results = []
         coordinator.recordingBundleReady.connect(results.append)
 
-        with patch('core.controllers.streaming.components.StreamCoordinator.RecordingManager',
+        with patch('core.services.streaming.RecordingService.RecordingManager',
                    return_value=mock_recording_manager):
             coordinator.start_recording(str(tmp_path))
             coordinator.append_detection_record(_detection_record())
@@ -289,7 +287,7 @@ class TestStreamCoordinator:
         coordinator = StreamCoordinator(mock_logger)
         coordinator.is_connected = True
 
-        with patch('core.controllers.streaming.components.StreamCoordinator.RecordingManager',
+        with patch('core.services.streaming.RecordingService.RecordingManager',
                    return_value=mock_recording_manager):
             coordinator.start_recording(str(tmp_path))
             mock_recording_manager.stop_recording.reset_mock()
@@ -308,7 +306,7 @@ class TestStreamCoordinator:
         results = []
         coordinator.recordingBundleReady.connect(results.append)
 
-        with patch('core.controllers.streaming.components.StreamCoordinator.RecordingManager',
+        with patch('core.services.streaming.RecordingService.RecordingManager',
                    return_value=mock_recording_manager):
             coordinator.start_recording(str(tmp_path))
             coordinator.stop_recording()
@@ -332,7 +330,7 @@ class TestStreamCoordinator:
         coordinator = StreamCoordinator(mock_logger)
         coordinator.is_connected = True
 
-        with patch('core.controllers.streaming.components.StreamCoordinator.RecordingManager',
+        with patch('core.services.streaming.RecordingService.RecordingManager',
                    return_value=mock_recording_manager):
             coordinator.start_recording(str(tmp_path))
             coordinator.record_frame(sample_frame, [{}, {}], 1.5)
@@ -350,7 +348,7 @@ class TestStreamCoordinator:
         coordinator.is_connected = True
         mock_recording_manager.get_recording_info = Mock(return_value={"total_frames": 412})
 
-        with patch('core.controllers.streaming.components.StreamCoordinator.RecordingManager',
+        with patch('core.services.streaming.RecordingService.RecordingManager',
                    return_value=mock_recording_manager):
             coordinator.start_recording(str(tmp_path))
 

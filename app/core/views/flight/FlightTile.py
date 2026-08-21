@@ -50,6 +50,11 @@ class FlightTile(TranslationMixin, QFrame):
     reconnectRequested = Signal(object)
     fullscreenRequested = Signal(object)
     muteGalleryToggled = Signal(object, bool)
+    # Recording is orchestrated by FlightTileController (it owns the
+    # frames, detections and telemetry a recording captures); the tile
+    # only asks. Both carry the tile so a shared slot can tell feeds apart.
+    recordingStartRequested = Signal(object)
+    recordingStopRequested = Signal(object)
     # Fires whenever the tile's operator-facing display name changes —
     # nickname rename, ``aircraft_name`` arriving from telemetry, or
     # the operator clearing a nickname. Carries the pairing code and
@@ -103,9 +108,9 @@ class FlightTile(TranslationMixin, QFrame):
 
         self._frame_count = 0
         self._gallery_muted = False
-        # Per-tile recording state (created on demand from the context menu).
-        self._recorder = None
-        self._recording_path: Optional[str] = None
+        # Mirrors the controller's recording state so the context menu
+        # offers the right verb; set via set_recording_state().
+        self._is_recording = False
         # Most-recent decoded source frame (BGR ndarray). Held by
         # reference, not copied — ``WebRTCStreamService`` produces one
         # ndarray per frame and the prior reference goes out of scope
@@ -270,90 +275,41 @@ class FlightTile(TranslationMixin, QFrame):
         except Exception:  # noqa: BLE001 - never crash the UI thread
             pass
 
-        # Feed the frame to the recorder if one is active. Done AFTER
-        # rendering so a slow disk doesn't stall the display path.
-        recorder = self._recorder
-        if recorder is not None:
-            try:
-                recorder.add_frame(frame_bgr, ts)
-            except Exception:  # noqa: BLE001 - recording is best-effort
-                pass
-
     # ------------------------------------------------------------------
     # per-tile recording (plan §15 M3)
     # ------------------------------------------------------------------
 
     @property
     def is_recording(self) -> bool:
-        return self._recorder is not None
+        return self._is_recording
 
-    def _start_recording_from_menu(self) -> None:
-        from PySide6.QtWidgets import QFileDialog
-        # Default to ~/Videos/ADIAT to keep recordings out of the user's
-        # home directory root. The directory is created on demand by the
-        # VideoRecorder service if it doesn't exist yet.
-        import os as _os
-        default_dir = _os.path.join(_os.path.expanduser("~"), "Videos", "ADIAT")
-        chosen = QFileDialog.getExistingDirectory(
-            self, self.tr("Choose recording directory"), default_dir
-        )
-        if not chosen:
-            return
-        self._start_recording(chosen)
+    def set_recording_state(self, recording: bool, message: str = "") -> None:
+        """Reflect the controller's recording state on the status strip.
 
-    def _start_recording(self, output_dir: str) -> None:
-        # Determine the source resolution from the current video pane
-        # pixmap. Falls back to a sane default if no frame has arrived yet.
-        from core.services.streaming.VideoRecordingService import (
-            RecordingConfig,
-            VideoRecorder,
-        )
-        pixmap = self.ui.videoLabel.pixmap()
-        if pixmap is not None and not pixmap.isNull():
-            resolution = (max(640, pixmap.width()), max(360, pixmap.height()))
-        else:
-            resolution = (1280, 720)
+        The tile never records anything itself - FlightTileController owns
+        the recording (video, detections, telemetry, map) and reports back
+        here so the badge and the context-menu verb stay truthful.
+        """
+        self._is_recording = bool(recording)
+        if message:
+            self.ui.statusBadgeLabel.setText(message)
+        # No message means "state only": the badge text is owned by
+        # whichever richer report last wrote it ("Recording saved", an
+        # error). The video writer's own stopped-signal arrives queued,
+        # after that report - clearing here would wipe it moments after
+        # the operator saw it.
 
-        config = RecordingConfig(
-            output_dir=output_dir,
-            filename_prefix=f"flight_{self.pairing_code}",
-            fps=30,
-        )
-        recorder = VideoRecorder(config)
+    def set_recording_result(self, message: str, bundle_dir: str = "") -> None:
+        """Show where a finished recording landed.
 
-        # Surface the recorder's output path on the status strip while
-        # recording is active.
-        def _on_recording_started(path: str) -> None:
-            self._recording_path = path
-            self.ui.statusBadgeLabel.setText(self.tr("REC ● {filename}").format(
-                filename=__import__("os").path.basename(path)
-            ))
-
-        def _on_recording_error(msg: str) -> None:
-            self.ui.statusBadgeLabel.setText(self.tr("REC error: {msg}").format(msg=msg))
-
-        recorder.recordingStarted.connect(_on_recording_started)
-        recorder.errorOccurred.connect(_on_recording_error)
-
-        if not recorder.start_recording(resolution):
-            # Service already logged the failure; surface to the user via
-            # the status strip so they're not left guessing.
-            self.ui.statusBadgeLabel.setText(self.tr("REC failed to start"))
-            return
-        self._recorder = recorder
-
-    def _stop_recording(self) -> None:
-        recorder = self._recorder
-        self._recorder = None
-        if recorder is None:
-            return
-        try:
-            recorder.stop_recording()
-        except Exception:  # noqa: BLE001 - cleanup must not crash UI
-            pass
-        if self._recording_path:
-            self.ui.statusBadgeLabel.setText(self.tr("Recording saved"))
-            self._recording_path = None
+        The badge is small, so the folder path rides on its tooltip
+        rather than the label text. A finished recording is by definition
+        no longer recording, whatever order the writer's queued signals
+        land in.
+        """
+        self._is_recording = False
+        self.ui.statusBadgeLabel.setText(message)
+        self.ui.statusBadgeLabel.setToolTip(bundle_dir or "")
 
     # ------------------------------------------------------------------
     # status strip
@@ -609,17 +565,21 @@ class FlightTile(TranslationMixin, QFrame):
         mute.triggered.connect(_toggle_mute)
         menu.addAction(mute)
 
-        # Recording toggle. Reuses the existing :class:`VideoRecorder`
-        # service so the output format matches RTMP/HDMI recordings the
-        # rest of the app produces (plan §15 M3 — Recording via existing
-        # VideoRecordingService).
+        # Recording toggle (plan §15 M3). The controller records this
+        # feed's video, detections, telemetry and flight map into one
+        # bundle - the same artifact a streaming-window recording makes -
+        # so the menu only requests; it never touches a recorder.
         if self.is_recording:
             stop_rec = QAction(self.tr("Stop Recording"), menu)
-            stop_rec.triggered.connect(self._stop_recording)
+            stop_rec.triggered.connect(
+                lambda: self.recordingStopRequested.emit(self)
+            )
             menu.addAction(stop_rec)
         else:
             start_rec = QAction(self.tr("Start Recording…"), menu)
-            start_rec.triggered.connect(self._start_recording_from_menu)
+            start_rec.triggered.connect(
+                lambda: self.recordingStartRequested.emit(self)
+            )
             menu.addAction(start_rec)
 
         reconnect = QAction(self.tr("Reconnect"), menu)

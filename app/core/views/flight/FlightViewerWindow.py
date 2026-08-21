@@ -62,16 +62,11 @@ class _TileSubWindow(QMdiSubWindow):
     def closeEvent(self, event):  # noqa: N802 - Qt name
         widget = self.widget()
         if widget is not None:
-            # Stop any in-flight recording so the MP4 segment is finalized
-            # before the embedded tile is destroyed.
-            if getattr(widget, "is_recording", False):
-                try:
-                    widget._stop_recording()
-                except Exception:  # pragma: no cover - never block teardown
-                    pass
             # Forward the close to the embedded tile's signal chain so
             # the controller's ``_on_tile_close`` → ``tear_down`` path
-            # runs before the subwindow disappears.
+            # runs before the subwindow disappears. That path also stops
+            # and finalizes any in-flight recording (the controller owns
+            # it), so the bundle survives the tile being closed mid-flight.
             if hasattr(widget, "closeRequested"):
                 try:
                     widget.closeRequested.emit(widget)

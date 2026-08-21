@@ -249,8 +249,8 @@ class TestWizardAutoRecord:
     """
 
     def _fake_recording_manager(self, monkeypatch):
-        coordinator_module = import_module(
-            'core.controllers.streaming.components.StreamCoordinator'
+        recording_module = import_module(
+            'core.services.streaming.RecordingService'
         )
 
         class FakeRecordingManager(QObject):
@@ -272,7 +272,7 @@ class TestWizardAutoRecord:
             def get_recording_info(self):
                 return {"total_frames": 30}
 
-        monkeypatch.setattr(coordinator_module, "RecordingManager", FakeRecordingManager)
+        monkeypatch.setattr(recording_module, "RecordingManager", FakeRecordingManager)
 
     def test_auto_record_arms_from_wizard_data(self, window, tmp_path):
         window.apply_wizard_data({
@@ -440,10 +440,8 @@ class TestEndToEndBundle:
 
     def test_detections_and_flight_land_in_the_bundle(self, window, tmp_path, monkeypatch):
         """The operator's whole loop: start, detect, fly, stop, read the folder."""
-        # `import ...components.StreamCoordinator` binds the class, not the
-        # module: the components package re-exports it under the same name.
-        coordinator_module = import_module(
-            'core.controllers.streaming.components.StreamCoordinator'
+        recording_module = import_module(
+            'core.services.streaming.RecordingService'
         )
 
         # Stands in for the video writer only: this test is about the bundle,
@@ -472,7 +470,7 @@ class TestEndToEndBundle:
                 return {"total_frames": self.frames}
 
         monkeypatch.setattr(
-            coordinator_module, "RecordingManager", FakeRecordingManager
+            recording_module, "RecordingManager", FakeRecordingManager
         )
 
         coordinator = window.stream_coordinator
@@ -520,8 +518,8 @@ class TestEndToEndBundle:
         The whole flight used to be discarded because the flight-map option
         was read from a checkbox that only became enabled with that fix.
         """
-        coordinator_module = import_module(
-            'core.controllers.streaming.components.StreamCoordinator'
+        recording_module = import_module(
+            'core.services.streaming.RecordingService'
         )
 
         class FakeRecordingManager(QObject):
@@ -543,7 +541,7 @@ class TestEndToEndBundle:
             def get_recording_info(self):
                 return {}
 
-        monkeypatch.setattr(coordinator_module, "RecordingManager", FakeRecordingManager)
+        monkeypatch.setattr(recording_module, "RecordingManager", FakeRecordingManager)
 
         coordinator = window.stream_coordinator
         coordinator.is_connected = True
@@ -583,8 +581,8 @@ class TestEndToEndBundle:
         thing they lose, and the bundle has to say why rather than looking
         like it failed.
         """
-        coordinator_module = import_module(
-            'core.controllers.streaming.components.StreamCoordinator'
+        recording_module = import_module(
+            'core.services.streaming.RecordingService'
         )
 
         class FakeRecordingManager(QObject):
@@ -606,7 +604,7 @@ class TestEndToEndBundle:
             def get_recording_info(self):
                 return {"total_frames": 120}
 
-        monkeypatch.setattr(coordinator_module, "RecordingManager", FakeRecordingManager)
+        monkeypatch.setattr(recording_module, "RecordingManager", FakeRecordingManager)
 
         coordinator = window.stream_coordinator
         coordinator.is_connected = True
@@ -662,8 +660,8 @@ class TestEndToEndBundle:
         """The point of the XML is re-opening it; that must not need GPS."""
         from core.services.XmlService import XmlService
 
-        coordinator_module = import_module(
-            'core.controllers.streaming.components.StreamCoordinator'
+        recording_module = import_module(
+            'core.services.streaming.RecordingService'
         )
 
         class FakeRecordingManager(QObject):
@@ -685,7 +683,7 @@ class TestEndToEndBundle:
             def get_recording_info(self):
                 return {}
 
-        monkeypatch.setattr(coordinator_module, "RecordingManager", FakeRecordingManager)
+        monkeypatch.setattr(recording_module, "RecordingManager", FakeRecordingManager)
 
         coordinator = window.stream_coordinator
         coordinator.is_connected = True
@@ -708,10 +706,8 @@ class TestEndToEndBundle:
         assert len(images[0]["areas_of_interest"]) == 1
 
     def test_declining_detections_records_video_only(self, window, tmp_path, monkeypatch):
-        # `import ...components.StreamCoordinator` binds the class, not the
-        # module: the components package re-exports it under the same name.
-        coordinator_module = import_module(
-            'core.controllers.streaming.components.StreamCoordinator'
+        recording_module = import_module(
+            'core.services.streaming.RecordingService'
         )
 
         class FakeRecordingManager(QObject):
@@ -733,7 +729,7 @@ class TestEndToEndBundle:
             def get_recording_info(self):
                 return {}
 
-        monkeypatch.setattr(coordinator_module, "RecordingManager", FakeRecordingManager)
+        monkeypatch.setattr(recording_module, "RecordingManager", FakeRecordingManager)
 
         coordinator = window.stream_coordinator
         coordinator.is_connected = True

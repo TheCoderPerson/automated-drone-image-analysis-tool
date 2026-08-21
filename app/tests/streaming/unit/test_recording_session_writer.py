@@ -10,6 +10,7 @@ import pytest
 
 from core.services.streaming.RecordingSessionService import (
     BUNDLE_DIR_PREFIX,
+    detection_record_from_flight_envelope,
     DETECTIONS_LOG,
     DETECTIONS_SUBDIR,
     FRAMES_LOG,
@@ -87,6 +88,192 @@ class TestBundleAllocation:
         assert first != second
         assert second.name.endswith("_2")
         assert first.is_dir() and second.is_dir()
+
+
+class TestBundleLabels:
+    """Feed labels keep multi-drone bundles tellable apart on disk."""
+
+    def test_label_lands_in_the_folder_name(self, tmp_path):
+        bundle = allocate_bundle_dir(str(tmp_path), label="TEXSAR-01")
+
+        assert bundle.name.startswith(BUNDLE_DIR_PREFIX)
+        assert bundle.name.endswith("_TEXSAR-01")
+
+    def test_hostile_labels_are_sanitized(self, tmp_path):
+        """Aircraft names are operator-typed; the filesystem is not."""
+        bundle = allocate_bundle_dir(str(tmp_path), label='TEXSAR 01 / "thermal"')
+
+        assert bundle.is_dir()
+        name = bundle.name
+        assert "/" not in name and '"' not in name and " " not in name
+        assert "TEXSAR-01" in name
+
+    def test_config_feed_label_names_the_folder_and_manifest(self, tmp_path, config):
+        config.feed = {
+            "label": "TEXSAR-02",
+            "pairing_code": "K3F9PM",
+            "aircraft_name": "TEXSAR-02",
+            "aircraft_serial": "SN123",
+        }
+        writer = RecordingSessionWriter()
+        bundle = writer.start_session(config)
+        writer.finalize()
+
+        assert "TEXSAR-02" in os.path.basename(bundle)
+        manifest = read_manifest(bundle)
+        assert manifest["feed"]["pairing_code"] == "K3F9PM"
+        assert manifest["feed"]["aircraft_serial"] == "SN123"
+
+    def test_no_feed_keeps_the_streaming_folder_shape(self, tmp_path, config):
+        """Streaming-window bundles are unchanged by the feed addition."""
+        writer = RecordingSessionWriter()
+        bundle = writer.start_session(config)
+        writer.finalize()
+
+        assert os.path.basename(bundle).startswith(BUNDLE_DIR_PREFIX)
+        assert read_manifest(bundle)["feed"] == {}
+
+
+class TestPreEncodedThumbnails:
+    """ADIAT Flight ships JPEG thumbs; they must pass through verbatim."""
+
+    def _jpeg(self, width=40, height=30):
+        import cv2
+        ok, buf = cv2.imencode(".jpg", _thumbnail(width, height))
+        assert ok
+        return buf.tobytes()
+
+    def test_jpeg_bytes_written_verbatim_with_size(self, config):
+        jpeg = self._jpeg(40, 30)
+        writer = RecordingSessionWriter()
+        bundle = _finalized(writer, config)
+        writer.append_detection(_record(thumbnail=None, thumbnail_jpeg=jpeg))
+        writer.finalize()
+
+        rows = read_jsonl(os.path.join(bundle, DETECTIONS_LOG))
+        assert rows[0]["thumbnail"] == f"{DETECTIONS_SUBDIR}/detection_0000.jpg"
+        assert rows[0]["thumbnail_size"] == [40, 30]
+        stored = open(
+            os.path.join(bundle, DETECTIONS_SUBDIR, "detection_0000.jpg"), "rb"
+        ).read()
+        assert stored == jpeg  # byte-for-byte, no re-encode
+
+    def test_jpeg_bytes_win_over_a_raw_crop(self, config):
+        jpeg = self._jpeg(40, 30)
+        writer = RecordingSessionWriter()
+        bundle = _finalized(writer, config)
+        writer.append_detection(_record(thumbnail=_thumbnail(99, 99), thumbnail_jpeg=jpeg))
+        writer.finalize()
+
+        rows = read_jsonl(os.path.join(bundle, DETECTIONS_LOG))
+        assert rows[0]["thumbnail_size"] == [40, 30]
+
+    def test_corrupt_jpeg_is_still_stored_without_a_size(self, config):
+        """Size is a convenience; the bytes are the record."""
+        writer = RecordingSessionWriter()
+        bundle = _finalized(writer, config)
+        writer.append_detection(_record(thumbnail=None, thumbnail_jpeg=b"not-a-jpeg"))
+        writer.finalize()
+
+        rows = read_jsonl(os.path.join(bundle, DETECTIONS_LOG))
+        assert rows[0]["thumbnail"] is not None
+        assert "thumbnail_size" not in rows[0]
+
+
+class TestFlightEnvelopeConversion:
+    """ADIAT Flight envelopes map onto the bundle's DetectionRecord."""
+
+    def _envelope(self, **overrides):
+        payload = {
+            "track_key": "person|sess|7",
+            "class_name": "person",
+            "detector_id": "person",
+            "confidence": 0.87,
+            "captured_at_ms": 1_787_300_000_123,
+            "bbox_norm": [0.25, 0.5, 0.1, 0.2],
+            "location": {"lat": 30.25, "lon": -97.75},
+            "thumb_bytes": b"\xff\xd8jpeg-bytes",
+            "feed_id": "K3F9PM",
+        }
+        payload.update(overrides)
+        return payload
+
+    def test_full_envelope_maps_every_field(self):
+        frame = np.zeros((720, 1280, 3), dtype=np.uint8)
+
+        record = detection_record_from_flight_envelope(
+            self._envelope(), recorded_frame_index=42, frame_bgr=frame
+        )
+
+        assert record.track_key == "person|sess|7"
+        assert record.detection_type == "person"
+        assert record.confidence == pytest.approx(0.87)
+        assert record.captured_at_ms == 1_787_300_000_123
+        assert record.latitude == pytest.approx(30.25)
+        assert record.longitude == pytest.approx(-97.75)
+        assert record.recorded_frame_index == 42
+        # Normalized bbox projected against the actual frame.
+        assert record.bbox == (320, 360, 128, 144)
+        assert record.centroid == (384, 432)
+        assert record.frame_resolution == (1280, 720)
+        assert record.bbox_norm == pytest.approx((0.25, 0.5, 0.1, 0.2))
+        # The mobile thumb passes through pre-encoded; its crop geometry
+        # is unknown, so the origin is explicitly unknown too.
+        assert record.thumbnail_jpeg == b"\xff\xd8jpeg-bytes"
+        assert record.thumbnail is None
+        assert record.thumbnail_origin is None
+        # A live feed has no seekable timeline.
+        assert record.video_time_seconds is None
+
+    def test_missing_thumb_is_cropped_from_the_frame(self):
+        """A thumbless promotion still gets an image, from the live frame."""
+        frame = np.random.randint(0, 255, (720, 1280, 3), dtype=np.uint8)
+
+        record = detection_record_from_flight_envelope(
+            self._envelope(thumb_bytes=None), frame_bgr=frame
+        )
+
+        assert record.thumbnail_jpeg is None
+        assert record.thumbnail is not None
+        assert record.thumbnail_origin is not None
+        ox, oy = record.thumbnail_origin
+        h, w = record.thumbnail.shape[:2]
+        # The crop contains the detection bbox.
+        x, y, bw, bh = record.bbox
+        assert ox <= x and oy <= y
+        assert ox + w >= x + bw and oy + h >= y + bh
+
+    def test_no_frame_keeps_normalized_coordinates(self):
+        """Before the first frame there is nothing to project against."""
+        record = detection_record_from_flight_envelope(self._envelope())
+
+        assert record.bbox == (0, 0, 0, 0)
+        assert record.centroid is None
+        assert record.frame_resolution == (0, 0)
+        assert record.bbox_norm == pytest.approx((0.25, 0.5, 0.1, 0.2))
+        assert record.thumbnail_jpeg is not None
+
+    def test_detector_id_stands_in_for_a_missing_class(self):
+        record = detection_record_from_flight_envelope(
+            self._envelope(class_name=None, detector_id="dji-native")
+        )
+
+        assert record.detection_type == "dji-native"
+
+    def test_junk_envelope_degrades_without_raising(self):
+        record = detection_record_from_flight_envelope({
+            "bbox_norm": ["x", None],
+            "location": "nowhere",
+            "confidence": "high",
+            "captured_at_ms": "later",
+        })
+
+        assert record.bbox == (0, 0, 0, 0)
+        assert record.bbox_norm is None
+        assert record.latitude is None
+        assert record.confidence == 0.0
+        assert record.captured_at_ms is None
+        assert record.detection_type == "detection"
 
 
 class TestSessionLifecycle:

@@ -53,6 +53,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import time
 from dataclasses import dataclass, field, asdict
 from enum import Enum
@@ -98,6 +99,11 @@ class RecordingSessionConfig:
     source_type: str = ""
     resolution: Tuple[int, int] = (0, 0)
     fps_limit: Optional[int] = None
+    # Which feed this recording came from, for multi-feed sessions (the
+    # Flight Viewer records each drone independently). Recorded verbatim
+    # in the manifest; a ``label`` key also names the bundle folder so two
+    # drones recording at the same second stay distinguishable on disk.
+    feed: Dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -134,6 +140,17 @@ class DetectionRecord:
     centroid: Optional[Tuple[int, int]] = None
     confidence: float = 0.0
     detection_type: str = "detection"
+    # ADIAT Flight identifies tracks by string key, not integer id; both
+    # are kept so either pipeline's identity survives into the record.
+    track_key: Optional[str] = None
+    # The publisher's wall clock for the detection, in ms (ADIAT Flight).
+    # The natural join key against a flight session's telemetry rows,
+    # which carry the same clock.
+    captured_at_ms: Optional[int] = None
+    # Normalized [x, y, w, h] in 0..1, when the detection arrived that way
+    # (flight envelopes). Kept alongside the pixel bbox because the pixel
+    # projection depends on a frame having been seen.
+    bbox_norm: Optional[Tuple[float, float, float, float]] = None
     pixel_area: float = 0.0
     frame_resolution: Tuple[int, int] = (0, 0)
     first_frame_index: Optional[int] = None
@@ -148,9 +165,17 @@ class DetectionRecord:
     # BGR crop, encoded to JPEG on the writer thread. Callers must hand
     # over a copy they will not mutate.
     thumbnail: Optional[np.ndarray] = None
+    # Alternative to ``thumbnail``: an already-encoded JPEG (ADIAT Flight
+    # ships mobile-cropped thumbs over the data channel). Written to disk
+    # verbatim - no decode/re-encode round trip. When both are set, the
+    # pre-encoded bytes win.
+    thumbnail_jpeg: Optional[bytes] = None
     # Top-left of the crop within the source frame, so a consumer can
-    # re-project bbox/centroid onto the saved thumbnail.
-    thumbnail_origin: Tuple[int, int] = (0, 0)
+    # re-project bbox/centroid onto the saved thumbnail. ``None`` means
+    # the crop geometry is unknown (a thumbnail produced elsewhere, e.g.
+    # on the mobile publisher) - consumers must then center on the
+    # thumbnail rather than project the bbox into it.
+    thumbnail_origin: Optional[Tuple[int, int]] = (0, 0)
 
 
 def _json_safe(value: Any) -> Any:
@@ -183,16 +208,35 @@ def _json_safe(value: Any) -> Any:
     return str(value)
 
 
-def allocate_bundle_dir(root_dir: str, *, now: Optional[float] = None) -> Path:
+def _sanitize_label(label: Optional[str]) -> str:
+    """Reduce a feed label to filesystem-safe characters.
+
+    Aircraft names are operator-typed ("TEXSAR 01 / thermal"), so anything
+    outside a conservative set becomes ``-``. Capped so a runaway label
+    cannot produce an unwieldy path.
+    """
+    if not label:
+        return ""
+    cleaned = re.sub(r"[^A-Za-z0-9_-]+", "-", str(label)).strip("-")
+    return cleaned[:40]
+
+
+def allocate_bundle_dir(root_dir: str, *, now: Optional[float] = None,
+                        label: Optional[str] = None) -> Path:
     """Create and return a fresh, uniquely named bundle directory.
 
-    Named for the wall clock so a folder listing sorts chronologically. A
-    same-second collision (two recordings started back to back, or a
-    restored folder) gets a ``_2``, ``_3``, ... suffix rather than being
-    written into.
+    Named for the wall clock so a folder listing sorts chronologically,
+    plus an optional feed ``label`` so two feeds recording at the same
+    moment (a multi-drone Flight Viewer session) stay tellable apart in a
+    folder listing. A same-second collision still gets a ``_2``, ``_3``,
+    ... suffix rather than being written into.
     """
     stamp = time.strftime("%Y%m%d_%H%M%S", time.localtime(now if now is not None else time.time()))
-    base = Path(root_dir) / f"{BUNDLE_DIR_PREFIX}_{stamp}"
+    name = f"{BUNDLE_DIR_PREFIX}_{stamp}"
+    suffix_label = _sanitize_label(label)
+    if suffix_label:
+        name = f"{name}_{suffix_label}"
+    base = Path(root_dir) / name
     candidate = base
     suffix = 2
     while candidate.exists():
@@ -267,7 +311,9 @@ class RecordingSessionWriter:
 
         self.last_error = None
         try:
-            self._bundle_dir = allocate_bundle_dir(config.root_dir)
+            self._bundle_dir = allocate_bundle_dir(
+                config.root_dir, label=(config.feed or {}).get("label")
+            )
         except OSError as exc:
             self._bundle_dir = None
             self.last_error = str(exc)
@@ -503,36 +549,65 @@ class RecordingSessionWriter:
 
         payload = asdict(record)
         thumbnail = payload.pop("thumbnail", None)
+        thumbnail_jpeg = payload.pop("thumbnail_jpeg", None)
         payload["seq"] = seq
         payload["recorded_at_epoch_s"] = time.time()
 
-        thumb_name = self._write_thumbnail(seq, thumbnail)
+        thumb_name, thumb_size = self._write_thumbnail(seq, thumbnail, thumbnail_jpeg)
         payload["thumbnail"] = thumb_name
-        if thumb_name and isinstance(thumbnail, np.ndarray) and thumbnail.ndim >= 2:
+        if thumb_size is not None:
             # Saved so a consumer can size the exported AOI against the
             # thumbnail without re-decoding every JPEG.
-            payload["thumbnail_size"] = [int(thumbnail.shape[1]), int(thumbnail.shape[0])]
+            payload["thumbnail_size"] = [int(thumb_size[0]), int(thumb_size[1])]
 
         self._append_line(handles, DETECTIONS_LOG, payload)
         with self._counter_lock:
             self._detections_stored += 1
 
-    def _write_thumbnail(self, seq: int, thumbnail) -> Optional[str]:
-        """Encode a detection thumbnail; returns its bundle-relative path."""
-        if thumbnail is None or not isinstance(thumbnail, np.ndarray) or thumbnail.size == 0:
-            return None
+    def _write_thumbnail(
+        self, seq: int, thumbnail, thumbnail_jpeg=None,
+    ) -> Tuple[Optional[str], Optional[Tuple[int, int]]]:
+        """Store a detection thumbnail.
+
+        Returns ``(bundle-relative path, (width, height))`` or
+        ``(None, None)`` when there is nothing to store.
+
+        Pre-encoded JPEG bytes (ADIAT Flight's mobile-cropped thumbs) win
+        over a raw crop and are written verbatim; they are decoded once
+        here - on the writer thread - only to learn their dimensions for
+        the AOI export.
+        """
         relative = f"{DETECTIONS_SUBDIR}/detection_{seq:04d}.jpg"
         target = self._bundle_dir / relative
+
+        if isinstance(thumbnail_jpeg, (bytes, bytearray)) and thumbnail_jpeg:
+            target.parent.mkdir(parents=True, exist_ok=True)
+            with open(target, "wb") as handle:
+                handle.write(bytes(thumbnail_jpeg))
+            size = None
+            try:
+                decoded = cv2.imdecode(
+                    np.frombuffer(bytes(thumbnail_jpeg), dtype=np.uint8),
+                    cv2.IMREAD_COLOR,
+                )
+                if decoded is not None and decoded.ndim >= 2:
+                    size = (int(decoded.shape[1]), int(decoded.shape[0]))
+            except Exception:  # noqa: BLE001 - size is a convenience, not a requirement
+                size = None
+            return relative, size
+
+        if thumbnail is None or not isinstance(thumbnail, np.ndarray) or thumbnail.size == 0:
+            return None, None
         ok, buffer = cv2.imencode(
             ".jpg", thumbnail, [int(cv2.IMWRITE_JPEG_QUALITY), _THUMBNAIL_JPEG_QUALITY]
         )
         if not ok:
             self.logger.warning(f"Could not encode thumbnail for detection {seq}")
-            return None
+            return None, None
         target.parent.mkdir(parents=True, exist_ok=True)
         with open(target, "wb") as handle:
             handle.write(buffer.tobytes())
-        return relative
+        return relative, (int(thumbnail.shape[1]), int(thumbnail.shape[0]))
 
     def _write_telemetry(self, handles: Dict[str, Any], envelope: dict) -> None:
         payload = dict(envelope)
@@ -594,6 +669,7 @@ class RecordingSessionWriter:
                 "fps_limit": config.fps_limit if config else None,
                 "files": videos,
             },
+            "feed": _json_safe(config.feed) if config else {},
             "counts": counts,
             "options": {
                 "save_detections": bool(config.save_detections) if config else False,
@@ -606,6 +682,125 @@ class RecordingSessionWriter:
             },
         }
         return manifest
+
+
+def _crop_with_context(frame: np.ndarray, bbox_px: Tuple[int, int, int, int]):
+    """Crop a detection from ``frame`` with the gallery's context padding.
+
+    Mirrors the streaming tracker's thumbnail crop (1.5x context, minimum
+    120 px, clamped at the frame edges) so a desktop-cropped flight thumb
+    looks like every other thumbnail in the app. Returns
+    ``(crop, (origin_x, origin_y))`` or ``(None, None)`` when the bbox is
+    unusable.
+    """
+    x, y, w, h = bbox_px
+    if w <= 0 or h <= 0:
+        return None, None
+    frame_h, frame_w = frame.shape[:2]
+    zoom_w = max(120, int(w * 1.5))
+    zoom_h = max(120, int(h * 1.5))
+    cx = x + w // 2
+    cy = y + h // 2
+    x1 = max(0, cx - zoom_w // 2)
+    y1 = max(0, cy - zoom_h // 2)
+    x2 = min(frame_w, cx + zoom_w // 2)
+    y2 = min(frame_h, cy + zoom_h // 2)
+    if x2 <= x1 or y2 <= y1:
+        return None, None
+    return frame[y1:y2, x1:x2].copy(), (x1, y1)
+
+
+def detection_record_from_flight_envelope(
+    envelope: dict,
+    *,
+    recorded_frame_index: Optional[int] = None,
+    frame_bgr: Optional[np.ndarray] = None,
+) -> DetectionRecord:
+    """Build a :class:`DetectionRecord` from an ADIAT Flight envelope.
+
+    Flight detections arrive over the data channel in a different shape
+    from streaming tracks: a normalized bbox, a mobile-cropped JPEG thumb,
+    and a ``location`` the *publisher* geotagged (so no desktop-side
+    position resolution is needed or wanted). This converter maps that
+    shape onto the bundle's record:
+
+    * ``bbox_norm`` is stored as-is; the pixel ``bbox``/``centroid`` are
+      projected against ``frame_bgr`` when a frame is available (they stay
+      zero otherwise - normalized coordinates are the flight source of
+      truth).
+    * The mobile thumb passes through as ``thumbnail_jpeg`` with
+      ``thumbnail_origin=None`` (its crop geometry is unknown, so the AOI
+      export centers on it). When the envelope has no thumb, the latest
+      video frame stands in: the detection is cropped with the gallery's
+      context padding, and the known origin makes the AOI projection
+      exact.
+    * ``video_time_seconds`` stays ``None`` - a live feed has no seekable
+      timeline; ``captured_at_ms`` (the publisher's clock) joins against
+      the same session's telemetry, and ``recorded_frame_index`` locates
+      the moment in the recorded MP4.
+    """
+    envelope = envelope if isinstance(envelope, dict) else {}
+
+    bbox_norm = envelope.get("bbox_norm")
+    norm: Optional[Tuple[float, float, float, float]] = None
+    if isinstance(bbox_norm, (list, tuple)) and len(bbox_norm) >= 4:
+        try:
+            norm = tuple(float(v) for v in bbox_norm[:4])
+        except (TypeError, ValueError):
+            norm = None
+
+    bbox: Tuple[int, int, int, int] = (0, 0, 0, 0)
+    centroid: Optional[Tuple[int, int]] = None
+    frame_resolution: Tuple[int, int] = (0, 0)
+    pixel_area = 0.0
+    if frame_bgr is not None and getattr(frame_bgr, "ndim", 0) >= 2 and norm is not None:
+        frame_h, frame_w = frame_bgr.shape[:2]
+        frame_resolution = (int(frame_w), int(frame_h))
+        bbox = (
+            int(round(norm[0] * frame_w)),
+            int(round(norm[1] * frame_h)),
+            int(round(norm[2] * frame_w)),
+            int(round(norm[3] * frame_h)),
+        )
+        centroid = (bbox[0] + bbox[2] // 2, bbox[1] + bbox[3] // 2)
+        pixel_area = float(bbox[2] * bbox[3])
+
+    thumb = envelope.get("thumb_bytes")
+    thumbnail_jpeg = bytes(thumb) if isinstance(thumb, (bytes, bytearray)) and thumb else None
+    thumbnail = None
+    thumbnail_origin: Optional[Tuple[int, int]] = None
+    if thumbnail_jpeg is None and frame_bgr is not None and bbox != (0, 0, 0, 0):
+        thumbnail, thumbnail_origin = _crop_with_context(frame_bgr, bbox)
+
+    location = envelope.get("location") if isinstance(envelope.get("location"), dict) else {}
+    lat = location.get("lat")
+    lon = location.get("lon")
+
+    confidence = envelope.get("confidence")
+    captured = envelope.get("captured_at_ms")
+
+    return DetectionRecord(
+        track_id=0,
+        bbox=bbox,
+        centroid=centroid,
+        confidence=float(confidence) if isinstance(confidence, (int, float)) else 0.0,
+        detection_type=str(
+            envelope.get("class_name") or envelope.get("detector_id") or "detection"
+        ),
+        track_key=str(envelope.get("track_key")) if envelope.get("track_key") else None,
+        captured_at_ms=int(captured) if isinstance(captured, (int, float)) else None,
+        bbox_norm=norm,
+        pixel_area=pixel_area,
+        frame_resolution=frame_resolution,
+        first_frame_index=None,
+        video_time_seconds=None,
+        recorded_frame_index=recorded_frame_index,
+        latitude=float(lat) if isinstance(lat, (int, float)) else None,
+        longitude=float(lon) if isinstance(lon, (int, float)) else None,
+        thumbnail=thumbnail,
+        thumbnail_jpeg=thumbnail_jpeg,
+        thumbnail_origin=thumbnail_origin,
+    )
 
 
 def _iso(epoch_s: Optional[float]) -> Optional[str]:
@@ -662,6 +857,7 @@ __all__ = [
     "RecordingSessionConfig",
     "RecordingSessionWriter",
     "allocate_bundle_dir",
+    "detection_record_from_flight_envelope",
     "read_jsonl",
     "read_manifest",
 ]

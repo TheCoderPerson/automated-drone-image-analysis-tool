@@ -15,14 +15,19 @@ variant lives in this module docstring per CLAUDE.md §2.2.1.
 
 from __future__ import annotations
 
+import os
 from typing import Optional
 
-from PySide6.QtCore import QObject, Signal
+from PySide6.QtCore import QObject, QSettings, Signal
 
 from core.controllers.flight.DetectionThumbCropper import DetectionThumbCropper
 from core.services.LoggerService import LoggerService
 from core.services.streaming.DetectionFeedService import DetectionFeedService
 from core.services.streaming.FlightSessionStore import FlightSessionStore
+from core.services.streaming.RecordingService import RecordingService
+from core.services.streaming.RecordingSessionService import (
+    detection_record_from_flight_envelope,
+)
 from core.services.streaming.WebRTCStreamService import WebRTCStreamService
 from core.services.streaming.signaling import SignalingChannel
 from core.services.streaming.TelemetryFeedService import TelemetryFeedService
@@ -85,6 +90,9 @@ class FlightTileController(QObject):
     sessionEstablished = Signal(str, str)        # feed_id, session_id
     sessionChanged = Signal(str, str, str)       # feed_id, old_session_id, new_session_id
     resumeComplete = Signal(str, str, int)       # feed_id, session_id, last_seq
+    # A recording of this feed finished; carries finalize_bundle's result
+    # (bundle_dir, artifacts, counts, errors) so the viewer can surface it.
+    recordingFinished = Signal(str, dict)  # feed_id, result
     # Fires when an auto-resume attempt aborted before the tile
     # materialized — operator cancelled, timeout fired, mobile/Worker
     # haven't shipped §20 awaiting_viewer logic yet, etc. The viewer
@@ -136,6 +144,15 @@ class FlightTileController(QObject):
         # → viewer.remove_tile → subwindow.close → loop). Tearing down
         # twice double-disconnects signals + double-deletes services.
         self._teardown_started: bool = False
+        # Per-feed recording (plan §15 M3, extended): one RecordingService
+        # per tile, so every inbound feed is independently recordable and
+        # two drones recording at once write two separate bundles. The
+        # service captures this feed's video frames, its promoted
+        # detections and its telemetry into one reviewable folder.
+        self._recording = RecordingService(self.logger, parent=self)
+        self._recording.recordingStateChanged.connect(self._on_recording_state_changed)
+        self._recording.recordingBundleReady.connect(self._on_recording_bundle_ready)
+        self._recording.errorOccurred.connect(self._on_recording_error)
         # Desktop-side thumbnail cropper (plan §19.4.1). Created in
         # ``_materialize_tile`` once the FlightTile (and its overlay,
         # which owns the frame ring) exists.
@@ -493,6 +510,8 @@ class FlightTileController(QObject):
         # the gallery filter dropdown + retroactively patch existing
         # row labels.
         tile.displayNameChanged.connect(self.feedDisplayNameChanged.emit)
+        tile.recordingStartRequested.connect(self._on_recording_start_requested)
+        tile.recordingStopRequested.connect(self._on_recording_stop_requested)
         self._tile = tile
 
         feed_service = DetectionFeedService(parent=self)
@@ -548,6 +567,9 @@ class FlightTileController(QObject):
         if svc is None:
             return
         svc.frameReady.connect(tile.on_frame)
+        # Recording taps the same frame stream; a cheap no-op per frame
+        # while no recording is active.
+        svc.frameReady.connect(self._on_frame_for_recording)
         svc.streamStatsChanged.connect(tile.update_stats)
         svc.dataChannelMessage.connect(feed_service.handle_message)
         svc.dataChannelMessage.connect(telemetry_service.handle_message)
@@ -744,6 +766,11 @@ class FlightTileController(QObject):
                     f"FlightTileController({self._pairing_code}): "
                     f"detection persist skipped: {exc}"
                 )
+        # An active recording stores the promoted detection alongside the
+        # video. Promotions are the unit of record (same as the gallery);
+        # snapshot backfill routes through here too, so detections missed
+        # during a brief disconnect still reach the bundle.
+        self._record_detection(merged)
         # Detections render in the shared Mission Gallery dock; per-tile
         # detection panels are gone (collapsed into the gallery to avoid
         # duplicate rows showing the same event in two places).
@@ -832,6 +859,9 @@ class FlightTileController(QObject):
                     f"FlightTileController({self._pairing_code}): "
                     "HUD update failed"
                 )
+        # An active recording gets the same enriched fixes, which is what
+        # bounds its flight map to the window that was actually recorded.
+        self._recording.append_telemetry(envelope)
         if self._pairing_code:
             self.telemetryReceived.emit(self._pairing_code, envelope)
 
@@ -914,6 +944,160 @@ class FlightTileController(QObject):
             self.detectionSnapshot.emit(self._pairing_code, decorated)
 
     # ------------------------------------------------------------------
+    # per-feed recording (plan §15 M3, extended to full session bundles)
+    # ------------------------------------------------------------------
+
+    _RECORDING_DIR_KEY = "recording/output_dir"
+
+    def _recording_settings(self) -> QSettings:
+        return QSettings("ADIAT", "FlightViewer")
+
+    def _default_recording_dir(self) -> str:
+        # ~/Videos/ADIAT keeps recordings out of the user's home root -
+        # the same default the tile's video-only recorder used.
+        return os.path.join(os.path.expanduser("~"), "Videos", "ADIAT")
+
+    def _on_recording_start_requested(self, tile) -> None:
+        """Start recording this feed into a fresh session bundle."""
+        if self._recording.is_recording:
+            return
+
+        frame = getattr(tile, "_latest_frame_bgr", None)
+        if frame is None or getattr(frame, "size", 0) == 0:
+            # The writer is sized from the source resolution, which is
+            # only known once a frame has arrived. Recording before video
+            # flows would size a 4K feed at a guessed fallback.
+            tile.set_recording_state(
+                False, self.tr("Waiting for video before recording can start")
+            )
+            return
+
+        settings = self._recording_settings()
+        start_dir = str(
+            settings.value(self._RECORDING_DIR_KEY, self._default_recording_dir())
+        )
+        from PySide6.QtWidgets import QFileDialog
+
+        chosen = QFileDialog.getExistingDirectory(
+            tile, self.tr("Choose recording folder"), start_dir
+        )
+        if not chosen:
+            return
+        settings.setValue(self._RECORDING_DIR_KEY, chosen)
+        settings.sync()
+
+        frame_h, frame_w = frame.shape[:2]
+        started = self._recording.start(
+            chosen, (int(frame_w), int(frame_h)), self._recording_metadata(tile)
+        )
+        if started:
+            self.logger.info(
+                f"FlightTileController({self._pairing_code}): recording to "
+                f"{self._recording.recording_bundle_dir}"
+            )
+
+    def _recording_metadata(self, tile) -> dict:
+        """Describe this feed for the bundle's manifest and folder name."""
+        feed: dict = {
+            "label": tile.windowTitle() or (self._pairing_code or ""),
+            "pairing_code": self._pairing_code,
+            "session_id": self._session_id,
+        }
+        # The tile caches the aircraft identity from every telemetry
+        # envelope it renders, regardless of which path delivered it; the
+        # feed service's last raw envelope is the fallback for a tile that
+        # has not drawn its HUD yet.
+        candidates = [
+            (getattr(tile, "_aircraft_name", None), getattr(tile, "_aircraft_serial", None)),
+        ]
+        if self._telemetry_service is not None:
+            envelope = self._telemetry_service.last_envelope
+            if isinstance(envelope, dict):
+                candidates.append(
+                    (envelope.get("aircraft_name"), envelope.get("aircraft_serial"))
+                )
+        for name, serial in candidates:
+            if isinstance(name, str) and name.strip() and "aircraft_name" not in feed:
+                feed["aircraft_name"] = name.strip()
+            if isinstance(serial, str) and serial.strip() and "aircraft_serial" not in feed:
+                feed["aircraft_serial"] = serial.strip()
+        return {
+            "algorithm": "ADIAT Flight",
+            "source_url": self._pairing_code or "",
+            "source_type": "webrtc",
+            # Flight detections and telemetry are always worth keeping -
+            # there is no algorithm-side cost knob like the streaming
+            # window's checkboxes, and the publisher already geotags.
+            "save_detections": True,
+            "save_flight_map": True,
+            "feed": feed,
+        }
+
+    def _on_recording_stop_requested(self, _tile) -> None:
+        self._recording.stop()
+
+    def _on_frame_for_recording(self, frame_bgr, _ts: float, _frame_n: int) -> None:
+        """Feed the recording from the same stream the tile renders.
+
+        The mobile publisher burns detection overlays into the video, so
+        the recorded frames show exactly what the operator saw.
+        """
+        if self._recording.is_recording and frame_bgr is not None:
+            self._recording.add_frame(frame_bgr)
+
+    def _record_detection(self, envelope: dict) -> None:
+        """Store a promoted detection in the active recording, if any."""
+        if not self._recording.is_recording:
+            return
+        tile = self._tile
+        frame = getattr(tile, "_latest_frame_bgr", None) if tile is not None else None
+        try:
+            record = detection_record_from_flight_envelope(
+                envelope,
+                recorded_frame_index=self._recording.recorded_frame_index(),
+                frame_bgr=frame,
+            )
+            self._recording.append_detection(record)
+        except Exception as exc:  # noqa: BLE001 - recording must not break the feed
+            self.logger.error(
+                f"FlightTileController({self._pairing_code}): "
+                f"could not record detection: {exc}"
+            )
+
+    def _on_recording_state_changed(self, recording: bool, path_or_message: str) -> None:
+        tile = self._tile
+        if tile is None:
+            return
+        if recording:
+            filename = os.path.basename(path_or_message or "")
+            tile.set_recording_state(
+                True, self.tr("REC ● {filename}").format(filename=filename)
+            )
+        else:
+            tile.set_recording_state(False)
+
+    def _on_recording_bundle_ready(self, result: dict) -> None:
+        bundle_dir = str(result.get("bundle_dir") or "")
+        counts = result.get("counts") or {}
+        self.logger.info(
+            f"FlightTileController({self._pairing_code}): recording saved to "
+            f"{bundle_dir} ({counts.get('detections_stored', 0)} detections, "
+            f"{counts.get('telemetry_fixes', 0)} fixes)"
+        )
+        tile = self._tile
+        if tile is not None:
+            tile.set_recording_result(self.tr("Recording saved"), bundle_dir)
+        if self._pairing_code:
+            self.recordingFinished.emit(self._pairing_code, dict(result))
+
+    def _on_recording_error(self, message: str) -> None:
+        tile = self._tile
+        if tile is not None:
+            tile.set_recording_result(
+                self.tr("Recording error: {message}").format(message=message)
+            )
+
+    # ------------------------------------------------------------------
     # tile commands
     # ------------------------------------------------------------------
 
@@ -957,6 +1141,15 @@ class FlightTileController(QObject):
         if self._teardown_started:
             return
         self._teardown_started = True
+        # Closing the tile must not cost the operator the recording they
+        # were making - stop and finalize before the frame source goes away.
+        try:
+            self._recording.cleanup()
+        except Exception:  # noqa: BLE001 - teardown continues regardless
+            self.logger.warning(
+                f"FlightTileController({self._pairing_code}): "
+                "recording cleanup raised during teardown"
+            )
         if self._service is not None:
             try:
                 self._service.cleanup()
