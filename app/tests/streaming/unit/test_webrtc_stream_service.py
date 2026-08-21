@@ -17,8 +17,10 @@ smoke path in plan §14.
 
 from __future__ import annotations
 
+import asyncio
 import os
 import sys
+import warnings
 
 import pytest
 from PySide6.QtWidgets import QApplication
@@ -252,3 +254,252 @@ def test_missing_aiortc_emits_error_and_exits_cleanly(qapp, monkeypatch) -> None
     svc.run()
     assert errors, "errorOccurred should fire when aiortc cannot be imported"
     assert "aiortc" in errors[0].lower()
+
+
+class MediaStreamErrorLike(Exception):
+    """Stand-in for aiortc's ``MediaStreamError``, which carries no message.
+
+    Declared here rather than imported so these tests hold whether or not
+    aiortc is installed in the environment.
+    """
+
+
+class TestCleanShutdown:
+    """Field report: closing the app during a live feed printed three
+    "Task was destroyed but it is pending!" warnings, then a "Video track
+    error:" with no message at all.
+
+    Both are the ordinary close path complaining about itself: the loop
+    was closed with work still in flight, and the track ending because
+    the peer went away was reported as a fault.
+    """
+
+    def _service(self):
+        return WebRTCStreamService(
+            signaling=InMemorySignalingChannel(), pairing_code="ABC234"
+        )
+
+    # -- draining the loop before closing it ---------------------------
+
+    def test_drain_leaves_nothing_pending(self, qapp) -> None:
+        """What asyncio complains about at collection time is a task that
+        was never finished; after the drain there are none."""
+        svc = self._service()
+        loop = asyncio.new_event_loop()
+        try:
+            async def forever():
+                await asyncio.sleep(3600)
+
+            async def seed():
+                loop.create_task(forever())      # e.g. websockets keepalive
+                loop.create_task(forever())      # e.g. an orphaned _tear_down
+                await asyncio.sleep(0)
+
+            loop.run_until_complete(seed())
+            assert [t for t in asyncio.all_tasks(loop) if not t.done()]
+
+            svc._drain_loop(loop)
+
+            assert not [t for t in asyncio.all_tasks(loop) if not t.done()]
+        finally:
+            loop.close()
+            svc.cleanup()
+
+    def test_drain_lets_cancellation_finish_its_cleanup(self, qapp) -> None:
+        """Cancelling is not enough - a task's ``finally`` is where the
+        transport actually gets released, and that only runs if the
+        cancellation is awaited."""
+        svc = self._service()
+        loop = asyncio.new_event_loop()
+        released = []
+        try:
+            async def holds_a_transport():
+                try:
+                    await asyncio.sleep(3600)
+                finally:
+                    await asyncio.sleep(0)       # yields, as a real close does
+                    released.append("closed")
+
+            async def seed():
+                loop.create_task(holds_a_transport())
+                await asyncio.sleep(0)
+
+            loop.run_until_complete(seed())
+
+            svc._drain_loop(loop)
+
+            assert released == ["closed"]
+        finally:
+            loop.close()
+            svc.cleanup()
+
+    def test_drain_of_an_idle_loop_is_a_no_op(self, qapp) -> None:
+        svc = self._service()
+        loop = asyncio.new_event_loop()
+        try:
+            svc._drain_loop(loop)
+            assert loop.is_closed() is False
+        finally:
+            loop.close()
+            svc.cleanup()
+
+    def test_drain_of_a_closed_loop_is_silent(self, qapp) -> None:
+        """A shutdown path that can throw turns a clean close into a crash
+        report - and one that warns is still noise on the console the
+        operator is watching."""
+        svc = self._service()
+        loop = asyncio.new_event_loop()
+        loop.close()
+
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always")
+            svc._drain_loop(loop)  # must not raise
+
+        assert [str(w.message) for w in caught] == []
+        svc.cleanup()
+
+    # -- one teardown, awaited -----------------------------------------
+
+    def test_stop_starts_exactly_one_teardown(self, qapp) -> None:
+        """``request_disconnect`` then ``cleanup`` - the ordinary
+        close-the-tile-then-close-the-window sequence - must not stack
+        teardowns."""
+        svc = self._service()
+        loop = asyncio.new_event_loop()
+        started = []
+
+        async def fake_tear_down():
+            started.append(1)
+            await asyncio.sleep(3600)
+
+        svc._tear_down = fake_tear_down
+        try:
+            async def stop_twice():
+                svc._begin_tear_down()
+                svc._begin_tear_down()
+                await asyncio.sleep(0)
+
+            loop.run_until_complete(stop_twice())
+
+            assert started == [1]
+        finally:
+            svc._drain_loop(loop)
+            loop.close()
+            svc.cleanup()
+
+    def test_finish_awaits_the_teardown_already_under_way(self, qapp) -> None:
+        """The orphan in the field report was a half-run teardown: the loop
+        stopped mid-flight, and the finally block then started a *second*
+        one that skipped the cancel the first had already claimed."""
+        svc = self._service()
+        loop = asyncio.new_event_loop()
+        calls = []
+
+        async def fake_tear_down():
+            calls.append("start")
+            await asyncio.sleep(0)
+            calls.append("done")
+
+        svc._tear_down = fake_tear_down
+        try:
+            async def stop_then_finish():
+                svc._begin_tear_down()
+                await asyncio.sleep(0)          # teardown starts, then suspends
+                await svc._finish_tear_down()
+
+            loop.run_until_complete(stop_then_finish())
+
+            assert calls == ["start", "done"], "one teardown, run to completion"
+            assert svc._teardown_task is None
+        finally:
+            loop.close()
+            svc.cleanup()
+
+    def test_finish_tears_down_when_nothing_started_one(self, qapp) -> None:
+        """A terminal negotiation error ends the loop without a stop
+        request; the finally block is then the only teardown there is."""
+        svc = self._service()
+        loop = asyncio.new_event_loop()
+        calls = []
+
+        async def fake_tear_down():
+            calls.append("start")
+
+        svc._tear_down = fake_tear_down
+        try:
+            loop.run_until_complete(svc._finish_tear_down())
+
+            assert calls == ["start"]
+        finally:
+            loop.close()
+            svc.cleanup()
+
+    def test_schedule_stop_without_a_running_loop_still_sets_stop(self, qapp) -> None:
+        svc = self._service()
+        svc._schedule_stop()
+
+        assert svc._stop.is_set() is True
+        assert svc._teardown_task is None
+        svc.cleanup()
+
+    # -- the empty "Video track error:" --------------------------------
+
+    def test_a_track_ending_during_shutdown_is_not_an_error(self, qapp) -> None:
+        """MediaStreamError carries no message, so the operator was shown
+        "Video track error:" and nothing else - for the close they had just
+        asked for."""
+        svc = self._service()
+        errors = []
+        svc.errorOccurred.connect(errors.append)
+
+        class EndedTrack:
+            async def recv(self):
+                svc._stop.set()                  # the close lands first
+                raise MediaStreamErrorLike()
+
+        loop = asyncio.new_event_loop()
+        try:
+            loop.run_until_complete(svc._consume_video(EndedTrack()))
+        finally:
+            loop.close()
+
+        assert errors == []
+        svc.cleanup()
+
+    def test_a_track_failing_mid_flight_still_reports(self, qapp) -> None:
+        """The publisher dropping out unannounced is a real event - and it
+        now names the failure instead of trailing off after the colon."""
+        svc = self._service()
+        errors = []
+        svc.errorOccurred.connect(errors.append)
+
+        class BrokenTrack:
+            async def recv(self):
+                raise MediaStreamErrorLike()     # no message, as aiortc's has none
+
+        loop = asyncio.new_event_loop()
+        try:
+            loop.run_until_complete(svc._consume_video(BrokenTrack()))
+        finally:
+            loop.close()
+
+        assert errors == ["Video track error: MediaStreamErrorLike"]
+        svc.cleanup()
+
+    def test_a_message_bearing_failure_is_passed_through(self, qapp) -> None:
+        svc = self._service()
+        errors = []
+        svc.errorOccurred.connect(errors.append)
+
+        class BrokenTrack:
+            async def recv(self):
+                raise RuntimeError("decoder gave up")
+
+        loop = asyncio.new_event_loop()
+        try:
+            loop.run_until_complete(svc._consume_video(BrokenTrack()))
+        finally:
+            loop.close()
+
+        assert errors == ["Video track error: decoder gave up"]
+        svc.cleanup()

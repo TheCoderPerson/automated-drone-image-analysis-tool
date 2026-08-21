@@ -153,6 +153,10 @@ class WebRTCStreamService(QThread):
         self._loop: Optional[asyncio.AbstractEventLoop] = None
         self._loop_ready = threading.Event()
         self._stop = threading.Event()
+        # The teardown _schedule_stop starts, so run()'s finally block can
+        # await that one instead of racing a second one against it.
+        self._teardown_task: Optional[asyncio.Future] = None
+        self._torn_down = False
 
         self._pc = None
         self._frame_n = 0
@@ -254,7 +258,30 @@ class WebRTCStreamService(QThread):
             self._stop.set()
             return
         loop.call_soon_threadsafe(self._stop.set)
-        loop.call_soon_threadsafe(lambda: asyncio.ensure_future(self._tear_down()))
+        loop.call_soon_threadsafe(self._begin_tear_down)
+
+    def _begin_tear_down(self) -> None:
+        """Start teardown on the loop thread, at most once.
+
+        Held in ``_teardown_task`` rather than left fire-and-forget:
+        stopping the loop is what ends ``_main``, so an untracked task
+        was routinely suspended mid-teardown when ``run_until_complete``
+        returned - and then run()'s finally block began a *second*
+        teardown that skipped the signaling-task cancel (the first had
+        already claimed it), leaving the orphan pending until the garbage
+        collector complained about it.
+        """
+        if self._torn_down:
+            # A stop request queues this with ``call_soon_threadsafe``, and
+            # a queued callback survives the loop stopping - so without
+            # this guard the drain's own ``run_until_complete`` would run a
+            # leftover one and start a whole second teardown after the
+            # first had finished.
+            return
+        task = self._teardown_task
+        if task is not None and not task.done():
+            return
+        self._teardown_task = asyncio.ensure_future(self._tear_down())
 
     def reset(self) -> None:
         """Lifecycle hook (CLAUDE.md §2.2.1) — drop transient state."""
@@ -321,6 +348,7 @@ class WebRTCStreamService(QThread):
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         self._loop = loop
+        self._torn_down = False
         self._sas_confirmation = asyncio.Event()
         self._loop_ready.set()
 
@@ -335,12 +363,69 @@ class WebRTCStreamService(QThread):
             )
         finally:
             try:
-                loop.run_until_complete(self._tear_down())
+                loop.run_until_complete(self._finish_tear_down())
             except Exception:  # pragma: no cover - defensive
                 pass
+            self._drain_loop(loop)
             loop.close()
             self._loop = None
             self.connectionStatusChanged.emit(False, "Disconnected")
+
+    async def _finish_tear_down(self) -> None:
+        """Complete teardown exactly once, whichever way the loop ended.
+
+        A stop request has usually started one already; finish that.
+        Otherwise (a terminal negotiation error, a crash) nothing has
+        torn down yet and this is the only teardown there will be.
+        """
+        task = self._teardown_task
+        self._teardown_task = None
+        # Claim teardown *before* awaiting, not after. A stop request's
+        # queued ``_begin_tear_down`` can land while this coroutine is
+        # suspended below - and left unclaimed it would read a cleared
+        # ``_teardown_task``, conclude nobody was tearing down, and start
+        # a second teardown alongside this one.
+        self._torn_down = True
+        if task is None:
+            await self._tear_down()
+            return
+        try:
+            await task
+        except asyncio.CancelledError:  # pragma: no cover - best effort
+            pass
+
+    def _drain_loop(self, loop: asyncio.AbstractEventLoop) -> None:
+        """Settle everything still scheduled, then let the loop close quietly.
+
+        ``loop.close()`` on a loop with pending work makes asyncio print
+        "Task was destroyed but it is pending!" once per task as the
+        garbage collector reaches them - which is what a live feed's close
+        used to look like on the console. Teardown accounts for the tasks
+        this service owns; this covers the rest, which nobody here holds a
+        handle to: the websockets keepalive its signaling subscription
+        brought along, and whatever aiortc still has in flight.
+
+        Cancelling and then *awaiting* them is what turns that into a
+        clean exit: a cancelled task is not finished until its
+        ``CancelledError`` has propagated through its ``finally`` blocks,
+        which is also where the transport actually gets released.
+        """
+        if loop.is_closed():
+            # Nothing to settle, and handing a closed loop a coroutine it
+            # will never await raises a RuntimeWarning - noise, from the
+            # code whose whole job here is to keep the close quiet.
+            return
+        try:
+            pending = [task for task in asyncio.all_tasks(loop) if not task.done()]
+            for task in pending:
+                task.cancel()
+            if pending:
+                loop.run_until_complete(
+                    asyncio.gather(*pending, return_exceptions=True)
+                )
+            loop.run_until_complete(loop.shutdown_asyncgens())
+        except Exception as exc:  # pragma: no cover - shutdown must not raise
+            self.logger.debug(f"WebRTC loop drain incomplete: {exc}")
 
     # ------------------------------------------------------------------
     # asyncio main loop
@@ -619,7 +704,16 @@ class WebRTCStreamService(QThread):
                 try:
                     frame = await track.recv()
                 except Exception as exc:
-                    self.errorOccurred.emit(f"Video track error: {exc}")
+                    # A track ends when the peer goes away, which is what
+                    # closing the app or the tile *is*. Reporting that as
+                    # an error - and with an empty message, since
+                    # MediaStreamError carries none - told the operator
+                    # something had gone wrong with a shutdown they asked
+                    # for.
+                    if self._stop.is_set():
+                        return
+                    detail = str(exc) or type(exc).__name__
+                    self.errorOccurred.emit(f"Video track error: {detail}")
                     return
 
                 ndarray = frame.to_ndarray(format="bgr24")
