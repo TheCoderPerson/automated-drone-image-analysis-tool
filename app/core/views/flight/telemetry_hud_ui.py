@@ -23,14 +23,14 @@ class Ui_TelemetryHud(object):
         if not TelemetryHud.objectName():
             TelemetryHud.setObjectName(u"TelemetryHud")
         TelemetryHud.resize(640, 56)
-        TelemetryHud.setStyleSheet(u"QWidget { background-color: rgba(0, 0, 0, 160); color: #e8e8e8; }\n"
+        TelemetryHud.setStyleSheet(u"QWidget { background-color: rgba(0, 0, 0, 190); color: #f2f2f2; }\n"
 "QLabel { font-family: \"Consolas\", \"Courier New\", monospace; font-size: 11px; }\n"
 "QLabel#staleBadge { color: #ff8080; font-weight: bold; }\n"
 "QLabel#batteryChip { padding-left: 4px; padding-right: 4px; border-radius: 2px; }")
         self.hudLayout = QVBoxLayout(TelemetryHud)
         self.hudLayout.setSpacing(1)
         self.hudLayout.setObjectName(u"hudLayout")
-        self.hudLayout.setContentsMargins(6, 2, 6, 2)
+        self.hudLayout.setContentsMargins(6, 4, 6, 4)
         self.row1Layout = QHBoxLayout()
         self.row1Layout.setSpacing(12)
         self.row1Layout.setObjectName(u"row1Layout")
@@ -89,6 +89,11 @@ class Ui_TelemetryHud(object):
 
         self.row2Layout.addWidget(self.batteryChip)
 
+        self.flightModeCaption = QLabel(TelemetryHud)
+        self.flightModeCaption.setObjectName(u"flightModeCaption")
+
+        self.row2Layout.addWidget(self.flightModeCaption)
+
         self.flightModeLabel = QLabel(TelemetryHud)
         self.flightModeLabel.setObjectName(u"flightModeLabel")
 
@@ -117,6 +122,7 @@ class Ui_TelemetryHud(object):
         self.verticalSpeedLabel.setText(QCoreApplication.translate("TelemetryHud", u"\u2195 \u2014", None))
         self.batteryLabel.setText(QCoreApplication.translate("TelemetryHud", u"BAT", None))
         self.batteryChip.setText(QCoreApplication.translate("TelemetryHud", u"\u2014", None))
+        self.flightModeCaption.setText(QCoreApplication.translate("TelemetryHud", u"MODE", None))
         self.flightModeLabel.setText(QCoreApplication.translate("TelemetryHud", u"\u2014", None))
         pass
     # retranslateUi

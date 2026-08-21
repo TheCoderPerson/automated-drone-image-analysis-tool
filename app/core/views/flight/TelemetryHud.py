@@ -92,6 +92,11 @@ class TelemetryHud(TranslationMixin, QWidget, Ui_TelemetryHud):
         # dropped when nothing is wrong. Callers driving the HUD from a
         # file switch this off via :meth:`set_staleness_tracking`.
         self._staleness_enabled = True
+        # The .ui's own sheet, carrying the translucent backing and the
+        # monospace label rules. Stale/clear COMPOSE against this rather
+        # than replacing it - blanking it stripped the background and left
+        # unreadable text over the video.
+        self._base_stylesheet = self.styleSheet()
 
         # 1 Hz staleness check — cheap; pure label updates.
         self._stale_timer = QTimer(self)
@@ -171,12 +176,19 @@ class TelemetryHud(TranslationMixin, QWidget, Ui_TelemetryHud):
             f"padding-left: 4px; padding-right: 4px; border-radius: 2px; }}"
         )
 
+    #: Mode strings the publisher sends when it does not know the mode.
+    #: Printing them verbatim put the word "Unknown" on the HUD next to the
+    #: battery chip, where it read as a battery reading rather than as "the
+    #: aircraft did not report a flight mode". An em dash says that, and
+    #: says it the same way every other absent field does.
+    _PLACEHOLDER_MODES = frozenset({"unknown", "none", "null", "n/a", "na", "-", "--"})
+
     def _render_flight_mode(self, is_flying, flight_mode) -> None:
         parts = []
         if is_flying is True:
             parts.append(self.tr("FLY"))
         mode = str(flight_mode).strip() if isinstance(flight_mode, str) else ""
-        if mode:
+        if mode and mode.lower() not in self._PLACEHOLDER_MODES:
             parts.append(mode)
         self.flightModeLabel.setText(" · ".join(parts) if parts else "—")
 
@@ -204,7 +216,8 @@ class TelemetryHud(TranslationMixin, QWidget, Ui_TelemetryHud):
             return
         # Dim the labels and append a "stale Ns" badge.
         self.setStyleSheet(
-            "QWidget { background-color: rgba(0, 0, 0, 160); color: #888; }"
+            self._base_stylesheet
+            + "\nQWidget { background-color: rgba(0, 0, 0, 190); color: #9a9a9a; }"
             "QLabel { font-family: \"Consolas\", \"Courier New\", monospace; "
             "font-size: 11px; }"
             "QLabel#staleBadge { color: #ff8080; font-weight: bold; }"
@@ -216,7 +229,7 @@ class TelemetryHud(TranslationMixin, QWidget, Ui_TelemetryHud):
     def _clear_stale(self) -> None:
         self.staleBadge.setText("")
         # Restore the .ui-defined stylesheet by resetting our override.
-        self.setStyleSheet("")
+        self.setStyleSheet(self._base_stylesheet)
 
     # ------------------------------------------------------------------
     # field formatting helpers
