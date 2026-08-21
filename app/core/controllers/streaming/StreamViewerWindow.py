@@ -44,7 +44,7 @@ from helpers.WidgetHelper import hand_off_focus, retire_widget
 from core.controllers.streaming.components import StreamCoordinator, DetectionRenderer, StreamStatistics
 from core.controllers.streaming.components import StreamTelemetryCoordinator
 from core.controllers.streaming.components.FrameProcessingWorker import FrameProcessingWorker
-from core.controllers.streaming.shared_widgets import DetectionThumbnailWidget, StreamControlWidget
+from core.controllers.streaming.shared_widgets import DetectionThumbnailWidget, StreamControlWidget, Track
 from core.views.components.FlightMapView import FlightMapView
 from core.views.flight.FlightPairingDialog import FlightPairingDialog
 from core.views.flight.TelemetryHud import TelemetryHud
@@ -62,6 +62,10 @@ from core.services.streaming.RTMPStreamService import (
     stream_type_from_source_label,
 )
 from core.services.streaming.contracts import FocusTarget
+from core.services.streaming.RecordingBundleService import (
+    find_bundle_for_video,
+    load_replay_detections,
+)
 from core.services.streaming.RecordingSessionService import DetectionRecord
 from helpers.TranslationMixin import TranslationMixin
 
@@ -109,6 +113,11 @@ class StreamViewerWindow(TranslationMixin, QMainWindow):
         # Bundle directory of the last finished recording, for the panel's
         # "Open Recording Folder" button.
         self._last_recording_bundle: Optional[str] = None
+        # Set when the connected file is a recording bundle's video: the
+        # window is then a REPLAY surface. Stored detections pre-load into
+        # the gallery and map, telemetry replays from the bundle's sidecar
+        # SRT, and detectors do not run - the record is the record.
+        self._replay_bundle_dir: Optional[str] = None
         self._pending_algorithm_options = None
         self._pending_processing_resolution = None  # Desired resolution from wizard (to be capped to native)
         self._active_stream_fps_limit: Optional[int] = None
@@ -1701,6 +1710,116 @@ finalize_bundle`).
         # applies to live sources.
         self.telemetry_hud.set_staleness_tracking(stream_type != StreamType.FILE)
 
+        # If this file is a recording bundle's video, become its replay
+        # surface: stored detections into the gallery/map now, detectors
+        # off for the whole source.
+        self._replay_bundle_dir = None
+        if stream_type == StreamType.FILE:
+            try:
+                self._enter_replay_if_bundle(url)
+            except Exception as e:  # noqa: BLE001 - replay must not block playback
+                self.logger.error(f"Could not load recording bundle for replay: {e}")
+
+    @property
+    def _replay_mode(self) -> bool:
+        """True while the connected source is a recording bundle's video."""
+        return self._replay_bundle_dir is not None
+
+    def _enter_replay_if_bundle(self, video_path: str) -> None:
+        """Turn the window into a replay surface for a recording bundle.
+
+        Opening the bundle's MP4 is the whole gesture: the stored
+        detections appear in the Detection Gallery immediately (click one
+        to jump the video there), their positions pin the map, and the
+        bundle's sidecar SRT - discovered by the ordinary file-telemetry
+        path - drives the HUD, aircraft marker and trail from the playhead.
+
+        Detectors deliberately do NOT run against a replay (see the frame
+        routing guards): the recorded video already carries the overlays
+        that were drawn live, and the stored detections are the record of
+        what the original run found. Re-detecting would burn CPU to
+        overwrite evidence with a re-enactment.
+        """
+        bundle_dir = find_bundle_for_video(video_path)
+        if bundle_dir is None:
+            return
+
+        self._replay_bundle_dir = bundle_dir
+        rows = load_replay_detections(bundle_dir)
+
+        loaded = 0
+        pinned = 0
+        for row in rows:
+            track = self._replay_row_to_track(row)
+            key = f"replay-{row.get('seq', loaded)}"
+            if track is not None:
+                self._gallery_tracks_by_key[key] = track
+                self.gallery_widget.add_track(track)
+                loaded += 1
+            latitude = row.get("latitude")
+            longitude = row.get("longitude")
+            if (track is not None and isinstance(latitude, (int, float))
+                    and isinstance(longitude, (int, float))):
+                self.map_view.add_detection({
+                    "track_key": key,
+                    "location": {"lat": float(latitude), "lon": float(longitude)},
+                    "class_name": row.get("detection_type") or "detection",
+                    "confidence": float(row.get("confidence") or 0.0),
+                })
+                pinned += 1
+
+        self.ui.infoPanel.append(
+            self.tr(
+                "Replaying recording: {count} stored detections loaded - "
+                "click one in the Gallery to jump to it."
+            ).format(count=loaded)
+        )
+        self.ui.infoPanel.append(
+            self.tr("Detectors are off during replay; the stored record is shown.")
+        )
+        if pinned:
+            self.ui.infoPanel.append(
+                self.tr("{count} detections pinned on the map.").format(count=pinned)
+            )
+
+    def _replay_row_to_track(self, row: dict) -> Optional[Track]:
+        """Build a gallery Track from a stored detection row.
+
+        The gallery is thumbnail-driven, so a row whose thumbnail file is
+        missing (or unreadable) is skipped rather than shown as a blank
+        square - it still exists in detections.csv.
+        """
+        thumbnail_path = row.get("thumbnail_path")
+        if not thumbnail_path:
+            return None
+        thumbnail = cv2.imread(thumbnail_path)
+        if thumbnail is None or thumbnail.size == 0:
+            return None
+
+        bbox = row.get("bbox") or [0, 0, 0, 0]
+        centroid = row.get("centroid")
+        if not (isinstance(centroid, (list, tuple)) and len(centroid) >= 2):
+            centroid = (int(bbox[0]) + int(bbox[2]) // 2, int(bbox[1]) + int(bbox[3]) // 2)
+        resolution = row.get("frame_resolution") or [0, 0]
+        recorded_frame = row.get("recorded_frame_index")
+
+        return Track(
+            track_id=int(row.get("seq", 0)),
+            bbox=tuple(int(v) for v in bbox[:4]),
+            centroid=(int(centroid[0]), int(centroid[1])),
+            thumbnail=thumbnail,
+            # Seek target in the RECORDED video - the writer's frame
+            # counter when the detection was stored. Best-effort by
+            # design (the writer runs at fixed fps); rows recorded
+            # without one land at the start rather than nowhere.
+            first_frame_index=int(recorded_frame) if isinstance(recorded_frame, (int, float)) else 0,
+            first_timestamp=float(row.get("video_time_seconds") or 0.0),
+            frame_resolution=(int(resolution[0] or 0), int(resolution[1] or 0)),
+            is_confirmed=True,
+            detection_type=str(row.get("detection_type") or "detection"),
+            confidence=float(row.get("confidence") or 0.0),
+        )
+
     def _selected_metadata_path(self) -> str:
         """The metadata file chosen in the controls, if any.
 
@@ -1977,6 +2096,7 @@ finalize_bundle`).
             self.video_display.clear_display(self.tr("No Stream Connected"))
 
             # Clear gallery and tracks on disconnect
+            self._replay_bundle_dir = None
             if hasattr(self, 'gallery_widget'):
                 self.gallery_widget.clear()
             if hasattr(self, 'thumbnail_widget'):
@@ -2044,7 +2164,7 @@ finalize_bundle`).
                 hasattr(self.stream_coordinator.stream_manager, 'is_playing')):
             is_paused = not self.stream_coordinator.stream_manager.is_playing()
 
-        if self.algorithm_widget and not is_paused:
+        if self.algorithm_widget and not is_paused and not self._replay_mode:
             # Store original frame for thumbnails (before detection rendering)
             # This ensures thumbnails are crisp without detection overlays.
             self._original_frame_for_thumbnails = frame
@@ -2095,8 +2215,11 @@ finalize_bundle`).
             # Clear pending resolution (only apply once)
             self._pending_processing_resolution = None
 
-        # Process frame with algorithm if loaded and not paused
-        if self.algorithm_widget and not is_paused:
+        # Process frame with algorithm if loaded and not paused. A replay
+        # never processes: the recorded video already carries the overlays
+        # drawn live, and the stored detections are the record - frames go
+        # straight to the display path below.
+        if self.algorithm_widget and not is_paused and not self._replay_mode:
             # Use worker thread if available, otherwise fall back to main thread
             use_worker = False
             # Check if worker is available, running, and not in the process of stopping

@@ -28,6 +28,13 @@ operator actually opens once the recording stops:
 * ``flight_map.html`` — a self-contained Leaflet page (path + pins).
 * ``flight_path.kml`` — path + detection placemarks for CalTopo and
   Google Earth.
+* a sidecar ``.SRT`` beside the recorded MP4, so opening that MP4 in the
+  streaming window replays the flight: the telemetry resolver discovers
+  the sidecar automatically and the HUD, aircraft marker and trail follow
+  the playhead. Together with :func:`find_bundle_for_video` /
+  :func:`load_replay_detections` (which pre-load the stored detections
+  into the gallery and map), the bundle replays on one screen — no
+  detectors re-run; the record is the record.
 
 Deriving is deliberately separate from capturing. It reads only the
 bundle directory, so it also serves as the repair path for a bundle left
@@ -54,6 +61,7 @@ from core.services.streaming.RecordingSessionService import (
 )
 
 RESULTS_XML = "ADIAT_Data.xml"
+REPLAY_DETECTIONS_LOG = DETECTIONS_LOG  # re-exported for replay callers
 DETECTIONS_CSV = "detections.csv"
 TELEMETRY_CSV = "telemetry.csv"
 FLIGHT_MAP_HTML = "flight_map.html"
@@ -84,6 +92,9 @@ _DETECTION_CSV_COLUMNS = [
     "frame_height",
     "thumbnail",
     "recorded_at_epoch_s",
+    # ADIAT Flight identity + clock (blank for streaming-window bundles).
+    "track_key",
+    "captured_at_ms",
 ]
 
 # The writer uses ``extrasaction="ignore"``, so a key absent from this
@@ -249,6 +260,8 @@ def write_detections_csv(bundle_dir: str, detections: Sequence[dict]) -> Optiona
                 "frame_height": _pair(resolution, 1),
                 "thumbnail": detection.get("thumbnail"),
                 "recorded_at_epoch_s": detection.get("recorded_at_epoch_s"),
+                "track_key": detection.get("track_key"),
+                "captured_at_ms": detection.get("captured_at_ms"),
             })
     return target
 
@@ -281,15 +294,32 @@ def build_aoi(detection: dict) -> dict:
     y = _pair(bbox, 1) or 0
     width = _pair(bbox, 2) or 0
     height = _pair(bbox, 3) or 0
-    origin_x = _pair(detection.get("thumbnail_origin"), 0) or 0
-    origin_y = _pair(detection.get("thumbnail_origin"), 1) or 0
-
-    center_x = int(round(x + width / 2.0 - origin_x))
-    center_y = int(round(y + height / 2.0 - origin_y))
 
     thumb_size = detection.get("thumbnail_size")
     thumb_w = _pair(thumb_size, 0)
     thumb_h = _pair(thumb_size, 1)
+
+    origin = detection.get("thumbnail_origin")
+    origin_known = _pair(origin, 0) is not None and _pair(origin, 1) is not None
+
+    if origin_known and width and height:
+        # Streaming-window records: the thumbnail was cropped locally, so
+        # the bbox projects exactly onto it.
+        origin_x = _pair(origin, 0) or 0
+        origin_y = _pair(origin, 1) or 0
+        center_x = int(round(x + width / 2.0 - origin_x))
+        center_y = int(round(y + height / 2.0 - origin_y))
+    elif thumb_w and thumb_h:
+        # Crop geometry unknown (an ADIAT Flight thumb was cropped on the
+        # mobile publisher): the crop is centered on the detection by
+        # construction, so the thumbnail's own center is the best - and
+        # only defensible - placement.
+        center_x = int(thumb_w) // 2
+        center_y = int(thumb_h) // 2
+    else:
+        center_x = int(round(x + width / 2.0))
+        center_y = int(round(y + height / 2.0))
+
     if thumb_w and thumb_h:
         # A clamped crop can put the nominal center outside the saved
         # image; keep the marker on the thumbnail either way.
@@ -502,6 +532,148 @@ def write_flight_kml(
     return target
 
 
+def _srt_timecode(seconds: float) -> str:
+    total_ms = max(0, int(round(seconds * 1000)))
+    hours, rem = divmod(total_ms, 3_600_000)
+    minutes, rem = divmod(rem, 60_000)
+    secs, ms = divmod(rem, 1000)
+    return f"{hours:02d}:{minutes:02d}:{secs:02d},{ms:03d}"
+
+
+def write_replay_srt(
+    bundle_dir: str,
+    fixes: Sequence[dict],
+    manifest: dict,
+    logger: Optional[LoggerService] = None,
+) -> Optional[str]:
+    """Write a sidecar ``.SRT`` beside the recorded MP4 for replay.
+
+    Opening the recorded MP4 in the streaming window then behaves like
+    opening a DJI clip from the card: :func:`~core.services.telemetry.\
+TelemetrySourceResolver.find_sidecar_srt` discovers the file, and the HUD,
+    aircraft marker and flight trail track the playhead.
+
+    Cue times come from ``recorded_at_epoch_s - started_at_epoch_s``
+    rather than the source's own timeline — the recorded MP4 begins when
+    the recording began, not at the source's t=0, and a live feed has no
+    source timeline at all. This makes one rule serve both bundle kinds,
+    at the cost of the video writer's known fixed-fps drift (documented on
+    ``recorded_frame_index``): alignment is best-effort, not frame-exact.
+
+    Altitudes are written as the explicit ``rel_alt``/``abs_alt`` pair
+    (ATO / MSL — never the terrain AGL, which is desktop-derived), which
+    also spares the reader its ffprobe datum probe. Written only for the
+    first video segment; a multi-segment recording gets telemetry replay
+    for its first 30 minutes and a logged note for the rest.
+    """
+    log = logger or LoggerService()
+    started = manifest.get("started_at_epoch_s")
+    videos = (manifest.get("video") or {}).get("files") or []
+    if not fixes or not isinstance(started, (int, float)) or not videos:
+        return None
+
+    if len(videos) > 1:
+        log.warning(
+            f"Recording bundle {bundle_dir}: {len(videos)} video segments; "
+            "replay telemetry is written for the first segment only."
+        )
+
+    cues: List[Tuple[float, dict]] = []
+    for fix in fixes:
+        lat = fix.get("aircraft_latitude")
+        lon = fix.get("aircraft_longitude")
+        stamped = fix.get("recorded_at_epoch_s")
+        if not isinstance(lat, (int, float)) or not isinstance(lon, (int, float)):
+            continue
+        if not isinstance(stamped, (int, float)):
+            continue
+        cues.append((max(0.0, float(stamped) - float(started)), fix))
+    if not cues:
+        return None
+    cues.sort(key=lambda item: item[0])
+
+    blocks: List[str] = []
+    for index, (seconds, fix) in enumerate(cues):
+        end_seconds = cues[index + 1][0] if index + 1 < len(cues) else seconds + 1.0
+        if end_seconds <= seconds:
+            end_seconds = seconds + 0.001
+
+        tokens = [
+            f"[latitude: {float(fix['aircraft_latitude']):.6f}]",
+            f"[longitude: {float(fix['aircraft_longitude']):.6f}]",
+        ]
+        ato = fix.get("aircraft_altitude_agl_m")
+        msl = fix.get("aircraft_altitude_msl_m")
+        if isinstance(ato, (int, float)) and isinstance(msl, (int, float)):
+            tokens.append(f"[rel_alt: {float(ato):.3f} abs_alt: {float(msl):.3f}]")
+        elif isinstance(msl, (int, float)):
+            tokens.append(f"[abs_alt: {float(msl):.3f}]")
+        elif isinstance(ato, (int, float)):
+            tokens.append(f"[rel_alt: {float(ato):.3f}]")
+        yaw = fix.get("aircraft_yaw_deg")
+        if isinstance(yaw, (int, float)):
+            tokens.append(f"[gb_yaw: {float(yaw):.1f}]")
+
+        lines = [
+            str(index + 1),
+            f"{_srt_timecode(seconds)} --> {_srt_timecode(end_seconds)}",
+            f"FrameCnt: {index + 1}, DiffTime: 0ms",
+        ]
+        captured = fix.get("captured_at_ms")
+        if isinstance(captured, (int, float)):
+            # The publisher's own wall clock, in the format DJI uses —
+            # frame extraction stamps EXIF capture time from this.
+            lines.append(
+                time.strftime(
+                    "%Y-%m-%d %H:%M:%S", time.localtime(float(captured) / 1000.0)
+                )
+                + f",{int(captured) % 1000:03d}"
+            )
+        lines.append(" ".join(tokens))
+        blocks.append("\n".join(lines))
+
+    video_name = str(videos[0])
+    srt_name = os.path.splitext(video_name)[0] + ".SRT"
+    target = os.path.join(bundle_dir, srt_name)
+    with open(target, "w", encoding="utf-8") as handle:
+        handle.write("\n\n".join(blocks) + "\n")
+    return target
+
+
+def find_bundle_for_video(video_path: str) -> Optional[str]:
+    """The recording bundle a video belongs to, or ``None``.
+
+    A video "belongs to" a bundle when its own directory carries the
+    bundle manifest — which is exactly how recordings are laid out, and
+    survives the folder being renamed or copied elsewhere.
+    """
+    if not video_path:
+        return None
+    directory = os.path.dirname(os.path.abspath(str(video_path)))
+    if os.path.isfile(os.path.join(directory, MANIFEST_FILE)):
+        return directory
+    return None
+
+
+def load_replay_detections(bundle_dir: str) -> List[dict]:
+    """The bundle's stored detections, ready for the replay gallery.
+
+    Rows come back in the shape ``detections.jsonl`` recorded — bbox,
+    confidence, type, geotag, ``recorded_frame_index`` for seeking —
+    plus ``thumbnail_path`` resolved to an absolute path when the
+    thumbnail file is actually present. Replay renders the record; it
+    never re-runs a detector.
+    """
+    rows = read_jsonl(os.path.join(bundle_dir, DETECTIONS_LOG))
+    for row in rows:
+        thumbnail = row.get("thumbnail")
+        if thumbnail:
+            candidate = os.path.join(bundle_dir, str(thumbnail).replace("/", os.sep))
+            if os.path.isfile(candidate):
+                row["thumbnail_path"] = candidate
+    return rows
+
+
 def finalize_bundle(bundle_dir: str, logger: Optional[LoggerService] = None) -> Dict[str, Any]:
     """Derive every finished artifact for a bundle directory.
 
@@ -529,6 +701,7 @@ def finalize_bundle(bundle_dir: str, logger: Optional[LoggerService] = None) -> 
         ("telemetry_csv", lambda: write_telemetry_csv(bundle_dir, telemetry)),
         ("flight_map_html", lambda: write_flight_map(bundle_dir, path, detections, manifest)),
         ("flight_path_kml", lambda: write_flight_kml(bundle_dir, path, detections, manifest)),
+        ("replay_srt", lambda: write_replay_srt(bundle_dir, telemetry, manifest, log)),
     )
     for name, step in steps:
         try:
@@ -576,6 +749,9 @@ __all__ = [
     "TELEMETRY_CSV",
     "build_aoi",
     "finalize_bundle",
+    "find_bundle_for_video",
+    "load_replay_detections",
+    "write_replay_srt",
     "write_detections_csv",
     "write_flight_kml",
     "write_flight_map",

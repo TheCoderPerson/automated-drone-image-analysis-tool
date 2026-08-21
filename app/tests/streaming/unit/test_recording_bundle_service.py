@@ -10,6 +10,9 @@ import pytest
 
 from core.services.streaming.RecordingBundleService import (
     DETECTIONS_CSV,
+    find_bundle_for_video,
+    load_replay_detections,
+    write_replay_srt,
     FLIGHT_MAP_HTML,
     FLIGHT_PATH_KML,
     RESULTS_XML,
@@ -51,7 +54,7 @@ def _record(seq=0, lat=30.1, lon=-97.2, **overrides):
     return DetectionRecord(**payload)
 
 
-def _build_bundle(tmp_path, *, detections=(), fixes=(), **config_overrides):
+def _build_bundle(tmp_path, *, detections=(), fixes=(), with_video=False, **config_overrides):
     """Run a real capture session, then return its finalized bundle path."""
     config = RecordingSessionConfig(
         root_dir=str(tmp_path),
@@ -67,6 +70,11 @@ def _build_bundle(tmp_path, *, detections=(), fixes=(), **config_overrides):
     writer = RecordingSessionWriter()
     bundle = writer.start_session(config)
     assert bundle is not None
+    if with_video:
+        # A placeholder MP4 so the manifest lists a video file - the
+        # replay SRT is named after it and written beside it.
+        with open(os.path.join(bundle, "rec_0001.mp4"), "wb") as fp:
+            fp.write(b"\x00")
     for record in detections:
         writer.append_detection(record)
     for fix in fixes:
@@ -138,6 +146,25 @@ class TestAoiProjection:
         assert "person" in aoi["user_comment"]
         assert "2:05" in aoi["user_comment"]
         assert "30.500000, -97.500000" in aoi["user_comment"]
+
+    def test_unknown_crop_geometry_centers_on_the_thumbnail(self):
+        """ADIAT Flight thumbs are cropped on the mobile publisher.
+
+        Their crop origin is unknown, so projecting the frame-space bbox
+        into them lands the marker nowhere meaningful - the crop is
+        centered on the detection by construction, so its own center is
+        the right placement.
+        """
+        aoi = build_aoi({
+            "seq": 0,
+            "bbox": [320, 360, 128, 144],       # frame pixels, valid
+            "thumbnail_origin": None,            # crop geometry unknown
+            "thumbnail_size": [160, 120],
+            "pixel_area": 500.0,
+        })
+
+        assert aoi["center"] == (80, 60)
+        assert aoi["area"] == 500
 
     def test_confidence_becomes_a_score(self):
         aoi = build_aoi({"seq": 0, "bbox": [10, 10, 8, 8], "confidence": 0.62})
@@ -234,6 +261,56 @@ class TestDetectionArtifacts:
         assert result["artifacts"]["detections_csv"] is None
         assert result["artifacts"]["results_xml"] is None
         assert not os.path.exists(os.path.join(bundle, RESULTS_XML))
+
+
+class TestFlightFeedBundles:
+    """A flight-shaped record travels the whole derive pipeline."""
+
+    def _flight_record(self, seq=0):
+        import cv2
+        ok, buf = cv2.imencode(".jpg", np.full((30, 40, 3), 210, dtype=np.uint8))
+        assert ok
+        from core.services.streaming.RecordingSessionService import (
+            detection_record_from_flight_envelope,
+        )
+        return detection_record_from_flight_envelope(
+            {
+                "track_key": f"person|sess|{seq}",
+                "class_name": "person",
+                "confidence": 0.9,
+                "captured_at_ms": 1_787_300_000_000 + seq,
+                "bbox_norm": [0.25, 0.5, 0.1, 0.2],
+                "location": {"lat": 30.25 + seq * 0.001, "lon": -97.75},
+                "thumb_bytes": buf.tobytes(),
+            },
+            recorded_frame_index=30 + seq,
+            frame_bgr=np.zeros((720, 1280, 3), dtype=np.uint8),
+        )
+
+    def test_flight_detections_reach_csv_xml_and_map(self, tmp_path):
+        bundle = _build_bundle(
+            tmp_path,
+            detections=[self._flight_record(0), self._flight_record(1)],
+            fixes=[_fix(30.25, -97.75, 0.0), _fix(30.26, -97.76, 1.0)],
+        )
+        result = finalize_bundle(bundle)
+
+        with open(os.path.join(bundle, DETECTIONS_CSV), encoding="utf-8", newline="") as fp:
+            rows = list(csv.DictReader(fp))
+        assert rows[0]["track_key"] == "person|sess|0"
+        assert rows[0]["captured_at_ms"] == "1787300000000"
+        assert float(rows[0]["latitude"]) == pytest.approx(30.25)
+
+        # The XML re-opens with the mobile thumbs as its images.
+        from core.services.XmlService import XmlService
+        images = XmlService(os.path.join(bundle, RESULTS_XML)).get_images()
+        assert len(images) == 2
+        assert os.path.isfile(images[0]["path"])
+
+        # The map pins at the publisher's geotag.
+        page = open(os.path.join(bundle, FLIGHT_MAP_HTML), encoding="utf-8").read()
+        assert "30.251" in page
+        assert result["counts"]["detections_geotagged"] == 2
 
 
 class TestFlightArtifacts:
@@ -438,6 +515,150 @@ class TestFlightPathOrdering:
 
         with open(os.path.join(bundle, TELEMETRY_CSV), encoding="utf-8", newline="") as fp:
             assert len(list(csv.DictReader(fp))) == 3
+
+
+class TestReplaySrt:
+    """The sidecar SRT that makes a recorded MP4 replay its telemetry."""
+
+    def _fixes(self):
+        return [_fix(30.25 + i * 0.001, -97.75 - i * 0.001, float(i)) for i in range(4)]
+
+    @staticmethod
+    def _spread_stamps(bundle, seconds_apart=1.0):
+        """Restamp the fix log so cues sit N seconds apart.
+
+        The writer stamps ``recorded_at_epoch_s`` at append time, and a
+        test appends all its fixes within microseconds - which would
+        collapse every cue to t=0.
+        """
+        import json
+
+        from core.services.streaming.RecordingSessionService import (
+            TELEMETRY_LOG,
+            read_jsonl,
+        )
+
+        started = read_manifest(bundle)["started_at_epoch_s"]
+        rows = read_jsonl(os.path.join(bundle, TELEMETRY_LOG))
+        for index, row in enumerate(rows):
+            row["recorded_at_epoch_s"] = started + index * seconds_apart
+        with open(os.path.join(bundle, TELEMETRY_LOG), "w", encoding="utf-8") as fp:
+            fp.write("\n".join(json.dumps(r) for r in rows) + "\n")
+
+    def test_srt_round_trips_through_the_real_parser(self, tmp_path):
+        from core.services.telemetry.TelemetrySourceResolver import (
+            find_sidecar_srt,
+            read_srt_track,
+        )
+
+        bundle = _build_bundle(tmp_path, fixes=self._fixes(), with_video=True)
+        self._spread_stamps(bundle)
+        result = finalize_bundle(bundle)
+
+        assert result["artifacts"]["replay_srt"] == "rec_0001.SRT"
+        # The ordinary sidecar discovery finds it next to the video...
+        sidecar = find_sidecar_srt(os.path.join(bundle, "rec_0001.mp4"))
+        assert sidecar is not None
+        # ...and the ordinary DJI parser reads it back.
+        track = read_srt_track(sidecar, source="sidecar")
+        assert track is not None and len(track) == 4
+        point = track.point_at(1.2)
+        assert point.latitude == pytest.approx(30.251, abs=1e-6)
+        assert point.altitude_agl_m == pytest.approx(40.0)   # ATO from the fix
+        assert point.altitude_msl_m == pytest.approx(320.0)
+        assert point.yaw_deg == pytest.approx(91.5)
+
+    def test_cue_times_are_relative_to_recording_start(self, tmp_path):
+        """A live feed has no source timeline; the recording's own start is t=0."""
+        import json
+
+        bundle = _build_bundle(tmp_path, fixes=self._fixes(), with_video=True)
+        # Rewrite the stamps so fixes land 2.5s and 7s after start.
+        manifest = read_manifest(bundle)
+        started = manifest["started_at_epoch_s"]
+        rows = []
+        from core.services.streaming.RecordingSessionService import TELEMETRY_LOG, read_jsonl
+        for offset, row in zip((2.5, 7.0), read_jsonl(os.path.join(bundle, TELEMETRY_LOG))[:2]):
+            row["recorded_at_epoch_s"] = started + offset
+            rows.append(row)
+        with open(os.path.join(bundle, TELEMETRY_LOG), "w", encoding="utf-8") as fp:
+            fp.write("\n".join(json.dumps(r) for r in rows) + "\n")
+
+        finalize_bundle(bundle)
+
+        srt = open(os.path.join(bundle, "rec_0001.SRT"), encoding="utf-8").read()
+        assert "00:00:02,500 -->" in srt
+        assert "00:00:07,000 -->" in srt
+
+    def test_no_telemetry_writes_no_srt(self, tmp_path):
+        bundle = _build_bundle(tmp_path, detections=[_record(0)], with_video=True)
+        result = finalize_bundle(bundle)
+
+        assert result["artifacts"]["replay_srt"] is None
+        assert not os.path.isfile(os.path.join(bundle, "rec_0001.SRT"))
+
+    def test_no_video_file_writes_no_srt(self, tmp_path):
+        """Nothing to replay against - a failed video start, say."""
+        bundle = _build_bundle(tmp_path, fixes=self._fixes(), with_video=False)
+        result = finalize_bundle(bundle)
+
+        assert result["artifacts"]["replay_srt"] is None
+
+    def test_multi_segment_recording_covers_the_first_segment(self, tmp_path):
+        bundle = _build_bundle(tmp_path, fixes=self._fixes(), with_video=True)
+        with open(os.path.join(bundle, "rec_0002.mp4"), "wb") as fp:
+            fp.write(b"\x00")
+
+        result = finalize_bundle(bundle)
+
+        assert result["artifacts"]["replay_srt"] == "rec_0001.SRT"
+        assert not os.path.isfile(os.path.join(bundle, "rec_0002.SRT"))
+
+    def test_partial_altitudes_still_produce_cues(self, tmp_path):
+        fixes = [{
+            "aircraft_latitude": 30.0,
+            "aircraft_longitude": -97.0,
+            # No altitudes at all - position alone is still a trail.
+        }]
+        bundle = _build_bundle(tmp_path, fixes=fixes, with_video=True)
+        result = finalize_bundle(bundle)
+
+        assert result["artifacts"]["replay_srt"] == "rec_0001.SRT"
+        srt = open(os.path.join(bundle, "rec_0001.SRT"), encoding="utf-8").read()
+        assert "[latitude: 30.000000]" in srt
+        assert "rel_alt" not in srt
+
+
+class TestReplayLoading:
+    """Locating a bundle from its video and loading the stored detections."""
+
+    def test_video_inside_a_bundle_is_recognized(self, tmp_path):
+        bundle = _build_bundle(tmp_path, detections=[_record(0)], with_video=True)
+        finalize_bundle(bundle)
+
+        assert find_bundle_for_video(os.path.join(bundle, "rec_0001.mp4")) == bundle
+
+    def test_ordinary_videos_are_not_bundles(self, tmp_path):
+        loose = tmp_path / "DJI_0042.MP4"
+        loose.write_bytes(b"\x00")
+
+        assert find_bundle_for_video(str(loose)) is None
+        assert find_bundle_for_video("") is None
+
+    def test_detections_load_with_resolved_thumbnails(self, tmp_path):
+        bundle = _build_bundle(
+            tmp_path, detections=[_record(0), _record(1, thumbnail=None)], with_video=True
+        )
+        finalize_bundle(bundle)
+
+        rows = load_replay_detections(bundle)
+
+        assert len(rows) == 2
+        assert os.path.isfile(rows[0]["thumbnail_path"])
+        assert rows[0]["recorded_frame_index"] == 148
+        assert rows[0]["latitude"] == pytest.approx(30.1)
+        # The thumbless row loads too - just with no image to show.
+        assert "thumbnail_path" not in rows[1]
 
 
 class TestManifestAndErrors:

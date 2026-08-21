@@ -226,83 +226,103 @@ toegeeflijk</translation>
 <context>
     <name>AOIController</name>
     <message>
-        <location filename="../app/core/controllers/images/viewer/aoi/AOIController.py" line="380"/>
+        <location filename="../app/core/controllers/images/viewer/aoi/AOIController.py" line="381"/>
         <source>No AOI #{number} in this analysis.</source>
         <translation>Geen AOI #{number} in deze analyse.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/aoi/AOIController.py" line="393"/>
-        <location filename="../app/core/controllers/images/viewer/aoi/AOIController.py" line="403"/>
+        <location filename="../app/core/controllers/images/viewer/aoi/AOIController.py" line="394"/>
+        <location filename="../app/core/controllers/images/viewer/aoi/AOIController.py" line="404"/>
         <source>AOI #{number} is hidden by the current filter.</source>
         <translation>AOI #{number} is verborgen door het huidige filter.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/aoi/AOIController.py" line="699"/>
+        <location filename="../app/core/controllers/images/viewer/aoi/AOIController.py" line="700"/>
         <source>Comment saved</source>
         <translation>Opmerking opgeslagen</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/aoi/AOIController.py" line="701"/>
+        <location filename="../app/core/controllers/images/viewer/aoi/AOIController.py" line="702"/>
         <source>Comment cleared</source>
         <translation>Opmerking gewist</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/aoi/AOIController.py" line="790"/>
+        <location filename="../app/core/controllers/images/viewer/aoi/AOIController.py" line="791"/>
         <source>Copy Data</source>
         <translation>Gegevens kopiëren</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/aoi/AOIController.py" line="796"/>
+        <location filename="../app/core/controllers/images/viewer/aoi/AOIController.py" line="797"/>
         <source>Find Similar AOIs</source>
         <translation>Vergelijkbare AOI&apos;s zoeken</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/aoi/AOIController.py" line="899"/>
+        <location filename="../app/core/controllers/images/viewer/aoi/AOIController.py" line="900"/>
         <source>AOI data copied</source>
         <translation>AOI-gegevens gekopieerd</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/aoi/AOIController.py" line="986"/>
+        <location filename="../app/core/controllers/images/viewer/aoi/AOIController.py" line="987"/>
         <source>Invalid image index</source>
         <translation>Ongeldige afbeeldingsindex</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/aoi/AOIController.py" line="991"/>
+        <location filename="../app/core/controllers/images/viewer/aoi/AOIController.py" line="992"/>
         <source>Invalid AOI index</source>
         <translation>Ongeldige AOI-index</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/aoi/AOIController.py" line="1060"/>
+        <location filename="../app/core/controllers/images/viewer/aoi/AOIController.py" line="1061"/>
         <source>Could not calculate AOI location. Diagnostic info copied to clipboard!</source>
         <translation>Kan AOI-locatie niet berekenen. Diagnostische informatie naar klembord gekopieerd!</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/aoi/AOIController.py" line="1066"/>
+        <location filename="../app/core/controllers/images/viewer/aoi/AOIController.py" line="1067"/>
         <source>Could not calculate AOI location</source>
         <translation>Kan AOI-locatie niet berekenen</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/aoi/AOIController.py" line="1524"/>
+        <location filename="../app/core/controllers/images/viewer/aoi/AOIController.py" line="1088"/>
+        <source>Terrain elevation: {value}</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/controllers/images/viewer/aoi/AOIController.py" line="1092"/>
+        <source>Terrain-corrected</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/controllers/images/viewer/aoi/AOIController.py" line="1097"/>
+        <source> (~{value} resolution)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/controllers/images/viewer/aoi/AOIController.py" line="1105"/>
+        <source>Flat terrain assumed</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/controllers/images/viewer/aoi/AOIController.py" line="1539"/>
         <source>Temperature sorting unavailable (no thermal data)</source>
         <translation>Sorteren op temperatuur niet beschikbaar (geen thermische gegevens)</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/aoi/AOIController.py" line="1875"/>
+        <location filename="../app/core/controllers/images/viewer/aoi/AOIController.py" line="1890"/>
         <source>Cannot Delete AOI</source>
         <translation>Kan AOI niet verwijderen</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/aoi/AOIController.py" line="1880"/>
+        <location filename="../app/core/controllers/images/viewer/aoi/AOIController.py" line="1895"/>
         <source>Only manually created AOIs can be deleted. Algorithm-detected AOIs cannot be deleted.</source>
         <translation>Alleen handmatig gemaakte AOI&apos;s kunnen worden verwijderd. Door algoritmen gedetecteerde AOI&apos;s kunnen niet worden verwijderd.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/aoi/AOIController.py" line="1886"/>
+        <location filename="../app/core/controllers/images/viewer/aoi/AOIController.py" line="1901"/>
         <source>Delete AOI</source>
         <translation>AOI verwijderen</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/aoi/AOIController.py" line="1889"/>
+        <location filename="../app/core/controllers/images/viewer/aoi/AOIController.py" line="1904"/>
         <source>Are you sure you want to delete this AOI? This action cannot be undone.</source>
         <translation>Weet u zeker dat u deze AOI wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt.</translation>
     </message>
@@ -4935,144 +4955,119 @@ miniatuur</translation>
 <context>
     <name>FlightTile</name>
     <message>
-        <location filename="../app/core/views/flight/FlightTile.py" line="460"/>
+        <location filename="../app/core/views/flight/FlightTile.py" line="416"/>
         <source>Feed {code}</source>
         <translation>Videofeed {code}</translation>
     </message>
     <message>
-        <location filename="../app/core/views/flight/FlightTile.py" line="298"/>
-        <source>Choose recording directory</source>
-        <translation>Opnamemap kiezen</translation>
-    </message>
-    <message>
-        <location filename="../app/core/views/flight/FlightTile.py" line="328"/>
-        <source>REC ● {filename}</source>
-        <translation>REC ● {filename}</translation>
-    </message>
-    <message>
-        <location filename="../app/core/views/flight/FlightTile.py" line="333"/>
-        <source>REC error: {msg}</source>
-        <translation>REC-fout: {msg}</translation>
-    </message>
-    <message>
-        <location filename="../app/core/views/flight/FlightTile.py" line="341"/>
-        <source>REC failed to start</source>
-        <translation>Opname kon niet starten</translation>
-    </message>
-    <message>
-        <location filename="../app/core/views/flight/FlightTile.py" line="355"/>
-        <source>Recording saved</source>
-        <translation>Opname opgeslagen</translation>
-    </message>
-    <message>
-        <location filename="../app/core/views/flight/FlightTile.py" line="364"/>
-        <location filename="../app/core/views/flight/FlightTile.py" line="383"/>
+        <location filename="../app/core/views/flight/FlightTile.py" line="320"/>
+        <location filename="../app/core/views/flight/FlightTile.py" line="339"/>
         <source>Network: {state}</source>
         <translation>Netwerk: {state}</translation>
     </message>
     <message>
-        <location filename="../app/core/views/flight/FlightTile.py" line="377"/>
+        <location filename="../app/core/views/flight/FlightTile.py" line="333"/>
         <source>latency: {ms:.0f}ms</source>
         <translation>latentie: {ms:.0f} ms</translation>
     </message>
     <message>
-        <location filename="../app/core/views/flight/FlightTile.py" line="379"/>
+        <location filename="../app/core/views/flight/FlightTile.py" line="335"/>
         <source>latency: --</source>
         <translation>latentie: --</translation>
     </message>
     <message>
-        <location filename="../app/core/views/flight/FlightTile.py" line="457"/>
+        <location filename="../app/core/views/flight/FlightTile.py" line="413"/>
         <source>{name} · {code}</source>
         <translation>{name} · {code}</translation>
     </message>
     <message>
-        <location filename="../app/core/views/flight/FlightTile.py" line="482"/>
+        <location filename="../app/core/views/flight/FlightTile.py" line="438"/>
         <source>Aircraft serial: {sn}</source>
         <translation>Serienummer drone: {sn}</translation>
     </message>
     <message>
-        <location filename="../app/core/views/flight/FlightTile.py" line="520"/>
+        <location filename="../app/core/views/flight/FlightTile.py" line="476"/>
         <source>Rename Feed</source>
         <translation>Feed hernoemen</translation>
     </message>
     <message>
-        <location filename="../app/core/views/flight/FlightTile.py" line="524"/>
+        <location filename="../app/core/views/flight/FlightTile.py" line="480"/>
         <source>Nickname for this drone (persists across new pairing codes via the aircraft serial number). Leave blank to clear.</source>
         <translation>Bijnaam voor deze drone (blijft behouden bij nieuwe koppelcodes via het serienummer van de drone). Laat leeg om te wissen.</translation>
     </message>
     <message>
-        <location filename="../app/core/views/flight/FlightTile.py" line="554"/>
+        <location filename="../app/core/views/flight/FlightTile.py" line="510"/>
         <source>Initializing</source>
         <translation>Initialiseren</translation>
     </message>
     <message>
-        <location filename="../app/core/views/flight/FlightTile.py" line="555"/>
+        <location filename="../app/core/views/flight/FlightTile.py" line="511"/>
         <source>Connecting</source>
         <translation>Verbinden</translation>
     </message>
     <message>
-        <location filename="../app/core/views/flight/FlightTile.py" line="556"/>
-        <location filename="../app/core/views/flight/FlightTile.py" line="557"/>
+        <location filename="../app/core/views/flight/FlightTile.py" line="512"/>
+        <location filename="../app/core/views/flight/FlightTile.py" line="513"/>
         <source>Connected</source>
         <translation>Verbonden</translation>
     </message>
     <message>
-        <location filename="../app/core/views/flight/FlightTile.py" line="558"/>
+        <location filename="../app/core/views/flight/FlightTile.py" line="514"/>
         <source>Disconnected</source>
         <translation>Verbinding verbroken</translation>
     </message>
     <message>
-        <location filename="../app/core/views/flight/FlightTile.py" line="559"/>
+        <location filename="../app/core/views/flight/FlightTile.py" line="515"/>
         <source>Failed</source>
         <translation>Mislukt</translation>
     </message>
     <message>
-        <location filename="../app/core/views/flight/FlightTile.py" line="560"/>
+        <location filename="../app/core/views/flight/FlightTile.py" line="516"/>
         <source>Closed</source>
         <translation>Gesloten</translation>
     </message>
     <message>
-        <location filename="../app/core/views/flight/FlightTile.py" line="574"/>
+        <location filename="../app/core/views/flight/FlightTile.py" line="530"/>
         <source>Rename Feed...</source>
         <translation>Feed hernoemen...</translation>
     </message>
     <message>
-        <location filename="../app/core/views/flight/FlightTile.py" line="591"/>
+        <location filename="../app/core/views/flight/FlightTile.py" line="547"/>
         <source>Restore</source>
         <translation>Herstellen</translation>
     </message>
     <message>
-        <location filename="../app/core/views/flight/FlightTile.py" line="595"/>
+        <location filename="../app/core/views/flight/FlightTile.py" line="551"/>
         <source>Maximize</source>
         <translation>Maximaliseren</translation>
     </message>
     <message>
-        <location filename="../app/core/views/flight/FlightTile.py" line="580"/>
+        <location filename="../app/core/views/flight/FlightTile.py" line="536"/>
         <source>Full Screen</source>
         <translation>Volledig scherm</translation>
     </message>
     <message>
-        <location filename="../app/core/views/flight/FlightTile.py" line="601"/>
+        <location filename="../app/core/views/flight/FlightTile.py" line="557"/>
         <source>Mute Detections in Gallery</source>
         <translation>Detecties in galerij verbergen</translation>
     </message>
     <message>
-        <location filename="../app/core/views/flight/FlightTile.py" line="617"/>
+        <location filename="../app/core/views/flight/FlightTile.py" line="573"/>
         <source>Stop Recording</source>
         <translation>Opname stoppen</translation>
     </message>
     <message>
-        <location filename="../app/core/views/flight/FlightTile.py" line="621"/>
+        <location filename="../app/core/views/flight/FlightTile.py" line="579"/>
         <source>Start Recording…</source>
         <translation>Opname starten…</translation>
     </message>
     <message>
-        <location filename="../app/core/views/flight/FlightTile.py" line="625"/>
+        <location filename="../app/core/views/flight/FlightTile.py" line="585"/>
         <source>Reconnect</source>
         <translation>Opnieuw verbinden</translation>
     </message>
     <message>
-        <location filename="../app/core/views/flight/FlightTile.py" line="631"/>
+        <location filename="../app/core/views/flight/FlightTile.py" line="591"/>
         <source>Close</source>
         <translation>Sluiten</translation>
     </message>
@@ -5113,22 +5108,22 @@ miniatuur</translation>
 <context>
     <name>FlightTileController</name>
     <message>
-        <location filename="../app/core/controllers/flight/FlightTileController.py" line="196"/>
+        <location filename="../app/core/controllers/flight/FlightTileController.py" line="213"/>
         <source>Looking up code {code} and connecting to the drone.</source>
         <translation>Code {code} opzoeken en verbinding maken met de drone.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/flight/FlightTileController.py" line="270"/>
+        <location filename="../app/core/controllers/flight/FlightTileController.py" line="287"/>
         <source>Name this device</source>
         <translation>Geef dit apparaat een naam</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/flight/FlightTileController.py" line="274"/>
+        <location filename="../app/core/controllers/flight/FlightTileController.py" line="291"/>
         <source>Give this publisher a name so you can recognise it next time (e.g. &apos;Operator A&apos;s M4E&apos;).</source>
         <translation>Geef deze zender een naam zodat u hem de volgende keer herkent (bijv. &apos;M4E van operator A&apos;).</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/flight/FlightTileController.py" line="295"/>
+        <location filename="../app/core/controllers/flight/FlightTileController.py" line="312"/>
         <source>Device &apos;{label}&apos; presented a different DTLS fingerprint than the last time you paired with it. This could mean the controller was reset, a different controller is using the label, or somebody is impersonating it.
 
 Reject if you weren&apos;t expecting this.</source>
@@ -5137,22 +5132,47 @@ Reject if you weren&apos;t expecting this.</source>
 Wijs af als u dit niet verwachtte.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/flight/FlightTileController.py" line="460"/>
+        <location filename="../app/core/controllers/flight/FlightTileController.py" line="477"/>
         <source>Pairing ended before video could start. Ask the operator to generate a new code and try again.</source>
         <translation>De koppeling eindigde voordat de video kon starten. Vraag de operator een nieuwe code te genereren en probeer het opnieuw.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/flight/FlightTileController.py" line="298"/>
+        <location filename="../app/core/controllers/flight/FlightTileController.py" line="972"/>
+        <source>Waiting for video before recording can start</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/controllers/flight/FlightTileController.py" line="982"/>
+        <source>Choose recording folder</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/controllers/flight/FlightTileController.py" line="1074"/>
+        <source>REC ● {filename}</source>
+        <translation type="unfinished">REC ● {filename}</translation>
+    </message>
+    <message>
+        <location filename="../app/core/controllers/flight/FlightTileController.py" line="1089"/>
+        <source>Recording saved</source>
+        <translation type="unfinished">Opname opgeslagen</translation>
+    </message>
+    <message>
+        <location filename="../app/core/controllers/flight/FlightTileController.py" line="1097"/>
+        <source>Recording error: {message}</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/controllers/flight/FlightTileController.py" line="315"/>
         <source>Fingerprint mismatch — &apos;{label}&apos;</source>
         <translation>Vingerafdruk komt niet overeen — &apos;{label}&apos;</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/flight/FlightTileController.py" line="309"/>
+        <location filename="../app/core/controllers/flight/FlightTileController.py" line="326"/>
         <source>Fingerprint changed on {ts}; previous identity was overwritten after operator review.</source>
         <translation>Vingerafdruk gewijzigd op {ts}; de vorige identiteit is overschreven na controle door de operator.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/flight/FlightTileController.py" line="402"/>
+        <location filename="../app/core/controllers/flight/FlightTileController.py" line="419"/>
         <source>This drone already has {current} viewers connected (maximum {limit}). Ask one to disconnect, or try again later.</source>
         <translation>Deze drone heeft al {current} kijkers verbonden (maximum {limit}). Vraag iemand de verbinding te verbreken of probeer het later opnieuw.</translation>
     </message>
@@ -5305,7 +5325,7 @@ Wijs af als u dit niet verwachtte.</translation>
         <translation>Open de ADIAT-documentatie in uw browser.</translation>
     </message>
     <message>
-        <location filename="../app/core/views/flight/FlightViewerWindow.py" line="274"/>
+        <location filename="../app/core/views/flight/FlightViewerWindow.py" line="269"/>
         <source>Rename Feed...</source>
         <translation>Feed hernoemen...</translation>
     </message>
@@ -5791,28 +5811,28 @@ De kaart blijft werken met gecachete tegels waar beschikbaar.</translation>
 <context>
     <name>GPSMapView</name>
     <message>
-        <location filename="../app/core/views/images/viewer/widgets/GPSMapView.py" line="1277"/>
+        <location filename="../app/core/views/images/viewer/widgets/GPSMapView.py" line="1278"/>
         <source>Copy Data</source>
         <translation>Gegevens kopiëren</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/widgets/GPSMapView.py" line="1281"/>
+        <location filename="../app/core/views/images/viewer/widgets/GPSMapView.py" line="1282"/>
         <source>Reset to estimated position</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/widgets/GPSMapView.py" line="1422"/>
+        <location filename="../app/core/views/images/viewer/widgets/GPSMapView.py" line="1423"/>
         <source>Position corrected by user</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/widgets/GPSMapView.py" line="1423"/>
+        <location filename="../app/core/views/images/viewer/widgets/GPSMapView.py" line="1424"/>
         <source>Drag to correct the location</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/widgets/GPSMapView.py" line="1845"/>
-        <location filename="../app/core/views/images/viewer/widgets/GPSMapView.py" line="1956"/>
+        <location filename="../app/core/views/images/viewer/widgets/GPSMapView.py" line="1873"/>
+        <location filename="../app/core/views/images/viewer/widgets/GPSMapView.py" line="1984"/>
         <source>Zoom FOV</source>
         <translation>Zoom-gezichtsveld</translation>
     </message>
@@ -12863,179 +12883,179 @@ Not needed for most videos, which already carry it.</source>
 <context>
     <name>StreamViewerWindow</name>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="126"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="135"/>
         <source>Automated Drone Image Analysis Tool v{version} - Sponsored by TEXSAR</source>
         <translation>Geautomatiseerd drone-beeldanalyse-instrument v{version} - Gesponsord door TEXSAR</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="264"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="273"/>
         <source>Live View</source>
         <translation>Live-weergave</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="269"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="278"/>
         <source>Gallery</source>
         <translation>Galerij</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="332"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="341"/>
         <source>Menu</source>
         <translation>Menu</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="333"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="342"/>
         <source>Streaming Analysis Wizard</source>
         <translation>Streaminganalyse-wizard</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="334"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="343"/>
         <source>Image Analysis</source>
         <translation>Beeldanalyse</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="335"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="344"/>
         <source>Flight Viewer</source>
         <translation>Vluchtviewer</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="336"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="345"/>
         <source>Preferences</source>
         <translation>Voorkeuren</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="346"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="355"/>
         <source>Help</source>
         <translation>Hulp</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="347"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="356"/>
         <source>Check for Updates</source>
         <translation>Controleren op updates</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="348"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="357"/>
         <source>Manual</source>
         <translation>Handleiding</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="349"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="358"/>
         <source>Community Forum</source>
         <translation>Communityforum</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="350"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="359"/>
         <source>YouTube Channel</source>
         <translation>YouTube-kanaal</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="377"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="386"/>
         <source>Start Recording</source>
         <translation>Opname starten</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="381"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="390"/>
         <source>Start recording the video stream with detection overlays.</source>
         <translation>Start opname van de videostream met detectie-overlays.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="382"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="391"/>
         <source>Stop Recording</source>
         <translation>Opname stoppen</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="386"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="395"/>
         <source>Stop the current recording and save to file.</source>
         <translation>Stop de huidige opname en sla op in een bestand.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="392"/>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="2376"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="401"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="2499"/>
         <source>Status: Not Recording</source>
         <translation>Status: niet aan het opnemen</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="396"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="405"/>
         <source>Current recording status and output file path</source>
         <translation>Huidige opnamestatus en pad naar uitvoerbestand</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="399"/>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="2378"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="408"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="2501"/>
         <source>Duration: --</source>
         <translation>Duur: --</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="402"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="411"/>
         <source>Recording statistics: Duration, FPS, Frames</source>
         <translation>Opnamestatistieken: duur, FPS, frames</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="406"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="415"/>
         <source>Save to:</source>
         <translation>Opslaan naar:</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="411"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="420"/>
         <source>Directory where video recordings will be saved.</source>
         <translation>Map waarin video-opnamen worden opgeslagen.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="412"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="421"/>
         <source>Browse...</source>
         <translation>Bladeren...</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="415"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="424"/>
         <source>Choose a folder to store recordings.</source>
         <translation>Kies een map om opnamen op te slaan.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="424"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="433"/>
         <source>Save detections</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="430"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="439"/>
         <source>Save each confirmed detection with the recording: a thumbnail, its position, and a results file that opens in the Image Analysis window.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="431"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="440"/>
         <source>Save flight map</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="437"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="446"/>
         <source>Save the flight path and detection locations as a map and a KML file. Requires location data from the video or a live ADIAT Flight feed.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="441"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="450"/>
         <source>Open Recording Folder</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="445"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="454"/>
         <source>Open the folder holding the last recording and its detections.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="560"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="569"/>
         <source>Select Recording Directory</source>
         <translation>Opnamemap selecteren</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="580"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="589"/>
         <source>Algorithm:</source>
         <translation>Algoritme:</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="583"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="592"/>
         <source>Select which streaming detection algorithm to use</source>
         <translation>Selecteer welk streamingdetectie-algoritme moet worden gebruikt</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="592"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="601"/>
         <source>Choose which streaming detection algorithm to run.
 • Color Anomaly &amp; Motion Detection: fused anomaly detectors
 • Color Detection: color-based highlighting</source>
@@ -13044,22 +13064,22 @@ Not needed for most videos, which already carry it.</source>
 • Kleurdetectie: kleurgebaseerde markering</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="623"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="632"/>
         <source>Gallery Threshold:</source>
         <translation>Galerijdrempel:</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="628"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="637"/>
         <source>Number of frames a detection must be seen before appearing in the Gallery tab</source>
         <translation>Aantal frames waarin een detectie moet worden gezien voordat deze in het tabblad Galerij verschijnt</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="633"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="642"/>
         <source> frames</source>
         <translation> frames</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="640"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="649"/>
         <source>Detections must be seen for this many consecutive frames
 before appearing in the Gallery. Higher values reduce
 false positives but delay detection appearance.</source>
@@ -13068,224 +13088,239 @@ voordat ze in de Galerij verschijnen. Hogere waarden verminderen
 valse positieven, maar vertragen het verschijnen van detecties.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="719"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="728"/>
         <source>Device {index}</source>
         <translation>Apparaat {index}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="928"/>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="947"/>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="961"/>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="984"/>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="998"/>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1012"/>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1026"/>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="2412"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="937"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="956"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="970"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="993"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1007"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1021"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1035"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="2535"/>
         <source>Error</source>
         <translation>Fout</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="929"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="938"/>
         <source>Failed to open Streaming Analysis Guide:
 {error}</source>
         <translation>Kan de streaminganalyse-gids niet openen:
 {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="948"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="957"/>
         <source>Failed to open Image Analysis:
 {error}</source>
         <translation>Kan beeldanalyse niet openen:
 {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="962"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="971"/>
         <source>Failed to open Preferences:
 {error}</source>
         <translation>Kan voorkeuren niet openen:
 {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="985"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="994"/>
         <source>Failed to open Flight Viewer:
 {error}</source>
         <translation>Kan Vluchtviewer niet openen:
 {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="999"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1008"/>
         <source>Failed to open Help documentation:
 {error}</source>
         <translation>Kan hulpdocumentatie niet openen:
 {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1013"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1022"/>
         <source>Failed to open Community Forum:
 {error}</source>
         <translation>Kan communityforum niet openen:
 {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1027"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1036"/>
         <source>Failed to open YouTube Channel:
 {error}</source>
         <translation>Kan YouTube-kanaal niet openen:
 {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1137"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1146"/>
         <source>Loaded: {algorithm}</source>
         <translation>Geladen: {algorithm}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1153"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1162"/>
         <source>Error loading algorithm: {error}</source>
         <translation>Fout bij laden van algoritme: {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1157"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1166"/>
         <source>Algorithm Load Error</source>
         <translation>Fout bij laden algoritme</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1668"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1677"/>
         <source>Algorithm switched to {label}</source>
         <translation>Algoritme overgeschakeld naar {label}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1751"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1775"/>
+        <source>Replaying recording: {count} stored detections loaded - click one in the Gallery to jump to it.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1779"/>
+        <source>Detectors are off during replay; the stored record is shown.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1782"/>
+        <source>{count} detections pinned on the map.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1870"/>
         <source>Connecting to {code}...</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1839"/>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1977"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1958"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="2096"/>
         <source>No Stream Connected</source>
         <translation>Geen stream verbonden</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1890"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="2009"/>
         <source>{state} - {message}</source>
         <translation>{state} - {message}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1886"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="2005"/>
         <source>Connected</source>
         <translation>Verbonden</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="535"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="544"/>
         <source>Save the flight path and detection locations as a map and a KML file. Location data is available for this source.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="542"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="551"/>
         <source>Save the flight path and detection locations as a map and a KML file. Nothing is saved unless location data arrives while recording.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1888"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="2007"/>
         <source>Disconnected</source>
         <translation>Verbinding verbroken</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1890"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="2009"/>
         <source>Connecting</source>
         <translation type="unfinished">Verbinden</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1908"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="2027"/>
         <source>✓ Connected: {message}</source>
         <translation>✓ Verbonden: {message}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1954"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="2073"/>
         <source>… {message}</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1959"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="2078"/>
         <source>✗ Disconnected: {message}</source>
         <translation>✗ Verbinding verbroken: {message}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="2193"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="2316"/>
         <source>No detections found.</source>
         <translation>Geen detecties gevonden.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="2197"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="2320"/>
         <source>Detection Results ({count} found):</source>
         <translation>Detectieresultaten ({count} gevonden):</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="2210"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="2333"/>
         <source>#{index}: Type({cls}) Pos({x},{y}) Size({w}x{h})</source>
         <translation>#{index}: type({cls}) pos({x},{y}) grootte({w}x{h})</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="2219"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="2342"/>
         <source>#{index}: Type({cls})</source>
         <translation>#{index}: type({cls})</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="2224"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="2347"/>
         <source> Conf({confidence:.2f})</source>
         <translation> betr({confidence:.2f})</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="2287"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="2410"/>
         <source>Recording saved to {folder}</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="2290"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="2413"/>
         <source>Stored {detections} detections and {fixes} location fixes.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="2297"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="2420"/>
         <source>Flight map saved as {name}</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="2304"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="2427"/>
         <source>Could not save part of the recording: {reason}</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="2345"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="2468"/>
         <source>Recording started: {path}</source>
         <translation>Opname gestart: {path}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="2352"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="2475"/>
         <source>Recording stopped</source>
         <translation>Opname gestopt</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="2369"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="2492"/>
         <source>Status: Recording to {path}</source>
         <translation>Status: opnemen naar {path}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="2392"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="2515"/>
         <source>Duration: {duration:.1f}s | FPS: {fps:.1f} | Frames: {frames} | Queue: {queue}</source>
         <translation>Duur: {duration:.1f}s | FPS: {fps:.1f} | Frames: {frames} | Wachtrij: {queue}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="2410"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="2533"/>
         <source>✗ Error: {error}</source>
         <translation>✗ Fout: {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="2477"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="2600"/>
         <source>Live Stream</source>
         <translation>Live-stream</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="2481"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="2604"/>
         <source>Cannot seek in live stream.
 
 Detection was first seen at frame {frame}.</source>
