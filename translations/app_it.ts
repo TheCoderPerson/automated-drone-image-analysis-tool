@@ -4955,119 +4955,124 @@ non valida</translation>
 <context>
     <name>FlightTile</name>
     <message>
-        <location filename="../app/core/views/flight/FlightTile.py" line="416"/>
+        <location filename="../app/core/views/flight/FlightTile.py" line="427"/>
         <source>Feed {code}</source>
         <translation>Flusso {code}</translation>
     </message>
     <message>
-        <location filename="../app/core/views/flight/FlightTile.py" line="320"/>
-        <location filename="../app/core/views/flight/FlightTile.py" line="339"/>
+        <location filename="../app/core/views/flight/FlightTile.py" line="331"/>
+        <location filename="../app/core/views/flight/FlightTile.py" line="350"/>
         <source>Network: {state}</source>
         <translation>Rete: {state}</translation>
     </message>
     <message>
-        <location filename="../app/core/views/flight/FlightTile.py" line="333"/>
+        <location filename="../app/core/views/flight/FlightTile.py" line="344"/>
         <source>latency: {ms:.0f}ms</source>
         <translation>latenza: {ms:.0f} ms</translation>
     </message>
     <message>
-        <location filename="../app/core/views/flight/FlightTile.py" line="335"/>
+        <location filename="../app/core/views/flight/FlightTile.py" line="346"/>
         <source>latency: --</source>
         <translation>latenza: --</translation>
     </message>
     <message>
-        <location filename="../app/core/views/flight/FlightTile.py" line="413"/>
+        <location filename="../app/core/views/flight/FlightTile.py" line="424"/>
         <source>{name} · {code}</source>
         <translation>{name} · {code}</translation>
     </message>
     <message>
-        <location filename="../app/core/views/flight/FlightTile.py" line="438"/>
+        <location filename="../app/core/views/flight/FlightTile.py" line="449"/>
         <source>Aircraft serial: {sn}</source>
         <translation>Numero di serie del drone: {sn}</translation>
     </message>
     <message>
-        <location filename="../app/core/views/flight/FlightTile.py" line="476"/>
+        <location filename="../app/core/views/flight/FlightTile.py" line="487"/>
         <source>Rename Feed</source>
         <translation>Rinomina flusso</translation>
     </message>
     <message>
-        <location filename="../app/core/views/flight/FlightTile.py" line="480"/>
+        <location filename="../app/core/views/flight/FlightTile.py" line="491"/>
         <source>Nickname for this drone (persists across new pairing codes via the aircraft serial number). Leave blank to clear.</source>
         <translation>Soprannome per questo drone (rimane valido tra nuovi codici di abbinamento tramite il numero di serie del drone). Lascia vuoto per cancellarlo.</translation>
     </message>
     <message>
-        <location filename="../app/core/views/flight/FlightTile.py" line="510"/>
+        <location filename="../app/core/views/flight/FlightTile.py" line="521"/>
         <source>Initializing</source>
         <translation>Inizializzazione</translation>
     </message>
     <message>
-        <location filename="../app/core/views/flight/FlightTile.py" line="511"/>
+        <location filename="../app/core/views/flight/FlightTile.py" line="522"/>
         <source>Connecting</source>
         <translation>Connessione</translation>
     </message>
     <message>
-        <location filename="../app/core/views/flight/FlightTile.py" line="512"/>
-        <location filename="../app/core/views/flight/FlightTile.py" line="513"/>
+        <location filename="../app/core/views/flight/FlightTile.py" line="523"/>
+        <location filename="../app/core/views/flight/FlightTile.py" line="524"/>
         <source>Connected</source>
         <translation>Connesso</translation>
     </message>
     <message>
-        <location filename="../app/core/views/flight/FlightTile.py" line="514"/>
+        <location filename="../app/core/views/flight/FlightTile.py" line="525"/>
         <source>Disconnected</source>
         <translation>Disconnesso</translation>
     </message>
     <message>
-        <location filename="../app/core/views/flight/FlightTile.py" line="515"/>
+        <location filename="../app/core/views/flight/FlightTile.py" line="526"/>
         <source>Failed</source>
         <translation>Non riuscito</translation>
     </message>
     <message>
-        <location filename="../app/core/views/flight/FlightTile.py" line="516"/>
+        <location filename="../app/core/views/flight/FlightTile.py" line="527"/>
         <source>Closed</source>
         <translation>Chiuso</translation>
     </message>
     <message>
-        <location filename="../app/core/views/flight/FlightTile.py" line="530"/>
+        <location filename="../app/core/views/flight/FlightTile.py" line="541"/>
         <source>Rename Feed...</source>
         <translation>Rinomina flusso...</translation>
     </message>
     <message>
-        <location filename="../app/core/views/flight/FlightTile.py" line="547"/>
+        <location filename="../app/core/views/flight/FlightTile.py" line="558"/>
         <source>Restore</source>
         <translation>Ripristina</translation>
     </message>
     <message>
-        <location filename="../app/core/views/flight/FlightTile.py" line="551"/>
+        <location filename="../app/core/views/flight/FlightTile.py" line="562"/>
         <source>Maximize</source>
         <translation>Massimizza</translation>
     </message>
     <message>
-        <location filename="../app/core/views/flight/FlightTile.py" line="536"/>
+        <location filename="../app/core/views/flight/FlightTile.py" line="547"/>
         <source>Full Screen</source>
         <translation>Schermo intero</translation>
     </message>
     <message>
-        <location filename="../app/core/views/flight/FlightTile.py" line="557"/>
+        <location filename="../app/core/views/flight/FlightTile.py" line="568"/>
         <source>Mute Detections in Gallery</source>
         <translation>Nascondi rilevamenti nella galleria</translation>
     </message>
     <message>
-        <location filename="../app/core/views/flight/FlightTile.py" line="573"/>
+        <location filename="../app/core/views/flight/FlightTile.py" line="584"/>
         <source>Stop Recording</source>
         <translation>Interrompi registrazione</translation>
     </message>
     <message>
-        <location filename="../app/core/views/flight/FlightTile.py" line="579"/>
+        <location filename="../app/core/views/flight/FlightTile.py" line="590"/>
         <source>Start Recording…</source>
         <translation>Avvia registrazione…</translation>
     </message>
     <message>
-        <location filename="../app/core/views/flight/FlightTile.py" line="585"/>
+        <location filename="../app/core/views/flight/FlightTile.py" line="597"/>
+        <source>Replay Recording</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/views/flight/FlightTile.py" line="603"/>
         <source>Reconnect</source>
         <translation>Riconnetti</translation>
     </message>
     <message>
-        <location filename="../app/core/views/flight/FlightTile.py" line="591"/>
+        <location filename="../app/core/views/flight/FlightTile.py" line="609"/>
         <source>Close</source>
         <translation>Chiudi</translation>
     </message>
@@ -5108,22 +5113,22 @@ non valida</translation>
 <context>
     <name>FlightTileController</name>
     <message>
-        <location filename="../app/core/controllers/flight/FlightTileController.py" line="213"/>
+        <location filename="../app/core/controllers/flight/FlightTileController.py" line="216"/>
         <source>Looking up code {code} and connecting to the drone.</source>
         <translation>Ricerca del codice {code} e connessione al drone.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/flight/FlightTileController.py" line="287"/>
+        <location filename="../app/core/controllers/flight/FlightTileController.py" line="290"/>
         <source>Name this device</source>
         <translation>Assegna un nome a questo dispositivo</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/flight/FlightTileController.py" line="291"/>
+        <location filename="../app/core/controllers/flight/FlightTileController.py" line="294"/>
         <source>Give this publisher a name so you can recognise it next time (e.g. &apos;Operator A&apos;s M4E&apos;).</source>
         <translation>Dai un nome a questo emittente per riconoscerlo la prossima volta (ad es. &apos;M4E operatore A&apos;).</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/flight/FlightTileController.py" line="312"/>
+        <location filename="../app/core/controllers/flight/FlightTileController.py" line="315"/>
         <source>Device &apos;{label}&apos; presented a different DTLS fingerprint than the last time you paired with it. This could mean the controller was reset, a different controller is using the label, or somebody is impersonating it.
 
 Reject if you weren&apos;t expecting this.</source>
@@ -5132,47 +5137,57 @@ Reject if you weren&apos;t expecting this.</source>
 Rifiuta se non te lo aspettavi.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/flight/FlightTileController.py" line="477"/>
+        <location filename="../app/core/controllers/flight/FlightTileController.py" line="480"/>
         <source>Pairing ended before video could start. Ask the operator to generate a new code and try again.</source>
         <translation>L&apos;abbinamento è terminato prima dell&apos;avvio del video. Chiedi all&apos;operatore di generare un nuovo codice e riprova.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/flight/FlightTileController.py" line="972"/>
+        <location filename="../app/core/controllers/flight/FlightTileController.py" line="976"/>
         <source>Waiting for video before recording can start</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/flight/FlightTileController.py" line="982"/>
+        <location filename="../app/core/controllers/flight/FlightTileController.py" line="986"/>
         <source>Choose recording folder</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/flight/FlightTileController.py" line="1074"/>
+        <location filename="../app/core/controllers/flight/FlightTileController.py" line="1078"/>
         <source>REC ● {filename}</source>
         <translation type="unfinished">REC ● {filename}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/flight/FlightTileController.py" line="1089"/>
+        <location filename="../app/core/controllers/flight/FlightTileController.py" line="1093"/>
         <source>Recording saved</source>
         <translation type="unfinished">Registrazione salvata</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/flight/FlightTileController.py" line="1097"/>
+        <location filename="../app/core/controllers/flight/FlightTileController.py" line="1126"/>
+        <source>No finished recording to replay yet</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/controllers/flight/FlightTileController.py" line="1171"/>
+        <source>Could not open replay: {error}</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/controllers/flight/FlightTileController.py" line="1178"/>
         <source>Recording error: {message}</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/flight/FlightTileController.py" line="315"/>
+        <location filename="../app/core/controllers/flight/FlightTileController.py" line="318"/>
         <source>Fingerprint mismatch — &apos;{label}&apos;</source>
         <translation>Impronta non corrispondente — &apos;{label}&apos;</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/flight/FlightTileController.py" line="326"/>
+        <location filename="../app/core/controllers/flight/FlightTileController.py" line="329"/>
         <source>Fingerprint changed on {ts}; previous identity was overwritten after operator review.</source>
         <translation>Impronta modificata il {ts}; l&apos;identità precedente è stata sovrascritta dopo la verifica dell&apos;operatore.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/flight/FlightTileController.py" line="419"/>
+        <location filename="../app/core/controllers/flight/FlightTileController.py" line="422"/>
         <source>This drone already has {current} viewers connected (maximum {limit}). Ask one to disconnect, or try again later.</source>
         <translation>Questo drone ha già {current} visualizzatori connessi (massimo {limit}). Chiedi a uno di disconnettersi oppure riprova più tardi.</translation>
     </message>

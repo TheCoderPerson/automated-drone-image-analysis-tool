@@ -45,9 +45,10 @@ class FakeRecordingManager(QObject):
 
     def start_recording(self, resolution, filename_prefix="rtmp_recording"):
         self.resolution = tuple(resolution)
-        self.recordingStateChanged.emit(
-            True, os.path.join(self.output_dir, "flight_recording.mp4")
-        )
+        video = os.path.join(self.output_dir, "flight_recording.mp4")
+        with open(video, "wb") as fp:
+            fp.write(b"\x00")
+        self.recordingStateChanged.emit(True, video)
         return True
 
     def stop_recording(self):
@@ -256,6 +257,145 @@ class TestStartStop:
         assert len(finished) == 1
         assert finished[0]["counts"]["detections_stored"] == 1
         assert os.path.isfile(os.path.join(bundle, "detections.csv"))
+
+
+class FakeStreamViewer:
+    """Stands in for the streaming window the replay handoff opens."""
+
+    instances: list = []
+
+    def __init__(self, algorithm_name=None, theme=None):
+        self.algorithm_name = algorithm_name
+        self.theme = theme
+        self.wizard_payloads = []
+        self.shown = False
+        FakeStreamViewer.instances.append(self)
+
+    def apply_wizard_data(self, payload):
+        self.wizard_payloads.append(dict(payload))
+
+    def isVisible(self):
+        return self.shown
+
+    def show(self):
+        self.shown = True
+
+    def raise_(self):
+        pass
+
+    def activateWindow(self):
+        pass
+
+
+@pytest.fixture
+def fake_stream_viewer(monkeypatch):
+    """Patch the lazily-imported StreamViewerWindow and isolate the app singleton."""
+    FakeStreamViewer.instances = []
+    svw_module = import_module("core.controllers.streaming.StreamViewerWindow")
+    monkeypatch.setattr(svw_module, "StreamViewerWindow", FakeStreamViewer)
+
+    app = QApplication.instance()
+    had = hasattr(app, "_stream_viewer")
+    previous = getattr(app, "_stream_viewer", None)
+    if had:
+        delattr(app, "_stream_viewer")
+    yield FakeStreamViewer
+    if had:
+        app._stream_viewer = previous
+    elif hasattr(app, "_stream_viewer"):
+        delattr(app, "_stream_viewer")
+
+
+class TestReplayHandoff:
+    """One click on the tile opens the recording in the replay surface."""
+
+    def _record_once(self, controller):
+        controller._tile._latest_frame_bgr = _frame()
+        controller._on_recording_start_requested(controller._tile)
+        bundle = controller._recording.recording_bundle_dir
+        controller._on_recording_stop_requested(controller._tile)
+        return bundle
+
+    def test_a_finished_recording_offers_replay(self, recording_dir):
+        controller = _make_controller()
+        try:
+            assert controller._tile._replay_available is False
+
+            bundle = self._record_once(controller)
+
+            assert controller._tile._replay_available is True
+            assert controller._last_replay_video == os.path.join(
+                bundle, "flight_recording.mp4"
+            )
+        finally:
+            controller.tear_down()
+
+    def test_replay_opens_the_streaming_window_on_the_recording(
+            self, recording_dir, fake_stream_viewer):
+        controller = _make_controller()
+        try:
+            bundle = self._record_once(controller)
+
+            controller._tile.replayRequested.emit(controller._tile)
+
+            assert len(fake_stream_viewer.instances) == 1
+            viewer = fake_stream_viewer.instances[0]
+            # No detector: replay shows the stored record.
+            assert viewer.algorithm_name == ""
+            assert viewer.shown is True
+            assert viewer.wizard_payloads == [{
+                "stream_type": "File",
+                "stream_url": os.path.join(bundle, "flight_recording.mp4"),
+                "auto_connect": True,
+            }]
+            # Registered as the app's one streaming window, like the
+            # viewer's other navigation entries.
+            assert getattr(QApplication.instance(), "_stream_viewer") is viewer
+        finally:
+            controller.tear_down()
+
+    def test_replay_reuses_a_visible_streaming_window(
+            self, recording_dir, fake_stream_viewer):
+        """A second replay re-points the open window, not a new one."""
+        controller = _make_controller()
+        try:
+            self._record_once(controller)
+
+            controller._tile.replayRequested.emit(controller._tile)
+            controller._tile.replayRequested.emit(controller._tile)
+
+            assert len(fake_stream_viewer.instances) == 1
+            assert len(fake_stream_viewer.instances[0].wizard_payloads) == 2
+        finally:
+            controller.tear_down()
+
+    def test_replay_before_any_recording_is_a_soft_no(
+            self, recording_dir, fake_stream_viewer):
+        controller = _make_controller()
+        try:
+            controller._tile.replayRequested.emit(controller._tile)
+
+            assert fake_stream_viewer.instances == []
+            badge = controller._tile.ui.statusBadgeLabel.text()
+            assert "No finished recording" in badge
+        finally:
+            controller.tear_down()
+
+    def test_replay_survives_the_bundle_being_deleted(
+            self, recording_dir, fake_stream_viewer):
+        """A vanished folder degrades to the badge, not a crash."""
+        import shutil
+
+        controller = _make_controller()
+        try:
+            bundle = self._record_once(controller)
+            shutil.rmtree(bundle)
+
+            controller._tile.replayRequested.emit(controller._tile)
+
+            assert fake_stream_viewer.instances == []
+        finally:
+            controller.tear_down()
 
 
 class TestIndependence:

@@ -153,6 +153,9 @@ class FlightTileController(QObject):
         self._recording.recordingStateChanged.connect(self._on_recording_state_changed)
         self._recording.recordingBundleReady.connect(self._on_recording_bundle_ready)
         self._recording.errorOccurred.connect(self._on_recording_error)
+        # The video of this tile's last finished recording, for one-click
+        # replay from the context menu.
+        self._last_replay_video: Optional[str] = None
         # Desktop-side thumbnail cropper (plan §19.4.1). Created in
         # ``_materialize_tile`` once the FlightTile (and its overlay,
         # which owns the frame ring) exists.
@@ -512,6 +515,7 @@ class FlightTileController(QObject):
         tile.displayNameChanged.connect(self.feedDisplayNameChanged.emit)
         tile.recordingStartRequested.connect(self._on_recording_start_requested)
         tile.recordingStopRequested.connect(self._on_recording_stop_requested)
+        tile.replayRequested.connect(self._on_replay_requested)
         self._tile = tile
 
         feed_service = DetectionFeedService(parent=self)
@@ -1087,8 +1091,85 @@ class FlightTileController(QObject):
         tile = self._tile
         if tile is not None:
             tile.set_recording_result(self.tr("Recording saved"), bundle_dir)
+        # Remember the recorded video so the context menu can offer
+        # one-click replay of this feed's session.
+        video = self._first_video_in(bundle_dir)
+        if video is not None:
+            self._last_replay_video = video
+            if tile is not None:
+                tile.set_replay_available(True)
         if self._pairing_code:
             self.recordingFinished.emit(self._pairing_code, dict(result))
+
+    @staticmethod
+    def _first_video_in(bundle_dir: str):
+        if not bundle_dir or not os.path.isdir(bundle_dir):
+            return None
+        videos = sorted(
+            name for name in os.listdir(bundle_dir) if name.lower().endswith(".mp4")
+        )
+        return os.path.join(bundle_dir, videos[0]) if videos else None
+
+    def _on_replay_requested(self, tile) -> None:
+        """Open this tile's last recording in the streaming window.
+
+        The streaming window is the app's replay surface: connecting it to
+        a bundle's video loads the stored detections into its gallery and
+        map and replays telemetry from the sidecar SRT, with the detectors
+        off. This is the inline path there - one click on the tile.
+        """
+        video = self._last_replay_video
+        if not video or not os.path.isfile(video):
+            if tile is not None:
+                tile.set_recording_result(
+                    self.tr("No finished recording to replay yet")
+                )
+            return
+        self._open_replay(video)
+
+    def _open_replay(self, video_path: str) -> None:
+        """Route the streaming window to ``video_path`` as a File source.
+
+        Mirrors FlightViewerController._open_streaming_detector: one
+        streaming window per app, reused when visible - but unlike plain
+        navigation, the reused window is re-pointed at the recording via
+        apply_wizard_data, whose auto_connect drives the ordinary File
+        connect path (and with it replay mode).
+        """
+        try:
+            # Imported lazily to avoid a circular import - the streaming
+            # window imports flight views (pairing dialog, HUD).
+            from core.controllers.streaming.StreamViewerWindow import StreamViewerWindow
+            from core.services.streaming.RTMPStreamService import SOURCE_TYPE_FILE
+            from core.services.SettingsService import SettingsService
+            from PySide6.QtWidgets import QApplication
+
+            app = QApplication.instance()
+            viewer = getattr(app, "_stream_viewer", None) if app else None
+            if viewer is None or not self._safe_is_visible(viewer):
+                theme = SettingsService().get_setting("Theme", "Dark").lower()
+                # No algorithm: replay never runs a detector, so loading
+                # one would only cost startup time.
+                viewer = StreamViewerWindow(algorithm_name="", theme=theme)
+                if app is not None:
+                    app._stream_viewer = viewer
+            viewer.apply_wizard_data({
+                "stream_type": SOURCE_TYPE_FILE,
+                "stream_url": video_path,
+                "auto_connect": True,
+            })
+            viewer.show()
+            viewer.raise_()
+            viewer.activateWindow()
+        except Exception as exc:  # noqa: BLE001 - never take the tile down
+            self.logger.error(
+                f"FlightTileController({self._pairing_code}): "
+                f"could not open replay: {exc}"
+            )
+            if self._tile is not None:
+                self._tile.set_recording_result(
+                    self.tr("Could not open replay: {error}").format(error=exc)
+                )
 
     def _on_recording_error(self, message: str) -> None:
         tile = self._tile

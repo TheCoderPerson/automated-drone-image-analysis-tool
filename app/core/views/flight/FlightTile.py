@@ -55,6 +55,10 @@ class FlightTile(TranslationMixin, QFrame):
     # only asks. Both carry the tile so a shared slot can tell feeds apart.
     recordingStartRequested = Signal(object)
     recordingStopRequested = Signal(object)
+    # Ask the controller to replay this tile's last finished recording in
+    # the streaming window (which owns file playback, seek, and the
+    # replay gallery/map). Carries the tile like the other requests.
+    replayRequested = Signal(object)
     # Fires whenever the tile's operator-facing display name changes —
     # nickname rename, ``aircraft_name`` arriving from telemetry, or
     # the operator clearing a nickname. Carries the pairing code and
@@ -111,6 +115,9 @@ class FlightTile(TranslationMixin, QFrame):
         # Mirrors the controller's recording state so the context menu
         # offers the right verb; set via set_recording_state().
         self._is_recording = False
+        # True once this tile has a finished recording that can be
+        # replayed; set via set_replay_available().
+        self._replay_available = False
         # Most-recent decoded source frame (BGR ndarray). Held by
         # reference, not copied — ``WebRTCStreamService`` produces one
         # ndarray per frame and the prior reference goes out of scope
@@ -310,6 +317,10 @@ class FlightTile(TranslationMixin, QFrame):
         self._is_recording = False
         self.ui.statusBadgeLabel.setText(message)
         self.ui.statusBadgeLabel.setToolTip(bundle_dir or "")
+
+    def set_replay_available(self, available: bool) -> None:
+        """Offer (or stop offering) "Replay Recording" in the context menu."""
+        self._replay_available = bool(available)
 
     # ------------------------------------------------------------------
     # status strip
@@ -581,6 +592,13 @@ class FlightTile(TranslationMixin, QFrame):
                 lambda: self.recordingStartRequested.emit(self)
             )
             menu.addAction(start_rec)
+
+        if self._replay_available and not self.is_recording:
+            replay = QAction(self.tr("Replay Recording"), menu)
+            replay.triggered.connect(
+                lambda: self.replayRequested.emit(self)
+            )
+            menu.addAction(replay)
 
         reconnect = QAction(self.tr("Reconnect"), menu)
         reconnect.triggered.connect(lambda: self.reconnectRequested.emit(self))
