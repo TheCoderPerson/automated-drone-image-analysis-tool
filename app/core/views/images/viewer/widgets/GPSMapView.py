@@ -24,6 +24,7 @@ from core.services.image.AOIService import AOIService, _get_terrain_service
 from core.services.LoggerService import LoggerService
 from helpers.TranslationMixin import TranslationMixin
 from helpers.PhotogrammetryHelper import FovHomography, validate_alignment
+from helpers.FormatHelper import FormatHelper
 
 
 class GPSMapView(TranslationMixin, QGraphicsView):
@@ -1489,6 +1490,28 @@ class GPSMapView(TranslationMixin, QGraphicsView):
         except Exception:
             return True
 
+    def _distance_unit(self):
+        """The operator's DistanceUnit preference, reached defensively.
+
+        This widget is nested under the map dialog rather than the viewer,
+        and is constructed in contexts where neither is present, so the
+        preference is read through the settings store with the viewer as a
+        hint. Feet is the app-wide default.
+        """
+        try:
+            parent = self.parent()
+            viewer = parent.parent() if parent is not None else None
+            unit = getattr(viewer, 'distance_unit', None)
+            if unit:
+                return unit
+        except Exception:  # noqa: BLE001 - a tooltip must never raise
+            pass
+        try:
+            from core.services.SettingsService import SettingsService
+            return SettingsService().get_setting('DistanceUnit', 'Feet')
+        except Exception:  # noqa: BLE001
+            return 'Feet'
+
     def update_fov_box(self, image_index):
         """
         Update the Field of View box for the current image.
@@ -1739,8 +1762,13 @@ class GPSMapView(TranslationMixin, QGraphicsView):
             tooltip += f"GSD: {gsd_cm:.2f} cm/px\n"
             tooltip += f"Bearing: {bearing:.1f}°"
             if terrain_elevation is not None:
-                tooltip += f"\nTerrain: {terrain_elevation:.0f}m ASL"
-                tooltip += f"\nEffective AGL: {effective_agl:.1f}m"
+                # Operator's own units, like every other altitude surface.
+                unit = self._distance_unit()
+                terrain_text = FormatHelper.format_elevation(
+                    terrain_elevation, unit, places=0)
+                agl_text = FormatHelper.format_elevation(effective_agl, unit)
+                tooltip += f"\n{self.tr('Terrain')}: {terrain_text} ASL"
+                tooltip += f"\n{self.tr('Effective AGL')}: {agl_text}"
             if has_raycast:
                 tooltip += "\nProjection: Raycast"
 

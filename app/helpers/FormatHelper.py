@@ -65,6 +65,46 @@ class FormatHelper:
         "change everywhere else."
     )
 
+    # Metres to feet. One constant, because three different values of it
+    # (/3.28084, *0.3048, *30.48) were already in the altitude code.
+    METERS_TO_FEET = 3.28084
+
+    @staticmethod
+    def format_elevation(meters, distance_unit='m', places=None):
+        """Format a terrain elevation in the operator's preferred unit.
+
+        Elevations follow the same ``DistanceUnit`` preference as
+        altitudes: showing one in metres beside the other in feet is the
+        kind of mismatch that makes an operator distrust both.
+
+        Args:
+            meters (float): Elevation in metres, as the DEM reports it.
+            distance_unit (str): ``'ft'``/``'Feet'`` or ``'m'``/``'Meters'``.
+            places (int, optional): Decimals. Defaults to 0 for feet (a
+                tenth of a foot is below DEM accuracy) and 1 for metres.
+
+        Returns:
+            str or None: e.g. ``'1006 ft'`` or ``'306.7 m'``; None when
+            there is no elevation to show.
+        """
+        if not isinstance(meters, (int, float)):
+            return None
+        if FormatHelper.prefers_feet(distance_unit):
+            value = float(meters) * FormatHelper.METERS_TO_FEET
+            return f"{value:.{0 if places is None else places}f} ft"
+        return f"{float(meters):.{1 if places is None else places}f} m"
+
+    @staticmethod
+    def prefers_feet(distance_unit) -> bool:
+        """Whether a ``DistanceUnit`` value means feet.
+
+        The app carries the preference in two spellings - ``'Feet'`` from
+        the settings store and ``'ft'`` from the viewer - so every caller
+        that has to branch on it asks here instead of matching one form
+        and silently failing on the other.
+        """
+        return str(distance_unit or '').strip().lower() in ('ft', 'feet')
+
     @staticmethod
     def altitude_inline(readings):
         """One-line altitude summary for tight UI, e.g. a status bar.

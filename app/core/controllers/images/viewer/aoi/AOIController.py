@@ -24,6 +24,7 @@ from PySide6.QtGui import QCursor, QColor
 from core.services.LoggerService import LoggerService
 from core.services.image.AOIService import AOIService
 from core.controllers.images.viewer.aoi.AOIUIComponent import AOIUIComponent
+from helpers.FormatHelper import FormatHelper
 from helpers.LocationInfo import LocationInfo
 from core.views.images.viewer.dialogs.AOICommentDialog import AOICommentDialog
 from core.views.images.viewer.dialogs.AOIFilterDialog import AOIFilterDialog
@@ -1076,15 +1077,29 @@ class AOIController(TranslationMixin):
 
             # Add elevation source indicator
             if result.elevation_source == 'terrain':
-                # Terrain elevation was used
+                # Terrain elevation was used. Shown in the operator's own
+                # DistanceUnit: this sits beside a status bar in feet, and
+                # a popup answering in metres reads as a different system.
+                unit = getattr(self.parent, 'distance_unit', 'ft')
                 source_icon = "🏔️"
-                source_tooltip = f"Terrain elevation: {result.terrain_elevation_m:.1f}m" if result.terrain_elevation_m else "Terrain-corrected"
+                elevation = FormatHelper.format_elevation(
+                    result.terrain_elevation_m, unit)
+                if elevation:
+                    source_tooltip = self.tr("Terrain elevation: {value}").format(
+                        value=elevation)
+                else:
+                    source_tooltip = self.tr("Terrain-corrected")
                 if result.terrain_resolution_m:
-                    source_tooltip += f" (~{result.terrain_resolution_m:.0f}m resolution)"
+                    # The DEM's own sample spacing - 1 m means local USGS
+                    # 3DEP answered, ~38 m the global online source.
+                    resolution = FormatHelper.format_elevation(
+                        result.terrain_resolution_m, unit, places=0)
+                    source_tooltip += self.tr(" (~{value} resolution)").format(
+                        value=resolution)
             else:
                 # Flat terrain assumed
                 source_icon = "⬜"
-                source_tooltip = "Flat terrain assumed"
+                source_tooltip = self.tr("Flat terrain assumed")
 
             # Show popup using coordinate controller's method
             if hasattr(self.parent, 'coordinate_controller'):

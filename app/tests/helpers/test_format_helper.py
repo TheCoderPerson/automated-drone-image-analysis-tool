@@ -147,3 +147,51 @@ class TestAltitudeRendering:
         """A landed aircraft reads 0; that is not "no altitude"."""
         readings = self._readings(value=0.0, unit='ft')
         assert FormatHelper.altitude_inline(readings) == "0.0 ft ATO"
+
+
+class TestElevationFormatting:
+    """Elevations follow the same DistanceUnit preference as altitudes.
+
+    Showing one in metres beside the other in feet is the mismatch that
+    makes an operator distrust both readings - which is exactly what the
+    coordinate popup did while the status bar read feet.
+    """
+
+    def test_feet_preference_converts(self):
+        # 306.7 m is 1006 ft.
+        assert FormatHelper.format_elevation(306.7, 'ft') == '1006 ft'
+
+    def test_metres_preference_keeps_metres(self):
+        assert FormatHelper.format_elevation(306.7, 'm') == '306.7 m'
+
+    def test_both_spellings_of_the_preference_work(self):
+        """The store says 'Feet'; the viewer says 'ft'. Both mean feet."""
+        assert FormatHelper.format_elevation(306.7, 'Feet') == '1006 ft'
+        assert FormatHelper.format_elevation(306.7, 'Meters') == '306.7 m'
+
+    def test_feet_default_to_whole_units(self):
+        """A tenth of a foot is far below DEM accuracy."""
+        assert FormatHelper.format_elevation(100.0, 'ft') == '328 ft'
+
+    def test_places_can_be_overridden(self):
+        assert FormatHelper.format_elevation(306.7, 'ft', places=1) == '1006.2 ft'
+        assert FormatHelper.format_elevation(38.0, 'm', places=0) == '38 m'
+
+    @pytest.mark.parametrize("junk", [None, '', 'abc', object()])
+    def test_junk_has_no_elevation_to_show(self, junk):
+        assert FormatHelper.format_elevation(junk, 'ft') is None
+
+    def test_zero_is_a_value_not_an_absence(self):
+        """Sea level is a real elevation."""
+        assert FormatHelper.format_elevation(0.0, 'm') == '0.0 m'
+
+    def test_an_unknown_preference_falls_back_to_metres(self):
+        """The DEM's own unit: never silently reinterpret the number."""
+        assert FormatHelper.format_elevation(306.7, 'furlongs') == '306.7 m'
+
+    @pytest.mark.parametrize("value,expected", [
+        ('ft', True), ('Feet', True), ('FT', True), (' feet ', True),
+        ('m', False), ('Meters', False), (None, False), ('', False),
+    ])
+    def test_prefers_feet_accepts_both_spellings(self, value, expected):
+        assert FormatHelper.prefers_feet(value) is expected
