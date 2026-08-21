@@ -381,21 +381,13 @@ class StreamViewerWindow(TranslationMixin, QMainWindow):
         recording_layout.setContentsMargins(5, 5, 5, 5)
         recording_layout.setSpacing(5)
 
-        # Recording buttons
-        button_layout = QHBoxLayout()
-        self.start_recording_btn = QPushButton(self.tr("Start Recording"))
-        self.start_recording_btn.setStyleSheet("QPushButton { background-color: #ff4444; color: white; font-weight: bold; }")
-        self.start_recording_btn.setToolTip(
-            self.tr("Start recording the video stream with detection overlays.")
-        )
-        self.stop_recording_btn = QPushButton(self.tr("Stop Recording"))
-        self.stop_recording_btn.setEnabled(False)
-        self.stop_recording_btn.setToolTip(
-            self.tr("Stop the current recording and save to file.")
-        )
-
-        button_layout.addWidget(self.start_recording_btn)
-        button_layout.addWidget(self.stop_recording_btn)
+        # The Start/Stop buttons live INLINE with the play button (see
+        # PlaybackControlBar) - recording acts on the video, so its
+        # trigger sits with the video. The panel keeps everything about
+        # where and what to save. Aliased here so every state handler
+        # (enable/disable, focus handoff, auto-record) is unchanged.
+        self.start_recording_btn = self.playback_controls.record_btn
+        self.stop_recording_btn = self.playback_controls.stop_record_btn
 
         # Recording status
         self.recording_status = QLabel(self.tr("Status: Not Recording"))
@@ -453,7 +445,6 @@ class StreamViewerWindow(TranslationMixin, QMainWindow):
             self.tr("Open the folder holding the last recording and its detections.")
         )
 
-        recording_layout.addLayout(button_layout)
         recording_layout.addWidget(self.recording_status)
         recording_layout.addWidget(self.recording_info)
         recording_layout.addLayout(dir_layout)
@@ -2033,11 +2024,13 @@ finalize_bundle`).
             if self.tab_widget.currentWidget() is self.gallery_widget:
                 self.tab_widget.setCurrentIndex(0)
 
-            # Show playback controls for file streams
+            # File streams get the full bar (timeline + recording); live
+            # streams get the record-only strip - a live feed has no
+            # timeline, but it is exactly what the operator records.
             if self.stream_coordinator.current_stream_type == StreamType.FILE:
                 self.playback_controls.show_for_file()
             else:
-                self.playback_controls.hide_for_stream()
+                self.playback_controls.show_for_live()
 
             # Notify algorithm
             if self.algorithm_widget:

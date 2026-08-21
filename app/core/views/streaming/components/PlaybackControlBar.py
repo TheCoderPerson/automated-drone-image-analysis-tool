@@ -73,6 +73,31 @@ class PlaybackControlBar(TranslationMixin, QWidget):
         self.total_time_label.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
         layout.addWidget(self.total_time_label)
 
+        # Recording controls, inline with playback. They belong to the
+        # video they act on, so they sit beside the play button rather
+        # than in the settings panel; the panel keeps the recording
+        # status, duration, folder and options. StreamViewerWindow owns
+        # the click handling and state (its start/stop_recording_btn
+        # attributes alias these), so live sources - which have no
+        # timeline - still show the bar as a record-only strip.
+        self.record_btn = QPushButton(self.tr("Start Recording"))
+        self.record_btn.setFixedHeight(40)
+        self.record_btn.setStyleSheet(
+            "QPushButton { background-color: #ff4444; color: white; font-weight: bold; }"
+        )
+        self.record_btn.setToolTip(
+            self.tr("Start recording the video stream with detection overlays.")
+        )
+        layout.addWidget(self.record_btn)
+
+        self.stop_record_btn = QPushButton(self.tr("Stop Recording"))
+        self.stop_record_btn.setFixedHeight(40)
+        self.stop_record_btn.setEnabled(False)
+        self.stop_record_btn.setToolTip(
+            self.tr("Stop the current recording and save to file.")
+        )
+        layout.addWidget(self.stop_record_btn)
+
     def connect_signals(self):
         """Connect internal signals."""
         self.play_pause_btn.clicked.connect(self.on_play_pause_clicked)
@@ -125,13 +150,31 @@ class PlaybackControlBar(TranslationMixin, QWidget):
             self.timeline_slider.setValue(slider_value)
             self.timeline_slider.blockSignals(False)
 
+    def _set_playback_visible(self, visible: bool) -> None:
+        """Show/hide the timeline widgets; the record buttons stay."""
+        self.play_pause_btn.setVisible(visible)
+        self.current_time_label.setVisible(visible)
+        self.timeline_slider.setVisible(visible)
+        self.total_time_label.setVisible(visible)
+
     def show_for_file(self):
-        """Show controls for file playback."""
+        """Show the full bar for file playback: timeline plus recording."""
+        self._set_playback_visible(True)
         self.setVisible(True)
         self.update_play_state(True)
 
+    def show_for_live(self):
+        """Show a record-only strip for live sources.
+
+        A live feed has no timeline to scrub, but it is exactly what the
+        operator records - hiding the whole bar (the old behavior) would
+        put the record buttons out of reach for RTMP/HDMI/ADIAT Flight.
+        """
+        self._set_playback_visible(False)
+        self.setVisible(True)
+
     def hide_for_stream(self):
-        """Hide controls for live stream."""
+        """Hide the bar entirely - nothing connected, nothing to record."""
         self.setVisible(False)
 
     def reset(self):

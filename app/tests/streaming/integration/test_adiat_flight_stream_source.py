@@ -116,14 +116,19 @@ class TestAdiatFlightStreamSource:
 
         assert received == [((720, 1280, 3), 3)]
 
-    def test_playback_controls_hidden_for_live_feed(self, viewer, stub_services):
-        """No timeline for a live source — same as HDMI/RTMP."""
+    def test_live_feed_shows_the_record_only_strip(self, viewer, stub_services):
+        """No timeline for a live source — but recording stays reachable.
+
+        The bar used to hide entirely for live feeds; now it shows as a
+        record-only strip, because a live feed is exactly what the
+        operator records.
+        """
         viewer.on_connect_requested("K7QM3P", StreamType.WEBRTC)
-        with patch.object(viewer.playback_controls, "hide_for_stream") as hide, \
+        with patch.object(viewer.playback_controls, "show_for_live") as live, \
                 patch.object(viewer.playback_controls, "show_for_file") as show:
             viewer.on_connection_changed(True, "connected")
 
-        hide.assert_called_once()
+        live.assert_called_once()
         show.assert_not_called()
 
     def test_seek_is_inert_for_live_feed(self, viewer, stub_services):

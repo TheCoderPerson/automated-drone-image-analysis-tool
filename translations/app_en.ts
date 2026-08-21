@@ -10632,6 +10632,26 @@ Choose the specific flight/sortie folder rather than a folder containing several
         <source>Seek through video</source>
         <translation>Seek through video</translation>
     </message>
+    <message>
+        <location filename="../app/core/views/streaming/components/PlaybackControlBar.py" line="83"/>
+        <source>Start Recording</source>
+        <translation type="unfinished">Start Recording</translation>
+    </message>
+    <message>
+        <location filename="../app/core/views/streaming/components/PlaybackControlBar.py" line="90"/>
+        <source>Start recording the video stream with detection overlays.</source>
+        <translation type="unfinished">Start recording the video stream with detection overlays.</translation>
+    </message>
+    <message>
+        <location filename="../app/core/views/streaming/components/PlaybackControlBar.py" line="93"/>
+        <source>Stop Recording</source>
+        <translation type="unfinished">Stop Recording</translation>
+    </message>
+    <message>
+        <location filename="../app/core/views/streaming/components/PlaybackControlBar.py" line="98"/>
+        <source>Stop the current recording and save to file.</source>
+        <translation type="unfinished">Stop the current recording and save to file.</translation>
+    </message>
 </context>
 <context>
     <name>Preferences</name>
@@ -12963,114 +12983,94 @@ Not needed for most videos, which already carry it.</source>
         <translation>YouTube Channel</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="386"/>
-        <source>Start Recording</source>
-        <translation>Start Recording</translation>
-    </message>
-    <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="390"/>
-        <source>Start recording the video stream with detection overlays.</source>
-        <translation>Start recording the video stream with detection overlays.</translation>
-    </message>
-    <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="391"/>
-        <source>Stop Recording</source>
-        <translation>Stop Recording</translation>
-    </message>
-    <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="395"/>
-        <source>Stop the current recording and save to file.</source>
-        <translation>Stop the current recording and save to file.</translation>
-    </message>
-    <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="401"/>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="2499"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="393"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="2492"/>
         <source>Status: Not Recording</source>
         <translation>Status: Not Recording</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="405"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="397"/>
         <source>Current recording status and output file path</source>
         <translation>Current recording status and output file path</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="408"/>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="2501"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="400"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="2494"/>
         <source>Duration: --</source>
         <translation>Duration: --</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="411"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="403"/>
         <source>Recording statistics: Duration, FPS, Frames</source>
         <translation>Recording statistics: Duration, FPS, Frames</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="415"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="407"/>
         <source>Save to:</source>
         <translation>Save to:</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="420"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="412"/>
         <source>Directory where video recordings will be saved.</source>
         <translation>Directory where video recordings will be saved.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="421"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="413"/>
         <source>Browse...</source>
         <translation>Browse...</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="424"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="416"/>
         <source>Choose a folder to store recordings.</source>
         <translation>Choose a folder to store recordings.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="433"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="425"/>
         <source>Save detections</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="439"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="431"/>
         <source>Save each confirmed detection with the recording: a thumbnail, its position, and a results file that opens in the Image Analysis window.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="440"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="432"/>
         <source>Save flight map</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="446"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="438"/>
         <source>Save the flight path and detection locations as a map and a KML file. Requires location data from the video or a live ADIAT Flight feed.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="450"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="442"/>
         <source>Open Recording Folder</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="454"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="446"/>
         <source>Open the folder holding the last recording and its detections.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="569"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="560"/>
         <source>Select Recording Directory</source>
         <translation>Select Recording Directory</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="589"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="580"/>
         <source>Algorithm:</source>
         <translation>Algorithm:</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="592"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="583"/>
         <source>Select which streaming detection algorithm to use</source>
         <translation>Select which streaming detection algorithm to use</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="601"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="592"/>
         <source>Choose which streaming detection algorithm to run.
 • Color Anomaly &amp; Motion Detection: fused anomaly detectors
 • Color Detection: color-based highlighting</source>
@@ -13079,22 +13079,22 @@ Not needed for most videos, which already carry it.</source>
 • Color Detection: color-based highlighting</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="632"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="623"/>
         <source>Gallery Threshold:</source>
         <translation>Gallery Threshold:</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="637"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="628"/>
         <source>Number of frames a detection must be seen before appearing in the Gallery tab</source>
         <translation>Number of frames a detection must be seen before appearing in the Gallery tab</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="642"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="633"/>
         <source> frames</source>
         <translation> frames</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="649"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="640"/>
         <source>Detections must be seen for this many consecutive frames
 before appearing in the Gallery. Higher values reduce
 false positives but delay detection appearance.</source>
@@ -13103,239 +13103,239 @@ before appearing in the Gallery. Higher values reduce
 false positives but delay detection appearance.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="728"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="719"/>
         <source>Device {index}</source>
         <translation>Device {index}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="937"/>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="956"/>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="970"/>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="993"/>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1007"/>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1021"/>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1035"/>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="2535"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="928"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="947"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="961"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="984"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="998"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1012"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1026"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="2528"/>
         <source>Error</source>
         <translation>Error</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="938"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="929"/>
         <source>Failed to open Streaming Analysis Guide:
 {error}</source>
         <translation>Failed to open Streaming Analysis Guide:
 {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="957"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="948"/>
         <source>Failed to open Image Analysis:
 {error}</source>
         <translation>Failed to open Image Analysis:
 {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="971"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="962"/>
         <source>Failed to open Preferences:
 {error}</source>
         <translation>Failed to open Preferences:
 {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="994"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="985"/>
         <source>Failed to open Flight Viewer:
 {error}</source>
         <translation>Failed to open Flight Viewer:
 {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1008"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="999"/>
         <source>Failed to open Help documentation:
 {error}</source>
         <translation>Failed to open Help documentation:
 {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1022"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1013"/>
         <source>Failed to open Community Forum:
 {error}</source>
         <translation>Failed to open Community Forum:
 {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1036"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1027"/>
         <source>Failed to open YouTube Channel:
 {error}</source>
         <translation>Failed to open YouTube Channel:
 {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1146"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1137"/>
         <source>Loaded: {algorithm}</source>
         <translation>Loaded: {algorithm}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1162"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1153"/>
         <source>Error loading algorithm: {error}</source>
         <translation>Error loading algorithm: {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1166"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1157"/>
         <source>Algorithm Load Error</source>
         <translation>Algorithm Load Error</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1677"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1668"/>
         <source>Algorithm switched to {label}</source>
         <translation>Algorithm switched to {label}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1775"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1766"/>
         <source>Replaying recording: {count} stored detections loaded - click one in the Gallery to jump to it.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1779"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1770"/>
         <source>Detectors are off during replay; the stored record is shown.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1782"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1773"/>
         <source>{count} detections pinned on the map.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1870"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1861"/>
         <source>Connecting to {code}...</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1958"/>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="2096"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1949"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="2089"/>
         <source>No Stream Connected</source>
         <translation>No Stream Connected</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="2009"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="2000"/>
         <source>{state} - {message}</source>
         <translation>{state} - {message}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="2005"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1996"/>
         <source>Connected</source>
         <translation>Connected</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="544"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="535"/>
         <source>Save the flight path and detection locations as a map and a KML file. Location data is available for this source.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="551"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="542"/>
         <source>Save the flight path and detection locations as a map and a KML file. Nothing is saved unless location data arrives while recording.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="2007"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="1998"/>
         <source>Disconnected</source>
         <translation>Disconnected</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="2009"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="2000"/>
         <source>Connecting</source>
         <translation type="unfinished">Connecting</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="2027"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="2018"/>
         <source>✓ Connected: {message}</source>
         <translation>✓ Connected: {message}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="2073"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="2066"/>
         <source>… {message}</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="2078"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="2071"/>
         <source>✗ Disconnected: {message}</source>
         <translation>✗ Disconnected: {message}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="2316"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="2309"/>
         <source>No detections found.</source>
         <translation>No detections found.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="2320"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="2313"/>
         <source>Detection Results ({count} found):</source>
         <translation>Detection Results ({count} found):</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="2333"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="2326"/>
         <source>#{index}: Type({cls}) Pos({x},{y}) Size({w}x{h})</source>
         <translation>#{index}: Type({cls}) Pos({x},{y}) Size({w}x{h})</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="2342"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="2335"/>
         <source>#{index}: Type({cls})</source>
         <translation>#{index}: Type({cls})</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="2347"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="2340"/>
         <source> Conf({confidence:.2f})</source>
         <translation> Conf({confidence:.2f})</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="2410"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="2403"/>
         <source>Recording saved to {folder}</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="2413"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="2406"/>
         <source>Stored {detections} detections and {fixes} location fixes.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="2420"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="2413"/>
         <source>Flight map saved as {name}</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="2427"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="2420"/>
         <source>Could not save part of the recording: {reason}</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="2468"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="2461"/>
         <source>Recording started: {path}</source>
         <translation>Recording started: {path}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="2475"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="2468"/>
         <source>Recording stopped</source>
         <translation>Recording stopped</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="2492"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="2485"/>
         <source>Status: Recording to {path}</source>
         <translation>Status: Recording to {path}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="2515"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="2508"/>
         <source>Duration: {duration:.1f}s | FPS: {fps:.1f} | Frames: {frames} | Queue: {queue}</source>
         <translation>Duration: {duration:.1f}s | FPS: {fps:.1f} | Frames: {frames} | Queue: {queue}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="2533"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="2526"/>
         <source>✗ Error: {error}</source>
         <translation>✗ Error: {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="2600"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="2593"/>
         <source>Live Stream</source>
         <translation>Live Stream</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="2604"/>
+        <location filename="../app/core/controllers/streaming/StreamViewerWindow.py" line="2597"/>
         <source>Cannot seek in live stream.
 
 Detection was first seen at frame {frame}.</source>

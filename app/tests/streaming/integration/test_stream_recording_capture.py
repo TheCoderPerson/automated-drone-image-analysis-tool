@@ -383,6 +383,52 @@ class TestWizardAutoRecord:
             assert os.path.isfile(os.path.join(bundle, name)), name
 
 
+class TestInlineRecordButtons:
+    """Start/Stop Recording live beside the play button, not in the panel."""
+
+    def test_window_buttons_are_the_playback_bars_buttons(self, window):
+        """Aliasing is the contract: every state handler keeps working."""
+        assert window.start_recording_btn is window.playback_controls.record_btn
+        assert window.stop_recording_btn is window.playback_controls.stop_record_btn
+
+    def test_recording_state_still_drives_the_inline_buttons(self, window):
+        window._update_recording_state(True, "C:/rec/video.mp4")
+        assert window.playback_controls.record_btn.isEnabled() is False
+        assert window.playback_controls.stop_record_btn.isEnabled() is True
+
+        window._update_recording_state(False, "")
+        assert window.playback_controls.record_btn.isEnabled() is True
+        assert window.playback_controls.stop_record_btn.isEnabled() is False
+
+    def test_live_sources_get_a_record_only_strip(self, window):
+        """The bar used to vanish for live feeds, taking recording with it."""
+        bar = window.playback_controls
+        bar.show_for_live()
+
+        assert bar.isVisibleTo(window) is True
+        assert bar.record_btn.isVisibleTo(bar) is True
+        assert bar.stop_record_btn.isVisibleTo(bar) is True
+        # No timeline to scrub on a live feed.
+        assert bar.play_pause_btn.isVisibleTo(bar) is False
+        assert bar.timeline_slider.isVisibleTo(bar) is False
+
+    def test_file_sources_get_the_full_bar(self, window):
+        bar = window.playback_controls
+        bar.show_for_live()  # e.g. previous source was live
+        bar.show_for_file()
+
+        assert bar.play_pause_btn.isVisibleTo(bar) is True
+        assert bar.timeline_slider.isVisibleTo(bar) is True
+        assert bar.record_btn.isVisibleTo(bar) is True
+
+    def test_disconnect_hides_the_whole_bar(self, window):
+        bar = window.playback_controls
+        bar.show_for_live()
+        bar.hide_for_stream()
+
+        assert bar.isVisibleTo(window) is False
+
+
 class TestBundleReport:
     """The finished bundle is reported and reachable."""
 
