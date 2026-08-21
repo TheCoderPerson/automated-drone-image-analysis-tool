@@ -679,25 +679,25 @@ class RTMPStreamService(QThread):
                     ):
                         continue
 
+                    # A file with no frames left has simply ended. Say so
+                    # immediately and quietly rather than spending the
+                    # transient-error budget (and five warnings) to find out.
+                    if self._is_file and self._is_at_end_of_file():
+                        self._pause_at_end_of_file()
+                        consecutive_errors = 0
+                        continue
+
                     consecutive_errors += 1
                     if consecutive_errors >= max_consecutive_errors:
                         if self._is_file:
-                            # End of video file - pause at end instead of disconnecting.
-                            # Give up on any pending post-seek read so we do not spin,
-                            # and report the seek failure so the UI stops waiting.
-                            failed_seek_id = None
-                            with self._playback_lock:
-                                self._is_playing = False
-                                if self._awaiting_seek_frame:
-                                    failed_seek_id = self._active_seek_id
-                                self._awaiting_seek_frame = False
-                                last_frame = max(0, self._total_frames - 1)
-                                self._cap.set(cv2.CAP_PROP_POS_FRAMES, last_frame)
-                                self._current_frame_pos = last_frame
-                            self.videoPositionChanged.emit(self._total_duration, self._total_duration)
-                            self.streamStatsChanged.emit({'is_playing': False})
-                            if failed_seek_id is not None:
-                                self.seekCompleted.emit(failed_seek_id, -1, False)
+                            # Frames were expected but never arrived - a damaged
+                            # or truncated file. Same landing as a clean end so
+                            # the operator keeps the frames that did decode.
+                            self.logger.warning(
+                                "Video stopped decoding before its reported end; "
+                                "pausing at the last good frame"
+                            )
+                            self._pause_at_end_of_file()
                             consecutive_errors = 0
                             continue
                         else:
@@ -878,6 +878,40 @@ class RTMPStreamService(QThread):
                     'is_playing': self._is_playing,
                     'capture_dropped_frames': self._capture_dropped_frames,
                 })
+
+    def _is_at_end_of_file(self) -> bool:
+        """True when the file has no frames left to read.
+
+        Uses the container's reported frame count, which some containers
+        get wrong - so an unknown or zero count returns False and lets the
+        retry path decide. Being one frame short of the count still counts
+        as the end: the position has already advanced past the last frame
+        that decoded.
+        """
+        if self._total_frames <= 0:
+            return False
+        return self._current_frame_pos >= self._total_frames - 1
+
+    def _pause_at_end_of_file(self) -> None:
+        """Land on the last frame, paused, and tell the UI playback ended.
+
+        Deliberately not a disconnect: the operator has just watched a
+        recording to its end and will usually want to scrub back into it,
+        which needs the capture still open.
+        """
+        failed_seek_id = None
+        with self._playback_lock:
+            self._is_playing = False
+            if self._awaiting_seek_frame:
+                failed_seek_id = self._active_seek_id
+            self._awaiting_seek_frame = False
+            last_frame = max(0, self._total_frames - 1)
+            self._cap.set(cv2.CAP_PROP_POS_FRAMES, last_frame)
+            self._current_frame_pos = last_frame
+        self.videoPositionChanged.emit(self._total_duration, self._total_duration)
+        self.streamStatsChanged.emit({'is_playing': False})
+        if failed_seek_id is not None:
+            self.seekCompleted.emit(failed_seek_id, -1, False)
 
     def _drop_stale_live_frames(self, max_grabs: int = 2):
         """Drop stale frames from live capture buffers to reduce display lag."""

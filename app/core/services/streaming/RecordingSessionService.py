@@ -34,12 +34,20 @@ Two properties drive the design:
   every detection up to the crash. Only the derived artifacts are lost,
   and :func:`RecordingBundleService.finalize_bundle` can rebuild those
   from the logs alone.
-* **Off the UI thread.** JPEG encoding and file I/O run on this writer's
-  own daemon thread, fed by a queue, so a burst of confirmed tracks cannot
-  stall frame presentation. Deliberately a plain thread rather than a
-  ``QThread``: the writer emits nothing and needs no event loop, and a
-  ``QThread`` that loses its last reference while still running aborts the
-  process, which is a poor trade for a background file writer.
+* **On the calling thread, deliberately.** Writes happen inline: one
+  JSONL line plus a small JPEG per confirmed detection (a few per minute),
+  a line per telemetry fix (~3/s), two integer counters per frame. That is
+  about a millisecond of work at human-scale rates, and paying it on the
+  UI thread costs far less than a worker thread did - twice. Python's
+  cyclic collector running on a non-main thread while Qt sits in C++ with
+  the GIL released takes the whole interpreter down with ``0x80000003``
+  (the mechanism is documented on
+  :func:`~core.controllers.flight.FlightViewerController.\
+ensure_webrtc_imports`); this writer tripped it once through an allocation
+  storm inside the thread and once through the thread's own startup. Video
+  frames - the genuinely high-volume path - are still encoded on
+  :class:`~core.services.streaming.VideoRecordingService.VideoRecorder`'s
+  own thread, which predates this and is untouched.
 
 The unit of record is the **confirmed track**, not the per-frame
 detection. A per-frame log at 30 fps is mostly the same blob re-reported;
@@ -55,11 +63,10 @@ import json
 import os
 import re
 import time
-from dataclasses import dataclass, field, asdict
+from dataclasses import dataclass, field, fields
 from enum import Enum
 from pathlib import Path
-from queue import Queue, Empty
-from threading import Lock, Thread
+from threading import Lock
 from typing import Any, Dict, List, Optional, Tuple
 
 import cv2
@@ -80,9 +87,6 @@ MANIFEST_FILE = "manifest.json"
 # Thumbnails are already small crops from the tracker; 85 keeps them
 # legible without bloating a long flight's bundle.
 _THUMBNAIL_JPEG_QUALITY = 85
-
-# Sentinel pushed onto the queue to wake the writer for shutdown.
-_STOP = object()
 
 
 @dataclass
@@ -256,7 +260,8 @@ class RecordingSessionWriter:
 
     Not a ``QObject``: nothing here needs signals or an event loop, and
     keeping it out of Qt's object graph means an abandoned writer is
-    collected quietly instead of aborting the process.
+    collected quietly instead of aborting the process. Nor does it own a
+    worker thread - see the module docstring for why.
     """
 
     def __init__(self, logger: Optional[LoggerService] = None):
@@ -264,10 +269,10 @@ class RecordingSessionWriter:
 
         self._config: Optional[RecordingSessionConfig] = None
         self._bundle_dir: Optional[Path] = None
-        self._queue: Queue = Queue()
         self._active = False
         self._started_at: Optional[float] = None
-        self._thread: Optional[Thread] = None
+        # Append handles, opened on first write, closed by finalize.
+        self._handles: Dict[str, Any] = {}
         # Why the last start_session failed, for the caller to report. The
         # writer has no signals of its own by design.
         self.last_error: Optional[str] = None
@@ -334,13 +339,8 @@ class RecordingSessionWriter:
         if config.save_detections:
             (self._bundle_dir / DETECTIONS_SUBDIR).mkdir(exist_ok=True)
 
+        self._handles = {}
         self._write_manifest(ended=False)
-        self._thread = Thread(
-            target=self._run,
-            name="ADIAT-RecordingSessionWriter",
-            daemon=True,
-        )
-        self._thread.start()
         return str(self._bundle_dir)
 
     def finalize(self, *, timeout_s: float = 10.0) -> Optional[str]:
@@ -350,18 +350,15 @@ class RecordingSessionWriter:
         Deriving ``ADIAT_Data.xml`` / the map is a separate step — see
         :func:`RecordingBundleService.finalize_bundle` — so the two
         concerns stay independently testable.
+
+        ``timeout_s`` is accepted for call-site compatibility and ignored:
+        there is no worker to wait for, so every write has already landed.
         """
         if not self._active:
             return self.bundle_dir
 
         self._active = False
-        self._queue.put(_STOP)
-        thread = self._thread
-        if thread is not None and thread.is_alive():
-            thread.join(timeout_s)
-            if thread.is_alive():
-                self.logger.warning("Recording session writer did not stop within timeout")
-        self._thread = None
+        self._close_handles()
 
         # Only now are the counters final - fixes queued moments before the
         # stop are counted by the writer thread, not by the caller. Deciding
@@ -432,7 +429,7 @@ class RecordingSessionWriter:
         """Queue a confirmed detection for storage. No-op when inactive."""
         if not self._active or self._config is None or not self._config.save_detections:
             return
-        self._queue.put(("detection", record))
+        self._guarded_write("detection", lambda: self._write_detection(record))
 
     def append_telemetry(self, envelope: dict) -> None:
         """Queue one telemetry fix. No-op when inactive or map is off."""
@@ -446,7 +443,7 @@ class RecordingSessionWriter:
         lon = envelope.get("aircraft_longitude")
         if not isinstance(lat, (int, float)) or not isinstance(lon, (int, float)):
             return
-        self._queue.put(("telemetry", dict(envelope)))
+        self._guarded_write("telemetry", lambda: self._write_telemetry(dict(envelope)))
 
     def note_frame(self, detection_count: int = 0, video_time_seconds: Optional[float] = None) -> None:
         """Record that one frame was written, with its raw detection count.
@@ -461,10 +458,11 @@ class RecordingSessionWriter:
             self._frames_recorded += 1
             self._raw_detections += max(0, int(detection_count))
         if self._config is not None and self._config.frame_level_detections:
-            self._queue.put(("frame", {
+            payload = {
                 "detections": int(detection_count),
                 "video_time_seconds": video_time_seconds,
-            }))
+            }
+            self._guarded_write("frame", lambda: self._write_frame(payload))
 
     def next_detection_index(self) -> int:
         """Peek at the sequence number the next detection will be given."""
@@ -486,70 +484,56 @@ class RecordingSessionWriter:
     # writer thread
     # ------------------------------------------------------------------
 
-    def _run(self) -> None:
-        """Consume the queue, writing to the bundle's append-only logs.
+    def _guarded_write(self, kind: str, write) -> None:
+        """Run one write, never letting a storage fault reach the caller.
 
-        The log handles are opened and closed here so they are only ever
-        touched by this thread. The manifest is written by the caller
-        thread instead, and only when this thread is not running.
+        The caller is the UI thread mid-frame or mid-detection: a full disk
+        must cost the operator that row, not the feed.
         """
-        if self._bundle_dir is None:
-            return
-
-        handles: Dict[str, Any] = {}
         try:
-            while True:
-                try:
-                    item = self._queue.get(timeout=0.5)
-                except Empty:
-                    if not self._active:
-                        break
-                    continue
+            write()
+        except Exception as exc:  # noqa: BLE001 - a lost row must not stop the flight
+            self.logger.error(
+                f"Failed to store {kind} record in {self._bundle_dir}: {exc}"
+            )
 
-                if item is _STOP:
-                    break
-
-                kind, payload = item
-                try:
-                    if kind == "detection":
-                        self._write_detection(handles, payload)
-                    elif kind == "telemetry":
-                        self._write_telemetry(handles, payload)
-                    elif kind == "frame":
-                        self._write_frame(handles, payload)
-                except Exception as exc:  # noqa: BLE001 - never kill the thread
-                    self.logger.error(
-                        f"Failed to store {kind} record in {self._bundle_dir}: {exc}"
-                    )
-        finally:
-            for handle in handles.values():
-                try:
-                    handle.close()
-                except OSError:
-                    pass
-
-    def _log_handle(self, handles: Dict[str, Any], filename: str):
+    def _log_handle(self, filename: str):
         """Open (once) and return an append handle for a bundle log."""
-        handle = handles.get(filename)
+        handle = self._handles.get(filename)
         if handle is None:
             handle = open(self._bundle_dir / filename, "a", encoding="utf-8")
-            handles[filename] = handle
+            self._handles[filename] = handle
         return handle
 
-    def _append_line(self, handles: Dict[str, Any], filename: str, payload: dict) -> None:
+    def _close_handles(self) -> None:
+        for handle in self._handles.values():
+            try:
+                handle.close()
+            except OSError:
+                pass
+        self._handles = {}
+
+    def _append_line(self, filename: str, payload: dict) -> None:
         """Append one JSON object and flush, so a crash keeps the line."""
-        handle = self._log_handle(handles, filename)
+        handle = self._log_handle(filename)
         handle.write(json.dumps(_json_safe(payload), separators=(",", ":")) + "\n")
         handle.flush()
 
-    def _write_detection(self, handles: Dict[str, Any], record: DetectionRecord) -> None:
+    def _write_detection(self, record: DetectionRecord) -> None:
         with self._counter_lock:
             seq = self._detection_seq
             self._detection_seq += 1
 
-        payload = asdict(record)
-        thumbnail = payload.pop("thumbnail", None)
-        thumbnail_jpeg = payload.pop("thumbnail_jpeg", None)
+        # A shallow field read, NOT dataclasses.asdict: asdict deep-copies
+        # every field, cloning the numpy thumbnail and the JPEG bytes only
+        # for them to be popped straight back off.
+        payload = {
+            f.name: getattr(record, f.name)
+            for f in fields(record)
+            if f.name not in ("thumbnail", "thumbnail_jpeg")
+        }
+        thumbnail = record.thumbnail
+        thumbnail_jpeg = record.thumbnail_jpeg
         payload["seq"] = seq
         payload["recorded_at_epoch_s"] = time.time()
 
@@ -560,7 +544,7 @@ class RecordingSessionWriter:
             # thumbnail without re-decoding every JPEG.
             payload["thumbnail_size"] = [int(thumb_size[0]), int(thumb_size[1])]
 
-        self._append_line(handles, DETECTIONS_LOG, payload)
+        self._append_line(DETECTIONS_LOG, payload)
         with self._counter_lock:
             self._detections_stored += 1
 
@@ -609,17 +593,17 @@ class RecordingSessionWriter:
             handle.write(buffer.tobytes())
         return relative, (int(thumbnail.shape[1]), int(thumbnail.shape[0]))
 
-    def _write_telemetry(self, handles: Dict[str, Any], envelope: dict) -> None:
+    def _write_telemetry(self, envelope: dict) -> None:
         payload = dict(envelope)
         payload["recorded_at_epoch_s"] = time.time()
-        self._append_line(handles, TELEMETRY_LOG, payload)
+        self._append_line(TELEMETRY_LOG, payload)
         with self._counter_lock:
             self._telemetry_fixes += 1
 
-    def _write_frame(self, handles: Dict[str, Any], payload: dict) -> None:
+    def _write_frame(self, payload: dict) -> None:
         payload = dict(payload)
         payload["recorded_at_epoch_s"] = time.time()
-        self._append_line(handles, FRAMES_LOG, payload)
+        self._append_line(FRAMES_LOG, payload)
 
     # ------------------------------------------------------------------
     # manifest
