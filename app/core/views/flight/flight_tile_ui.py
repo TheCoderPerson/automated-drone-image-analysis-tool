@@ -16,7 +16,8 @@ from PySide6.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
     QImage, QKeySequence, QLinearGradient, QPainter,
     QPalette, QPixmap, QRadialGradient, QTransform)
 from PySide6.QtWidgets import (QApplication, QFrame, QHBoxLayout, QLabel,
-    QSizePolicy, QSpacerItem, QVBoxLayout, QWidget)
+    QPushButton, QSizePolicy, QSpacerItem, QVBoxLayout,
+    QWidget)
 
 class Ui_FlightTileContents(object):
     def setupUi(self, FlightTileContents):
@@ -47,7 +48,7 @@ class Ui_FlightTileContents(object):
         sizePolicy1.setVerticalStretch(0)
         sizePolicy1.setHeightForWidth(self.statusStrip.sizePolicy().hasHeightForWidth())
         self.statusStrip.setSizePolicy(sizePolicy1)
-        self.statusStrip.setMaximumSize(QSize(16777215, 22))
+        self.statusStrip.setMaximumSize(QSize(16777215, 28))
         self.statusStrip.setFrameShape(QFrame.NoFrame)
         self.statusLayout = QHBoxLayout(self.statusStrip)
         self.statusLayout.setSpacing(10)
@@ -87,6 +88,11 @@ class Ui_FlightTileContents(object):
 
         self.statusLayout.addWidget(self.statusBadgeLabel)
 
+        self.recordButton = QPushButton(self.statusStrip)
+        self.recordButton.setObjectName(u"recordButton")
+
+        self.statusLayout.addWidget(self.recordButton)
+
 
         self.tileLayout.addWidget(self.statusStrip)
 
@@ -104,6 +110,9 @@ class Ui_FlightTileContents(object):
         self.bitrateLabel.setText(QCoreApplication.translate("FlightTileContents", u"0 kbps", None))
         self.latencyLabel.setText(QCoreApplication.translate("FlightTileContents", u"latency: --", None))
         self.statusBadgeLabel.setText("")
+#if QT_CONFIG(tooltip)
+        self.recordButton.setToolTip(QCoreApplication.translate("FlightTileContents", u"Record this feed: video, detections, telemetry and map.", None))
+#endif // QT_CONFIG(tooltip)
         pass
     # retranslateUi
 

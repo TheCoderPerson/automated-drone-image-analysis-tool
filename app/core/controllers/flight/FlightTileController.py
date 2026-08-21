@@ -24,6 +24,7 @@ from core.controllers.flight.DetectionThumbCropper import DetectionThumbCropper
 from core.services.LoggerService import LoggerService
 from core.services.streaming.DetectionFeedService import DetectionFeedService
 from core.services.streaming.FlightSessionStore import FlightSessionStore
+from core.services.streaming.RecordingLibrary import RecordingLibrary
 from core.services.streaming.RecordingService import RecordingService
 from core.services.streaming.RecordingSessionService import (
     detection_record_from_flight_envelope,
@@ -149,7 +150,9 @@ class FlightTileController(QObject):
         # two drones recording at once write two separate bundles. The
         # service captures this feed's video frames, its promoted
         # detections and its telemetry into one reviewable folder.
-        self._recording = RecordingService(self.logger, parent=self)
+        self._recording = RecordingService(
+            self.logger, parent=self, library=RecordingLibrary()
+        )
         self._recording.recordingStateChanged.connect(self._on_recording_state_changed)
         self._recording.recordingBundleReady.connect(self._on_recording_bundle_ready)
         self._recording.errorOccurred.connect(self._on_recording_error)
@@ -961,6 +964,34 @@ class FlightTileController(QObject):
         # the same default the tile's video-only recorder used.
         return os.path.join(os.path.expanduser("~"), "Videos", "ADIAT")
 
+    def _resolve_start_dir(self, preferred: str) -> str:
+        """A folder the file dialog can actually open.
+
+        Handing ``getExistingDirectory`` a path that does not exist makes
+        Windows greet the operator with "Path does not exist" instead of a
+        folder - which is what the uncreated ~/Videos/ADIAT default did.
+        Create the app's own default rather than merely naming it, and walk
+        up to something real if creation fails (a saved folder on a drive
+        that is no longer attached).
+        """
+        candidates = [
+            preferred,
+            self._default_recording_dir(),
+            os.path.join(os.path.expanduser("~"), "Videos"),
+            os.path.expanduser("~"),
+        ]
+        for candidate in candidates:
+            if not candidate:
+                continue
+            if os.path.isdir(candidate):
+                return candidate
+            try:
+                os.makedirs(candidate, exist_ok=True)
+                return candidate
+            except OSError:
+                continue
+        return os.path.expanduser("~")
+
     def _on_recording_start_requested(self, tile) -> None:
         """Start recording this feed into a fresh session bundle."""
         if self._recording.is_recording:
@@ -977,8 +1008,8 @@ class FlightTileController(QObject):
             return
 
         settings = self._recording_settings()
-        start_dir = str(
-            settings.value(self._RECORDING_DIR_KEY, self._default_recording_dir())
+        start_dir = self._resolve_start_dir(
+            str(settings.value(self._RECORDING_DIR_KEY, "") or "")
         )
         from PySide6.QtWidgets import QFileDialog
 
@@ -1128,39 +1159,17 @@ class FlightTileController(QObject):
         self._open_replay(video)
 
     def _open_replay(self, video_path: str) -> None:
-        """Route the streaming window to ``video_path`` as a File source.
+        """Hand this feed's recording to the dedicated Replay window.
 
-        Mirrors FlightViewerController._open_streaming_detector: one
-        streaming window per app, reused when visible - but unlike plain
-        navigation, the reused window is re-pointed at the recording via
-        apply_wizard_data, whose auto_connect drives the ordinary File
-        connect path (and with it replay mode).
+        Replay is its own experience - the recorded video, the stored
+        detections, the flight map and the telemetry HUD, with none of the
+        analysis apparatus - so it opens the app's ReplayWindow rather
+        than the streaming analysis page.
         """
         try:
-            # Imported lazily to avoid a circular import - the streaming
-            # window imports flight views (pairing dialog, HUD).
-            from core.controllers.streaming.StreamViewerWindow import StreamViewerWindow
-            from core.services.streaming.RTMPStreamService import SOURCE_TYPE_FILE
-            from core.services.SettingsService import SettingsService
-            from PySide6.QtWidgets import QApplication
-
-            app = QApplication.instance()
-            viewer = getattr(app, "_stream_viewer", None) if app else None
-            if viewer is None or not self._safe_is_visible(viewer):
-                theme = SettingsService().get_setting("Theme", "Dark").lower()
-                # No algorithm: replay never runs a detector, so loading
-                # one would only cost startup time.
-                viewer = StreamViewerWindow(algorithm_name="", theme=theme)
-                if app is not None:
-                    app._stream_viewer = viewer
-            viewer.apply_wizard_data({
-                "stream_type": SOURCE_TYPE_FILE,
-                "stream_url": video_path,
-                "auto_connect": True,
-            })
-            viewer.show()
-            viewer.raise_()
-            viewer.activateWindow()
+            # Lazy import: the replay window composes streaming components.
+            from core.controllers.streaming.ReplayWindow import open_replay
+            open_replay(video_path)
         except Exception as exc:  # noqa: BLE001 - never take the tile down
             self.logger.error(
                 f"FlightTileController({self._pairing_code}): "

@@ -108,6 +108,7 @@ class FlightViewerWindow(TranslationMixin, QMainWindow, Ui_FlightViewerWindow):
     saveLayoutRequested = Signal()
     restoreLayoutRequested = Signal()
     closeViewerRequested = Signal()
+    openRecordingRequested = Signal()
     openImageAnalysisRequested = Signal()
     openStreamingDetectorRequested = Signal()
     helpRequested = Signal()
@@ -201,6 +202,9 @@ class FlightViewerWindow(TranslationMixin, QMainWindow, Ui_FlightViewerWindow):
         self.actionToggleMap.toggled.connect(self.toggleMapRequested.emit)
         self.actionSaveLayout.triggered.connect(self.saveLayoutRequested.emit)
         self.actionRestoreLayout.triggered.connect(self.restoreLayoutRequested.emit)
+        self.actionOpenRecording.triggered.connect(
+            self.openRecordingRequested.emit
+        )
         self.actionOpenImageAnalysis.triggered.connect(
             self.openImageAnalysisRequested.emit
         )

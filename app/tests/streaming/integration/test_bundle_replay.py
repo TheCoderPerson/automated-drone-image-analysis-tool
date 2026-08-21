@@ -1,9 +1,11 @@
-"""Integration tests: replaying a recording bundle in the streaming window.
+"""Integration tests: the dedicated Replay window.
 
-Opening a bundle's MP4 is the whole replay gesture: the stored detections
-appear in the Detection Gallery immediately (click to jump), their
-positions pin the map, the sidecar SRT drives the HUD/trail from the
-playhead — and detectors do NOT run. The record is the record.
+Watching a recording is its own experience — video + timeline, the stored
+detections as a click-to-jump gallery, the flight on a map, the HUD on the
+playhead — with none of the analysis apparatus. These tests load real
+bundles into :class:`ReplayWindow` and drive it the way an operator would.
+The streaming analysis window is deliberately absent here: replay never
+runs a detector, structurally, because the window has none to run.
 """
 
 from __future__ import annotations
@@ -18,7 +20,7 @@ from PySide6.QtWidgets import QApplication
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..")))
 
-from core.controllers.streaming.StreamViewerWindow import StreamViewerWindow  # noqa: E402
+from core.controllers.streaming.ReplayWindow import ReplayWindow, open_replay  # noqa: E402
 from core.services.streaming.RecordingBundleService import finalize_bundle  # noqa: E402
 from core.services.streaming.RecordingSessionService import (  # noqa: E402
     DetectionRecord,
@@ -28,9 +30,15 @@ from core.services.streaming.RecordingSessionService import (  # noqa: E402
 from core.services.streaming.RTMPStreamService import StreamType  # noqa: E402
 
 
+@pytest.fixture(scope="module", autouse=True)
+def qapp():
+    app = QApplication.instance() or QApplication([])
+    yield app
+
+
 @pytest.fixture
-def window(qapp, isolated_stream_settings):
-    window = StreamViewerWindow(algorithm_name='', theme='dark')
+def window(qapp):
+    window = ReplayWindow()
     yield window
     window.close()
     QApplication.processEvents()
@@ -51,6 +59,7 @@ def _make_bundle(root, *, detections=2, fixes=3):
         root_dir=str(root), algorithm="ADIAT Flight",
         source_url="K3F9PM", source_type="webrtc",
         resolution=(1280, 720),
+        feed={"label": "TEXSAR-01", "pairing_code": "K3F9PM"},
     ))
     with open(os.path.join(bundle, "rec_0001.mp4"), "wb") as fp:
         fp.write(b"\x00")
@@ -75,11 +84,13 @@ def _make_bundle(root, *, detections=2, fixes=3):
         })
     writer.finalize()
 
-    # Spread the fix stamps so SRT cues cover a playable window.
+    # Spread the fix stamps onto the recorded clock so SRT cues cover a
+    # playable window.
     started = read_manifest(bundle)["started_at_epoch_s"]
     rows = read_jsonl(os.path.join(bundle, TELEMETRY_LOG))
     for index, row in enumerate(rows):
         row["recorded_at_epoch_s"] = started + index * 2.0
+        row["recorded_video_seconds"] = index * 2.0
         row["aircraft_latitude"] = 30.25 + index * 0.01
     with open(os.path.join(bundle, TELEMETRY_LOG), "w", encoding="utf-8") as fp:
         fp.write("\n".join(json.dumps(r) for r in rows) + "\n")
@@ -88,134 +99,267 @@ def _make_bundle(root, *, detections=2, fixes=3):
     return bundle
 
 
-class TestEnteringReplay:
-    def test_opening_a_bundle_video_loads_the_stored_detections(self, window, tmp_path):
+def _fake_playback(window):
+    """Stand in for the file stream — the placeholder MP4 is not decodable."""
+    manager = Mock()
+    manager.is_playing = Mock(return_value=True)
+    manager.play_pause = Mock()
+    manager.seek_to_frame = Mock(return_value=100)
+    manager.seek_to_time = Mock()
+    window.coordinator.connect_stream = Mock(return_value=True)
+    # load_recording() resets first; the real disconnect would null the
+    # mocked manager before playback wiring is exercised.
+    window.coordinator.disconnect_stream = Mock()
+    window.coordinator.stream_manager = manager
+    return manager
+
+
+class TestLoading:
+    def test_loading_a_bundle_fills_the_window(self, window, tmp_path):
         bundle = _make_bundle(tmp_path)
-        video = os.path.join(bundle, "rec_0001.mp4")
+        _fake_playback(window)
 
-        window._enter_replay_if_bundle(video)
+        assert window.load_recording(os.path.join(bundle, "rec_0001.mp4")) is True
 
-        assert window._replay_mode is True
+        # The stored detections are there the moment it loads.
         assert window.gallery_widget.gallery_list.count() == 2
-        assert len(window._gallery_tracks_by_key) == 2
-        # Jump targets come from the stored record, not from a detector.
-        track = window._gallery_tracks_by_key["replay-0"]
-        assert track.first_frame_index == 90
-        assert track.detection_type == "person"
-        text = window.ui.infoPanel.toPlainText()
-        assert "2" in text and "Detectors are off" in text
+        assert len(window._tracks_by_key) == 2
+        header = window.ui.headerLabel.text()
+        assert "TEXSAR-01" in header and "2" in header
+        assert "TEXSAR-01" in window.windowTitle()
 
     def test_stored_positions_pin_the_map(self, window, tmp_path):
         bundle = _make_bundle(tmp_path)
+        _fake_playback(window)
         pinned = []
         window.map_view.add_detection = pinned.append
 
-        window._enter_replay_if_bundle(os.path.join(bundle, "rec_0001.mp4"))
+        window.load_recording(os.path.join(bundle, "rec_0001.mp4"))
 
         assert len(pinned) == 2
         assert pinned[0]["location"]["lat"] == pytest.approx(30.25)
         assert pinned[0]["track_key"] == "replay-0"
 
-    def test_an_ordinary_video_does_not_enter_replay(self, window, tmp_path):
-        loose = tmp_path / "DJI_0042.MP4"
-        loose.write_bytes(b"\x00")
-
-        window._enter_replay_if_bundle(str(loose))
-
-        assert window._replay_mode is False
-        assert window.gallery_widget.gallery_list.count() == 0
-
-    def test_bundle_telemetry_replays_through_the_sidecar_srt(self, window, tmp_path):
-        """The same path a DJI card video takes: sidecar discovered, HUD fed."""
+    def test_telemetry_replays_through_the_sidecar_srt(self, window, tmp_path):
+        """Same path as a DJI card clip: sidecar discovered, HUD on the playhead."""
         bundle = _make_bundle(tmp_path)
-        video = os.path.join(bundle, "rec_0001.mp4")
+        _fake_playback(window)
 
-        available = window.telemetry_coordinator.begin_source(video, StreamType.FILE)
+        window.load_recording(os.path.join(bundle, "rec_0001.mp4"))
 
-        assert available is True
+        assert window.telemetry_coordinator.is_available is True
         assert window.telemetry_coordinator.position_at(2.0) == pytest.approx(
             (30.26, -97.75)
         )
 
-    def test_detections_missing_thumbnails_still_pin_without_gallery_rows(
-            self, window, tmp_path):
-        bundle = _make_bundle(tmp_path, detections=1)
-        # Delete the thumbnail file the row references.
-        os.remove(os.path.join(bundle, "detections", "detection_0000.jpg"))
+    def test_a_plain_video_still_plays_without_a_record(self, window, tmp_path):
+        """A loose MP4 has no bundle - the window plays it, gallery empty."""
+        loose = tmp_path / "DJI_0042.MP4"
+        loose.write_bytes(b"\x00")
+        _fake_playback(window)
 
-        window._enter_replay_if_bundle(os.path.join(bundle, "rec_0001.mp4"))
-
-        assert window._replay_mode is True
+        assert window.load_recording(str(loose)) is True
         assert window.gallery_widget.gallery_list.count() == 0
 
+    def test_loading_a_second_recording_replaces_the_first(self, window, tmp_path):
+        first = _make_bundle(tmp_path / "a", detections=2)
+        second = _make_bundle(tmp_path / "b", detections=1)
+        _fake_playback(window)
 
-class TestDetectorsStayOff:
-    def test_frames_bypass_the_algorithm_during_replay(self, window, tmp_path):
-        """The record is the record - replay never re-runs a detector."""
-        bundle = _make_bundle(tmp_path)
-        window._enter_replay_if_bundle(os.path.join(bundle, "rec_0001.mp4"))
+        window.load_recording(os.path.join(first, "rec_0001.mp4"))
+        _fake_playback(window)
+        window.load_recording(os.path.join(second, "rec_0001.mp4"))
 
-        algorithm = Mock()
-        algorithm.process_frame = Mock(return_value=[])
-        window.algorithm_widget = algorithm
-        window.algorithm_renders_frame = False
-        presented = []
-        window._present_frame = lambda frame, pos, source: presented.append(source) or True
+        assert window.gallery_widget.gallery_list.count() == 1
+        assert len(window._tracks_by_key) == 1
 
-        window.on_frame_received(np.zeros((720, 1280, 3), dtype=np.uint8), 0.0, 0)
+    def test_missing_thumbnails_skip_gallery_rows(self, window, tmp_path):
+        bundle = _make_bundle(tmp_path, detections=1)
+        os.remove(os.path.join(bundle, "detections", "detection_0000.jpg"))
+        _fake_playback(window)
 
-        algorithm.process_frame.assert_not_called()
-        # The frame still displays - via the raw path.
-        assert presented == ["raw"]
+        window.load_recording(os.path.join(bundle, "rec_0001.mp4"))
 
-    def test_the_same_frame_processes_when_not_in_replay(self, window):
-        algorithm = Mock()
-        algorithm.process_frame = Mock(return_value=[])
-        algorithm.get_config = Mock(return_value={})
-        window.algorithm_widget = algorithm
-        window.algorithm_renders_frame = False
-        window._present_frame = lambda frame, pos, source: True
-
-        window.on_frame_received(np.zeros((720, 1280, 3), dtype=np.uint8), 0.0, 0)
-
-        algorithm.process_frame.assert_called_once()
-
-    def test_replay_state_clears_on_disconnect(self, window, tmp_path):
-        bundle = _make_bundle(tmp_path)
-        window._enter_replay_if_bundle(os.path.join(bundle, "rec_0001.mp4"))
-        assert window._replay_mode is True
-        window._connection_established = True
-
-        window.on_connection_changed(False, "Disconnected")
-
-        assert window._replay_mode is False
         assert window.gallery_widget.gallery_list.count() == 0
 
 
 class TestJumpToDetection:
-    def test_gallery_click_arms_a_seek_to_the_stored_frame(self, window, tmp_path):
-        """Click a stored detection -> the video pauses and jumps there."""
+    def test_gallery_click_pauses_and_seeks_to_the_stored_frame(self, window, tmp_path):
         bundle = _make_bundle(tmp_path)
-        window._enter_replay_if_bundle(os.path.join(bundle, "rec_0001.mp4"))
-        track = window._gallery_tracks_by_key["replay-1"]
+        manager = _fake_playback(window)
+        window.load_recording(os.path.join(bundle, "rec_0001.mp4"))
+        track = window._tracks_by_key["replay-1"]
 
-        window.stream_coordinator.current_stream_type = StreamType.FILE
-        manager = Mock()
-        manager.is_playing = Mock(return_value=True)
-        manager.play_pause = Mock()
-        window.stream_coordinator.stream_manager = manager
-
-        window._on_gallery_track_clicked(track)
+        window._jump_to_track(track)
 
         manager.play_pause.assert_called_once()
-        assert window._highlight_track is track
+        manager.seek_to_frame.assert_called_once_with(119)  # 120 - 1
 
-    def test_map_pin_click_selects_the_stored_detection(self, window, tmp_path):
+    def test_map_pin_click_jumps_too(self, window, tmp_path):
         bundle = _make_bundle(tmp_path)
-        window._enter_replay_if_bundle(os.path.join(bundle, "rec_0001.mp4"))
-        selected = []
-        window._on_gallery_track_clicked = selected.append
+        manager = _fake_playback(window)
+        window.load_recording(os.path.join(bundle, "rec_0001.mp4"))
 
-        window._on_map_pin_clicked("replay-0")
+        window._on_pin_clicked("replay-0")
 
-        assert selected == [window._gallery_tracks_by_key["replay-0"]]
+        manager.seek_to_frame.assert_called_once_with(89)
+
+    def test_playhead_drives_the_bar_and_the_hud(self, window, tmp_path):
+        bundle = _make_bundle(tmp_path)
+        _fake_playback(window)
+        window.load_recording(os.path.join(bundle, "rec_0001.mp4"))
+        sampled = []
+        window.telemetry_coordinator.on_position_changed = sampled.append
+
+        window._on_stream_info({"current_time": 2.0, "total_time": 10.0})
+
+        assert sampled == [2.0]
+        assert window.playback_controls.current_time == 2.0
+
+
+class TestZoomOnClick:
+    """Clicking a detection lands on it, zoomed."""
+
+    def test_click_arms_a_zoom_consumed_by_the_sought_frame(self, window, tmp_path):
+        """Request/consume, not a timed guess: the display can only zoom
+        once it actually holds the frame the seek produced."""
+        bundle = _make_bundle(tmp_path)
+        _fake_playback(window)
+        window.load_recording(os.path.join(bundle, "rec_0001.mp4"))
+        focused = []
+        window.video_display.focus_on = focused.append
+
+        window._jump_to_track(window._tracks_by_key["replay-0"])
+        # Armed, not yet applied - no frame has arrived.
+        assert window._pending_focus is not None
+        assert focused == []
+
+        window._on_frame(np.zeros((720, 1280, 3), dtype=np.uint8), 0.0, 89)
+
+        assert len(focused) == 1
+        target = focused[0]
+        # Centred on the stored detection, in the frame it was measured in.
+        assert target.center_xy == (110, 132)
+        assert target.reference_size == (1280, 720)
+        # Consumed once: later frames must not re-zoom and fight the operator.
+        window._on_frame(np.zeros((720, 1280, 3), dtype=np.uint8), 0.0, 90)
+        assert len(focused) == 1
+
+    def test_map_pin_click_zooms_too(self, window, tmp_path):
+        bundle = _make_bundle(tmp_path)
+        _fake_playback(window)
+        window.load_recording(os.path.join(bundle, "rec_0001.mp4"))
+
+        window._on_pin_clicked("replay-1")
+
+        assert window._pending_focus is not None
+        assert window._pending_focus.center_xy == (150, 132)
+
+    def test_a_record_without_pixel_geometry_does_not_guess(self, window, tmp_path):
+        """A flight detection stored before any frame has only a normalized
+        bbox; zooming somewhere arbitrary would be worse than not zooming."""
+        bundle = _make_bundle(tmp_path)
+        _fake_playback(window)
+        window.load_recording(os.path.join(bundle, "rec_0001.mp4"))
+        track = window._tracks_by_key["replay-0"]
+        track.frame_resolution = (0, 0)
+
+        window._jump_to_track(track)
+
+        assert window._pending_focus is None
+
+    def test_loading_another_recording_disarms_a_pending_zoom(self, window, tmp_path):
+        first = _make_bundle(tmp_path / "a")
+        _fake_playback(window)
+        window.load_recording(os.path.join(first, "rec_0001.mp4"))
+        window._jump_to_track(window._tracks_by_key["replay-0"])
+        assert window._pending_focus is not None
+
+        second = _make_bundle(tmp_path / "b")
+        _fake_playback(window)
+        window.load_recording(os.path.join(second, "rec_0001.mp4"))
+
+        assert window._pending_focus is None
+
+
+class TestReadability:
+    """Field report: the HUD was unreadable and claimed stale data."""
+
+    def test_no_stale_badge_on_a_replay(self, window):
+        """A replay's fixes are never late - they are where the playhead is."""
+        assert window.telemetry_hud._staleness_enabled is False
+
+    def test_the_hud_keeps_its_background_after_a_fix_arrives(self, window):
+        """_clear_stale used to blank the whole sheet, stripping the backing."""
+        hud = window.telemetry_hud
+        hud.apply_envelope({"aircraft_latitude": 30.0, "aircraft_longitude": -97.0})
+
+        sheet = hud.styleSheet()
+        assert "background-color" in sheet
+        assert "rgba(0, 0, 0" in sheet
+
+    def test_the_hud_sits_off_the_bottom_edge(self, window):
+        """Flush against the edge reads as a window artifact, not an overlay."""
+        window.video_display.resize(800, 600)
+        window._reposition_hud()
+
+        hud = window.telemetry_hud
+        gap = window.video_display.height() - (hud.y() + hud.height())
+        assert gap == window._HUD_BOTTOM_MARGIN
+
+    def test_the_map_gets_enough_height_to_place_the_flight(self, window):
+        """A sliver of basemap tells the operator nothing about the flight,
+        but the gallery is the column's working surface - roughly 2:1."""
+        assert window.map_view.minimumHeight() >= 250
+        # Splitter sizes only settle once laid out.
+        window.resize(1280, 900)
+        window.show()
+        QApplication.processEvents()
+        try:
+            gallery_size, map_size = window.ui.sideSplitter.sizes()
+            assert map_size >= 250, "the map is back to a sliver"
+            assert gallery_size > map_size, "the gallery should lead"
+            ratio = gallery_size / map_size
+            assert 1.5 <= ratio <= 2.6, f"unexpected split ratio {ratio:.2f}"
+        finally:
+            window.hide()
+
+
+class TestOwnExperience:
+    """What makes replay replay: no analysis apparatus at all."""
+
+    def test_the_window_has_no_detector_to_run(self, window):
+        assert not hasattr(window, "algorithm_widget")
+        assert not hasattr(window, "processing_worker")
+
+    def test_the_record_toggle_is_hidden(self, window):
+        """You don't record a replay."""
+        assert window.playback_controls.record_btn.isVisibleTo(
+            window.playback_controls
+        ) is False
+
+    def test_open_replay_reuses_one_window(self, qapp, tmp_path, monkeypatch):
+        bundle = _make_bundle(tmp_path)
+        video = os.path.join(bundle, "rec_0001.mp4")
+        app = QApplication.instance()
+        had = hasattr(app, "_replay_window")
+        previous = getattr(app, "_replay_window", None)
+        if had:
+            delattr(app, "_replay_window")
+        try:
+            monkeypatch.setattr(
+                "core.controllers.streaming.ReplayWindow.ReplayWindow.load_recording",
+                lambda self, path: True,
+            )
+            first = open_replay(video)
+            second = open_replay(video)
+
+            assert first is second
+            assert getattr(app, "_replay_window") is first
+            first.close()
+            QApplication.processEvents()
+        finally:
+            if had:
+                app._replay_window = previous
+            elif hasattr(app, "_replay_window"):
+                delattr(app, "_replay_window")

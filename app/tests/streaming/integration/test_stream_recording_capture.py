@@ -379,26 +379,81 @@ class TestWizardAutoRecord:
         QApplication.processEvents()
 
         assert results[0]["counts"]["detections_stored"] == 1
+        # An auto-started recording is a full recording: the replay set at
+        # stop, exports on demand like any other.
+        assert os.path.isfile(os.path.join(bundle, "detections.jsonl"))
+        from core.services.streaming.RecordingBundleService import export_bundle
+        export_bundle(bundle)
         for name in ("detections.csv", "ADIAT_Data.xml", "flight_map.html"):
             assert os.path.isfile(os.path.join(bundle, name)), name
 
 
-class TestInlineRecordButtons:
-    """Start/Stop Recording live beside the play button, not in the panel."""
+class TestInlineRecordToggle:
+    """One compact record toggle beside the play button, not in the panel."""
 
-    def test_window_buttons_are_the_playback_bars_buttons(self, window):
-        """Aliasing is the contract: every state handler keeps working."""
-        assert window.start_recording_btn is window.playback_controls.record_btn
-        assert window.stop_recording_btn is window.playback_controls.stop_record_btn
+    @staticmethod
+    def _icon_centroid(button):
+        """Centre of mass of the button's painted glyph, in icon pixels."""
+        image = button.icon().pixmap(button.iconSize()).toImage()
+        xs = ys = count = 0
+        for y in range(image.height()):
+            for x in range(image.width()):
+                if image.pixelColor(x, y).alpha() > 40:
+                    xs += x
+                    ys += y
+                    count += 1
+        assert count, "the glyph painted nothing"
+        return xs / count, ys / count, image.width()
 
-    def test_recording_state_still_drives_the_inline_buttons(self, window):
+    def test_idle_shows_a_record_dot(self, window):
+        button = window.playback_controls.record_btn
+        # Painted, not text: a font glyph lands wherever its bearing puts it.
+        assert button.text() == ""
+        assert button.icon().isNull() is False
+        assert button.isEnabled() is True
+        assert button.width() == button.height() == 34
+
+    def test_recording_flips_to_a_stop_square(self, window):
+        """Camera idiom: the same button becomes the stop control."""
+        button = window.playback_controls.record_btn
+
         window._update_recording_state(True, "C:/rec/video.mp4")
-        assert window.playback_controls.record_btn.isEnabled() is False
-        assert window.playback_controls.stop_record_btn.isEnabled() is True
+        assert "e53935" in button.styleSheet()   # button fills red
+        assert button.isEnabled() is True        # never disabled - no focus yank
 
         window._update_recording_state(False, "")
-        assert window.playback_controls.record_btn.isEnabled() is True
-        assert window.playback_controls.stop_record_btn.isEnabled() is False
+        assert "transparent" in button.styleSheet()
+
+    def test_both_glyphs_are_pixel_centred(self, window):
+        """Field report: the record dot rendered off-centre in the button.
+
+        Text glyphs sit where the font's bearing puts them, and a
+        stylesheet on QPushButton takes over Qt's native padding. Painted
+        pixmaps with padding zeroed are centred by construction - and an
+        odd-sided square cannot centre in an even canvas, which is why the
+        square's side is even.
+        """
+        button = window.playback_controls.record_btn
+        for recording in (False, True):
+            window._update_recording_state(recording, "")
+            x, y, width = self._icon_centroid(button)
+            expected = (width - 1) / 2
+            assert abs(x - expected) < 0.01, f"recording={recording}: x off-centre"
+            assert abs(y - expected) < 0.01, f"recording={recording}: y off-centre"
+
+    def test_click_starts_when_idle_and_stops_when_recording(self, window, tmp_path):
+        calls = []
+        window.on_start_recording_requested = lambda d: calls.append(("start", d))
+        window.on_stop_recording_requested = lambda: calls.append(("stop", None))
+        window.recording_dir_edit.setText(str(tmp_path))
+
+        window.stream_coordinator.is_recording = False
+        window.playback_controls.record_btn.click()
+        window.stream_coordinator.is_recording = True
+        window.playback_controls.record_btn.click()
+
+        assert [c[0] for c in calls] == ["start", "stop"]
+        assert calls[0][1] == str(tmp_path)
 
     def test_live_sources_get_a_record_only_strip(self, window):
         """The bar used to vanish for live feeds, taking recording with it."""
@@ -407,7 +462,6 @@ class TestInlineRecordButtons:
 
         assert bar.isVisibleTo(window) is True
         assert bar.record_btn.isVisibleTo(bar) is True
-        assert bar.stop_record_btn.isVisibleTo(bar) is True
         # No timeline to scrub on a live feed.
         assert bar.play_pause_btn.isVisibleTo(bar) is False
         assert bar.timeline_slider.isVisibleTo(bar) is False
@@ -427,6 +481,64 @@ class TestInlineRecordButtons:
         bar.hide_for_stream()
 
         assert bar.isVisibleTo(window) is False
+
+
+class TestReplayEntryPoints:
+    """The analysis window hands recordings to the dedicated Replay window."""
+
+    @pytest.fixture
+    def fake_open_replay(self, monkeypatch):
+        opened = []
+        replay_module = import_module("core.controllers.streaming.ReplayWindow")
+        monkeypatch.setattr(
+            replay_module, "open_replay", lambda video: opened.append(video)
+        )
+        return opened
+
+    def test_menu_offers_open_recording(self, window):
+        assert window.action_open_recording.text() == "Open Recording…"
+
+    def test_replay_button_appears_after_a_recording_and_opens_it(
+            self, window, tmp_path, fake_open_replay):
+        bundle = str(tmp_path)
+        video = os.path.join(bundle, "rec.mp4")
+        with open(video, "wb") as fp:
+            fp.write(b"\x00")
+        assert window.replay_recording_btn.isHidden() is True
+
+        window.on_recording_bundle_ready({
+            "bundle_dir": bundle, "counts": {}, "artifacts": {}, "errors": [],
+        })
+
+        assert window.replay_recording_btn.isHidden() is False
+        window.replay_recording_btn.click()
+        assert fake_open_replay == [video]
+
+    def test_no_video_in_bundle_offers_no_replay(self, window, tmp_path):
+        window.on_recording_bundle_ready({
+            "bundle_dir": str(tmp_path), "counts": {}, "artifacts": {}, "errors": [],
+        })
+
+        assert window.replay_recording_btn.isHidden() is True
+
+    def test_open_recording_dialog_routes_the_choice_to_replay(
+            self, window, tmp_path, fake_open_replay, monkeypatch):
+        chosen = str(tmp_path / "some_recording.mp4")
+
+        class FakeDialog:
+            def __init__(self, entries, parent=None):
+                self.selected_video = chosen
+
+            def exec(self):
+                from PySide6.QtWidgets import QDialog
+                return QDialog.Accepted
+
+        dialog_module = import_module("core.views.streaming.RecordingsDialog")
+        monkeypatch.setattr(dialog_module, "RecordingsDialog", FakeDialog)
+
+        window._open_recordings_dialog()
+
+        assert fake_open_replay == [chosen]
 
 
 class TestBundleReport:
@@ -547,12 +659,15 @@ class TestEndToEndBundle:
         assert len(results) == 1
         assert results[0]["counts"]["detections_stored"] == 2
         assert results[0]["counts"]["telemetry_fixes"] == 2
-        for name in ("detections.csv", "ADIAT_Data.xml", "flight_map.html",
-                     "flight_path.kml", "telemetry.csv", "manifest.json"):
+        # The default footprint is the replay set...
+        for name in ("detections.jsonl", "telemetry.jsonl", "manifest.json"):
             assert os.path.isfile(os.path.join(bundle, name)), name
         assert os.path.isfile(os.path.join(bundle, "detections", "detection_0000.jpg"))
 
-        # The map has to show the flight, not just the detections.
+        # ...and Export adds the shareable map, showing the flight, not
+        # just the detections.
+        from core.services.streaming.RecordingBundleService import export_bundle
+        export_bundle(bundle)
         page = open(os.path.join(bundle, "flight_map.html"), encoding="utf-8").read()
         assert "30.4" in page and "-97.6" in page
         assert "30.5" in page
@@ -616,6 +731,8 @@ class TestEndToEndBundle:
         QApplication.processEvents()
 
         assert results[0]["counts"]["telemetry_fixes"] == 4
+        from core.services.streaming.RecordingBundleService import export_bundle
+        export_bundle(bundle)
         assert os.path.isfile(os.path.join(bundle, "flight_map.html"))
         assert os.path.isfile(os.path.join(bundle, "flight_path.kml"))
 
@@ -677,13 +794,14 @@ class TestEndToEndBundle:
         QApplication.processEvents()
 
         result = results[0]
-        # The detections are all there...
+        # The detections are all there, in the replay set...
         assert result["counts"]["detections_stored"] == 2
-        assert result["artifacts"]["detections_csv"] == "detections.csv"
-        assert result["artifacts"]["results_xml"] == "ADIAT_Data.xml"
         assert os.path.isfile(os.path.join(bundle, "detections", "detection_0000.jpg"))
-        # ...and they still carry a usable position in the recording's timeline,
-        # from the frame index, even with no aircraft position to geotag with.
+        # ...and export produces the shareable tables on demand, carrying a
+        # usable position in the recording's timeline from the frame index,
+        # even with no aircraft position to geotag with.
+        from core.services.streaming.RecordingBundleService import export_bundle
+        export_bundle(bundle)
         with open(os.path.join(bundle, "detections.csv"), encoding="utf-8", newline="") as fp:
             rows = list(csv.DictReader(fp))
         assert [row["video_time_seconds"] for row in rows] == ["5.0", "10.0"]
@@ -692,9 +810,8 @@ class TestEndToEndBundle:
         # ...but nothing pretends there was a flight.
         assert result["counts"]["telemetry_fixes"] == 0
         assert result["counts"]["detections_geotagged"] == 0
-        assert result["artifacts"]["flight_map_html"] is None
-        assert result["artifacts"]["flight_path_kml"] is None
-        assert result["artifacts"]["telemetry_csv"] is None
+        assert not os.path.exists(os.path.join(bundle, "flight_map.html"))
+        assert not os.path.exists(os.path.join(bundle, "flight_path.kml"))
 
         manifest = read_manifest(bundle)
         assert manifest["source"]["type"] == "rtmp"
@@ -743,6 +860,8 @@ class TestEndToEndBundle:
         window.on_stop_recording_requested()
         QApplication.processEvents()
 
+        from core.services.streaming.RecordingBundleService import export_bundle
+        export_bundle(bundle)
         service = XmlService(os.path.join(bundle, "ADIAT_Data.xml"))
         settings, image_count = service.get_settings()
         assert image_count == 1

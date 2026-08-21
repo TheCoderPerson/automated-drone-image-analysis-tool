@@ -128,6 +128,7 @@ class FlightViewerController(QObject):
         self.window.toggleMapRequested.connect(self._toggle_map)
         self.window.saveLayoutRequested.connect(self.save_layout)
         self.window.restoreLayoutRequested.connect(self.restore_layout)
+        self.window.openRecordingRequested.connect(self._open_recording)
         self.window.openImageAnalysisRequested.connect(self._open_image_analysis)
         self.window.openStreamingDetectorRequested.connect(self._open_streaming_detector)
         self.window.helpRequested.connect(self._open_help)
@@ -678,6 +679,27 @@ class FlightViewerController(QObject):
         except Exception as exc:  # noqa: BLE001 - surface to user, never crash
             self.logger.error(f"Flight Viewer: open Image Analysis failed: {exc}")
             self._show_navigation_error(self.tr("Image Analysis"), exc)
+
+    def _open_recording(self) -> None:
+        """Pick a past recording and watch it in the Replay window.
+
+        The tile's own "Replay Recording" only covers a recording made in
+        this session; this is how yesterday's flight gets opened - the
+        library lists every recording the app has made, and Browse covers
+        a bundle copied from another machine.
+        """
+        try:
+            from core.controllers.streaming.ReplayWindow import open_replay
+            from core.services.streaming.RecordingLibrary import RecordingLibrary
+            from core.views.streaming.RecordingsDialog import RecordingsDialog
+            from PySide6.QtWidgets import QDialog
+
+            dialog = RecordingsDialog(RecordingLibrary().recent(), parent=self.window)
+            if dialog.exec() == QDialog.Accepted and dialog.selected_video:
+                open_replay(dialog.selected_video)
+        except Exception as exc:  # noqa: BLE001 - surface to user, never crash
+            self.logger.error(f"Flight Viewer: open recording failed: {exc}")
+            self._show_navigation_error(self.tr("Recording Replay"), exc)
 
     def _open_streaming_detector(self) -> None:
         """Open the Streaming Detector window; keep the Flight Viewer up."""

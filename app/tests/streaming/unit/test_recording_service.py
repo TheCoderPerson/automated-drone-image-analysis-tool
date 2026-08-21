@@ -50,6 +50,9 @@ class FakeRecordingManager(QObject):
     def get_recording_info(self):
         return {"total_frames": self.frames}
 
+    def configured_fps(self):
+        return 30.0
+
 
 @pytest.fixture
 def fake_manager():
@@ -109,7 +112,9 @@ class TestLifecycle:
         assert results[0]["bundle_dir"] == bundle
         assert results[0]["counts"]["detections_stored"] == 1
         assert results[0]["counts"]["telemetry_fixes"] == 1
-        assert os.path.isfile(os.path.join(bundle, "detections.csv"))
+        # The default stop footprint is the replay set, not the exports.
+        assert os.path.isfile(os.path.join(bundle, "detections.jsonl"))
+        assert not os.path.exists(os.path.join(bundle, "detections.csv"))
         assert service.is_recording is False
         # Kept for inspection, replaced on the next start.
         assert service.recording_manager is not None
@@ -248,6 +253,62 @@ class TestIndependence:
         assert drone_a.is_recording is False
         assert drone_b.is_recording is True
         drone_b.stop()
+
+
+class TestRecordedClockStamps:
+    """Telemetry rides the recorded video's clock, not the wall clock.
+
+    The writer splices connection gaps out of the MP4, so wall-clock cue
+    times would lag the picture by the outage's length after every gap.
+    """
+
+    def test_fixes_are_stamped_with_the_writers_position(self, fake_manager, tmp_path, qapp):
+        service = RecordingService()
+        service.start(str(tmp_path), (640, 480))
+        for _ in range(45):
+            service.add_frame(_frame())
+
+        service.append_telemetry({"aircraft_latitude": 30.0, "aircraft_longitude": -97.0})
+        service.stop()
+
+        from core.services.streaming.RecordingSessionService import (
+            TELEMETRY_LOG,
+            read_jsonl,
+        )
+        bundle = None
+        for entry in tmp_path.iterdir():
+            if entry.is_dir():
+                bundle = str(entry)
+        rows = read_jsonl(os.path.join(bundle, TELEMETRY_LOG))
+        assert rows[0]["recorded_frame_index"] == 45
+        assert rows[0]["recorded_video_seconds"] == pytest.approx(45 / 30.0)
+
+    def test_a_manager_without_the_accessor_still_records_the_fix(self, tmp_path, qapp):
+        """Older/mocked managers: the fix is kept, just without the stamp."""
+        class BareManager(FakeRecordingManager):
+            configured_fps = None  # simulate the accessor being absent
+
+        with patch(
+            "core.services.streaming.RecordingService.RecordingManager",
+            BareManager,
+        ):
+            service = RecordingService()
+            service.start(str(tmp_path), (640, 480))
+            service.add_frame(_frame())
+            service.append_telemetry(
+                {"aircraft_latitude": 30.0, "aircraft_longitude": -97.0}
+            )
+            service.stop()
+
+        from core.services.streaming.RecordingSessionService import (
+            TELEMETRY_LOG,
+            read_jsonl,
+        )
+        bundle = next(str(e) for e in tmp_path.iterdir() if e.is_dir())
+        rows = read_jsonl(os.path.join(bundle, TELEMETRY_LOG))
+        assert len(rows) == 1
+        assert rows[0]["recorded_frame_index"] == 1
+        assert "recorded_video_seconds" not in rows[0]
 
 
 class TestFrames:

@@ -27,6 +27,7 @@ from core.services.streaming.RTMPStreamService import (
     stream_type_from_source_label,
 )
 from core.services.streaming.FlightStreamService import FlightStreamManager
+from core.services.streaming.RecordingLibrary import RecordingLibrary
 from core.services.streaming.RecordingService import RecordingService
 from core.services.streaming.RecordingSessionService import DetectionRecord
 from helpers import FeatureFlags
@@ -68,7 +69,9 @@ class StreamCoordinator(QObject):
         # Recording: one service owns the video writer plus the session
         # bundle. The coordinator forwards its signals and exposes its
         # state through properties, so callers see one object.
-        self.recording = RecordingService(self.logger, parent=self)
+        self.recording = RecordingService(
+            self.logger, parent=self, library=RecordingLibrary()
+        )
         self.recording.recordingStateChanged.connect(self.recordingStateChanged)
         self.recording.recordingStatsUpdated.connect(self.recordingStatsUpdated)
         self.recording.recordingBundleReady.connect(self.recordingBundleReady)
@@ -380,10 +383,26 @@ class StreamCoordinator(QObject):
         self.frameReceived.emit(frame, timestamp, video_frame_pos)
 
     def _on_connection_status_changed(self, connected: bool, message: str):
-        """Handle connection status change."""
+        """Handle connection status change.
+
+        A drop does NOT stop an active recording - the same semantics as a
+        Flight Viewer tile. The RTMP service retries a lost stream in
+        place (5 attempts, exponential backoff), emitting
+        ``connected=False`` between attempts; stopping here used to end
+        the recording on the FIRST of those, seconds before the stream
+        came back. Riding it out costs nothing: no frames arrive during
+        the gap, so nothing is written, and the recorded video splices the
+        outage out - telemetry stays aligned because its stamps ride the
+        writer's frame clock.
+
+        The recording still finalizes on every deliberate ending:
+        ``disconnect_stream()`` (the Disconnect button, or a replacement
+        source connecting), ``stop_recording()``, and ``cleanup()`` (the
+        window closing) all stop it explicitly. A stream that never comes
+        back leaves the recording armed until the operator acts - which is
+        their call to make, not a network blip's.
+        """
         self.is_connected = connected
-        if not connected and self.is_recording:
-            self.stop_recording()
         self.connectionChanged.emit(connected, message)
 
     def _on_stream_error(self, error: str):

@@ -239,9 +239,11 @@ class TestStreamCoordinator:
         assert result["bundle_dir"] == bundle
         assert result["counts"]["detections_stored"] == 1
         assert result["counts"]["telemetry_fixes"] == 2
-        assert result["artifacts"]["detections_csv"] == "detections.csv"
-        assert result["artifacts"]["flight_map_html"] == "flight_map.html"
-        assert os.path.isfile(os.path.join(bundle, "ADIAT_Data.xml"))
+        # The stop-path footprint is the replay set; exports are on demand.
+        assert result["artifacts"]["replay_srt"] is None  # fake writes no MP4
+        assert os.path.isfile(os.path.join(bundle, "detections.jsonl"))
+        assert os.path.isfile(os.path.join(bundle, "telemetry.jsonl"))
+        assert not os.path.exists(os.path.join(bundle, "ADIAT_Data.xml"))
         # The writer is released, so a second stop is a no-op.
         assert coordinator.session_writer is None
 
@@ -270,7 +272,7 @@ class TestStreamCoordinator:
         assert coordinator.session_writer is None
         assert len(results) == 1
         assert results[0]["counts"]["detections_stored"] == 1
-        assert os.path.isfile(os.path.join(bundle, "detections.csv"))
+        assert os.path.isfile(os.path.join(bundle, "detections.jsonl"))
 
         # The operator's Stop afterwards is a harmless no-op.
         assert coordinator.stop_recording() is None
@@ -446,16 +448,45 @@ class TestStreamCoordinator:
         assert coordinator.update_fps_limit(20) is True
         coordinator.stream_manager.set_fps_limit.assert_called_once_with(20)
 
-    def test_connection_drop_stops_active_recording(self, mock_logger):
-        """Unexpected disconnect should stop recording gracefully."""
+    def test_connection_drop_rides_out_an_active_recording(self, mock_logger):
+        """Flight-tile semantics: a drop must not end the recording.
+
+        The RTMP service retries a lost stream in place and emits
+        connected=False between attempts - stopping here used to end the
+        recording on the FIRST retry, seconds before the stream came back.
+        Nothing is written during the gap (no frames arrive), so riding it
+        out costs nothing and the outage splices out of the video.
+        """
         coordinator = StreamCoordinator(mock_logger)
         coordinator.is_recording = True
         coordinator.stop_recording = Mock()
 
-        coordinator._on_connection_status_changed(False, "Disconnected")
+        coordinator._on_connection_status_changed(False, "Reconnecting... (attempt 1)")
+        assert coordinator.is_recording is True
+        coordinator.stop_recording.assert_not_called()
 
-        coordinator.stop_recording.assert_called_once()
-        assert coordinator.is_connected is False
+        # The stream comes back; the same recording is still running.
+        coordinator._on_connection_status_changed(True, "Connected")
+        assert coordinator.is_recording is True
+        coordinator.stop_recording.assert_not_called()
+
+    def test_explicit_disconnect_still_finalizes_the_recording(
+            self, mock_logger, mock_recording_manager, tmp_path, qapp):
+        """The Disconnect button (and a replacement source) end it deliberately."""
+        coordinator = StreamCoordinator(mock_logger)
+        coordinator.is_connected = True
+        coordinator.stream_manager = Mock()
+        results = []
+        coordinator.recordingBundleReady.connect(results.append)
+
+        with patch('core.services.streaming.RecordingService.RecordingManager',
+                   return_value=mock_recording_manager):
+            coordinator.start_recording(str(tmp_path))
+            coordinator.disconnect_stream()
+
+        assert coordinator.is_recording is False
+        assert len(results) == 1
+        mock_recording_manager.stop_recording.assert_called()
 
     def test_recording_stats_forwarded(self, mock_logger):
         """Recording stats should be forwarded to UI listeners."""

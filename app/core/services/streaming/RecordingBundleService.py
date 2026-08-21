@@ -122,6 +122,11 @@ _TELEMETRY_CSV_COLUMNS = [
     "agl_source",
     "terrain_elevation_m",
     "recorded_at_epoch_s",
+    # The recorded video's own clock at the moment the fix arrived (see
+    # RecordingService.append_telemetry). Blank for bundles recorded
+    # before the stamp existed.
+    "recorded_frame_index",
+    "recorded_video_seconds",
 ]
 
 
@@ -553,12 +558,15 @@ def write_replay_srt(
 TelemetrySourceResolver.find_sidecar_srt` discovers the file, and the HUD,
     aircraft marker and flight trail track the playhead.
 
-    Cue times come from ``recorded_at_epoch_s - started_at_epoch_s``
-    rather than the source's own timeline — the recorded MP4 begins when
-    the recording began, not at the source's t=0, and a live feed has no
-    source timeline at all. This makes one rule serve both bundle kinds,
-    at the cost of the video writer's known fixed-fps drift (documented on
-    ``recorded_frame_index``): alignment is best-effort, not frame-exact.
+    Cue times ride the recorded video's own clock:
+    ``recorded_video_seconds`` (the writer's frame count / its fps at the
+    moment the fix arrived) when the fix carries it, falling back to
+    ``recorded_at_epoch_s - started_at_epoch_s`` for bundles recorded
+    before the stamp existed. The recorded clock matters because the
+    writer splices connection gaps out of the MP4 - wall-clock cues after
+    an outage would lag the picture by the outage's length for the rest
+    of the replay, while frame-count cues compress the gap exactly as the
+    video does. Alignment remains best-effort, not frame-exact.
 
     Altitudes are written as the explicit ``rel_alt``/``abs_alt`` pair
     (ATO / MSL — never the terrain AGL, which is desktop-derived), which
@@ -582,9 +590,13 @@ TelemetrySourceResolver.find_sidecar_srt` discovers the file, and the HUD,
     for fix in fixes:
         lat = fix.get("aircraft_latitude")
         lon = fix.get("aircraft_longitude")
-        stamped = fix.get("recorded_at_epoch_s")
         if not isinstance(lat, (int, float)) or not isinstance(lon, (int, float)):
             continue
+        recorded = fix.get("recorded_video_seconds")
+        if isinstance(recorded, (int, float)):
+            cues.append((max(0.0, float(recorded)), fix))
+            continue
+        stamped = fix.get("recorded_at_epoch_s")
         if not isinstance(stamped, (int, float)):
             continue
         cues.append((max(0.0, float(stamped) - float(started)), fix))
@@ -674,8 +686,18 @@ def load_replay_detections(bundle_dir: str) -> List[dict]:
     return rows
 
 
-def finalize_bundle(bundle_dir: str, logger: Optional[LoggerService] = None) -> Dict[str, Any]:
-    """Derive every finished artifact for a bundle directory.
+def finalize_bundle(bundle_dir: str, logger: Optional[LoggerService] = None,
+                    *, exports: bool = False) -> Dict[str, Any]:
+    """Finish a bundle: always the replay essentials, exports on request.
+
+    A recording's default footprint is what internal replay needs and
+    nothing more: the video, the sidecar ``.SRT`` (derived here from the
+    telemetry log), the detection log + thumbnails, and the manifest. The
+    five export artifacts — ``ADIAT_Data.xml``, the two CSVs,
+    ``flight_map.html`` and ``flight_path.kml`` — exist for OTHER tools
+    (the Images window, spreadsheets, browsers, CalTopo) and are written
+    only when ``exports=True`` (see :func:`export_bundle`, wired to the
+    Replay window's Export button).
 
     Each artifact is attempted independently: a failure writing the KML
     must not cost the operator the results XML. Failures are logged and
@@ -695,14 +717,17 @@ def finalize_bundle(bundle_dir: str, logger: Optional[LoggerService] = None) -> 
     artifacts: Dict[str, Optional[str]] = {}
     errors: List[str] = []
 
-    steps = (
-        ("detections_csv", lambda: write_detections_csv(bundle_dir, detections)),
-        ("results_xml", lambda: write_results_xml(bundle_dir, detections, manifest)),
-        ("telemetry_csv", lambda: write_telemetry_csv(bundle_dir, telemetry)),
-        ("flight_map_html", lambda: write_flight_map(bundle_dir, path, detections, manifest)),
-        ("flight_path_kml", lambda: write_flight_kml(bundle_dir, path, detections, manifest)),
+    steps = [
         ("replay_srt", lambda: write_replay_srt(bundle_dir, telemetry, manifest, log)),
-    )
+    ]
+    if exports:
+        steps += [
+            ("detections_csv", lambda: write_detections_csv(bundle_dir, detections)),
+            ("results_xml", lambda: write_results_xml(bundle_dir, detections, manifest)),
+            ("telemetry_csv", lambda: write_telemetry_csv(bundle_dir, telemetry)),
+            ("flight_map_html", lambda: write_flight_map(bundle_dir, path, detections, manifest)),
+            ("flight_path_kml", lambda: write_flight_kml(bundle_dir, path, detections, manifest)),
+        ]
     for name, step in steps:
         try:
             written = step()
@@ -727,7 +752,9 @@ def finalize_bundle(bundle_dir: str, logger: Optional[LoggerService] = None) -> 
 
     try:
         manifest.setdefault("counts", {}).update(counts)
-        manifest["artifacts"] = artifacts
+        merged = dict(manifest.get("artifacts") or {})
+        merged.update({k: v for k, v in artifacts.items() if v is not None})
+        manifest["artifacts"] = merged
         manifest.setdefault("telemetry", {})["available"] = bool(path)
         manifest["finalized_at"] = time.strftime("%Y-%m-%dT%H:%M:%S")
         if errors:
@@ -741,6 +768,17 @@ def finalize_bundle(bundle_dir: str, logger: Optional[LoggerService] = None) -> 
     return result
 
 
+def export_bundle(bundle_dir: str, logger: Optional[LoggerService] = None) -> Dict[str, Any]:
+    """Write the bundle's export artifacts for other tools.
+
+    ``ADIAT_Data.xml`` (Images-window review), ``detections.csv`` /
+    ``telemetry.csv`` (spreadsheets), ``flight_map.html`` (any browser)
+    and ``flight_path.kml`` (CalTopo / Google Earth). Idempotent — safe to
+    run again after more artifacts were asked for.
+    """
+    return finalize_bundle(bundle_dir, logger, exports=True)
+
+
 __all__ = [
     "DETECTIONS_CSV",
     "FLIGHT_MAP_HTML",
@@ -748,6 +786,7 @@ __all__ = [
     "RESULTS_XML",
     "TELEMETRY_CSV",
     "build_aoi",
+    "export_bundle",
     "finalize_bundle",
     "find_bundle_for_video",
     "load_replay_detections",

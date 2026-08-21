@@ -179,7 +179,7 @@ class TestDetectionArtifacts:
 
     def test_csv_has_one_row_per_detection(self, tmp_path):
         bundle = _build_bundle(tmp_path, detections=[_record(0), _record(1)])
-        result = finalize_bundle(bundle)
+        result = finalize_bundle(bundle, exports=True)
 
         assert result["artifacts"]["detections_csv"] == DETECTIONS_CSV
         with open(os.path.join(bundle, DETECTIONS_CSV), encoding="utf-8", newline="") as fp:
@@ -196,7 +196,7 @@ class TestDetectionArtifacts:
         from core.services.XmlService import XmlService
 
         bundle = _build_bundle(tmp_path, detections=[_record(0), _record(1)])
-        finalize_bundle(bundle)
+        finalize_bundle(bundle, exports=True)
 
         xml_path = os.path.join(bundle, RESULTS_XML)
         assert os.path.isfile(xml_path)
@@ -219,7 +219,7 @@ class TestDetectionArtifacts:
         from core.services.XmlService import XmlService
 
         bundle = _build_bundle(tmp_path, detections=[_record(0)])
-        finalize_bundle(bundle)
+        finalize_bundle(bundle, exports=True)
 
         moved = str(tmp_path / "copied_bundle")
         shutil.copytree(bundle, moved)
@@ -232,7 +232,7 @@ class TestDetectionArtifacts:
 
     def test_results_xml_records_provenance_options(self, tmp_path):
         bundle = _build_bundle(tmp_path, detections=[_record(0)])
-        finalize_bundle(bundle)
+        finalize_bundle(bundle, exports=True)
 
         root = ET.parse(os.path.join(bundle, RESULTS_XML)).getroot()
         options = {
@@ -247,7 +247,7 @@ class TestDetectionArtifacts:
         bundle = _build_bundle(
             tmp_path, detections=[_record(0), _record(1, thumbnail=None)]
         )
-        finalize_bundle(bundle)
+        finalize_bundle(bundle, exports=True)
 
         root = ET.parse(os.path.join(bundle, RESULTS_XML)).getroot()
         assert len(root.findall("./images/image")) == 1
@@ -256,7 +256,7 @@ class TestDetectionArtifacts:
 
     def test_no_detections_writes_no_detection_artifacts(self, tmp_path):
         bundle = _build_bundle(tmp_path, fixes=[_fix(30.0, -97.0)])
-        result = finalize_bundle(bundle)
+        result = finalize_bundle(bundle, exports=True)
 
         assert result["artifacts"]["detections_csv"] is None
         assert result["artifacts"]["results_xml"] is None
@@ -293,7 +293,7 @@ class TestFlightFeedBundles:
             detections=[self._flight_record(0), self._flight_record(1)],
             fixes=[_fix(30.25, -97.75, 0.0), _fix(30.26, -97.76, 1.0)],
         )
-        result = finalize_bundle(bundle)
+        result = finalize_bundle(bundle, exports=True)
 
         with open(os.path.join(bundle, DETECTIONS_CSV), encoding="utf-8", newline="") as fp:
             rows = list(csv.DictReader(fp))
@@ -320,7 +320,7 @@ class TestFlightArtifacts:
         bundle = _build_bundle(
             tmp_path, fixes=[_fix(30.0, -97.0, 0.0), _fix(30.01, -97.01, 1.0)]
         )
-        finalize_bundle(bundle)
+        finalize_bundle(bundle, exports=True)
 
         with open(os.path.join(bundle, TELEMETRY_CSV), encoding="utf-8", newline="") as fp:
             rows = list(csv.DictReader(fp))
@@ -343,7 +343,7 @@ class TestFlightArtifacts:
         fix["terrain_elevation_m"] = 288.5
         fix["agl_source"] = "terrain"
         bundle = _build_bundle(tmp_path, fixes=[fix])
-        finalize_bundle(bundle)
+        finalize_bundle(bundle, exports=True)
 
         with open(os.path.join(bundle, TELEMETRY_CSV), encoding="utf-8", newline="") as fp:
             row = next(csv.DictReader(fp))
@@ -366,7 +366,7 @@ class TestFlightArtifacts:
         fix["aircraft_altitude_agl_terrain_m"] = 31.5
         fix["agl_source"] = "flight"
         bundle = _build_bundle(tmp_path, fixes=[fix])
-        finalize_bundle(bundle)
+        finalize_bundle(bundle, exports=True)
 
         with open(os.path.join(bundle, TELEMETRY_CSV), encoding="utf-8", newline="") as fp:
             row = next(csv.DictReader(fp))
@@ -380,7 +380,7 @@ class TestFlightArtifacts:
             detections=[_record(0, lat=30.005, lon=-97.005)],
             fixes=[_fix(30.0, -97.0, 0.0), _fix(30.01, -97.01, 1.0)],
         )
-        result = finalize_bundle(bundle)
+        result = finalize_bundle(bundle, exports=True)
 
         assert result["artifacts"]["flight_map_html"] == FLIGHT_MAP_HTML
         page = open(os.path.join(bundle, FLIGHT_MAP_HTML), encoding="utf-8").read()
@@ -394,7 +394,7 @@ class TestFlightArtifacts:
             detections=[_record(0)],
             fixes=[_fix(30.0, -97.0, 0.0), _fix(30.01, -97.01, 1.0)],
         )
-        result = finalize_bundle(bundle)
+        result = finalize_bundle(bundle, exports=True)
 
         assert result["artifacts"]["flight_path_kml"] == FLIGHT_PATH_KML
         kml = open(os.path.join(bundle, FLIGHT_PATH_KML), encoding="utf-8").read()
@@ -407,7 +407,7 @@ class TestFlightArtifacts:
         bundle = _build_bundle(
             tmp_path, detections=[_record(0, lat=None, lon=None)]
         )
-        result = finalize_bundle(bundle)
+        result = finalize_bundle(bundle, exports=True)
 
         assert result["artifacts"]["flight_map_html"] is None
         assert result["artifacts"]["flight_path_kml"] is None
@@ -418,7 +418,7 @@ class TestFlightArtifacts:
     def test_geotagged_detections_alone_still_produce_a_map(self, tmp_path):
         """A live feed can geotag detections before any path accumulates."""
         bundle = _build_bundle(tmp_path, detections=[_record(0)])
-        result = finalize_bundle(bundle)
+        result = finalize_bundle(bundle, exports=True)
 
         assert result["artifacts"]["flight_map_html"] == FLIGHT_MAP_HTML
 
@@ -431,7 +431,7 @@ class TestFlightArtifacts:
         bundle = _build_bundle(
             tmp_path, detections=[_record(0)], save_flight_map=False
         )
-        result = finalize_bundle(bundle)
+        result = finalize_bundle(bundle, exports=True)
 
         assert result["artifacts"]["flight_map_html"] is None
         assert result["artifacts"]["flight_path_kml"] is None
@@ -445,7 +445,7 @@ class TestFlightArtifacts:
         bundle = _build_bundle(tmp_path, detections=[_record(0)])
         os.remove(os.path.join(bundle, "manifest.json"))
 
-        result = finalize_bundle(bundle)
+        result = finalize_bundle(bundle, exports=True)
 
         assert result["artifacts"]["flight_map_html"] == FLIGHT_MAP_HTML
 
@@ -511,7 +511,7 @@ class TestFlightPathOrdering:
             _fix(30.0, -97.0, 1.0),
             _fix(30.1, -97.1, 2.0),
         ])
-        finalize_bundle(bundle)
+        finalize_bundle(bundle, exports=True)
 
         with open(os.path.join(bundle, TELEMETRY_CSV), encoding="utf-8", newline="") as fp:
             assert len(list(csv.DictReader(fp))) == 3
@@ -553,7 +553,7 @@ class TestReplaySrt:
 
         bundle = _build_bundle(tmp_path, fixes=self._fixes(), with_video=True)
         self._spread_stamps(bundle)
-        result = finalize_bundle(bundle)
+        result = finalize_bundle(bundle, exports=True)
 
         assert result["artifacts"]["replay_srt"] == "rec_0001.SRT"
         # The ordinary sidecar discovery finds it next to the video...
@@ -584,15 +584,57 @@ class TestReplaySrt:
         with open(os.path.join(bundle, TELEMETRY_LOG), "w", encoding="utf-8") as fp:
             fp.write("\n".join(json.dumps(r) for r in rows) + "\n")
 
-        finalize_bundle(bundle)
+        finalize_bundle(bundle, exports=True)
 
         srt = open(os.path.join(bundle, "rec_0001.SRT"), encoding="utf-8").read()
         assert "00:00:02,500 -->" in srt
         assert "00:00:07,000 -->" in srt
 
+    def test_cues_prefer_the_recorded_videos_clock(self, tmp_path):
+        """An outage splices out of the video; the SRT must compress with it.
+
+        Wall stamps here show a 45-second gap between fixes, but the
+        writer's clock shows them one recorded second apart - because
+        nothing was written during the outage. Cue times must follow the
+        writer, or the HUD would lag the picture by 45s after the gap.
+        """
+        import json
+
+        from core.services.streaming.RecordingSessionService import (
+            TELEMETRY_LOG,
+            read_jsonl,
+        )
+
+        bundle = _build_bundle(tmp_path, fixes=self._fixes()[:2], with_video=True)
+        started = read_manifest(bundle)["started_at_epoch_s"]
+        rows = read_jsonl(os.path.join(bundle, TELEMETRY_LOG))
+        # Fix 0 at wall t=1s; fix 1 at wall t=46s (a 45s outage between).
+        for row, wall, recorded in zip(rows, (1.0, 46.0), (1.0, 2.0)):
+            row["recorded_at_epoch_s"] = started + wall
+            row["recorded_video_seconds"] = recorded
+            row["recorded_frame_index"] = int(recorded * 30)
+        with open(os.path.join(bundle, TELEMETRY_LOG), "w", encoding="utf-8") as fp:
+            fp.write("\n".join(json.dumps(r) for r in rows) + "\n")
+
+        finalize_bundle(bundle, exports=True)
+
+        srt = open(os.path.join(bundle, "rec_0001.SRT"), encoding="utf-8").read()
+        assert "00:00:01,000 -->" in srt
+        assert "00:00:02,000 -->" in srt      # one recorded second later...
+        assert "00:00:46,000" not in srt      # ...not 45 wall seconds later
+
+    def test_fixes_without_the_stamp_fall_back_to_wall_clock(self, tmp_path):
+        """Bundles recorded before the stamp existed still get an SRT."""
+        bundle = _build_bundle(tmp_path, fixes=self._fixes(), with_video=True)
+        self._spread_stamps(bundle)
+
+        result = finalize_bundle(bundle, exports=True)
+
+        assert result["artifacts"]["replay_srt"] == "rec_0001.SRT"
+
     def test_no_telemetry_writes_no_srt(self, tmp_path):
         bundle = _build_bundle(tmp_path, detections=[_record(0)], with_video=True)
-        result = finalize_bundle(bundle)
+        result = finalize_bundle(bundle, exports=True)
 
         assert result["artifacts"]["replay_srt"] is None
         assert not os.path.isfile(os.path.join(bundle, "rec_0001.SRT"))
@@ -600,7 +642,7 @@ class TestReplaySrt:
     def test_no_video_file_writes_no_srt(self, tmp_path):
         """Nothing to replay against - a failed video start, say."""
         bundle = _build_bundle(tmp_path, fixes=self._fixes(), with_video=False)
-        result = finalize_bundle(bundle)
+        result = finalize_bundle(bundle, exports=True)
 
         assert result["artifacts"]["replay_srt"] is None
 
@@ -609,7 +651,7 @@ class TestReplaySrt:
         with open(os.path.join(bundle, "rec_0002.mp4"), "wb") as fp:
             fp.write(b"\x00")
 
-        result = finalize_bundle(bundle)
+        result = finalize_bundle(bundle, exports=True)
 
         assert result["artifacts"]["replay_srt"] == "rec_0001.SRT"
         assert not os.path.isfile(os.path.join(bundle, "rec_0002.SRT"))
@@ -621,7 +663,7 @@ class TestReplaySrt:
             # No altitudes at all - position alone is still a trail.
         }]
         bundle = _build_bundle(tmp_path, fixes=fixes, with_video=True)
-        result = finalize_bundle(bundle)
+        result = finalize_bundle(bundle, exports=True)
 
         assert result["artifacts"]["replay_srt"] == "rec_0001.SRT"
         srt = open(os.path.join(bundle, "rec_0001.SRT"), encoding="utf-8").read()
@@ -634,7 +676,7 @@ class TestReplayLoading:
 
     def test_video_inside_a_bundle_is_recognized(self, tmp_path):
         bundle = _build_bundle(tmp_path, detections=[_record(0)], with_video=True)
-        finalize_bundle(bundle)
+        finalize_bundle(bundle, exports=True)
 
         assert find_bundle_for_video(os.path.join(bundle, "rec_0001.mp4")) == bundle
 
@@ -649,7 +691,7 @@ class TestReplayLoading:
         bundle = _build_bundle(
             tmp_path, detections=[_record(0), _record(1, thumbnail=None)], with_video=True
         )
-        finalize_bundle(bundle)
+        finalize_bundle(bundle, exports=True)
 
         rows = load_replay_detections(bundle)
 
@@ -661,6 +703,51 @@ class TestReplayLoading:
         assert "thumbnail_path" not in rows[1]
 
 
+class TestDefaultFootprint:
+    """A recording's default footprint is the minimal replay set."""
+
+    def test_default_finalize_writes_no_export_files(self, tmp_path):
+        bundle = _build_bundle(
+            tmp_path,
+            detections=[_record(0)],
+            fixes=[_fix(30.0, -97.0), _fix(30.1, -97.1)],
+            with_video=True,
+        )
+
+        result = finalize_bundle(bundle)
+
+        # The replay essentials are present...
+        assert result["artifacts"]["replay_srt"] == "rec_0001.SRT"
+        assert os.path.isfile(os.path.join(bundle, "detections", "detection_0000.jpg"))
+        # ...and none of the export artifacts are.
+        for name in (DETECTIONS_CSV, RESULTS_XML, TELEMETRY_CSV,
+                     FLIGHT_MAP_HTML, FLIGHT_PATH_KML):
+            assert not os.path.exists(os.path.join(bundle, name)), name
+
+    def test_export_bundle_adds_the_shareable_files_later(self, tmp_path):
+        """The Replay window's Export button, as a service call."""
+        from core.services.streaming.RecordingBundleService import export_bundle
+
+        bundle = _build_bundle(
+            tmp_path,
+            detections=[_record(0)],
+            fixes=[_fix(30.0, -97.0), _fix(30.1, -97.1)],
+            with_video=True,
+        )
+        finalize_bundle(bundle)
+
+        result = export_bundle(bundle)
+
+        for name in (DETECTIONS_CSV, RESULTS_XML, TELEMETRY_CSV,
+                     FLIGHT_MAP_HTML, FLIGHT_PATH_KML):
+            assert os.path.isfile(os.path.join(bundle, name)), name
+        # The manifest carries both waves of artifacts.
+        manifest = read_manifest(bundle)
+        assert manifest["artifacts"]["replay_srt"] == "rec_0001.SRT"
+        assert manifest["artifacts"]["results_xml"] == RESULTS_XML
+        assert result["errors"] == []
+
+
 class TestManifestAndErrors:
     """The manifest describes the finished bundle."""
 
@@ -670,7 +757,7 @@ class TestManifestAndErrors:
             detections=[_record(0), _record(1, lat=None, lon=None)],
             fixes=[_fix(30.0, -97.0)],
         )
-        finalize_bundle(bundle)
+        finalize_bundle(bundle, exports=True)
 
         manifest = read_manifest(bundle)
         assert manifest["counts"]["detections_stored"] == 2
@@ -691,7 +778,7 @@ class TestManifestAndErrors:
             raise RuntimeError("kml exploded")
 
         monkeypatch.setattr(module, "write_flight_kml", boom)
-        result = finalize_bundle(bundle)
+        result = finalize_bundle(bundle, exports=True)
 
         assert result["artifacts"]["flight_path_kml"] is None
         assert any("kml exploded" in message for message in result["errors"])
@@ -701,7 +788,7 @@ class TestManifestAndErrors:
 
     def test_finalizing_an_empty_bundle_is_harmless(self, tmp_path):
         bundle = _build_bundle(tmp_path)
-        result = finalize_bundle(bundle)
+        result = finalize_bundle(bundle, exports=True)
 
         assert result["counts"]["detections_stored"] == 0
         assert set(result["artifacts"].values()) == {None}
@@ -717,7 +804,7 @@ class TestManifestAndErrors:
             if os.path.exists(path):
                 os.remove(path)
 
-        result = finalize_bundle(bundle)
+        result = finalize_bundle(bundle, exports=True)
 
         assert result["artifacts"]["detections_csv"] == DETECTIONS_CSV
         assert result["artifacts"]["results_xml"] == RESULTS_XML

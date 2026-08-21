@@ -7,6 +7,10 @@ and timeline scrubbing for video file playback.
 
 from PySide6.QtWidgets import QWidget, QHBoxLayout, QPushButton, QSlider, QLabel
 from PySide6.QtCore import Qt, Signal
+from core.views.streaming.components.RecordButton import (
+    configure_record_button,
+    set_record_button_state,
+)
 from helpers.TranslationMixin import TranslationMixin
 
 
@@ -73,30 +77,17 @@ class PlaybackControlBar(TranslationMixin, QWidget):
         self.total_time_label.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
         layout.addWidget(self.total_time_label)
 
-        # Recording controls, inline with playback. They belong to the
-        # video they act on, so they sit beside the play button rather
-        # than in the settings panel; the panel keeps the recording
-        # status, duration, folder and options. StreamViewerWindow owns
-        # the click handling and state (its start/stop_recording_btn
-        # attributes alias these), so live sources - which have no
-        # timeline - still show the bar as a record-only strip.
-        self.record_btn = QPushButton(self.tr("Start Recording"))
-        self.record_btn.setFixedHeight(40)
-        self.record_btn.setStyleSheet(
-            "QPushButton { background-color: #ff4444; color: white; font-weight: bold; }"
-        )
-        self.record_btn.setToolTip(
-            self.tr("Start recording the video stream with detection overlays.")
-        )
+        # Record toggle, inline with playback. Recording belongs to the
+        # video it acts on, so its trigger sits beside the play button;
+        # the settings panel keeps the recording status, duration, folder
+        # and options. One camera-style toggle: a red dot when idle, a
+        # stop square on a red field while recording. StreamViewerWindow
+        # owns the click handling and drives set_recording_state(), so
+        # live sources - which have no timeline - still show the bar as a
+        # record-only strip.
+        self.record_btn = QPushButton()
+        configure_record_button(self.record_btn)
         layout.addWidget(self.record_btn)
-
-        self.stop_record_btn = QPushButton(self.tr("Stop Recording"))
-        self.stop_record_btn.setFixedHeight(40)
-        self.stop_record_btn.setEnabled(False)
-        self.stop_record_btn.setToolTip(
-            self.tr("Stop the current recording and save to file.")
-        )
-        layout.addWidget(self.stop_record_btn)
 
     def connect_signals(self):
         """Connect internal signals."""
@@ -150,8 +141,18 @@ class PlaybackControlBar(TranslationMixin, QWidget):
             self.timeline_slider.setValue(slider_value)
             self.timeline_slider.blockSignals(False)
 
+    def set_recording_state(self, recording: bool) -> None:
+        """Flip the record toggle between idle and recording.
+
+        The look lives in
+        :mod:`~core.views.streaming.components.RecordButton`, shared with
+        the Flight Viewer tiles so the control reads the same wherever the
+        operator finds it.
+        """
+        set_record_button_state(self.record_btn, recording)
+
     def _set_playback_visible(self, visible: bool) -> None:
-        """Show/hide the timeline widgets; the record buttons stay."""
+        """Show/hide the timeline widgets; the record toggle stays."""
         self.play_pause_btn.setVisible(visible)
         self.current_time_label.setVisible(visible)
         self.timeline_slider.setVisible(visible)
@@ -168,7 +169,7 @@ class PlaybackControlBar(TranslationMixin, QWidget):
 
         A live feed has no timeline to scrub, but it is exactly what the
         operator records - hiding the whole bar (the old behavior) would
-        put the record buttons out of reach for RTMP/HDMI/ADIAT Flight.
+        put the record toggle out of reach for RTMP/HDMI/ADIAT Flight.
         """
         self._set_playback_visible(False)
         self.setVisible(True)

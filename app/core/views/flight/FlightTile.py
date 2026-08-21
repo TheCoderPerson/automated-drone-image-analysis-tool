@@ -34,7 +34,15 @@ from PySide6.QtWidgets import (
 from core.views.flight.DetectionOverlayWidget import DetectionOverlayWidget
 from core.views.flight.flight_tile_ui import Ui_FlightTileContents
 from core.views.flight.TelemetryHud import TelemetryHud
+from core.views.streaming.components.RecordButton import (
+    configure_record_button,
+    set_record_button_state,
+)
 from helpers.TranslationMixin import TranslationMixin
+
+# The tile's status strip is tighter than the playback bar, so the toggle
+# is a size down; the glyph keeps its proportions.
+_TILE_RECORD_PX = 24
 
 
 class FlightTile(TranslationMixin, QFrame):
@@ -143,6 +151,13 @@ class FlightTile(TranslationMixin, QFrame):
         self.telemetry_hud.move(0, 0)
         self.telemetry_hud.setVisible(False)  # show on first envelope
         self.ui.videoLabel.installEventFilter(self)
+
+        # Record toggle on the status strip. Recording was previously
+        # reachable only from the right-click menu, which buried the one
+        # action an operator reaches for mid-flight. The context-menu entry
+        # stays - both emit the same requests.
+        configure_record_button(self.ui.recordButton, size=_TILE_RECORD_PX)
+        self.ui.recordButton.clicked.connect(self._on_record_clicked)
 
         self._build_context_menu()
 
@@ -290,6 +305,13 @@ class FlightTile(TranslationMixin, QFrame):
     def is_recording(self) -> bool:
         return self._is_recording
 
+    def _on_record_clicked(self) -> None:
+        """One button, two meanings: start when idle, stop when recording."""
+        if self._is_recording:
+            self.recordingStopRequested.emit(self)
+        else:
+            self.recordingStartRequested.emit(self)
+
     def set_recording_state(self, recording: bool, message: str = "") -> None:
         """Reflect the controller's recording state on the status strip.
 
@@ -298,6 +320,7 @@ class FlightTile(TranslationMixin, QFrame):
         here so the badge and the context-menu verb stay truthful.
         """
         self._is_recording = bool(recording)
+        set_record_button_state(self.ui.recordButton, self._is_recording)
         if message:
             self.ui.statusBadgeLabel.setText(message)
         # No message means "state only": the badge text is owned by
@@ -315,6 +338,7 @@ class FlightTile(TranslationMixin, QFrame):
         land in.
         """
         self._is_recording = False
+        set_record_button_state(self.ui.recordButton, False)
         self.ui.statusBadgeLabel.setText(message)
         self.ui.statusBadgeLabel.setToolTip(bundle_dir or "")
 

@@ -202,9 +202,14 @@ class TestStartStop:
             assert code == "K3F9PM"
             assert result["counts"]["detections_stored"] == 2
             assert result["counts"]["telemetry_fixes"] == 3
-            for name in ("detections.csv", "ADIAT_Data.xml", "flight_map.html",
-                         "flight_path.kml", "telemetry.csv", "manifest.json"):
+            # The default footprint is the replay set; the fake video
+            # writer dropped an MP4, so the sidecar SRT rides beside it.
+            for name in ("detections.jsonl", "telemetry.jsonl",
+                         "manifest.json", "flight_recording.SRT"):
                 assert os.path.isfile(os.path.join(bundle, name)), name
+            for name in ("detections.csv", "ADIAT_Data.xml",
+                         "flight_map.html", "flight_path.kml"):
+                assert not os.path.exists(os.path.join(bundle, name)), name
             # Both detections have images: the mobile thumb verbatim, and
             # the thumbless one cropped from the live frame.
             assert os.path.isfile(os.path.join(bundle, "detections", "detection_0000.jpg"))
@@ -256,54 +261,16 @@ class TestStartStop:
 
         assert len(finished) == 1
         assert finished[0]["counts"]["detections_stored"] == 1
-        assert os.path.isfile(os.path.join(bundle, "detections.csv"))
-
-
-class FakeStreamViewer:
-    """Stands in for the streaming window the replay handoff opens."""
-
-    instances: list = []
-
-    def __init__(self, algorithm_name=None, theme=None):
-        self.algorithm_name = algorithm_name
-        self.theme = theme
-        self.wizard_payloads = []
-        self.shown = False
-        FakeStreamViewer.instances.append(self)
-
-    def apply_wizard_data(self, payload):
-        self.wizard_payloads.append(dict(payload))
-
-    def isVisible(self):
-        return self.shown
-
-    def show(self):
-        self.shown = True
-
-    def raise_(self):
-        pass
-
-    def activateWindow(self):
-        pass
+        assert os.path.isfile(os.path.join(bundle, "detections.jsonl"))
 
 
 @pytest.fixture
-def fake_stream_viewer(monkeypatch):
-    """Patch the lazily-imported StreamViewerWindow and isolate the app singleton."""
-    FakeStreamViewer.instances = []
-    svw_module = import_module("core.controllers.streaming.StreamViewerWindow")
-    monkeypatch.setattr(svw_module, "StreamViewerWindow", FakeStreamViewer)
-
-    app = QApplication.instance()
-    had = hasattr(app, "_stream_viewer")
-    previous = getattr(app, "_stream_viewer", None)
-    if had:
-        delattr(app, "_stream_viewer")
-    yield FakeStreamViewer
-    if had:
-        app._stream_viewer = previous
-    elif hasattr(app, "_stream_viewer"):
-        delattr(app, "_stream_viewer")
+def fake_open_replay(monkeypatch):
+    """Capture handoffs to the dedicated Replay window."""
+    opened = []
+    replay_module = import_module("core.controllers.streaming.ReplayWindow")
+    monkeypatch.setattr(replay_module, "open_replay", lambda video: opened.append(video))
+    return opened
 
 
 class TestReplayHandoff:
@@ -330,33 +297,24 @@ class TestReplayHandoff:
         finally:
             controller.tear_down()
 
-    def test_replay_opens_the_streaming_window_on_the_recording(
-            self, recording_dir, fake_stream_viewer):
+    def test_replay_opens_the_dedicated_replay_window(
+            self, recording_dir, fake_open_replay):
+        """Replay is its own experience - the handoff goes to ReplayWindow,
+        never to the analysis page."""
         controller = _make_controller()
         try:
             bundle = self._record_once(controller)
 
             controller._tile.replayRequested.emit(controller._tile)
 
-            assert len(fake_stream_viewer.instances) == 1
-            viewer = fake_stream_viewer.instances[0]
-            # No detector: replay shows the stored record.
-            assert viewer.algorithm_name == ""
-            assert viewer.shown is True
-            assert viewer.wizard_payloads == [{
-                "stream_type": "File",
-                "stream_url": os.path.join(bundle, "flight_recording.mp4"),
-                "auto_connect": True,
-            }]
-            # Registered as the app's one streaming window, like the
-            # viewer's other navigation entries.
-            assert getattr(QApplication.instance(), "_stream_viewer") is viewer
+            assert fake_open_replay == [
+                os.path.join(bundle, "flight_recording.mp4")
+            ]
         finally:
             controller.tear_down()
 
-    def test_replay_reuses_a_visible_streaming_window(
-            self, recording_dir, fake_stream_viewer):
-        """A second replay re-points the open window, not a new one."""
+    def test_each_click_repoints_the_replay_window(
+            self, recording_dir, fake_open_replay):
         controller = _make_controller()
         try:
             self._record_once(controller)
@@ -364,25 +322,26 @@ class TestReplayHandoff:
             controller._tile.replayRequested.emit(controller._tile)
             controller._tile.replayRequested.emit(controller._tile)
 
-            assert len(fake_stream_viewer.instances) == 1
-            assert len(fake_stream_viewer.instances[0].wizard_payloads) == 2
+            # open_replay itself reuses one window per app; the tile just
+            # asks twice.
+            assert len(fake_open_replay) == 2
         finally:
             controller.tear_down()
 
     def test_replay_before_any_recording_is_a_soft_no(
-            self, recording_dir, fake_stream_viewer):
+            self, recording_dir, fake_open_replay):
         controller = _make_controller()
         try:
             controller._tile.replayRequested.emit(controller._tile)
 
-            assert fake_stream_viewer.instances == []
+            assert fake_open_replay == []
             badge = controller._tile.ui.statusBadgeLabel.text()
             assert "No finished recording" in badge
         finally:
             controller.tear_down()
 
     def test_replay_survives_the_bundle_being_deleted(
-            self, recording_dir, fake_stream_viewer):
+            self, recording_dir, fake_open_replay):
         """A vanished folder degrades to the badge, not a crash."""
         import shutil
 
@@ -393,7 +352,70 @@ class TestReplayHandoff:
 
             controller._tile.replayRequested.emit(controller._tile)
 
-            assert fake_stream_viewer.instances == []
+            assert fake_open_replay == []
+        finally:
+            controller.tear_down()
+
+
+class TestRecordingFolderDialog:
+    """Field report: the picker opened on "Path does not exist"."""
+
+    def test_the_default_folder_is_created_not_just_named(self, monkeypatch, tmp_path):
+        """Handing getExistingDirectory an uncreated path greets the
+        operator with a Windows error instead of a folder."""
+        monkeypatch.setenv("USERPROFILE", str(tmp_path))
+        monkeypatch.setenv("HOME", str(tmp_path))
+        controller = _make_controller()
+        try:
+            default = controller._default_recording_dir()
+            assert not os.path.isdir(default)
+
+            resolved = controller._resolve_start_dir("")
+
+            assert os.path.isdir(resolved)
+            assert os.path.normpath(resolved) == os.path.normpath(default)
+        finally:
+            controller.tear_down()
+
+    def test_an_existing_saved_folder_is_honoured(self, monkeypatch, tmp_path):
+        monkeypatch.setenv("USERPROFILE", str(tmp_path))
+        monkeypatch.setenv("HOME", str(tmp_path))
+        saved = tmp_path / "flight_recordings"
+        saved.mkdir()
+        controller = _make_controller()
+        try:
+            assert os.path.normpath(controller._resolve_start_dir(str(saved))) == \
+                os.path.normpath(str(saved))
+        finally:
+            controller.tear_down()
+
+    def test_a_saved_folder_on_a_missing_drive_falls_back(self, monkeypatch, tmp_path):
+        """The operator's card reader is not attached today."""
+        monkeypatch.setenv("USERPROFILE", str(tmp_path))
+        monkeypatch.setenv("HOME", str(tmp_path))
+        controller = _make_controller()
+        try:
+            resolved = controller._resolve_start_dir("Z:/not/attached/recordings")
+
+            assert os.path.isdir(resolved)
+            assert "not" not in resolved
+        finally:
+            controller.tear_down()
+
+    def test_it_always_returns_something_openable(self, monkeypatch, tmp_path):
+        """Even if every candidate fails, the dialog gets a real folder."""
+        monkeypatch.setenv("USERPROFILE", str(tmp_path))
+        monkeypatch.setenv("HOME", str(tmp_path))
+
+        def refuse(*_args, **_kwargs):
+            raise OSError("read-only")
+
+        controller = _make_controller()
+        try:
+            monkeypatch.setattr(os, "makedirs", refuse)
+            resolved = controller._resolve_start_dir("Z:/nope")
+
+            assert os.path.isdir(resolved)
         finally:
             controller.tear_down()
 

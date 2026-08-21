@@ -56,6 +56,8 @@
     <addaction name="actionSaveLayout"/>
     <addaction name="actionRestoreLayout"/>
     <addaction name="separator"/>
+    <addaction name="actionOpenRecording"/>
+    <addaction name="separator"/>
     <addaction name="actionOpenImageAnalysis"/>
     <addaction name="actionOpenStreamingDetector"/>
     <addaction name="separator"/>
@@ -147,6 +149,14 @@
    </property>
    <property name="toolTip">
     <string>Show or hide the detection map dock.</string>
+   </property>
+  </action>
+  <action name="actionOpenRecording">
+   <property name="text">
+    <string>Open Recording…</string>
+   </property>
+   <property name="toolTip">
+    <string>Watch a recording: video, detections, telemetry and map.</string>
    </property>
   </action>
   <action name="actionOpenImageAnalysis">

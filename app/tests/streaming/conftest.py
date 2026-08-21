@@ -55,6 +55,9 @@ def isolated_stream_settings(tmp_path_factory, request, monkeypatch):
     for name in (
         "core.controllers.streaming.StreamViewerWindow",
         "core.controllers.flight.FlightTileController",
+        # The recording library persists bundle paths; without isolation
+        # every recording test would write into the user's real registry.
+        "core.services.streaming.RecordingLibrary",
     ):
         try:
             modules.append(importlib.import_module(name))

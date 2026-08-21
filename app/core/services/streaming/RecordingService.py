@@ -59,9 +59,14 @@ class RecordingService(QObject):
     recordingBundleReady = Signal(dict)         # finalize_bundle result
     errorOccurred = Signal(str)
 
-    def __init__(self, logger: Optional[LoggerService] = None, parent=None):
+    def __init__(self, logger: Optional[LoggerService] = None, parent=None,
+                 library=None):
         super().__init__(parent)
         self.logger = logger or LoggerService()
+        # RecordingLibrary (or None). Production owners pass one so every
+        # finished bundle shows up in the Replay window's picker; tests
+        # omit it so they never touch the user's persisted library.
+        self._library = library
 
         # Video writer. Kept (not cleared) after stop so callers can
         # inspect the finished recording; replaced on the next start.
@@ -262,9 +267,38 @@ class RecordingService(QObject):
             self.session_writer.append_detection(record)
 
     def append_telemetry(self, envelope: dict) -> None:
-        """Store one telemetry fix in the active recording's bundle."""
-        if self.is_recording and self.session_writer is not None:
-            self.session_writer.append_telemetry(envelope)
+        """Store one telemetry fix, stamped with the recorded video's clock.
+
+        Wall-clock stamps alone cannot align replay: the video writer
+        splices connection gaps out (no frames arrive, none are written),
+        so after an outage the MP4's timeline is shorter than wall time by
+        the outage - and every wall-clock cue after it would lag the
+        picture for the rest of the replay. Stamping each fix with the
+        writer's frame count at arrival puts telemetry on the same clock
+        as the video, so gaps compress identically in both.
+        """
+        if not (self.is_recording and self.session_writer is not None):
+            return
+        stamped = dict(envelope) if isinstance(envelope, dict) else envelope
+        frames = self.recorded_frame_index()
+        if isinstance(stamped, dict) and frames is not None:
+            stamped["recorded_frame_index"] = frames
+            fps = self._configured_fps()
+            if fps:
+                stamped["recorded_video_seconds"] = frames / fps
+        self.session_writer.append_telemetry(stamped)
+
+    def _configured_fps(self) -> Optional[float]:
+        """The video writer's fixed frame rate, or None when unknowable."""
+        manager = self.recording_manager
+        accessor = getattr(manager, "configured_fps", None)
+        if accessor is None:
+            return None
+        try:
+            fps = float(accessor())
+        except Exception:  # noqa: BLE001 - test doubles may not implement this
+            return None
+        return fps if fps > 0 else None
 
     def recorded_frame_index(self) -> Optional[int]:
         """The video writer's frame count so far, or ``None`` when idle.
@@ -301,6 +335,12 @@ class RecordingService(QObject):
         self.recording_bundle_dir = None
         if not bundle_dir:
             return
+
+        if self._library is not None:
+            try:
+                self._library.remember(bundle_dir)
+            except Exception as exc:  # noqa: BLE001 - the library is a convenience
+                self.logger.warning(f"Could not register recording in library: {exc}")
 
         try:
             result = finalize_bundle(bundle_dir, self.logger)

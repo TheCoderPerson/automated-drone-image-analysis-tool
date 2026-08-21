@@ -246,3 +246,73 @@ def test_viewer_controller_opens_dialog_with_existing_window(qtbot, stub_service
     qtbot.wait(20)
     assert "FVC234" not in viewer._tile_controllers
     viewer.shutdown()
+
+
+class TestReplayEntryPoint:
+    """The Flight Viewer needs a way into a recording made yesterday.
+
+    The tile's own "Replay Recording" only covers a recording made in this
+    session, so without a menu entry a past flight was unreachable from
+    this window.
+    """
+
+    def test_the_menu_offers_open_recording(self, qapp):
+        from core.views.flight.FlightViewerWindow import FlightViewerWindow
+
+        window = FlightViewerWindow()
+        try:
+            assert window.actionOpenRecording.text() == "Open Recording…"
+            # Sits with the other cross-window entries.
+            titles = [a.text() for a in window.menuMain.actions()]
+            assert "Open Recording…" in titles
+        finally:
+            window.close()
+
+    def test_the_action_reaches_the_controller(self, qapp, tmp_path, monkeypatch):
+        from core.controllers.flight.FlightViewerController import FlightViewerController
+        from core.services.streaming.signaling import InMemorySignalingChannel
+
+        controller = FlightViewerController(signaling=InMemorySignalingChannel())
+        try:
+            # The constructor already wired the action; patch the slot's
+            # target rather than connecting again (which would fire twice).
+            opened = []
+            monkeypatch.setattr(
+                type(controller), "_open_recording",
+                lambda _self: opened.append(True),
+            )
+
+            controller.window.actionOpenRecording.trigger()
+
+            assert opened == [True]
+        finally:
+            controller.shutdown()
+
+    def test_choosing_a_recording_opens_the_replay_window(
+            self, qapp, tmp_path, monkeypatch):
+        from importlib import import_module
+
+        from core.controllers.flight.FlightViewerController import FlightViewerController
+        from core.services.streaming.signaling import InMemorySignalingChannel
+        chosen = str(tmp_path / "rec.mp4")
+        opened = []
+        replay_module = import_module("core.controllers.streaming.ReplayWindow")
+        monkeypatch.setattr(replay_module, "open_replay", lambda v: opened.append(v))
+
+        class FakeDialog:
+            def __init__(self, entries, parent=None):
+                self.selected_video = chosen
+
+            def exec(self):
+                return QDialog.Accepted
+
+        dialog_module = import_module("core.views.streaming.RecordingsDialog")
+        monkeypatch.setattr(dialog_module, "RecordingsDialog", FakeDialog)
+
+        controller = FlightViewerController(signaling=InMemorySignalingChannel())
+        try:
+            controller._open_recording()
+
+            assert opened == [chosen]
+        finally:
+            controller.shutdown()

@@ -40,11 +40,11 @@ from core.services.ConfigService import ConfigService
 from core.views.streaming.StreamViewerWindow_ui import Ui_StreamViewerWindow
 from core.services.LoggerService import LoggerService
 from helpers import BuildInfo
-from helpers.WidgetHelper import hand_off_focus, retire_widget
+from helpers.WidgetHelper import retire_widget
 from core.controllers.streaming.components import StreamCoordinator, DetectionRenderer, StreamStatistics
 from core.controllers.streaming.components import StreamTelemetryCoordinator
 from core.controllers.streaming.components.FrameProcessingWorker import FrameProcessingWorker
-from core.controllers.streaming.shared_widgets import DetectionThumbnailWidget, StreamControlWidget, Track
+from core.controllers.streaming.shared_widgets import DetectionThumbnailWidget, StreamControlWidget
 from core.views.components.FlightMapView import FlightMapView
 from core.views.flight.FlightPairingDialog import FlightPairingDialog
 from core.views.flight.TelemetryHud import TelemetryHud
@@ -62,10 +62,6 @@ from core.services.streaming.RTMPStreamService import (
     stream_type_from_source_label,
 )
 from core.services.streaming.contracts import FocusTarget
-from core.services.streaming.RecordingBundleService import (
-    find_bundle_for_video,
-    load_replay_detections,
-)
 from core.services.streaming.RecordingSessionService import DetectionRecord
 from helpers.TranslationMixin import TranslationMixin
 
@@ -113,11 +109,10 @@ class StreamViewerWindow(TranslationMixin, QMainWindow):
         # Bundle directory of the last finished recording, for the panel's
         # "Open Recording Folder" button.
         self._last_recording_bundle: Optional[str] = None
-        # Set when the connected file is a recording bundle's video: the
-        # window is then a REPLAY surface. Stored detections pre-load into
-        # the gallery and map, telemetry replays from the bundle's sidecar
-        # SRT, and detectors do not run - the record is the record.
-        self._replay_bundle_dir: Optional[str] = None
+        # The last finished recording's video, for the one-click Replay
+        # button (which opens the dedicated ReplayWindow - this window
+        # stays an analysis surface).
+        self._last_recording_video: Optional[str] = None
         self._pending_algorithm_options = None
         self._pending_processing_resolution = None  # Desired resolution from wizard (to be capped to native)
         self._active_stream_fps_limit: Optional[int] = None
@@ -339,10 +334,12 @@ class StreamViewerWindow(TranslationMixin, QMainWindow):
 
         # Primary navigation menu
         primary_menu = menu_bar.addMenu(self.tr("Menu"))
+        self.action_open_recording = QAction(self.tr("Open Recording…"), self)
         self.action_streaming_guide = QAction(self.tr("Streaming Analysis Wizard"), self)
         self.action_image_analysis = QAction(self.tr("Image Analysis"), self)
         self.action_flight_viewer = QAction(self.tr("Flight Viewer"), self)
         self.action_preferences = QAction(self.tr("Preferences"), self)
+        primary_menu.addAction(self.action_open_recording)
         primary_menu.addAction(self.action_streaming_guide)
         primary_menu.addSeparator()
         primary_menu.addAction(self.action_image_analysis)
@@ -364,6 +361,7 @@ class StreamViewerWindow(TranslationMixin, QMainWindow):
         help_menu.addAction(self.action_youtube)
 
         # Wire actions
+        self.action_open_recording.triggered.connect(self._open_recordings_dialog)
         self.action_streaming_guide.triggered.connect(self._open_streaming_guide)
         self.action_image_analysis.triggered.connect(self._open_image_analysis)
         self.action_flight_viewer.triggered.connect(self._open_flight_viewer)
@@ -381,13 +379,10 @@ class StreamViewerWindow(TranslationMixin, QMainWindow):
         recording_layout.setContentsMargins(5, 5, 5, 5)
         recording_layout.setSpacing(5)
 
-        # The Start/Stop buttons live INLINE with the play button (see
+        # The record toggle lives INLINE with the play button (see
         # PlaybackControlBar) - recording acts on the video, so its
         # trigger sits with the video. The panel keeps everything about
-        # where and what to save. Aliased here so every state handler
-        # (enable/disable, focus handoff, auto-record) is unchanged.
-        self.start_recording_btn = self.playback_controls.record_btn
-        self.stop_recording_btn = self.playback_controls.stop_record_btn
+        # where and what to save.
 
         # Recording status
         self.recording_status = QLabel(self.tr("Status: Not Recording"))
@@ -437,8 +432,14 @@ class StreamViewerWindow(TranslationMixin, QMainWindow):
             )
         )
 
-        # Shown once a recording has been saved, so the operator can get to
-        # the folder without hunting for it.
+        # Shown once a recording has been saved: watch it, or get to the
+        # files. Replay opens the dedicated ReplayWindow - watching a
+        # recording is its own experience, not an analysis session.
+        self.replay_recording_btn = QPushButton(self.tr("Replay"))
+        self.replay_recording_btn.setVisible(False)
+        self.replay_recording_btn.setToolTip(
+            self.tr("Watch this recording: video, detections, telemetry and map.")
+        )
         self.open_recording_btn = QPushButton(self.tr("Open Recording Folder"))
         self.open_recording_btn.setVisible(False)
         self.open_recording_btn.setToolTip(
@@ -450,6 +451,7 @@ class StreamViewerWindow(TranslationMixin, QMainWindow):
         recording_layout.addLayout(dir_layout)
         recording_layout.addWidget(self.save_detections_check)
         recording_layout.addWidget(self.save_map_check)
+        recording_layout.addWidget(self.replay_recording_btn)
         recording_layout.addWidget(self.open_recording_btn)
 
         # Replace placeholder with recording widget
@@ -488,8 +490,7 @@ class StreamViewerWindow(TranslationMixin, QMainWindow):
         self._update_map_option_hint()
 
         # Connect signals
-        self.start_recording_btn.clicked.connect(self._emit_start_recording)
-        self.stop_recording_btn.clicked.connect(self.on_stop_recording_requested)
+        self.playback_controls.record_btn.clicked.connect(self._on_record_toggle_clicked)
         self.recording_dir_browse.clicked.connect(self._browse_recording_directory)
         self.recording_dir_edit.textChanged.connect(self._on_recording_directory_changed)
         self.save_detections_check.toggled.connect(
@@ -499,6 +500,7 @@ class StreamViewerWindow(TranslationMixin, QMainWindow):
             lambda checked: self.settings.setValue("recording/save_map", checked)
         )
         self.open_recording_btn.clicked.connect(self._open_last_recording_folder)
+        self.replay_recording_btn.clicked.connect(self._replay_last_recording)
 
     def _settings_bool(self, key: str, default: bool) -> bool:
         """Read a boolean setting. QSettings returns strings on some platforms."""
@@ -547,11 +549,36 @@ finalize_bundle`).
         if folder and os.path.isdir(folder):
             QDesktopServices.openUrl(QUrl.fromLocalFile(folder))
 
-    def _emit_start_recording(self):
-        """Emit start recording signal with directory."""
-        default_recording_dir = os.path.expanduser("~")
-        directory = self.recording_dir_edit.text().strip() or default_recording_dir
-        self.on_start_recording_requested(directory)
+    def _replay_last_recording(self) -> None:
+        """Watch the recording that just finished, in the Replay window."""
+        video = getattr(self, "_last_recording_video", None)
+        if video and os.path.isfile(video):
+            self._open_replay_window(video)
+
+    def _open_recordings_dialog(self) -> None:
+        """Pick any known recording and replay it."""
+        from core.services.streaming.RecordingLibrary import RecordingLibrary
+        from core.views.streaming.RecordingsDialog import RecordingsDialog
+
+        dialog = RecordingsDialog(RecordingLibrary().recent(), parent=self)
+        if dialog.exec() == QDialog.Accepted and dialog.selected_video:
+            self._open_replay_window(dialog.selected_video)
+
+    def _open_replay_window(self, video_path: str) -> None:
+        """Hand a recording to the dedicated Replay window."""
+        try:
+            # Lazy import; the replay window composes streaming components.
+            from core.controllers.streaming.ReplayWindow import open_replay
+            open_replay(video_path)
+        except Exception as exc:  # noqa: BLE001 - never take this window down
+            self.logger.error(f"Could not open replay: {exc}")
+            self.ui.infoPanel.append(
+                self.tr("Could not open replay: {error}").format(error=exc)
+            )
+
+    def _on_record_toggle_clicked(self):
+        """One button, two meanings: start when idle, stop when recording."""
+        self.on_recording_toggled(not self.stream_coordinator.is_recording)
 
     def _browse_recording_directory(self):
         """Browse for recording directory."""
@@ -1701,116 +1728,6 @@ finalize_bundle`).
         # applies to live sources.
         self.telemetry_hud.set_staleness_tracking(stream_type != StreamType.FILE)
 
-        # If this file is a recording bundle's video, become its replay
-        # surface: stored detections into the gallery/map now, detectors
-        # off for the whole source.
-        self._replay_bundle_dir = None
-        if stream_type == StreamType.FILE:
-            try:
-                self._enter_replay_if_bundle(url)
-            except Exception as e:  # noqa: BLE001 - replay must not block playback
-                self.logger.error(f"Could not load recording bundle for replay: {e}")
-
-    @property
-    def _replay_mode(self) -> bool:
-        """True while the connected source is a recording bundle's video."""
-        return self._replay_bundle_dir is not None
-
-    def _enter_replay_if_bundle(self, video_path: str) -> None:
-        """Turn the window into a replay surface for a recording bundle.
-
-        Opening the bundle's MP4 is the whole gesture: the stored
-        detections appear in the Detection Gallery immediately (click one
-        to jump the video there), their positions pin the map, and the
-        bundle's sidecar SRT - discovered by the ordinary file-telemetry
-        path - drives the HUD, aircraft marker and trail from the playhead.
-
-        Detectors deliberately do NOT run against a replay (see the frame
-        routing guards): the recorded video already carries the overlays
-        that were drawn live, and the stored detections are the record of
-        what the original run found. Re-detecting would burn CPU to
-        overwrite evidence with a re-enactment.
-        """
-        bundle_dir = find_bundle_for_video(video_path)
-        if bundle_dir is None:
-            return
-
-        self._replay_bundle_dir = bundle_dir
-        rows = load_replay_detections(bundle_dir)
-
-        loaded = 0
-        pinned = 0
-        for row in rows:
-            track = self._replay_row_to_track(row)
-            key = f"replay-{row.get('seq', loaded)}"
-            if track is not None:
-                self._gallery_tracks_by_key[key] = track
-                self.gallery_widget.add_track(track)
-                loaded += 1
-            latitude = row.get("latitude")
-            longitude = row.get("longitude")
-            if (track is not None and isinstance(latitude, (int, float))
-                    and isinstance(longitude, (int, float))):
-                self.map_view.add_detection({
-                    "track_key": key,
-                    "location": {"lat": float(latitude), "lon": float(longitude)},
-                    "class_name": row.get("detection_type") or "detection",
-                    "confidence": float(row.get("confidence") or 0.0),
-                })
-                pinned += 1
-
-        self.ui.infoPanel.append(
-            self.tr(
-                "Replaying recording: {count} stored detections loaded - "
-                "click one in the Gallery to jump to it."
-            ).format(count=loaded)
-        )
-        self.ui.infoPanel.append(
-            self.tr("Detectors are off during replay; the stored record is shown.")
-        )
-        if pinned:
-            self.ui.infoPanel.append(
-                self.tr("{count} detections pinned on the map.").format(count=pinned)
-            )
-
-    def _replay_row_to_track(self, row: dict) -> Optional[Track]:
-        """Build a gallery Track from a stored detection row.
-
-        The gallery is thumbnail-driven, so a row whose thumbnail file is
-        missing (or unreadable) is skipped rather than shown as a blank
-        square - it still exists in detections.csv.
-        """
-        thumbnail_path = row.get("thumbnail_path")
-        if not thumbnail_path:
-            return None
-        thumbnail = cv2.imread(thumbnail_path)
-        if thumbnail is None or thumbnail.size == 0:
-            return None
-
-        bbox = row.get("bbox") or [0, 0, 0, 0]
-        centroid = row.get("centroid")
-        if not (isinstance(centroid, (list, tuple)) and len(centroid) >= 2):
-            centroid = (int(bbox[0]) + int(bbox[2]) // 2, int(bbox[1]) + int(bbox[3]) // 2)
-        resolution = row.get("frame_resolution") or [0, 0]
-        recorded_frame = row.get("recorded_frame_index")
-
-        return Track(
-            track_id=int(row.get("seq", 0)),
-            bbox=tuple(int(v) for v in bbox[:4]),
-            centroid=(int(centroid[0]), int(centroid[1])),
-            thumbnail=thumbnail,
-            # Seek target in the RECORDED video - the writer's frame
-            # counter when the detection was stored. Best-effort by
-            # design (the writer runs at fixed fps); rows recorded
-            # without one land at the start rather than nowhere.
-            first_frame_index=int(recorded_frame) if isinstance(recorded_frame, (int, float)) else 0,
-            first_timestamp=float(row.get("video_time_seconds") or 0.0),
-            frame_resolution=(int(resolution[0] or 0), int(resolution[1] or 0)),
-            is_confirmed=True,
-            detection_type=str(row.get("detection_type") or "detection"),
-            confidence=float(row.get("confidence") or 0.0),
-        )
-
     def _selected_metadata_path(self) -> str:
         """The metadata file chosen in the controls, if any.
 
@@ -2089,7 +2006,6 @@ finalize_bundle`).
             self.video_display.clear_display(self.tr("No Stream Connected"))
 
             # Clear gallery and tracks on disconnect
-            self._replay_bundle_dir = None
             if hasattr(self, 'gallery_widget'):
                 self.gallery_widget.clear()
             if hasattr(self, 'thumbnail_widget'):
@@ -2157,7 +2073,7 @@ finalize_bundle`).
                 hasattr(self.stream_coordinator.stream_manager, 'is_playing')):
             is_paused = not self.stream_coordinator.stream_manager.is_playing()
 
-        if self.algorithm_widget and not is_paused and not self._replay_mode:
+        if self.algorithm_widget and not is_paused:
             # Store original frame for thumbnails (before detection rendering)
             # This ensures thumbnails are crisp without detection overlays.
             self._original_frame_for_thumbnails = frame
@@ -2208,11 +2124,8 @@ finalize_bundle`).
             # Clear pending resolution (only apply once)
             self._pending_processing_resolution = None
 
-        # Process frame with algorithm if loaded and not paused. A replay
-        # never processes: the recorded video already carries the overlays
-        # drawn live, and the stored detections are the record - frames go
-        # straight to the display path below.
-        if self.algorithm_widget and not is_paused and not self._replay_mode:
+        # Process frame with algorithm if loaded and not paused
+        if self.algorithm_widget and not is_paused:
             # Use worker thread if available, otherwise fall back to main thread
             use_worker = False
             # Check if worker is available, running, and not in the process of stopping
@@ -2395,6 +2308,12 @@ finalize_bundle`).
         self._last_recording_bundle = bundle_dir
         if hasattr(self, "open_recording_btn"):
             self.open_recording_btn.setVisible(True)
+        from core.services.streaming.RecordingLibrary import RecordingLibrary
+        video = RecordingLibrary.first_video_in(bundle_dir)
+        if video:
+            self._last_recording_video = video
+            if hasattr(self, "replay_recording_btn"):
+                self.replay_recording_btn.setVisible(True)
 
         counts = result.get("counts") or {}
         detections = int(counts.get("detections_stored") or 0)
@@ -2472,26 +2391,24 @@ finalize_bundle`).
                 self.algorithm_widget.on_recording_stopped(path)
 
     def _update_recording_state(self, recording: bool, path: str):
-        """Update recording widget UI state."""
-        if hasattr(self, 'start_recording_btn') and hasattr(self, 'stop_recording_btn'):
-            # Enable the successor, hand focus to it, then disable the button
-            # the user pressed - otherwise Qt picks the successor itself and
-            # focus leaves the recording controls.
-            if recording:
-                self.stop_recording_btn.setEnabled(True)
-                hand_off_focus(self.stop_recording_btn, self.start_recording_btn)
-                self.start_recording_btn.setEnabled(False)
-                self.recording_status.setText(
-                    self.tr("Status: Recording to {path}").format(path=path)
-                )
-                self.recording_status.setStyleSheet("QLabel { color: red; font-weight: bold; }")
-            else:
-                self.start_recording_btn.setEnabled(True)
-                hand_off_focus(self.start_recording_btn, self.stop_recording_btn)
-                self.stop_recording_btn.setEnabled(False)
-                self.recording_status.setText(self.tr("Status: Not Recording"))
-                self.recording_status.setStyleSheet("QLabel { color: gray; }")
-                self.recording_info.setText(self.tr("Duration: --"))
+        """Update recording widget UI state.
+
+        The single record toggle never disables, so - unlike the old
+        Start/Stop pair - no focus handoff is needed here: nothing gets
+        disabled under the user's focus, and the scroll area holds still.
+        """
+        self.playback_controls.set_recording_state(recording)
+        if not hasattr(self, 'recording_status'):
+            return
+        if recording:
+            self.recording_status.setText(
+                self.tr("Status: Recording to {path}").format(path=path)
+            )
+            self.recording_status.setStyleSheet("QLabel { color: red; font-weight: bold; }")
+        else:
+            self.recording_status.setText(self.tr("Status: Not Recording"))
+            self.recording_status.setStyleSheet("QLabel { color: gray; }")
+            self.recording_info.setText(self.tr("Duration: --"))
 
     @Slot(dict)
     def on_recording_stats_updated(self, stats: dict):
