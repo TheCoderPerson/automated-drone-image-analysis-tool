@@ -349,6 +349,16 @@ class Ui_StreamingGuide(object):
 
         self.verticalLayout_altitude.addWidget(self.labelAltitude)
 
+        self.labelAltitudeHint = QLabel(self.widgetAltitude)
+        self.labelAltitudeHint.setObjectName(u"labelAltitudeHint")
+        font3 = QFont()
+        font3.setPointSize(9)
+        font3.setItalic(True)
+        self.labelAltitudeHint.setFont(font3)
+        self.labelAltitudeHint.setWordWrap(True)
+
+        self.verticalLayout_altitude.addWidget(self.labelAltitudeHint)
+
         self.horizontalLayout_altitude = QHBoxLayout()
         self.horizontalLayout_altitude.setObjectName(u"horizontalLayout_altitude")
         self.altitudeSlider = QSlider(self.widgetAltitude)
@@ -394,10 +404,10 @@ class Ui_StreamingGuide(object):
         self.verticalLayout_gsd.setObjectName(u"verticalLayout_gsd")
         self.labelGSDTitle = QLabel(self.gsdWidget)
         self.labelGSDTitle.setObjectName(u"labelGSDTitle")
-        font3 = QFont()
-        font3.setPointSize(12)
-        font3.setBold(True)
-        self.labelGSDTitle.setFont(font3)
+        font4 = QFont()
+        font4.setPointSize(12)
+        font4.setBold(True)
+        self.labelGSDTitle.setFont(font4)
 
         self.verticalLayout_gsd.addWidget(self.labelGSDTitle)
 
@@ -497,9 +507,9 @@ class Ui_StreamingGuide(object):
         self.verticalLayout_algorithmDecision.setObjectName(u"verticalLayout_algorithmDecision")
         self.labelCurrentQuestion = QLabel(self.algorithmWidget)
         self.labelCurrentQuestion.setObjectName(u"labelCurrentQuestion")
-        font4 = QFont()
-        font4.setPointSize(14)
-        self.labelCurrentQuestion.setFont(font4)
+        font5 = QFont()
+        font5.setPointSize(14)
+        self.labelCurrentQuestion.setFont(font5)
         self.labelCurrentQuestion.setAlignment(Qt.AlignCenter)
 
         self.verticalLayout_algorithmDecision.addWidget(self.labelCurrentQuestion)
@@ -538,10 +548,10 @@ class Ui_StreamingGuide(object):
 
         self.labelAlgorithmResult = QLabel(self.algorithmWidget)
         self.labelAlgorithmResult.setObjectName(u"labelAlgorithmResult")
-        font5 = QFont()
-        font5.setPointSize(14)
-        font5.setBold(True)
-        self.labelAlgorithmResult.setFont(font5)
+        font6 = QFont()
+        font6.setPointSize(14)
+        font6.setBold(True)
+        self.labelAlgorithmResult.setFont(font6)
         self.labelAlgorithmResult.setVisible(False)
         self.labelAlgorithmResult.setAlignment(Qt.AlignCenter)
 
@@ -619,9 +629,9 @@ class Ui_StreamingGuide(object):
 
         self.skipGuideCheckBox = QCheckBox(self.buttonWidget)
         self.skipGuideCheckBox.setObjectName(u"skipGuideCheckBox")
-        font6 = QFont()
-        font6.setPointSize(10)
-        self.skipGuideCheckBox.setFont(font6)
+        font7 = QFont()
+        font7.setPointSize(10)
+        self.skipGuideCheckBox.setFont(font7)
 
         self.horizontalLayout_buttons.addWidget(self.skipGuideCheckBox)
 
@@ -710,6 +720,7 @@ class Ui_StreamingGuide(object):
         self.labelPageCaptureTitle.setText(QCoreApplication.translate("StreamingGuide", u"Video Capture Information", None))
         self.labelDrone.setText(QCoreApplication.translate("StreamingGuide", u"What drone/camera was used to capture the video?", None))
         self.labelAltitude.setText(QCoreApplication.translate("StreamingGuide", u"At what above ground level (AGL) altitude was the drone flying?", None))
+        self.labelAltitudeHint.setText(QCoreApplication.translate("StreamingGuide", u"Height above the ground being flown over - what the image scale depends on. Over flat terrain this equals the drone's above-takeoff (ATO) reading. Any value detected from a video log is that ATO reading, so check it if the terrain rises or falls.", None))
         self.altitudeUnitComboBox.setItemText(0, QCoreApplication.translate("StreamingGuide", u"ft", None))
         self.altitudeUnitComboBox.setItemText(1, QCoreApplication.translate("StreamingGuide", u"m", None))
 

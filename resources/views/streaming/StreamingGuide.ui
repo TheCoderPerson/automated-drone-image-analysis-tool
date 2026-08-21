@@ -697,6 +697,22 @@ Not needed for most videos, which already carry it.</string>
            </widget>
           </item>
           <item>
+           <widget class="QLabel" name="labelAltitudeHint">
+            <property name="font">
+             <font>
+              <pointsize>9</pointsize>
+              <italic>true</italic>
+             </font>
+            </property>
+            <property name="text">
+             <string>Height above the ground being flown over - what the image scale depends on. Over flat terrain this equals the drone's above-takeoff (ATO) reading. Any value detected from a video log is that ATO reading, so check it if the terrain rises or falls.</string>
+            </property>
+            <property name="wordWrap">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+          <item>
            <layout class="QHBoxLayout" name="horizontalLayout_altitude">
             <item>
              <widget class="QSlider" name="altitudeSlider">

@@ -576,3 +576,64 @@ def test_audit_quiet_on_healthy_metadata(tmp_path, monkeypatch):
     monkeypatch.setattr(waldo_module, 'get_solar_position', lambda lat, lon, utc: (30.0, 120.0))
 
     assert WaldoMetadataService().audit_capture_times([p]) == []
+
+
+# --------------------------------------------------------------------------
+# synthesised XMP: the altitude reference is recorded, not inferred
+# --------------------------------------------------------------------------
+
+def _synthesised_fields(monkeypatch):
+    """Capture what _write_synthesised_xmp would embed."""
+    written = {}
+
+    def fake_add_xmp_fields(path, fields):
+        written['path'] = path
+        written['fields'] = {name: value for _ns, name, value in fields}
+
+    from helpers.MetaDataHelper import MetaDataHelper
+    monkeypatch.setattr(
+        MetaDataHelper, 'add_xmp_fields', staticmethod(fake_add_xmp_fields)
+    )
+    WaldoMetadataService._write_synthesised_xmp(
+        'frame.jpg',
+        {'pitch': -88.0, 'yaw': 12.0, 'roll': OUTWARD_ROLL_DEG},
+        plane_heading_deg=95.0,
+        agl_m=118.4,
+        abs_orthometric_m=402.9,
+    )
+    return written['fields']
+
+
+def test_synthesised_xmp_marks_the_altitude_as_terrain_referenced(monkeypatch):
+    """The pre-pass computes a real AGL; nothing recorded that before.
+
+    ``RelativeAltitude`` carries height above the takeoff point on DJI
+    imagery and a terrain-referenced AGL here. Writing the marker is what
+    lets a label downstream be right instead of a guess.
+    """
+    fields = _synthesised_fields(monkeypatch)
+    assert fields['AltitudeType'] == 'terrain'
+
+
+def test_synthesised_xmp_still_writes_the_same_altitude(monkeypatch):
+    """Marking the value must not change it - this is a labelling pass."""
+    fields = _synthesised_fields(monkeypatch)
+    assert fields['RelativeAltitude'] == '+118.4000'
+    assert fields['AbsoluteAltitude'] == '+402.9000'
+
+
+def test_the_marker_round_trips_through_image_service(monkeypatch):
+    """What the pre-pass writes is what ImageService reads back."""
+    from core.services.image.ImageService import ImageService
+    from helpers.FormatHelper import FormatHelper
+
+    fields = _synthesised_fields(monkeypatch)
+    xmp = {f'drone-dji:{name}': value for name, value in fields.items()}
+
+    service = ImageService.__new__(ImageService)
+    service.xmp_data = xmp
+    service.drone_make = 'Canon'
+
+    assert service.get_altitude_reference() == \
+        FormatHelper.ALTITUDE_REFERENCE_TERRAIN
+    assert service.get_relative_altitude() == pytest.approx(118.4)

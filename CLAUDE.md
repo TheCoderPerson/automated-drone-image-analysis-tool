@@ -134,6 +134,48 @@ This file is auto-loaded as project context. It defines normative engineering st
   - Visible strings MUST use translation-ready patterns from Section 2.8.
   - Translation extraction/compilation MUST be run when text changes.
 
+### 2.11 Altitude References
+
+ADIAT carries **three** aircraft altitudes. They are different numbers, they are equal only over flat ground, and confusing them is the highest-value mistake to design against: the error is zero on the bench and grows with terrain relief, so it appears only in the field, over the ground a search team is actually working.
+
+| Reference | Meaning | Label |
+|---|---|---|
+| **ATO** | height above the **takeoff point** — barometric, DJI's `rel_alt`; does not change when terrain rises | `ATO` |
+| **AGL** | height above the **terrain beneath the aircraft** — measured or DEM-derived | `AGL` |
+| **MSL** | height above mean sea level | `MSL` |
+
+- ATO and AGL MUST NOT share a field, a column, or a label. "AGL" MUST mean height above terrain everywhere in ADIAT; a takeoff-relative value MUST be called ATO.
+- Live telemetry keys (the wire dict *is* the contract — see [TelemetryEnrichmentService.py](app/core/services/telemetry/TelemetryEnrichmentService.py)):
+
+  | Key | Meaning |
+  |---|---|
+  | `aircraft_altitude_msl_m` | MSL |
+  | `aircraft_altitude_agl_m` | **ATO.** Wire name kept for compatibility with recorded bundles and shipped ADIAT Flight builds; it has always carried ATO |
+  | `aircraft_altitude_agl_terrain_m` | **AGL**, or absent when none was resolved |
+  | `agl_source` | provenance of `aircraft_altitude_agl_terrain_m` only. ADIAT Flight sends this as `aircraft_altitude_agl_source` (`UPPER_SNAKE`, unconditionally, including `TAKEOFF_REFERENCE`); `_stamp_source` folds it into `agl_source` at ingest so there is one provenance name internally and in recorded bundles, and leaves the raw key in place so `telemetry.jsonl` stays faithful to the wire |
+  | `terrain_elevation_m` | DEM elevation beneath the aircraft |
+
+- **Provenance MUST be checked before presenting an AGL.** Presence of `aircraft_altitude_agl_terrain_m` — never `agl_source` — decides whether an AGL exists; `publisher_agl_source()` and `has_publisher_agl()` decide whether it was actually referenced to terrain. `takeoff_reference` (Flight looked and found no terrain source) MUST stay distinguishable from an absent source name (a publisher predating the field): both earn a DEM lookup, but only the first can be reported to the operator as such. An AGL that was not MUST be marked (the HUD appends `*`). Unknown source names MUST pass through rather than be dropped.
+- `agl_source == "reported"` predates this rule and is kept verbatim for bundle comparability: it means "ATO only, no AGL resolved".
+- ADIAT Flight's AGL outranks Desktop's inference; enrichment MUST pass such an envelope through without a DEM lookup. The live differential anchors, best first: the publisher's **takeoff coordinates** (`takeoff_latitude`/`takeoff_longitude` — positions are datum-free, Desktop samples its own DEM at the launch point, and a viewer connecting mid-flight still anchors correctly), then the first fix for publishers predating the fields. Anchor bookkeeping MUST run on every fix so a mid-flight fallback is already armed when the publisher stops resolving AGL.
+- `TelemetryEnrichmentService._absolute_agl` (the `MSL − geoid − terrain` path) is **intentionally inert in production**: the DEM worker is built with `enable_geoid=False` because `GeoidService` mutates thread-affine PROJ state and hard-crashed a real session. Do not "fix" it, and do not re-enable the geoid on the telemetry thread to make its tests live.
+- **`aircraft_altitude_msl_m` has an undetermined datum, from either source.** Treat it as ellipsoidal-or-unknown and NEVER difference it against a DEM without a geoid correction:
+  - DJI SRT `abs_alt` is a GPS height above the WGS84 ellipsoid ([video.csv](app/video.csv): "NB abs_alt is ELLIPSOIDAL, not orthometric").
+  - ADIAT Flight's is DJI's own ASL frame (RTK fusion when available, else `KeyAltitude + KeyTakeoffLocationAltitude`), and DJI does not document `KeyTakeoffLocationAltitude`'s datum. Measured against the orthometric Copernicus DEM on the 2026-06-10 Georgetown flights it disagreed by ~26 m — the local geoid separation — so the evidence points to ellipsoidal there too. The `aircraft_altitude_msl_m` KDoc in Flight's `TelemetryPublisher.kt` records this at the point of consumption.
+  - The error runs −20 to −30 m across CONUS **in the direction that overstates height above terrain**, which is the one direction an AGL must never err in. `ImageService`/`WaldoMetadataService` reached the same conclusion for EXIF GPS altitude and apply `convert_ellipsoidal_to_orthometric` first.
+- **`aircraft_altitude_agl_terrain_m` needs no datum correction at all** — that is the whole reason it exists. Both ADIAT Flight's `TERRAIN_DEM` chain and `TelemetryEnrichmentService._anchored_agl` build it from a *difference* of DEM samples anchored where ATO is zero, so any constant datum offset cancels exactly. Code MUST NOT "improve" either by folding an MSL term in; that is the mistake that overstated height above terrain ~3× on mobile.
+- **Image path:** `drone-dji:RelativeAltitude` is ATO for DJI imagery and a genuine terrain-referenced AGL for WALDO-prepassed imagery. The pre-pass marks its own output with `drone-dji:AltitudeType` = `terrain`; `ImageService.get_altitude_reference()` reads it back. That reference is for **labelling and diagnostics only** — no GSD, AOI-geolocation or coverage calculation may branch on it without its own change and its own tests. An absent marker means ATO.
+- **The flight altitude anchor** ([AltitudeAnchorService.py](app/core/services/image/AltitudeAnchorService.py)) is the one model for image-path altitude: estimate the takeoff point's elevation, then `camera_elevation = anchor + ATO` per frame (barometric precision) and `AGL = camera_elevation − DEM(point)`. AOI geolocation, GSD, the altitude readout and POD all resolve through it; the viewer registers the mission via `set_mission_images()`.
+  - **Anchors are per flight segment, never per mission.** A SAR folder holds several flights by several pilots from several launch sites, so the registry segments automatically — aircraft serial first (simultaneous pilots interleave in capture time), then capture-time gaps (`MISSION_SEGMENT_GAP_S`) — and consumers address anchors by image path. An image that cannot be tied to a flight anchors nothing and falls back; one flight's launch frame MUST never anchor another flight's images.
+  - The general registry (`strict_datum`) accepts two kinds of evidence, strongest first: a **near-ground frame** (ATO ≤ 10 m → DEM at that position; the datum never enters), and the **baro datum test**. DJI slaves recorded absolute altitude to the barometer — measured on a real 238-frame mission the implied-constant spread was exactly 0.0 — so `median(GPSAltitude − ATO)` recovers the firmware's takeoff estimate exactly, and the datum question collapses to two candidates separated by the geoid undulation. The candidate sitting on ground the flight overflew wins; both, neither, or an undulation too small to separate refuses, and the fallback stands.
+  - The raw GPS ensemble MUST NOT anchor general consumers however coherent it is — a constant datum offset is perfectly coherent. POD alone keeps it, bounded by its sensor max range, with its documented conservative residual bias.
+  - There is no operator takeoff-elevation input: tying every image back to a launch point is not something a multi-pilot SAR workflow can do, so a knob demanding it is a trap.
+  - Without an anchor every path falls back to the pre-existing cross-checked chains (`_select_effective_agl`); with one, the per-frame cross-check is skipped — real takeoff-to-nadir relief would otherwise be misread as datum error.
+  - Per-airframe `GPSAltitude` datums are **unverified** (n=1 evidence suggests at least one DJI writes orthometric; `video.csv` documents SRT `abs_alt` as ellipsoidal; WALDO treats Canon airframe GPS as ellipsoidal deliberately). Never infer a datum from one dataset; the anchor model exists so nobody has to.
+- User-facing altitude labels MUST come from `FormatHelper.altitude_reference_abbreviation()` / `altitude_reference_phrase()` so a value's reference plane travels with it. Exports (KML, CalTopo, PDF) spell the plane out; tight UI uses the abbreviation.
+- An operator-entered override (`AltitudeController.custom_agl_altitude_ft`, the streaming wizard's altitude) is height above the ground being flown over — label it AGL, not ATO.
+- ADIAT Flight and Desktop both label sea level **MSL** as of Flight's ASL→MSL string pass; the wire key was always `aircraft_altitude_msl_m`.
+
 ## 3. Testing Standards
 
 ### 3.1 Test Placement

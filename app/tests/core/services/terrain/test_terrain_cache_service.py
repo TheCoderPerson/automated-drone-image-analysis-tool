@@ -9,7 +9,12 @@ import os
 from PIL import Image
 import io
 
-from core.services.terrain.TerrainCacheService import TerrainCacheService
+import math
+
+from core.services.terrain.TerrainCacheService import (
+    TerrainCacheService,
+    bounds_for_radius,
+)
 from core.services.terrain.ElevationProvider import TerrariumProvider
 
 
@@ -206,21 +211,41 @@ class TestTerrainCacheService:
 
     @patch.object(TerrariumProvider, 'download_tile')
     def test_prefetch_tiles(self, mock_download):
-        """Test prefetching tiles for an area."""
+        """A radius prefetch downloads every tile covering that radius."""
         with tempfile.TemporaryDirectory() as tmpdir:
             service = TerrainCacheService(cache_dir=tmpdir)
-
             mock_download.return_value = self.create_test_tile()
 
-            # Prefetch larger area to ensure multiple tiles
-            # Using radius_km=10 to ensure at least one tile is covered
             count = service.prefetch_tiles(40.7128, -74.0060, radius_km=10, zoom=10)
 
-            # The prefetch should download at least some tiles
-            # Note: count may be 0 if calculation results in no tiles due to formula issues
-            assert count >= 0
-            # Verify mock was called appropriate number of times
+            assert count > 0
             assert mock_download.call_count == count
+            # Nothing left uncached: the previous version of this test
+            # asserted only ``count >= 0``, which is how a longitude
+            # conversion 35x too narrow went unnoticed.
+            assert service.count_missing_tiles(
+                bounds_for_radius(40.7128, -74.0060, 10), zoom=10) == 0
+
+    @patch.object(TerrariumProvider, 'download_tile')
+    def test_prefetch_covers_the_requested_ground(self, mock_download):
+        """Regression guard for the longitude conversion.
+
+        Scaling ``dlon`` by the latitude instead of its cosine collapsed the
+        box: at 30 degrees a 10 km radius became a few hundred metres of
+        longitude, so the prefetch fetched a sliver and every lookup outside
+        it still hit the network.
+        """
+        with tempfile.TemporaryDirectory() as tmpdir:
+            service = TerrainCacheService(cache_dir=tmpdir)
+            mock_download.return_value = self.create_test_tile()
+            service.prefetch_tiles(30.0, -97.0, radius_km=10, zoom=12)
+
+            # 8 km east of centre is inside a 10 km radius, so its tile must
+            # be cached. Under the old arithmetic it was far outside the box
+            # that actually got fetched.
+            east_lon = -97.0 + 8.0 / (111.0 * math.cos(math.radians(30.0)))
+            tile_x, tile_y = TerrariumProvider.lat_lon_to_tile(30.0, east_lon, 12)
+            assert service.is_tile_cached(12, tile_x, tile_y)
 
     @patch.object(TerrariumProvider, 'download_tile')
     def test_is_online(self, mock_download):
@@ -233,3 +258,90 @@ class TestTerrainCacheService:
 
             mock_download.return_value = None
             assert not service.is_online()
+
+
+class TestBoundsForRadius:
+    """Longitude degrees shrink with the cosine of latitude."""
+
+    def test_east_west_span_matches_the_radius(self):
+        """The property the bug broke: 10 km east is inside a 10 km radius."""
+        for lat in (0.0, 30.0, 45.0, 60.0):
+            min_lon, _min_lat, max_lon, _max_lat = bounds_for_radius(lat, -97.0, 10)
+            half_width_km = ((max_lon - min_lon) / 2.0) * 111.0 * math.cos(
+                math.radians(lat))
+            assert half_width_km == pytest.approx(10.0, rel=0.02), lat
+
+    def test_north_south_span_is_latitude_independent(self):
+        for lat in (0.0, 30.0, 60.0):
+            _min_lon, min_lat, _max_lon, max_lat = bounds_for_radius(lat, -97.0, 10)
+            half_height_km = ((max_lat - min_lat) / 2.0) * 111.0
+            assert half_height_km == pytest.approx(10.0, rel=0.02), lat
+
+    def test_the_box_widens_in_longitude_toward_the_poles(self):
+        equator = bounds_for_radius(0.0, 0.0, 10)
+        mid = bounds_for_radius(60.0, 0.0, 10)
+        assert (mid[2] - mid[0]) > (equator[2] - equator[0]) * 1.9
+
+    def test_at_the_equator_the_box_is_square_in_degrees(self):
+        min_lon, min_lat, max_lon, max_lat = bounds_for_radius(0.0, 0.0, 10)
+        assert (max_lon - min_lon) == pytest.approx(max_lat - min_lat, rel=1e-6)
+
+    def test_near_the_poles_the_width_is_clamped(self):
+        """cos(lat) approaches zero; an unclamped divisor would explode."""
+        min_lon, _min_lat, max_lon, _max_lat = bounds_for_radius(89.9, 0.0, 10)
+        assert (max_lon - min_lon) <= 20.0
+
+
+class TestPrefetchBounds:
+    """The bbox form every acquisition path actually uses."""
+
+    @staticmethod
+    def _tile():
+        # Reuse the suite's PNG builder rather than keeping a second copy.
+        return TestTerrainCacheService().create_test_tile()
+
+    @patch.object(TerrariumProvider, 'download_tile')
+    def test_cached_tiles_are_not_refetched(self, mock_download):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            service = TerrainCacheService(cache_dir=tmpdir)
+            mock_download.return_value = self._tile()
+            bounds = (-97.01, 30.0, -97.0, 30.01)
+
+            first = service.prefetch_bounds(bounds, zoom=12)
+            calls_after_first = mock_download.call_count
+            second = service.prefetch_bounds(bounds, zoom=12)
+
+            assert first > 0
+            assert second == 0
+            assert mock_download.call_count == calls_after_first
+
+    @patch.object(TerrariumProvider, 'download_tile')
+    def test_cancellation_stops_before_the_first_tile(self, mock_download):
+        """A prefetch is opportunistic; it must never hold up its caller."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            service = TerrainCacheService(cache_dir=tmpdir)
+            mock_download.return_value = self._tile()
+            written = service.prefetch_bounds(
+                (-97.5, 30.0, -97.0, 30.5), zoom=12, cancel_check=lambda: True)
+            assert written == 0
+            mock_download.assert_not_called()
+
+    @patch.object(TerrariumProvider, 'download_tile')
+    def test_progress_reaches_the_total(self, mock_download):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            service = TerrainCacheService(cache_dir=tmpdir)
+            mock_download.return_value = self._tile()
+            seen = []
+            service.prefetch_bounds(
+                (-97.01, 30.0, -97.0, 30.01), zoom=12,
+                progress_callback=lambda d, t, m: seen.append((d, t)))
+            assert seen
+            assert seen[-1][0] == seen[-1][1]
+
+    def test_count_missing_reports_everything_uncached(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            service = TerrainCacheService(cache_dir=tmpdir)
+            bounds = (-97.01, 30.0, -97.0, 30.01)
+            min_x, min_y, max_x, max_y = service.tile_range(bounds, 12)
+            span = (max_x - min_x + 1) * (max_y - min_y + 1)
+            assert service.count_missing_tiles(bounds, 12) == span

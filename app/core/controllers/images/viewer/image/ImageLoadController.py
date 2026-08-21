@@ -15,6 +15,7 @@ from core.services.image.ImageService import ImageService
 from core.services.image.ImageHighlightService import ImageHighlightService
 from helpers.LocationInfo import LocationInfo
 from helpers.TranslationMixin import TranslationMixin
+from helpers.FormatHelper import FormatHelper
 
 
 class ImageLoadController(TranslationMixin):
@@ -375,15 +376,29 @@ class ImageLoadController(TranslationMixin):
         """Update metadata displays in status bar."""
         image = self.parent.images[self.parent.current_image]
 
-        # Altitude
-        altitude = image_service.get_relative_altitude(self.parent.distance_unit)
-        if altitude:
-            self.parent.messages['Relative Altitude'] = f"{altitude} {self.parent.distance_unit}"
+        # Altitude, with the plane it is measured from. The same XMP tag
+        # holds height above the takeoff point for DJI imagery and a
+        # terrain-referenced AGL for WALDO-prepassed imagery, and the status
+        # bar used to label both "Relative Altitude".
+        #
+        # Where the metadata carries ATO and the DEM can answer for this
+        # position, both are shown: ATO is what the aircraft reported,
+        # AGL is height above the ground actually being flown over, and
+        # over relief they are materially different numbers.
+        readings = image_service.get_altitude_readings(
+            self.parent.distance_unit,
+            use_terrain=getattr(self.parent, 'use_terrain_elevation', True),
+        )
+        self.parent.messages['Relative Altitude'] = FormatHelper.altitude_inline(
+            readings)
 
-            # Check for negative altitude and prompt for custom AGL
-            if altitude < 0 and hasattr(self.parent, 'altitude_controller'):
-                if self.parent.altitude_controller.custom_agl_altitude_ft is None:
-                    self.parent.altitude_controller.prompt_for_custom_altitude(auto_triggered=True)
+        # A negative altitude means the metadata cannot be trusted for GSD;
+        # offer the operator the override once.
+        if (readings.has_value and readings.value < 0
+                and hasattr(self.parent, 'altitude_controller')):
+            if self.parent.altitude_controller.custom_agl_altitude_ft is None:
+                self.parent.altitude_controller.prompt_for_custom_altitude(
+                    auto_triggered=True)
 
         # Gimbal orientation
         direction = image_service.get_camera_yaw()

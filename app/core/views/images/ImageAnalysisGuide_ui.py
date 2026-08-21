@@ -260,6 +260,16 @@ class Ui_ImageAnalysisGuide(object):
 
         self.verticalLayout_altitude.addWidget(self.labelAltitude)
 
+        self.labelAltitudeHint = QLabel(self.widgetAltitude)
+        self.labelAltitudeHint.setObjectName(u"labelAltitudeHint")
+        font3 = QFont()
+        font3.setPointSize(9)
+        font3.setItalic(True)
+        self.labelAltitudeHint.setFont(font3)
+        self.labelAltitudeHint.setWordWrap(True)
+
+        self.verticalLayout_altitude.addWidget(self.labelAltitudeHint)
+
         self.horizontalLayout_altitude = QHBoxLayout()
         self.horizontalLayout_altitude.setObjectName(u"horizontalLayout_altitude")
         self.altitudeSlider = QSlider(self.widgetAltitude)
@@ -305,10 +315,10 @@ class Ui_ImageAnalysisGuide(object):
         self.verticalLayout_gsd.setObjectName(u"verticalLayout_gsd")
         self.labelGSDTitle = QLabel(self.gsdWidget)
         self.labelGSDTitle.setObjectName(u"labelGSDTitle")
-        font3 = QFont()
-        font3.setPointSize(12)
-        font3.setBold(True)
-        self.labelGSDTitle.setFont(font3)
+        font4 = QFont()
+        font4.setPointSize(12)
+        font4.setBold(True)
+        self.labelGSDTitle.setFont(font4)
 
         self.verticalLayout_gsd.addWidget(self.labelGSDTitle)
 
@@ -407,9 +417,9 @@ class Ui_ImageAnalysisGuide(object):
         self.verticalLayout_algorithm.setObjectName(u"verticalLayout_algorithm")
         self.labelCurrentQuestion = QLabel(self.algorithmWidget)
         self.labelCurrentQuestion.setObjectName(u"labelCurrentQuestion")
-        font4 = QFont()
-        font4.setPointSize(14)
-        self.labelCurrentQuestion.setFont(font4)
+        font5 = QFont()
+        font5.setPointSize(14)
+        self.labelCurrentQuestion.setFont(font5)
         self.labelCurrentQuestion.setAlignment(Qt.AlignCenter)
 
         self.verticalLayout_algorithm.addWidget(self.labelCurrentQuestion)
@@ -448,10 +458,10 @@ class Ui_ImageAnalysisGuide(object):
 
         self.labelAlgorithmResult = QLabel(self.algorithmWidget)
         self.labelAlgorithmResult.setObjectName(u"labelAlgorithmResult")
-        font5 = QFont()
-        font5.setPointSize(14)
-        font5.setBold(True)
-        self.labelAlgorithmResult.setFont(font5)
+        font6 = QFont()
+        font6.setPointSize(14)
+        font6.setBold(True)
+        self.labelAlgorithmResult.setFont(font6)
         self.labelAlgorithmResult.setVisible(False)
         self.labelAlgorithmResult.setAlignment(Qt.AlignCenter)
 
@@ -671,9 +681,9 @@ class Ui_ImageAnalysisGuide(object):
 
         self.skipCheckBox = QCheckBox(self.buttonWidget)
         self.skipCheckBox.setObjectName(u"skipCheckBox")
-        font6 = QFont()
-        font6.setPointSize(10)
-        self.skipCheckBox.setFont(font6)
+        font7 = QFont()
+        font7.setPointSize(10)
+        self.skipCheckBox.setFont(font7)
 
         self.horizontalLayout_buttons_main.addWidget(self.skipCheckBox)
 
@@ -722,6 +732,7 @@ class Ui_ImageAnalysisGuide(object):
         self.labelPage2Title.setText(QCoreApplication.translate("ImageAnalysisGuide", u"Image Capture Information", None))
         self.labelDrone.setText(QCoreApplication.translate("ImageAnalysisGuide", u"What drone/camera was used to capture images?", None))
         self.labelAltitude.setText(QCoreApplication.translate("ImageAnalysisGuide", u"At what above ground level (AGL) altitude was the drone flying?", None))
+        self.labelAltitudeHint.setText(QCoreApplication.translate("ImageAnalysisGuide", u"Height above the ground being flown over - what the image scale depends on. Over flat terrain this equals the drone's above-takeoff (ATO) reading; over rising ground it is less.", None))
         self.altitudeUnitComboBox.setItemText(0, QCoreApplication.translate("ImageAnalysisGuide", u"ft", None))
         self.altitudeUnitComboBox.setItemText(1, QCoreApplication.translate("ImageAnalysisGuide", u"m", None))
 

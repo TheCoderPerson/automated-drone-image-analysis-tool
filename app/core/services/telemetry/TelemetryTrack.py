@@ -73,10 +73,15 @@ class TelemetryPoint:
     def to_envelope(self) -> Dict[str, object]:
         """Render in the shape ``TelemetryHud.apply_envelope`` expects.
 
-        ``agl_source`` starts as ``reported`` — the drone's own
-        takeoff-relative figure. :class:`~core.services.telemetry.\
-TelemetryEnrichmentService.TelemetryEnrichmentService` may later replace
-        the value with a DEM-derived one and flip this to ``terrain``.
+        ``aircraft_altitude_agl_m`` is ATO — above the takeoff point —
+        because that is what SRT ``rel_alt`` and a flight log's relative
+        altitude are. No terrain-referenced AGL exists here, so the
+        ``aircraft_altitude_agl_terrain_m`` key is deliberately left
+        absent for :class:`~core.services.telemetry.\
+TelemetryEnrichmentService.TelemetryEnrichmentService` to fill in, and
+        ``agl_source`` starts as ``reported`` — meaning "ATO only, no AGL
+        resolved yet", which enrichment flips to ``terrain`` once it has
+        a DEM sample. The ATO value itself is never rewritten.
         """
         return {
             "aircraft_latitude": self.latitude,

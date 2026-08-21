@@ -128,7 +128,17 @@ class StreamImageCapturePage(BasePage):
                 return
 
     def _apply_detected_altitude(self, altitude_m: float) -> None:
-        """Set the altitude control from a detected AGL, in the active unit."""
+        """Set the altitude control from a detected altitude.
+
+        The detected value is the log's takeoff-relative reading (SRT
+        ``rel_alt`` — ATO), while the field asks for height above the
+        ground being flown over, which is what GSD depends on. The two
+        agree over flat terrain and diverge with relief, so this is a
+        starting point the operator is told to check rather than an
+        answer; the field's hint says so. Left as an autofill on purpose:
+        it is right often enough to be worth offering, and correcting the
+        number here would need a DEM lookup per frame.
+        """
         unit = self.wizard_data.get('altitude_unit', 'ft')
         value = altitude_m if unit == 'm' else altitude_m * 3.28084
         value = int(round(value))

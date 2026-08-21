@@ -1,4 +1,5 @@
 import simplekml
+from helpers.FormatHelper import FormatHelper
 from helpers.LocationInfo import LocationInfo
 from helpers.MetaDataHelper import MetaDataHelper
 from core.services.image.ImageService import ImageService
@@ -361,12 +362,21 @@ class KMLGeneratorService:
                 if not image_gps:
                     continue
 
-                # Get additional metadata for description
-                # Use custom altitude if provided, otherwise get from EXIF
-                if self.custom_altitude_ft is not None and self.custom_altitude_ft > 0:
-                    altitude = self.custom_altitude_ft
-                else:
-                    altitude = image_service.get_relative_altitude(distance_unit='ft')
+                # Get additional metadata for description.
+                # Use custom altitude if provided, otherwise get from EXIF.
+                # The reference plane travels with the value: an operator
+                # override is a height above the ground being flown over,
+                # a WALDO-prepassed image carries a terrain-referenced AGL,
+                # and a DJI image carries height above the takeoff point.
+                # All three used to be exported as "AGL".
+                # Every reference plane this image has, resolved by the
+                # service: the operator's override, or the image's own
+                # figure plus the DEM-derived AGL beside it. A reader in
+                # CalTopo or Google Earth has no tooltip to ask with.
+                readings = image_service.get_altitude_readings(
+                    'ft', use_terrain=self.use_terrain,
+                    custom_altitude_ft=self.custom_altitude_ft,
+                    offline_only=False)
 
                 gimbal_pitch = image_service.get_camera_pitch()
                 gimbal_yaw = image_service.get_camera_yaw()
@@ -385,8 +395,8 @@ class KMLGeneratorService:
                 description += f"Image: {image_name}\n"
                 description += f"GPS: {image_gps['latitude']:.6f}, {image_gps['longitude']:.6f}\n"
 
-                if altitude:
-                    description += f"Altitude: {altitude:.1f} ft AGL\n"
+                for line in FormatHelper.altitude_lines(readings):
+                    description += f"{line}\n"
                 if gimbal_pitch is not None:
                     description += f"Gimbal Pitch: {gimbal_pitch:.1f}°\n"
                 if gimbal_yaw is not None:

@@ -24,6 +24,14 @@ from .CanopyServiceFactory import (
     CANOPY_KIND_META,
 )
 from .TileFetchService import TileFetchService, FetchResult
+from .TerrainAcquisitionService import (
+    TerrainAcquisitionService,
+    AcquisitionPlan,
+    AcquisitionOutcome,
+    SETTING_ENABLED,
+    SETTING_MAX_MB,
+    DEFAULT_MAX_MB,
+)
 from .grid import (
     GridSpec,
     GridSample,
@@ -56,6 +64,7 @@ __all__ = [
     'CANOPY_KIND_LANDFIRE',
     'CANOPY_KIND_META',
     'TileFetchService',
+    'TerrainAcquisitionService',
     'FetchResult',
     'GridSpec',
     'GridSample',

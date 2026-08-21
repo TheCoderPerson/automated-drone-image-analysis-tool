@@ -251,6 +251,52 @@ class TestFlightArtifacts:
         assert float(rows[1]["aircraft_latitude"]) == pytest.approx(30.01)
         assert rows[0]["agl_source"] == "reported"
 
+    def test_telemetry_csv_carries_every_altitude_reference(self, tmp_path):
+        """All three references reach the CSV, and stay in their own column.
+
+        The writer uses ``extrasaction="ignore"``, so a key the column
+        list forgets is dropped without a word - which is how
+        ``terrain_elevation_m`` went missing before. A detection carries no
+        altitude of its own; it reaches these values by joining
+        ``detections.csv`` to this file on ``video_time_seconds``, so a
+        missing column costs the join too.
+        """
+        fix = _fix(30.0, -97.0, 0.0)
+        fix["aircraft_altitude_agl_terrain_m"] = 31.5
+        fix["terrain_elevation_m"] = 288.5
+        fix["agl_source"] = "terrain"
+        bundle = _build_bundle(tmp_path, fixes=[fix])
+        finalize_bundle(bundle)
+
+        with open(os.path.join(bundle, TELEMETRY_CSV), encoding="utf-8", newline="") as fp:
+            row = next(csv.DictReader(fp))
+
+        assert float(row["aircraft_altitude_msl_m"]) == pytest.approx(320.0)
+        # ATO and AGL are different numbers in different columns.
+        assert float(row["aircraft_altitude_agl_m"]) == pytest.approx(40.0)
+        assert float(row["aircraft_altitude_agl_terrain_m"]) == pytest.approx(31.5)
+        assert float(row["terrain_elevation_m"]) == pytest.approx(288.5)
+        assert row["agl_source"] == "terrain"
+
+    def test_a_flight_session_leaves_the_terrain_columns_blank(self, tmp_path):
+        """ADIAT Flight supplies AGL, so desktop takes no DEM sample.
+
+        Documented rather than fixed: skipping the lookups is the point of
+        trusting Flight's measured AGL, and the operator gets the AGL
+        itself either way.
+        """
+        fix = _fix(30.0, -97.0, 0.0)
+        fix["aircraft_altitude_agl_terrain_m"] = 31.5
+        fix["agl_source"] = "flight"
+        bundle = _build_bundle(tmp_path, fixes=[fix])
+        finalize_bundle(bundle)
+
+        with open(os.path.join(bundle, TELEMETRY_CSV), encoding="utf-8", newline="") as fp:
+            row = next(csv.DictReader(fp))
+
+        assert float(row["aircraft_altitude_agl_terrain_m"]) == pytest.approx(31.5)
+        assert row["terrain_elevation_m"] == ""
+
     def test_flight_map_contains_path_and_pins(self, tmp_path):
         bundle = _build_bundle(
             tmp_path,

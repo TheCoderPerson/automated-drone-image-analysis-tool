@@ -11,6 +11,7 @@ from PySide6.QtWidgets import QLabel, QMessageBox
 from PySide6.QtCore import Qt
 
 from core.services.LoggerService import LoggerService
+from helpers.FormatHelper import FormatHelper
 from helpers.TranslationMixin import TranslationMixin
 from core.services.image.ImageService import ImageService
 
@@ -42,7 +43,9 @@ class StatusController(TranslationMixin):
         status_items = []
         label_map = {
             "GPS Coordinates": self.tr("GPS Coordinates"),
-            "Relative Altitude": self.tr("Relative Altitude"),
+            # The value carries its reference plane (ATO / AGL), so the
+            # label must not assert one. Dict key kept for plumbing.
+            "Relative Altitude": self.tr("Altitude"),
             "Gimbal Orientation": self.tr("Gimbal Orientation"),
             "Estimated Average GSD": self.tr("Estimated Average GSD"),
             "Temperature": self.tr("Temperature"),
@@ -69,8 +72,16 @@ class StatusController(TranslationMixin):
         # Update status bar
         if status_items:
             status_bar.setText(" | ".join(status_items))
+            # The bar is one concatenated label, so the altitude pair is
+            # explained on the bar itself. Only when an altitude is shown:
+            # a tooltip about altitudes on a bar with none would confuse.
+            if messages.get("Relative Altitude"):
+                status_bar.setToolTip(FormatHelper.ALTITUDE_TOOLTIP)
+            else:
+                status_bar.setToolTip("")
         else:
             status_bar.setText("")
+            status_bar.setToolTip("")
 
     def show_toast(self, text: str, msec: int = 3000, color: str = "#00C853"):
         """Show a toast message.

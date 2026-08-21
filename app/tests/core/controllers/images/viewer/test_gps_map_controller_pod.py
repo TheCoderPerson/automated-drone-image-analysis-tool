@@ -67,13 +67,18 @@ def test_altitude_basis_reports_takeoff_elevation_in_metres(app):
     assert ctrl._altitude_basis_label() == "Altitude basis: takeoff elevation 900 m"
 
 
-def test_altitude_basis_flags_the_reported_agl_fallback(app):
+def test_altitude_basis_flags_the_reported_ato_fallback(app):
+    """The fallback is DEM(nadir) + the drone's takeoff-relative reading.
+
+    Labelling that "AGL" would claim terrain referencing the number does
+    not have - the error is zero over flat ground and grows with relief.
+    """
     result = _real_result()
     result.altitude_source_counts = {'agl_nadir': 12}
 
     label = _controller_with_result(app, result)._altitude_basis_label()
 
-    assert label == "Altitude basis: reported AGL (approximate over terrain)"
+    assert label == "Altitude basis: reported ATO (approximate over terrain)"
 
 
 def test_altitude_basis_is_absent_for_an_all_override_run(app):

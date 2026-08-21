@@ -19,8 +19,9 @@ start on the ramp minutes before recording. So a video with no
 Column naming is not standardised across vendors, so columns are matched
 against an alias table on a normalized form of the header
 (``"GPS Altitude (ft MSL)"`` → ``"gps altitude ft msl"``) rather than by
-exact string equality. Altitudes are converted to metres, and MSL and AGL
-are kept apart — the same distinction DJI's ``abs_alt`` / ``rel_alt`` pair
+exact string equality. Altitudes are converted to metres, and MSL and ATO
+(above the takeoff point) are kept apart — the same distinction DJI's
+``abs_alt`` / ``rel_alt`` pair
 carries, and the one the HUD and DEM correction depend on.
 """
 

@@ -19,6 +19,11 @@ from core.services.LoggerService import LoggerService
 from .ElevationProvider import ElevationProvider
 
 
+# Manifests already announced, so re-reading one is silent. Keyed by path
+# and tile count so a refreshed manifest reports itself again.
+_LOGGED_MANIFESTS = set()
+
+
 class USGS3DEPProvider(ElevationProvider):
     """Local-disk USGS 3DEP 1m GeoTIFF elevation provider."""
 
@@ -88,9 +93,16 @@ class USGS3DEPProvider(ElevationProvider):
         if self._strtree_geoms:
             self._strtree = STRtree(self._strtree_geoms)
 
-        self.logger.info(
-            f"USGS3DEPProvider: indexed {len(self._tiles)} tiles from {self.manifest_path}"
-        )
+        # Once per manifest, not once per construction: providers are built
+        # per lookup path (AOI, GSD, anchor, acquisition probe), so this
+        # otherwise repeats the same line dozens of times per image.
+        signature = (str(self.manifest_path), len(self._tiles))
+        if signature not in _LOGGED_MANIFESTS:
+            _LOGGED_MANIFESTS.add(signature)
+            self.logger.info(
+                f"USGS3DEPProvider: indexed {len(self._tiles)} tiles from "
+                f"{self.manifest_path}"
+            )
 
     def get_provider_kind(self) -> str:
         return 'local_geotiff'

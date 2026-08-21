@@ -24,6 +24,7 @@ from pathlib import Path
 import tempfile
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
+from helpers.FormatHelper import FormatHelper
 from helpers.LocationInfo import LocationInfo
 from helpers.ColorUtils import ColorUtils
 from core.services.LoggerService import LoggerService
@@ -497,10 +498,20 @@ class PdfGeneratorService:
             # "Nonecm/px" in the report, and a missing yaw fell back to 0,
             # which reads as a real due-north heading rather than an absence.
             position_str = image_service.get_position(self.viewer.position_format) or "N/A"
-            agl_str = self._report_value(
-                image_service.get_relative_altitude(self.viewer.distance_unit),
-                self.viewer.distance_unit
-            )
+            # ATO for a DJI image, AGL for a WALDO-prepassed one, plus the
+            # DEM-derived AGL beside an ATO figure. The service resolves
+            # which planes apply; a printed report is read away from the app,
+            # so neither is left implied.
+            readings = image_service.get_altitude_readings(
+                self.viewer.distance_unit,
+                use_terrain=getattr(self.viewer, 'use_terrain_elevation', True),
+                offline_only=False)
+            altitude_label = FormatHelper.altitude_reference_abbreviation(
+                readings.reference)
+            agl_str = self._report_value(readings.value, self.viewer.distance_unit)
+            terrain_agl_str = (
+                self._report_value(readings.terrain_agl, self.viewer.distance_unit)
+                if readings.has_terrain_agl else None)
             orientation_str = self._report_value(image_service.get_camera_yaw(), "°")
             gsd_str = self._report_value(image_service.get_average_gsd(), "cm/px")
 
@@ -509,7 +520,13 @@ class PdfGeneratorService:
 
             # Add metadata as separate paragraph
             metadata_text = f"GPS Coordinates: {position_str} (camera's position, not ground location) | "
-            metadata_text += f"AGL: {agl_str} | Drone Orientation: {orientation_str} | Estimated Average GSD: {gsd_str}"
+            # AGL first, for the same reason the exports lead with it: a
+            # printed report is read by someone who cannot see the launch
+            # point.
+            if terrain_agl_str is not None:
+                metadata_text += f"AGL: {terrain_agl_str} | "
+            metadata_text += f"{altitude_label}: {agl_str} | "
+            metadata_text += f"Drone Orientation: {orientation_str} | Estimated Average GSD: {gsd_str}"
             self.story.append(Paragraph(metadata_text, self.styles['Normal']))
             self.story.append(Spacer(1, 10))
 

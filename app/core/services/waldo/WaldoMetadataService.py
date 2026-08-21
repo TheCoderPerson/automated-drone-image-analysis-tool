@@ -32,7 +32,7 @@ from zoneinfo import ZoneInfo
 import cv2
 import numpy as np
 
-from helpers.MetaDataHelper import MetaDataHelper
+from helpers.MetaDataHelper import MetaDataHelper, XMP_ALTITUDE_TYPE_TERRAIN
 from helpers.LocationInfo import LocationInfo
 from core.services.LoggerService import LoggerService
 from core.services.shadow.SolarPosition import (
@@ -1362,6 +1362,13 @@ class WaldoMetadataService:
         GimbalYawDegree carries the stored image-top bearing per camera:
         image-top = plane backward for cam 0, plane FORWARD for cam 1 (the
         opposed body mounting; see MODEL_IMAGE_UP_OFFSET_DEG).
+
+        RelativeAltitude carries a **terrain-referenced** AGL here -
+        ``compute_relative_altitude_m`` subtracts the DEM elevation under
+        the camera - whereas a DJI image puts height above the takeoff
+        point in that same tag. AltitudeType records which of the two this
+        is, so a downstream surface can label it correctly instead of
+        guessing; nothing branches its arithmetic on the tag.
         """
         flight_yaw = float(plane_heading_deg) % 360.0
         fields = [
@@ -1370,6 +1377,7 @@ class WaldoMetadataService:
             (DRONE_DJI_NS, "GimbalRollDegree", f"{angles['roll']:+.4f}"),
             (DRONE_DJI_NS, "FlightYawDegree", f"{flight_yaw:+.4f}"),
             (DRONE_DJI_NS, "RelativeAltitude", f"{agl_m:+.4f}"),
+            (DRONE_DJI_NS, "AltitudeType", XMP_ALTITUDE_TYPE_TERRAIN),
             (DRONE_DJI_NS, "AbsoluteAltitude", f"{abs_orthometric_m:+.4f}"),
             (WALDO_NAMESPACE_URI, "Processed", "true"),
             (WALDO_NAMESPACE_URI, "ProcessorVersion", WALDO_PROCESSOR_VERSION),

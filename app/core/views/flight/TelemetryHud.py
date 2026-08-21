@@ -3,8 +3,15 @@
 Renders the publisher's live aircraft + gimbal state at ~4 Hz (publisher
 throttle). Plan §19.3 specifies the layout and field formatting:
 
-    LAT 30.2672  LON -97.7431  ALT 312 m MSL / 26 m AGL
+    LAT 30.2672  LON -97.7431  ALT AGL 21 / ATO 26 / MSL 312 m
     HDG 091° E   SPD 4.3 m/s   ↓0.5 m/s  BAT 82%   FLY · Normal
+
+All three altitude references are shown because they are different
+numbers: MSL is above sea level, ATO is above the takeoff point, AGL is
+above the terrain beneath the aircraft. An AGL slot rendered as an
+em-dash means no terrain-referenced value exists — never that the
+aircraft is on the ground — and a trailing ``*`` marks an AGL nothing
+referenced to terrain. The widget tooltip names where the AGL came from.
 
 The widget is fed by :class:`~core.services.streaming.\
 TelemetryFeedService.TelemetryFeedService` via Qt signal/slot wiring.
@@ -21,6 +28,18 @@ from PySide6.QtCore import QTimer
 from PySide6.QtWidgets import QWidget
 
 from core.services.SettingsService import SettingsService
+from core.services.telemetry.TelemetryEnrichmentService import (
+    AGL_SOURCE_FLIGHT,
+    AGL_SOURCE_LASER,
+    AGL_SOURCE_TAKEOFF_REFERENCE,
+    AGL_SOURCE_TERRAIN,
+    AGL_SOURCE_TERRAIN_DEM,
+    AGL_SOURCE_ULTRASONIC,
+    TERRAIN_AGL_KEY,
+    TRUSTED_AGL_SOURCES,
+    normalise_agl_source,
+    publisher_agl_source,
+)
 from core.views.flight.telemetry_hud_ui import Ui_TelemetryHud
 from helpers.TranslationMixin import TranslationMixin
 
@@ -29,6 +48,28 @@ from helpers.TranslationMixin import TranslationMixin
 # badge per plan §19.3. The publisher sends at ~4 Hz so the gap is
 # unambiguous in practice.
 STALENESS_THRESHOLD_SECONDS = 5.0
+
+# Appended to an AGL nothing referenced to terrain — the same marker
+# ADIAT Flight's HUD uses for the case.
+UNVERIFIED_AGL_MARKER = "*"
+
+# Sources that genuinely measured height above terrain. Anything else
+# beside an AGL value earns the marker above.
+_TERRAIN_REFERENCED_SOURCES = TRUSTED_AGL_SOURCES | {AGL_SOURCE_TERRAIN}
+
+
+def _is_terrain_referenced(agl_source) -> bool:
+    """True when an AGL value actually measured height above terrain.
+
+    ADIAT Flight publishes its AGL with no source name and omits the
+    value entirely when no terrain source backed it, so a bare AGL is
+    terrain-referenced by construction.
+    """
+    source = normalise_agl_source(agl_source)
+    if source is None:
+        return True
+    return source in _TERRAIN_REFERENCED_SOURCES
+
 
 # Cardinal letters for the compass — pad heading text to 3 digits + letter.
 _CARDINALS = ("N", "NE", "E", "SE", "S", "SW", "W", "NW", "N")
@@ -93,11 +134,17 @@ class TelemetryHud(TranslationMixin, QWidget, Ui_TelemetryHud):
         self.lonLabel.setText(self.tr("LON {value}").format(
             value=self._format_coord(env.get("aircraft_longitude"), is_lat=False)
         ))
+        agl = env.get(TERRAIN_AGL_KEY)
+        # Either provenance key: ADIAT Flight names its source on the wire,
+        # enrichment records its own under the internal name.
+        agl_source = publisher_agl_source(env)
         self.altLabel.setText(self._format_altitudes(
             env.get("aircraft_altitude_msl_m"),
             env.get("aircraft_altitude_agl_m"),
-            env.get("agl_source"),
+            agl,
+            agl_source,
         ))
+        self.altLabel.setToolTip(self._altitude_tooltip(agl_source, agl))
         self.headingLabel.setText(self._format_heading(env.get("aircraft_yaw_deg")))
         self.speedLabel.setText(self._format_speed(env.get("horizontal_speed_ms")))
         self.verticalSpeedLabel.setText(
@@ -181,28 +228,98 @@ class TelemetryHud(TranslationMixin, QWidget, Ui_TelemetryHud):
             return "—"
         return f"{float(value):.6f}"
 
-    def _format_altitudes(self, msl, agl, agl_source=None) -> str:
-        if not isinstance(msl, (int, float)) and not isinstance(agl, (int, float)):
+    def _format_altitudes(self, msl, ato, agl, agl_source=None) -> str:
+        """Render all three altitude references on one line.
+
+        The three are different numbers: MSL is above sea level, ATO is
+        above the *takeoff point* (the drone's own barometric figure) and
+        AGL is above the terrain beneath the aircraft. ATO and AGL agree
+        exactly on flat ground and diverge with relief, so showing either
+        one labelled as the other is a mistake that passes every bench
+        test and appears only in the field — which is why all three are
+        shown, and why an unavailable AGL renders as an em-dash instead of
+        borrowing the ATO reading.
+
+        The unit is written once, at the end: three copies of "ft" do not
+        fit beside LAT/LON/HDG/SPD on a 640 px strip.
+        """
+        # AGL leads: it is the number that describes clearance over the
+        # ground being flown, so it reads first. ATO is the drone's own
+        # reported figure, MSL the sea-level reference.
+        values = (agl, ato, msl)
+        if not any(isinstance(value, (int, float)) for value in values):
             return self.tr("ALT —")
         if self._distance_unit == "Feet":
-            msl_part = self._meters_to_feet(msl)
-            agl_part = self._meters_to_feet(agl)
-            suffix_msl = "ft MSL"
-            suffix_agl = "ft AGL"
+            parts = [self._meters_to_feet(value) for value in values]
+            unit = "ft"
         else:
-            msl_part = self._fmt_num(msl, 0)
-            agl_part = self._fmt_num(agl, 0)
-            suffix_msl = "m MSL"
-            suffix_agl = "m AGL"
-        # Mark AGL corrected against the DEM so the operator can tell it
-        # apart from the drone's takeoff-relative figure — the two diverge
-        # exactly when terrain matters most. Plain ASCII: the HUD renders in
-        # Consolas/Courier New, which lack most symbol glyphs.
-        if agl_source == "terrain":
-            suffix_agl = f"{suffix_agl} (DEM)"
-        return self.tr("ALT {msl} {msl_unit} / {agl} {agl_unit}").format(
-            msl=msl_part, msl_unit=suffix_msl, agl=agl_part, agl_unit=suffix_agl,
+            parts = [self._fmt_num(value, 0) for value in values]
+            unit = "m"
+        text = self.tr("ALT AGL {agl} / ATO {ato} / MSL {msl} {unit}").format(
+            agl=parts[0], ato=parts[1], msl=parts[2], unit=unit,
         )
+        # An "AGL" nothing referenced to terrain is really an ATO reading.
+        # Mark it rather than letting it read as ground clearance — the
+        # same convention ADIAT Flight's own HUD uses. Plain ASCII: the
+        # HUD renders in Consolas/Courier New, which lack most symbol
+        # glyphs.
+        if isinstance(agl, (int, float)) and not _is_terrain_referenced(agl_source):
+            text = f"{text}{UNVERIFIED_AGL_MARKER}"
+        return text
+
+    def _altitude_tooltip(self, agl_source, agl) -> str:
+        """Spell out the three references, and name the AGL's source.
+
+        The full source name lives here rather than inline: three values
+        already fill the altitude slot, and the operator needs the name
+        when interpreting a reading, not on every glance.
+        """
+        if not isinstance(agl, (int, float)):
+            if normalise_agl_source(agl_source) == AGL_SOURCE_TAKEOFF_REFERENCE:
+                # The publisher looked and found no terrain source. Worth
+                # saying: it separates "nobody could measure this" from
+                # "this feed cannot report it", and it is the reason
+                # enrichment is still trying.
+                origin = self.tr(
+                    "no AGL yet - ADIAT Flight found no terrain source here"
+                )
+            else:
+                origin = self.tr("no terrain-referenced AGL available")
+        else:
+            origin = self.tr("AGL source: {origin}").format(
+                origin=self._agl_source_label(agl_source)
+            )
+        return "\n".join([
+            self.tr("AGL — above the terrain beneath the aircraft; what "
+                    "clearance and image scale depend on"),
+            self.tr("ATO — above the takeoff point (the drone's own "
+                    "reading); equal to AGL only over flat ground"),
+            self.tr("MSL — above mean sea level"),
+            origin,
+        ])
+
+    def _agl_source_label(self, agl_source) -> str:
+        """Name an AGL provenance value for the operator.
+
+        An unrecognised source is shown verbatim rather than hidden: a
+        name a newer ADIAT Flight build invented is still better
+        provenance than none.
+        """
+        source = normalise_agl_source(agl_source)
+        if source is None or source == AGL_SOURCE_FLIGHT:
+            # ADIAT Flight sends its fused AGL without naming the sensor.
+            return self.tr("ADIAT Flight (fused)")
+        if source == AGL_SOURCE_LASER:
+            return self.tr("laser rangefinder (ADIAT Flight)")
+        if source == AGL_SOURCE_ULTRASONIC:
+            return self.tr("downward sensor (ADIAT Flight)")
+        if source == AGL_SOURCE_TERRAIN_DEM:
+            return self.tr("terrain DEM (ADIAT Flight)")
+        if source == AGL_SOURCE_TERRAIN:
+            return self.tr("desktop DEM")
+        if source == AGL_SOURCE_TAKEOFF_REFERENCE:
+            return self.tr("no terrain source — this is the takeoff-relative reading")
+        return source
 
     def _format_heading(self, yaw_deg) -> str:
         if not isinstance(yaw_deg, (int, float)):

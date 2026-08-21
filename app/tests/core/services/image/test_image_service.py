@@ -11,8 +11,10 @@ import tempfile
 import os
 import piexif
 import pandas as pd
+from types import SimpleNamespace
 from unittest.mock import patch, MagicMock
 from core.services.image.ImageService import ImageService
+from helpers.FormatHelper import FormatHelper
 
 try:
     import tifffile
@@ -481,3 +483,432 @@ def test_image_service_img_array_assignment_still_works():
     finally:
         if os.path.exists(tmp_path):
             os.unlink(tmp_path)
+
+
+class TestAltitudeReference:
+    """Which plane RelativeAltitude is measured from.
+
+    ``drone-dji:RelativeAltitude`` holds two different quantities: DJI puts
+    height above the takeoff point there, and ADIAT's WALDO pre-pass puts a
+    terrain-referenced AGL in the same tag. Nothing recorded which until
+    the pre-pass started marking its own output with ``AltitudeType``.
+    """
+
+    def test_dji_imagery_is_takeoff_relative(self, image_service):
+        """No marker - which is every DJI image ever shot."""
+        image_service.xmp_data = {'drone-dji:RelativeAltitude': '+72.3000'}
+        image_service.drone_make = 'DJI'
+        assert image_service.get_altitude_reference() == \
+            FormatHelper.ALTITUDE_REFERENCE_TAKEOFF
+
+    def test_a_marked_image_is_terrain_referenced(self, image_service):
+        image_service.xmp_data = {
+            'drone-dji:RelativeAltitude': '+72.3000',
+            'drone-dji:AltitudeType': 'terrain',
+        }
+        image_service.drone_make = 'Canon'
+        assert image_service.get_altitude_reference() == \
+            FormatHelper.ALTITUDE_REFERENCE_TERRAIN
+
+    def test_the_marker_is_case_insensitive(self, image_service):
+        image_service.xmp_data = {'drone-dji:AltitudeType': ' Terrain '}
+        image_service.drone_make = 'Canon'
+        assert image_service.get_altitude_reference() == \
+            FormatHelper.ALTITUDE_REFERENCE_TERRAIN
+
+    @pytest.mark.parametrize("value", ['RtkAlt', 'GpsAlt', '', 'agl', 42])
+    def test_any_other_altitude_type_means_takeoff(self, image_service, value):
+        """DJI's own AltitudeType values describe the fix, not the plane.
+
+        Reading one of those as "terrain-referenced" would relabel a
+        takeoff-relative number as ground clearance.
+        """
+        image_service.xmp_data = {'drone-dji:AltitudeType': value}
+        image_service.drone_make = 'DJI'
+        assert image_service.get_altitude_reference() == \
+            FormatHelper.ALTITUDE_REFERENCE_TAKEOFF
+
+    def test_no_metadata_at_all_means_takeoff(self, image_service):
+        image_service.xmp_data = None
+        image_service.drone_make = None
+        assert image_service.get_altitude_reference() == \
+            FormatHelper.ALTITUDE_REFERENCE_TAKEOFF
+
+    def test_the_altitude_value_itself_is_unchanged(self, image_service):
+        """Reading the reference must not disturb the number.
+
+        This pass is a relabel: no GSD, AOI or coverage output may move.
+        """
+        image_service.xmp_data = {
+            'drone-dji:RelativeAltitude': '+72.3000',
+            'drone-dji:AltitudeType': 'terrain',
+        }
+        image_service.drone_make = 'Canon'
+        image_service.get_altitude_reference()
+        assert image_service.get_relative_altitude() == pytest.approx(72.3)
+
+
+class TestAltitudeReadings:
+    """One accessor decides which reference planes an image has.
+
+    The AGL itself is not computed here - it comes from the effective-AGL
+    iteration the GSD and AOI paths already run - so these tests cover the
+    decision and the delegation, which is what display sites depend on.
+    """
+
+    def _service(self, image_service, reference, terrain_agl=None):
+        image_service.get_relative_altitude = MagicMock(return_value=171.0)
+        image_service.get_altitude_reference = MagicMock(return_value=reference)
+        image_service.get_terrain_agl = MagicMock(return_value=terrain_agl)
+        return image_service
+
+    def test_dji_imagery_gets_both_planes(self, image_service):
+        service = self._service(
+            image_service, FormatHelper.ALTITUDE_REFERENCE_TAKEOFF, 141.2)
+        readings = service.get_altitude_readings('ft')
+
+        assert readings.value == 171.0
+        assert readings.reference == FormatHelper.ALTITUDE_REFERENCE_TAKEOFF
+        assert readings.terrain_agl == 141.2
+        assert readings.has_terrain_agl is True
+
+    def test_terrain_referenced_imagery_is_not_asked_twice(self, image_service):
+        """WALDO imagery already carries AGL; a second lookup adds nothing."""
+        service = self._service(
+            image_service, FormatHelper.ALTITUDE_REFERENCE_TERRAIN, 141.2)
+        readings = service.get_altitude_readings('ft')
+
+        assert readings.reference == FormatHelper.ALTITUDE_REFERENCE_TERRAIN
+        assert readings.terrain_agl is None
+        service.get_terrain_agl.assert_not_called()
+
+    def test_an_override_stands_alone_as_agl(self, image_service):
+        """The operator was asked for height above the ground flown over."""
+        service = self._service(
+            image_service, FormatHelper.ALTITUDE_REFERENCE_TAKEOFF, 141.2)
+        readings = service.get_altitude_readings('ft', custom_altitude_ft=250.0)
+
+        assert readings.value == 250.0
+        assert readings.reference == FormatHelper.ALTITUDE_REFERENCE_MANUAL
+        assert readings.terrain_agl is None
+        service.get_terrain_agl.assert_not_called()
+
+    def test_an_override_converts_to_metres(self, image_service):
+        service = self._service(
+            image_service, FormatHelper.ALTITUDE_REFERENCE_TAKEOFF)
+        readings = service.get_altitude_readings('m', custom_altitude_ft=328.084)
+        assert readings.value == pytest.approx(100.0, abs=0.01)
+        assert readings.unit == 'm'
+
+    def test_an_unavailable_dem_leaves_the_ato_alone(self, image_service):
+        """No tile cached, or no coverage: the ATO figure is still correct."""
+        service = self._service(
+            image_service, FormatHelper.ALTITUDE_REFERENCE_TAKEOFF, None)
+        readings = service.get_altitude_readings('ft')
+
+        assert readings.value == 171.0
+        assert readings.has_terrain_agl is False
+
+    def test_the_terrain_preference_is_forwarded(self, image_service):
+        service = self._service(
+            image_service, FormatHelper.ALTITUDE_REFERENCE_TAKEOFF, 141.2)
+        service.get_altitude_readings('ft', use_terrain=False)
+        assert service.get_terrain_agl.call_args.kwargs['use_terrain'] is False
+
+    def test_display_reads_default_to_cache_only(self, image_service):
+        """A status-bar read must never block on a tile fetch."""
+        service = self._service(
+            image_service, FormatHelper.ALTITUDE_REFERENCE_TAKEOFF, 141.2)
+        service.get_altitude_readings('ft')
+        assert service.get_terrain_agl.call_args.kwargs['offline_only'] is True
+
+    def test_no_altitude_at_all_is_reported_as_absent(self, image_service):
+        image_service.get_relative_altitude = MagicMock(return_value=None)
+        image_service.get_altitude_reference = MagicMock(
+            return_value=FormatHelper.ALTITUDE_REFERENCE_TAKEOFF)
+        image_service.get_terrain_agl = MagicMock(return_value=None)
+        readings = image_service.get_altitude_readings('ft')
+        assert readings.has_value is False
+
+
+class TestWorkingAltitude:
+    """One decision: which altitude image geometry is computed with.
+
+    GSD scales with height above the ground being photographed. Over flat
+    terrain ATO and AGL agree; over relief they differ by the whole terrain
+    change, and every figure derived from GSD inherits that error.
+    """
+
+    def _service(self, image_service, reported=100.0, effective=None,
+                 has_intrinsics=True):
+        image_service.get_relative_altitude = MagicMock(return_value=reported)
+        image_service._effective_agl_at_pixel = MagicMock(return_value=effective)
+        image_service._build_gsd_service = MagicMock(
+            return_value=MagicMock() if has_intrinsics else None)
+        return image_service
+
+    def test_the_dem_agl_is_used_when_available(self, image_service):
+        service = self._service(image_service, reported=100.0, effective=71.5)
+        assert service.get_working_altitude_m() == 71.5
+
+    def test_ato_is_the_fallback(self, image_service):
+        """No coverage, or no tile cached yet: the reported figure stands."""
+        service = self._service(image_service, reported=100.0, effective=None)
+        assert service.get_working_altitude_m() == 100.0
+
+    def test_a_non_positive_agl_falls_back(self, image_service):
+        service = self._service(image_service, reported=100.0, effective=0.0)
+        assert service.get_working_altitude_m() == 100.0
+
+    def test_an_operator_override_wins_outright(self, image_service):
+        """Entered as height above the ground flown - what GSD wants."""
+        service = self._service(image_service, reported=100.0, effective=71.5)
+        result = service.get_working_altitude_m(custom_altitude_ft=328.084)
+        assert result == pytest.approx(100.0, abs=0.01)
+        service._effective_agl_at_pixel.assert_not_called()
+
+    def test_the_terrain_preference_forces_ato(self, image_service):
+        service = self._service(image_service, reported=100.0, effective=71.5)
+        assert service.get_working_altitude_m(use_terrain=False) == 100.0
+        service._effective_agl_at_pixel.assert_not_called()
+
+    def test_missing_intrinsics_fall_back_without_projecting(self, image_service):
+        """Nothing can be projected, so the DEM cannot be consulted."""
+        service = self._service(image_service, reported=100.0, effective=71.5,
+                                has_intrinsics=False)
+        assert service.get_working_altitude_m() == 100.0
+        service._effective_agl_at_pixel.assert_not_called()
+
+    def test_a_failing_dem_lookup_falls_back(self, image_service):
+        service = self._service(image_service, reported=100.0)
+        service._effective_agl_at_pixel = MagicMock(
+            side_effect=RuntimeError("tile server down"))
+        assert service.get_working_altitude_m() == 100.0
+
+    def test_no_altitude_at_all_stays_none(self, image_service):
+        service = self._service(image_service, reported=None, effective=None)
+        assert service.get_working_altitude_m() is None
+
+
+class TestGsdUsesTheWorkingAltitude:
+    def test_the_gsd_service_is_built_at_the_resolved_altitude(self, image_service):
+        image_service.get_working_altitude_m = MagicMock(return_value=71.5)
+        image_service._build_gsd_service = MagicMock()
+        image_service.get_gsd_service()
+        assert image_service._build_gsd_service.call_args.kwargs['altitude_m'] == 71.5
+
+    def test_terrain_agl_gives_a_larger_gsd_than_ato_over_rising_ground(self):
+        """The physical point: less height above ground means finer scale.
+
+        Guards the direction of the correction - swapping the two would make
+        every derived object size wrong by the same ratio, silently.
+        """
+        from core.services.GSDService import GSDService
+        common = dict(focal_length=24.0, image_size=(4000, 3000),
+                      tilt_angle=0.0, sensor=(9.65, 7.24))
+        at_ato = GSDService(altitude=100.0, **common).compute_average_gsd()
+        at_agl = GSDService(altitude=71.5, **common).compute_average_gsd()
+        assert at_agl < at_ato
+        assert at_agl / at_ato == pytest.approx(71.5 / 100.0, rel=0.01)
+
+    def test_the_agl_iteration_still_projects_from_ato(self, image_service):
+        """Guards against the recursion this split exists to prevent.
+
+        The effective-AGL solve needs a projection; building that projection
+        from an AGL would re-enter the resolution that asked for it.
+        """
+        image_service.get_relative_altitude = MagicMock(return_value=100.0)
+        image_service._effective_agl_at_pixel = MagicMock(return_value=71.5)
+        base = MagicMock()
+        image_service._build_gsd_service = MagicMock(return_value=base)
+
+        image_service.get_effective_agl_at_pixel(10, 10)
+
+        # Built with no explicit altitude: the ATO projection.
+        assert image_service._build_gsd_service.call_args.args[0] is None
+        assert image_service._effective_agl_at_pixel.call_args.args[2] is base
+
+
+class TestAglEstimateSelection:
+    """The two AGL estimates are cross-checked, not blindly preferred.
+
+    Measured near Georgetown TX: ATO 150.9 ft over ground 11-15 ft below the
+    takeoff point, so AGL is ~165 ft. The absolute-elevation chain reported
+    254 ft - 89 ft high, the local geoid undulation - because that aircraft's
+    EXIF GPSAltitude is already orthometric and the ellipsoid correction was
+    applied to it anyway. The terrain-relief estimate is immune, so a
+    disagreement means the absolute chain is the one to drop.
+    """
+
+    @staticmethod
+    def _iterate(service, reported_agl, drone_terrain, drone_absolute,
+                 terrain_here):
+        """Drive one pass of the iteration with fixed terrain samples."""
+        elevation = MagicMock()
+        elevation.source = 'terrain'
+        elevation.elevation_m = terrain_here
+        terrain_service = MagicMock()
+        terrain_service.enabled = True
+        terrain_service.get_elevation.return_value = elevation
+
+        service._get_projection_context = MagicMock(return_value={
+            'drone_lat': 30.6535, 'drone_lon': -97.9536,
+            'img_w': 4000, 'img_h': 3000, 'cx': 2000.0, 'cy': 1500.0,
+            'focal_mm': 8.8, 'sensor_w_mm': 13.2, 'sensor_h_mm': 8.8,
+            'pitch': -90.0, 'yaw': 0.0, 'roll': 0.0, 'roll_axis': None,
+            'reported_agl': reported_agl,
+            'drone_terrain_elev_m': drone_terrain,
+            'drone_absolute_elev_m': drone_absolute,
+            'geoid_undulation_m': -27.1,
+            'terrain_service': terrain_service,
+        })
+        return service._effective_agl_at_pixel(2000, 1500, MagicMock())
+
+    def test_a_geoid_sized_divergence_drops_the_absolute_estimate(self, image_service):
+        """The field case: 46 m ATO, ground 3.7 m below takeoff."""
+        # terrain here 308.0 m; takeoff ground 311.7 m; ATO 46.0 m
+        # relief estimate  = 46.0 + (311.7 - 308.0) = 49.7 m  (~163 ft)
+        # absolute estimate inflated by the 27.1 m undulation -> 76.8 m
+        result = self._iterate(image_service, reported_agl=46.0,
+                               drone_terrain=311.7, drone_absolute=384.8,
+                               terrain_here=308.0)
+        assert result == pytest.approx(49.7, abs=0.2)
+
+    def test_agreement_keeps_the_more_precise_absolute_estimate(self, image_service):
+        """A sound datum: the absolute chain is the better of the two."""
+        # relief = 46.0 + (311.7 - 308.0) = 49.7; absolute = 357.7 - 308.0 = 49.7
+        result = self._iterate(image_service, reported_agl=46.0,
+                               drone_terrain=311.7, drone_absolute=357.7,
+                               terrain_here=308.0)
+        assert result == pytest.approx(49.7, abs=0.2)
+
+    def test_rising_ground_reduces_agl_below_ato(self, image_service):
+        """Direction guard: terrain above the takeoff point means less clearance."""
+        # ground here 4 m ABOVE takeoff -> AGL = 46 - 4 = 42
+        result = self._iterate(image_service, reported_agl=46.0,
+                               drone_terrain=308.0, drone_absolute=None,
+                               terrain_here=312.0)
+        assert result == pytest.approx(42.0, abs=0.2)
+
+    def test_falling_ground_raises_agl_above_ato(self, image_service):
+        """And the converse - the case the field screenshot was taken over."""
+        result = self._iterate(image_service, reported_agl=46.0,
+                               drone_terrain=312.0, drone_absolute=None,
+                               terrain_here=308.0)
+        assert result == pytest.approx(50.0, abs=0.2)
+
+    def test_without_terrain_under_the_camera_the_ato_figure_stands(self, image_service):
+        result = self._iterate(image_service, reported_agl=46.0,
+                               drone_terrain=None, drone_absolute=None,
+                               terrain_here=308.0)
+        assert result == pytest.approx(46.0, abs=0.2)
+
+
+class TestAnchoredAglResolution:
+    """With a mission anchor, altitude is takeoff + ATO - no datum, no
+    cross-check. The DJI_0064 case: the per-frame absolute chain read
+    77.4 m (254 ft) where the true figure is ~50 m (~165 ft)."""
+
+    @staticmethod
+    def _iterate_anchored(service, reported_agl, anchor_plus_ato, terrain_here):
+        elevation = MagicMock()
+        elevation.source = 'terrain'
+        elevation.elevation_m = terrain_here
+        terrain_service = MagicMock()
+        terrain_service.enabled = True
+        terrain_service.get_elevation.return_value = elevation
+
+        service._get_projection_context = MagicMock(return_value={
+            'drone_lat': 30.6535, 'drone_lon': -97.9536,
+            'img_w': 4000, 'img_h': 3000, 'cx': 2000.0, 'cy': 1500.0,
+            'focal_mm': 8.8, 'sensor_w_mm': 13.2, 'sensor_h_mm': 8.8,
+            'pitch': -90.0, 'yaw': 0.0, 'roll': 0.0, 'roll_axis': None,
+            'reported_agl': reported_agl,
+            'drone_terrain_elev_m': None,
+            'drone_absolute_elev_m': anchor_plus_ato,
+            'geoid_undulation_m': None,
+            'altitude_anchored': True,
+            'terrain_service': terrain_service,
+        })
+        return service._effective_agl_at_pixel(2000, 1500, MagicMock())
+
+    def test_anchored_agl_is_a_plain_dem_difference(self, image_service):
+        """DJI_0064: camera = 311.0 + 46.0 = 357.0; ground 307.2 -> 49.8 m."""
+        result = self._iterate_anchored(image_service, reported_agl=46.0,
+                                        anchor_plus_ato=357.0,
+                                        terrain_here=307.2)
+        assert result == pytest.approx(49.8, abs=0.2)
+
+    def test_takeoff_to_nadir_relief_is_not_misread_as_datum_error(self, image_service):
+        """The reason the cross-check is skipped when anchored.
+
+        A valley launch under a ridge search: anchored AGL and the
+        nadir-relief estimate legitimately differ by the full launch-to-here
+        relief. Running the divergence check would reject the correct
+        anchored value - the trap the per-frame check falls into from the
+        other side.
+        """
+        # Launch at 250 m, ground here 400 m, ATO 200 m -> true AGL 50 m.
+        result = self._iterate_anchored(image_service, reported_agl=200.0,
+                                        anchor_plus_ato=450.0,
+                                        terrain_here=400.0)
+        assert result == pytest.approx(50.0, abs=0.2)
+
+    def test_the_projection_context_uses_the_mission_anchor(self, monkeypatch,
+                                                            image_service):
+        """anchor + ATO becomes the camera elevation; no geoid is consulted."""
+        from core.services.image import AltitudeAnchorService as registry_module
+        monkeypatch.setattr(registry_module, 'mission_anchor_elevation',
+                            lambda offline_only=True, image_path=None: 311.0)
+
+        image_service.get_camera_intrinsics = lambda: {
+            'focal_length_mm': 8.8, 'sensor_width_mm': 13.2,
+            'sensor_height_mm': 8.8}
+        image_service.get_camera_yaw_with_source = lambda: (0.0, 'gimbal')
+        image_service.get_camera_pitch = lambda: -90.0
+        image_service.get_gimbal_roll = lambda: 0.0
+        image_service.get_relative_altitude = lambda unit='m': 46.0
+        image_service.get_asl_altitude = lambda unit: 358.1
+
+        terrain = MagicMock()
+        terrain.enabled = True
+        terrain.get_elevation.return_value = SimpleNamespace(
+            source='terrain', elevation_m=307.2)
+
+        with patch("core.services.image.FrameGeometry.LocationInfo.get_gps",
+                   return_value={'latitude': 30.6535, 'longitude': -97.9536}), \
+             patch("core.services.terrain.TerrainService", return_value=terrain):
+            ctx = image_service._get_projection_context()
+
+        assert ctx['altitude_anchored'] is True
+        assert ctx['drone_absolute_elev_m'] == pytest.approx(357.0)
+        terrain.get_geoid_undulation.assert_not_called()
+
+    def test_without_an_anchor_the_fallback_chain_is_unchanged(self, monkeypatch,
+                                                               image_service):
+        from core.services.image import AltitudeAnchorService as registry_module
+        monkeypatch.setattr(registry_module, 'mission_anchor_elevation',
+                            lambda offline_only=True, image_path=None: None)
+
+        image_service.get_camera_intrinsics = lambda: {
+            'focal_length_mm': 8.8, 'sensor_width_mm': 13.2,
+            'sensor_height_mm': 8.8}
+        image_service.get_camera_yaw_with_source = lambda: (0.0, 'gimbal')
+        image_service.get_camera_pitch = lambda: -90.0
+        image_service.get_gimbal_roll = lambda: 0.0
+        image_service.get_relative_altitude = lambda unit='m': 46.0
+        image_service.get_asl_altitude = lambda unit: 358.1
+
+        terrain = MagicMock()
+        terrain.enabled = True
+        terrain.get_elevation.return_value = SimpleNamespace(
+            source='terrain', elevation_m=307.2)
+        terrain.get_geoid_undulation.return_value = -26.6
+
+        with patch("core.services.image.FrameGeometry.LocationInfo.get_gps",
+                   return_value={'latitude': 30.6535, 'longitude': -97.9536}), \
+             patch("core.services.terrain.TerrainService", return_value=terrain):
+            ctx = image_service._get_projection_context()
+
+        assert ctx['altitude_anchored'] is False
+        assert ctx['drone_absolute_elev_m'] == pytest.approx(384.7, abs=0.1)

@@ -9,6 +9,8 @@ import tempfile
 import os
 from unittest.mock import patch, MagicMock
 from core.services.export.KMLGeneratorService import KMLGeneratorService
+from core.services.image.ImageService import AltitudeReadings
+from helpers.FormatHelper import FormatHelper
 from core.services.export.ZipBundleService import ZipBundleService
 
 
@@ -141,7 +143,9 @@ def test_generate_image_locations_kml(kml_service, sample_images):
 
         mock_img_service = MagicMock()
         mock_img_service.exif_data = {}
-        mock_img_service.get_relative_altitude.return_value = 100.0
+        mock_img_service.get_altitude_readings.return_value = AltitudeReadings(
+            value=100.0, reference=FormatHelper.ALTITUDE_REFERENCE_TAKEOFF,
+            unit='ft')
         mock_img_service.get_camera_pitch.return_value = -90.0
         mock_img_service.get_camera_yaw.return_value = 0.0
         MockImageService.return_value = mock_img_service
@@ -234,3 +238,83 @@ def test_report_value_keeps_real_measurements(value, unit, expected):
 def test_report_value_says_na_when_there_is_no_measurement(unit):
     assert PdfGeneratorService._report_value(None, unit) == 'N/A'
     assert PdfGeneratorService._report_value('', unit) == 'N/A'
+
+
+class TestKmlAltitudeReferenceLabels:
+    """A KML is read in Google Earth and CalTopo, with no tooltip to help.
+
+    The description therefore has to say which plane each altitude is
+    measured from, and carry the DEM-derived height above the ground being
+    flown over beside a takeoff-relative figure. Every one of these cases
+    used to export the single word "AGL".
+    """
+
+    @staticmethod
+    def _descriptions(service, images, readings=None):
+        with patch('core.services.export.KMLGeneratorService.ImageService') as MockImageService, \
+                patch('core.services.export.KMLGeneratorService.LocationInfo') as MockLocationInfo:
+            mock_img_service = MagicMock()
+            mock_img_service.exif_data = {}
+            mock_img_service.get_altitude_readings.return_value = (
+                readings if readings is not None else AltitudeReadings(
+                    value=100.0, unit='ft',
+                    reference=FormatHelper.ALTITUDE_REFERENCE_TAKEOFF))
+            mock_img_service.get_camera_pitch.return_value = -90.0
+            mock_img_service.get_camera_yaw.return_value = 0.0
+            MockImageService.return_value = mock_img_service
+
+            MockLocationInfo.get_gps.return_value = {
+                'latitude': 37.7749, 'longitude': -122.4194,
+            }
+            service.generate_image_locations_kml(images)
+            return ([f.description for f in service.kml.features],
+                    mock_img_service)
+
+    def test_dji_altitude_is_labelled_above_takeoff(self, kml_service, sample_images):
+        descriptions, _ = self._descriptions(kml_service, sample_images)
+        assert "Altitude: 100.0 ft ATO (above the takeoff point)" in descriptions[0]
+
+    def test_the_dem_agl_is_exported_beside_it(self, kml_service, sample_images):
+        """The number that describes clearance over the ground flown."""
+        descriptions, _ = self._descriptions(kml_service, sample_images, AltitudeReadings(
+            value=100.0, unit='ft',
+            reference=FormatHelper.ALTITUDE_REFERENCE_TAKEOFF, terrain_agl=71.4))
+        assert "Altitude: 71.4 ft AGL (above the terrain, from DEM)" in descriptions[0]
+        assert "Altitude: 100.0 ft ATO (above the takeoff point)" in descriptions[0]
+        # AGL first for a reader who cannot see the launch point.
+        assert (descriptions[0].index("AGL (above the terrain")
+                < descriptions[0].index("ATO (above the takeoff"))
+
+    def test_a_terrain_referenced_altitude_is_labelled_agl(self, kml_service, sample_images):
+        """WALDO-prepassed imagery really is height above the terrain."""
+        descriptions, _ = self._descriptions(kml_service, sample_images, AltitudeReadings(
+            value=100.0, unit='ft',
+            reference=FormatHelper.ALTITUDE_REFERENCE_TERRAIN))
+        assert "Altitude: 100.0 ft AGL (above the terrain)" in descriptions[0]
+
+    def test_an_operator_override_is_labelled_as_entered(self, sample_images):
+        """The operator typed a height above the ground being flown over."""
+        service = KMLGeneratorService(custom_altitude_ft=250.0)
+        descriptions, mock_img = self._descriptions(service, sample_images, AltitudeReadings(
+            value=250.0, unit='ft',
+            reference=FormatHelper.ALTITUDE_REFERENCE_MANUAL))
+        assert "Altitude: 250.0 ft AGL (operator-entered)" in descriptions[0]
+        # The override is handed to the service, which decides what it means.
+        assert mock_img.get_altitude_readings.call_args.kwargs[
+            'custom_altitude_ft'] == 250.0
+
+    def test_the_export_waits_for_the_dem(self, kml_service, sample_images):
+        """Unlike the status bar: an export may block for a correct number."""
+        _descriptions, mock_img = self._descriptions(kml_service, sample_images)
+        assert mock_img.get_altitude_readings.call_args.kwargs[
+            'offline_only'] is False
+
+    def test_no_altitude_writes_no_altitude_line(self, kml_service, sample_images):
+        descriptions, _ = self._descriptions(
+            kml_service, sample_images, AltitudeReadings(value=None, unit='ft'))
+        assert "Altitude:" not in descriptions[0]
+
+    def test_the_coordinates_are_untouched(self, kml_service, sample_images):
+        """This pass moves labels, never numbers."""
+        descriptions, _ = self._descriptions(kml_service, sample_images)
+        assert "37.774900, -122.419400" in descriptions[0]

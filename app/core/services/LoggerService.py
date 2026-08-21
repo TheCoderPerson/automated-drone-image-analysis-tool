@@ -76,6 +76,19 @@ def resolve_log_level():
     return logging.DEBUG
 
 
+def resolve_console_log_level():
+    """Resolve the console handler's level.
+
+    Separate from the logger's own level so the file log stays verbose
+    while the console stays readable. ``ADIAT_CONSOLE_LOG_LEVEL`` wins;
+    otherwise the console shows WARNING and above. ``OFF`` silences it.
+    """
+    env = os.environ.get('ADIAT_CONSOLE_LOG_LEVEL', '').strip().upper()
+    if env in _LEVELS:
+        return _LEVELS[env]
+    return logging.WARNING
+
+
 class LoggerService:
     """Service to write errors and warnings to an application log file.
 
@@ -108,6 +121,14 @@ class LoggerService:
             )
             stdoutHandler.setFormatter(stdoutFmt)
             fileHandler.setFormatter(stdoutFmt)
+            # The console shows what an operator or developer must notice;
+            # the file keeps the full trace for troubleshooting. Without
+            # this split a source run prints every DEBUG/INFO diagnostic
+            # (terrain indexing, anchor resolution, acquisition skips) over
+            # the top of whatever is being worked on, which trains people
+            # to ignore the console entirely. ``ADIAT_CONSOLE_LOG_LEVEL``
+            # overrides it when the stream itself is what you are watching.
+            stdoutHandler.setLevel(resolve_console_log_level())
             self.logger.addHandler(stdoutHandler)
             self.logger.addHandler(fileHandler)
             # Baked in by build type (see resolve_log_level): prod/packaged

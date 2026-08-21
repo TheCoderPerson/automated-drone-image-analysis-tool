@@ -156,6 +156,12 @@ PROJ_CTX_KEYS = {
     'drone_lat', 'drone_lon', 'img_w', 'img_h', 'cx', 'cy', 'focal_mm',
     'sensor_w_mm', 'sensor_h_mm', 'pitch', 'yaw', 'roll', 'roll_axis',
     'reported_agl', 'drone_terrain_elev_m', 'drone_absolute_elev_m',
+    # Carried so the effective-AGL selection can name the undulation when
+    # the absolute and terrain-relief estimates disagree.
+    'geoid_undulation_m',
+    # True when the mission altitude anchor supplied the camera elevation;
+    # the AGL loop then skips the per-frame cross-check.
+    'altitude_anchored',
     'terrain_service',
 }
 

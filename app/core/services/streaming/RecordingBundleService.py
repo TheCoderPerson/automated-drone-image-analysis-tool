@@ -12,7 +12,19 @@ operator actually opens once the recording stops:
   re-projected onto that thumbnail.
 * ``detections.csv`` — the same rows as a flat table, for spreadsheets
   and scripts.
-* ``telemetry.csv`` — every fix recorded during the session.
+* ``telemetry.csv`` — every fix recorded during the session, carrying all
+  three altitude references: ``aircraft_altitude_msl_m`` (sea level),
+  ``aircraft_altitude_agl_m`` (ATO — above the takeoff point) and
+  ``aircraft_altitude_agl_terrain_m`` (AGL — above the terrain beneath
+  the aircraft), plus the ``agl_source`` that produced the last of them.
+  A detection has no altitude of its own; joining ``detections.csv`` to
+  this file on ``video_time_seconds`` supplies all three.
+
+  Bundles recorded before the references were split apart have an
+  ``aircraft_altitude_agl_m`` column holding ATO on some rows and
+  terrain-referenced AGL on others, because enrichment used to overwrite
+  it in place. Nothing reads that column back, so no migration exists;
+  treat the value in an old bundle as "one of the two, unknown which".
 * ``flight_map.html`` — a self-contained Leaflet page (path + pins).
 * ``flight_path.kml`` — path + detection placemarks for CalTopo and
   Google Earth.
@@ -74,6 +86,17 @@ _DETECTION_CSV_COLUMNS = [
     "recorded_at_epoch_s",
 ]
 
+# The writer uses ``extrasaction="ignore"``, so a key absent from this
+# list is silently dropped from the CSV no matter what the envelope
+# carries. All three altitude references are listed explicitly:
+# ``aircraft_altitude_agl_m`` is above the takeoff point (ATO),
+# ``aircraft_altitude_agl_terrain_m`` is above the terrain beneath the
+# aircraft, and ``agl_source`` says which produced the latter.
+#
+# ``aircraft_altitude_agl_terrain_m`` and ``terrain_elevation_m`` are
+# blank for ADIAT Flight sessions by design: Flight sends a measured AGL
+# and desktop enrichment then issues no DEM lookups at all, so there is
+# no terrain sample to record. See TelemetryEnrichmentService.
 _TELEMETRY_CSV_COLUMNS = [
     "video_time_seconds",
     "captured_at_ms",
@@ -81,10 +104,12 @@ _TELEMETRY_CSV_COLUMNS = [
     "aircraft_longitude",
     "aircraft_altitude_msl_m",
     "aircraft_altitude_agl_m",
+    "aircraft_altitude_agl_terrain_m",
     "aircraft_yaw_deg",
     "horizontal_speed_ms",
     "vertical_speed_ms",
     "agl_source",
+    "terrain_elevation_m",
     "recorded_at_epoch_s",
 ]
 

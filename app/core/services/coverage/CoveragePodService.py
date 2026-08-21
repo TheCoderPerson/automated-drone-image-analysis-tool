@@ -61,7 +61,6 @@ class CoveragePodService:
         self.params = params or PodParams()
         self.custom_altitude_ft = custom_altitude_ft
         self.logger = logger or LoggerService()
-        self._geoid_memo = {}
 
     def calculate(self, images: List[Dict[str, Any]], progress_callback=None,
                   cancel_check=None) -> CoverageResult:
@@ -388,104 +387,24 @@ class CoveragePodService:
     def _resolve_altitude_anchor(self, images):
         """``(takeoff elevation in the DEM's datum, reason key)`` for the mission.
 
-        Each frame implies a takeoff elevation independently::
-
-            implied(i) = (GPS_ASL(i) - geoid_N(i)) - reported_AGL(i)
-
-        which is a constant when the GPS-altitude datum and the barometric AGL
-        agree, so the median over a bounded sample is a far better estimate than
-        any single frame (GPS vertical noise averages down) and the spread is a
-        direct coherence test.
-
-        Validated two ways, both chosen so real terrain cannot trip them - a
-        valley launch under a ridge search is the case this exists to fix, and
-        a check that rejects it is worse than no check (the trap
-        ``AOIService._select_effective_agl`` hits from the other side, where a
-        per-frame comparison reads real relief as a datum error):
-
-        * **coherence** - the spread of ``implied`` across the flight. Wide
-          spread means GPS altitude and the barometer are not tracking each
-          other, so neither can be trusted.
-        * **physical plausibility** - the anchor must leave the aircraft above
-          ground and within sensor range of it over the terrain actually flown.
-
-        Known limitation: a datum mismatch (GPS altitude that is already
-        orthometric, or a wrong geoid) is a CONSTANT offset. It leaves the
-        spread untouched and is indistinguishable from a genuine launch-point
-        elevation, so only an offset large enough to fail the physical check is
-        caught. The resolved anchor is therefore reported in stats and the log
-        so it can be checked against the known launch elevation. For the fleet
-        this serves, EXIF GPS altitude is ellipsoidal (see
-        ``WaldoMetadataService``), and where the geoid is negative - all of
-        CONUS - an undetected mismatch biases POD low, the conservative
-        direction.
+        Delegates to the shared :class:`AltitudeAnchorService` - the model
+        this method pioneered, now used by AOI geolocation, GSD and the
+        altitude readout as well, so every subsystem resolves the same
+        anchor. POD supplies its own frame reader and terrain sampler, and
+        bounds the plausibility check with its sensor max range.
         """
-        samples = []
-        implied_agl_inputs = []
-        for image in self._anchor_sample(images):
-            # An explicit AGL is not height above takeoff, so it cannot inform
-            # the anchor (and such frames bypass it anyway).
-            if self._agl_is_override(image):
-                continue
-            try:
-                fg = self._frame_geometry(image)
-            except Exception:
-                continue
-            if fg is None or not fg.agl_m or fg.agl_m <= 0:
-                continue
-
-            elev = self._point_elevation(fg.lat, fg.lon)
-            if elev is not None:
-                implied_agl_inputs.append((fg.agl_m, elev))
-
-            if fg.asl_alt_m is None:
-                continue
-            undulation = self._geoid_undulation(fg.lat, fg.lon)
-            if undulation is None:
-                continue
-            implied = (fg.asl_alt_m - undulation) - fg.agl_m
-            if math.isfinite(implied):
-                samples.append(implied)
-
-        if len(samples) < _ANCHOR_MIN_SAMPLES:
-            return None, 'insufficient_samples'
-
-        arr = np.asarray(samples, dtype=np.float64)
-        anchor = float(np.median(arr))
-        mad = float(np.median(np.abs(arr - anchor)))
-        if mad > _ANCHOR_MAX_MAD_M:
-            self.logger.warning(
-                f"POD: GPS-altitude and barometric-AGL chains disagree across the "
-                f"flight (spread {mad:.1f} m > {_ANCHOR_MAX_MAD_M:.0f} m); "
-                "cannot trust a takeoff elevation from them.")
-            return None, 'incoherent'
-
-        if implied_agl_inputs:
-            implied_agls = [anchor + agl - elev for agl, elev in implied_agl_inputs]
-            median_agl = float(np.median(implied_agls))
-            if median_agl < _MIN_AGL_M or median_agl > self.params.max_range_m:
-                self.logger.warning(
-                    f"POD: a takeoff elevation of {anchor:.0f} m puts the aircraft at "
-                    f"{median_agl:.0f} m above the terrain flown, which is not a real "
-                    "flight; the GPS-altitude datum does not match the DEM. Using "
-                    "reported AGL instead.")
-                return None, 'implausible_agl'
-
-        return anchor, 'ok'
-
-    @staticmethod
-    def _anchor_sample(images):
-        """Evenly spaced, bounded subset of ``images`` for the anchor pre-pass.
-
-        Bounded so the cost is O(1) in mission size, and spread across the flight
-        so barometric drift shows up in the spread rather than hiding at one end.
-        """
-        candidates = [im for im in images
-                      if not im.get('hidden', False) and im.get('path', '') != '']
-        if not candidates:
-            return []
-        step = max(1, len(candidates) // _ANCHOR_SAMPLE_FRAMES)
-        return candidates[::step][:_ANCHOR_SAMPLE_FRAMES]
+        from core.services.image.AltitudeAnchorService import AltitudeAnchorService
+        service = AltitudeAnchorService(
+            terrain_service=self.terrain,
+            logger=self.logger,
+            custom_altitude_ft=self.custom_altitude_ft,
+            max_plausible_agl_m=self.params.max_range_m,
+            frame_geometry_fn=self._frame_geometry,
+        )
+        anchor = service.resolve(images)
+        if not anchor.resolved:
+            return None, anchor.reason
+        return anchor.elevation_m, anchor.reason
 
     def _point_elevation(self, lat, lon):
         """Cache-backed DEM elevation at a point, or None when unavailable."""
@@ -502,34 +421,6 @@ class CoveragePodService:
         if elev is None or not math.isfinite(elev):
             return None
         return float(elev)
-
-    def _geoid_undulation(self, lat, lon):
-        """EGM96 undulation at (lat, lon), memoised on a ~1 km key.
-
-        The undulation field is smooth (well under 0.1 m of change across a
-        single mission), so rounding costs no accuracy and keeps the pyproj
-        transform off the per-frame path. ``None`` when no geoid is available -
-        callers must then fall back rather than assume 0 m.
-
-        Only successful lookups are memoised: the EGM96 grid loads lazily and a
-        first-call failure must not poison the rest of the mission.
-        """
-        getter = getattr(self.terrain, 'get_geoid_undulation', None)
-        if getter is None:
-            return None
-        key = (round(lat, 2), round(lon, 2))
-        if key in self._geoid_memo:
-            return self._geoid_memo[key]
-        try:
-            value = getter(lat, lon)
-        except Exception as e:
-            self.logger.warning(
-                f"POD: geoid lookup failed at {lat:.5f},{lon:.5f}: {e}")
-            return None
-        if value is None:
-            return None
-        self._geoid_memo[key] = value
-        return value
 
     @staticmethod
     def _agl_differs(effective_agl, sizing_agl):

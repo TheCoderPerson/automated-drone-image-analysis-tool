@@ -107,6 +107,9 @@ class AOINeighborService:
         """
         try:
             cache_key = (image['path'], agl_override_m, image.get('bearing'))
+            # Computed before remember() below closes over it: the GPS-less
+            # path caches a negative result before the altitude block runs.
+            agl_is_override = bool(agl_override_m and agl_override_m > 0)
             cached = self._coverage_meta_cache.get(cache_key)
             # The FOV alignment can change mid-session (Align Image tool), so a
             # cache entry is only valid while the refinement it saw is current
@@ -121,6 +124,8 @@ class AOINeighborService:
             def remember(meta):
                 self._coverage_meta_cache[cache_key] = {
                     'refinement_source': image.get('fov_alignment'),
+                    'agl_is_override': agl_is_override,
+                    'path': image['path'],
                     'meta': meta
                 }
                 return meta
@@ -162,7 +167,7 @@ class AOINeighborService:
             )
 
             # Get altitude
-            if agl_override_m and agl_override_m > 0:
+            if agl_is_override:
                 altitude = agl_override_m
             else:
                 altitude = image_service.get_relative_altitude('m') or 0
@@ -355,6 +360,18 @@ class AOINeighborService:
         if aoi_terrain_elevation_m is None:
             return altitude
 
+        # The mission anchor first, matching the forward projection: camera
+        # elevation is takeoff + ATO, so the height above the AOI's ground is
+        # a plain difference - datum-free, no cross-check needed. Skipped for
+        # an explicit override, which is already a true AGL.
+        if not coverage_info.get('agl_is_override'):
+            from core.services.image.AltitudeAnchorService import (
+                mission_anchor_elevation)
+            anchor_elev = mission_anchor_elevation(
+                offline_only=False, image_path=coverage_info.get('path'))
+            if anchor_elev is not None:
+                return max(1.0, anchor_elev + altitude - aoi_terrain_elevation_m)
+
         terrain_service = _get_terrain_service()
         if terrain_service is None or not terrain_service.enabled:
             return altitude
@@ -402,6 +419,15 @@ class AOINeighborService:
         try:
             if not coverage_info.get('focal_mm') or not coverage_info.get('sensor_w_mm'):
                 return None
+            # NOTE: coverage_info['altitude'] is deliberately the *raw*
+            # takeoff-relative figure - it is the input this file's own
+            # correction chain (_terrain_adjusted_altitude ->
+            # AOIService._select_effective_agl) consumes, and pre-correcting
+            # it here would apply the terrain relief twice. That leaves this
+            # radius computed at ATO while the position it marks is
+            # terrain-corrected; fixing it needs the AOI's terrain elevation,
+            # which only the projection caller holds. Tracked as a follow-up
+            # rather than half-corrected.
             gsd_cm = GSDService(
                 focal_length=coverage_info['focal_mm'],
                 image_size=(coverage_info['width'], coverage_info['height']),

@@ -214,6 +214,45 @@ class Ui_Preferences(object):
 
         self.verticalLayout_2.addWidget(self.terrainWidget)
 
+        self.autoAcquireTerrainWidget = QWidget(self.mainWidget)
+        self.autoAcquireTerrainWidget.setObjectName(u"autoAcquireTerrainWidget")
+        self.horizontalLayout_autoAcquireTerrain = QHBoxLayout(self.autoAcquireTerrainWidget)
+        self.horizontalLayout_autoAcquireTerrain.setObjectName(u"horizontalLayout_autoAcquireTerrain")
+        self.autoAcquireTerrainLabel = QLabel(self.autoAcquireTerrainWidget)
+        self.autoAcquireTerrainLabel.setObjectName(u"autoAcquireTerrainLabel")
+        self.autoAcquireTerrainLabel.setFont(font)
+
+        self.horizontalLayout_autoAcquireTerrain.addWidget(self.autoAcquireTerrainLabel)
+
+        self.autoAcquireTerrainCheckBox = QCheckBox(self.autoAcquireTerrainWidget)
+        self.autoAcquireTerrainCheckBox.setObjectName(u"autoAcquireTerrainCheckBox")
+        self.autoAcquireTerrainCheckBox.setFont(font)
+
+        self.horizontalLayout_autoAcquireTerrain.addWidget(self.autoAcquireTerrainCheckBox)
+
+        self.autoAcquireTerrainLimitLabel = QLabel(self.autoAcquireTerrainWidget)
+        self.autoAcquireTerrainLimitLabel.setObjectName(u"autoAcquireTerrainLimitLabel")
+        self.autoAcquireTerrainLimitLabel.setFont(font)
+
+        self.horizontalLayout_autoAcquireTerrain.addWidget(self.autoAcquireTerrainLimitLabel)
+
+        self.autoAcquireTerrainLimitSpinBox = QSpinBox(self.autoAcquireTerrainWidget)
+        self.autoAcquireTerrainLimitSpinBox.setObjectName(u"autoAcquireTerrainLimitSpinBox")
+        self.autoAcquireTerrainLimitSpinBox.setFont(font)
+        self.autoAcquireTerrainLimitSpinBox.setMinimum(10)
+        self.autoAcquireTerrainLimitSpinBox.setMaximum(10000)
+        self.autoAcquireTerrainLimitSpinBox.setSingleStep(50)
+        self.autoAcquireTerrainLimitSpinBox.setValue(250)
+
+        self.horizontalLayout_autoAcquireTerrain.addWidget(self.autoAcquireTerrainLimitSpinBox)
+
+        self.autoAcquireTerrainSpacer = QSpacerItem(20, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
+
+        self.horizontalLayout_autoAcquireTerrain.addItem(self.autoAcquireTerrainSpacer)
+
+
+        self.verticalLayout_2.addWidget(self.autoAcquireTerrainWidget)
+
         self.terrainCacheWidget = QWidget(self.mainWidget)
         self.terrainCacheWidget.setObjectName(u"terrainCacheWidget")
         self.horizontalLayout_terrain_cache = QHBoxLayout(self.terrainCacheWidget)
@@ -416,6 +455,23 @@ class Ui_Preferences(object):
 "Terrain data is cached locally and works offline after first download.", None))
 #endif // QT_CONFIG(tooltip)
         self.terrainElevationCheckBox.setText(QCoreApplication.translate("Preferences", u"Enable", None))
+#if QT_CONFIG(tooltip)
+        self.autoAcquireTerrainLabel.setToolTip(QCoreApplication.translate("Preferences", u"Keep elevation data for the search area on hand, for whichever elevation source is selected above.\n"
+"Downloads run while an analysis is working, when a results viewer opens and before an export - whichever comes first - so the data is already local by the time AOI coordinates are calculated.", None))
+#endif // QT_CONFIG(tooltip)
+        self.autoAcquireTerrainLabel.setText(QCoreApplication.translate("Preferences", u"Auto-Download Elevation Data:", None))
+#if QT_CONFIG(tooltip)
+        self.autoAcquireTerrainCheckBox.setToolTip(QCoreApplication.translate("Preferences", u"Fetch elevation data for the area the images cover, before it is needed.\n"
+"\u2022 AWS Terrain Tiles (the default source): a few tiles, well under a megabyte\n"
+"\u2022 USGS 3DEP: about 4 MB per square kilometre, United States only\n"
+"\u2022 Skipped, with a note, above the size limit, in Offline Only mode, with no connectivity, or when the area is already covered\n"
+"\u2022 Never required: Download Coverage Data in Preferences and on the GPS Map still does it on demand, including for offline import", None))
+#endif // QT_CONFIG(tooltip)
+        self.autoAcquireTerrainCheckBox.setText(QCoreApplication.translate("Preferences", u"Enable", None))
+        self.autoAcquireTerrainLimitLabel.setText(QCoreApplication.translate("Preferences", u"Size limit (MB):", None))
+#if QT_CONFIG(tooltip)
+        self.autoAcquireTerrainLimitSpinBox.setToolTip(QCoreApplication.translate("Preferences", u"An automatic download larger than this is skipped and noted in the message pane, so an unexpectedly large search area never consumes a field connection unannounced.", None))
+#endif // QT_CONFIG(tooltip)
 #if QT_CONFIG(tooltip)
         self.terrainCacheLabel.setToolTip(QCoreApplication.translate("Preferences", u"Manage the terrain elevation data cache.\n"
 "Terrain tiles are downloaded and stored locally for offline use.", None))

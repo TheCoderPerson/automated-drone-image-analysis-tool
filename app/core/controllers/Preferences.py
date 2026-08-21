@@ -12,6 +12,9 @@ from core.services.terrain import (
     TerrainProviderFactory,
     PROVIDER_USGS_3DEP_LOCAL,
     DEFAULT_PROVIDER_ID,
+    DEFAULT_MAX_MB,
+    SETTING_ENABLED,
+    SETTING_MAX_MB,
 )
 from core.services.terrain.CanopyServiceFactory import (
     CanopyServiceFactory,
@@ -275,6 +278,24 @@ class Preferences(TranslationMixin, QDialog, Ui_Preferences):
         if hasattr(self, 'terrainElevationCheckBox'):
             self.terrainElevationCheckBox.setChecked(terrain_enabled)
 
+        # Automatic acquisition for whichever elevation source is selected.
+        # On by default: the online source has always downloaded tiles on
+        # demand, so fetching the working area up front is the same data
+        # sooner, not a new category of behaviour. The size limit below is
+        # what keeps a large area from surprising a field connection, and
+        # "Use Terrain Elevation" / "Offline Only" both switch it off.
+        if hasattr(self, 'autoAcquireTerrainCheckBox'):
+            self.autoAcquireTerrainCheckBox.setChecked(
+                self.parent.settings_service.get_bool_setting(SETTING_ENABLED, True)
+            )
+        if hasattr(self, 'autoAcquireTerrainLimitSpinBox'):
+            try:
+                limit = int(float(self.parent.settings_service.get_setting(
+                    SETTING_MAX_MB, DEFAULT_MAX_MB) or DEFAULT_MAX_MB))
+            except (TypeError, ValueError):
+                limit = int(DEFAULT_MAX_MB)
+            self.autoAcquireTerrainLimitSpinBox.setValue(limit)
+
         # Terrain provider selection + 3DEP paths
         provider_id = self.parent.settings_service.get_setting('TerrainProviderId', DEFAULT_PROVIDER_ID) or DEFAULT_PROVIDER_ID
         idx = self.terrainProviderComboBox.findData(provider_id)
@@ -390,6 +411,13 @@ class Preferences(TranslationMixin, QDialog, Ui_Preferences):
     def _update_terrain_provider(self):
         """Persist the active terrain provider id and refresh dependent UI."""
         provider_id = self.terrainProviderComboBox.currentData() or DEFAULT_PROVIDER_ID
+        if hasattr(self, 'autoAcquireTerrainCheckBox'):
+            self.parent.settings_service.set_setting(
+                SETTING_ENABLED, self.autoAcquireTerrainCheckBox.isChecked())
+        if hasattr(self, 'autoAcquireTerrainLimitSpinBox'):
+            self.parent.settings_service.set_setting(
+                SETTING_MAX_MB, self.autoAcquireTerrainLimitSpinBox.value())
+
         self.parent.settings_service.set_setting('TerrainProviderId', provider_id)
         self._refresh_terrain_provider_visibility()
         # Force terrain service to rebuild on next access so the new provider is used.

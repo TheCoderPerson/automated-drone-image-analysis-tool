@@ -697,6 +697,12 @@ class MainWindow(TranslationMixin, QMainWindow, Ui_MainWindow):
             thread.started.connect(self.analyzeService.process_files)
             thread.start()
 
+            # Terrain rides along with the pass: nothing in analysis reads the
+            # DEM, so the network is idle for exactly as long as the CPU is
+            # busy - and terrain is wanted the moment the run ends, by AOI
+            # geolocation, the map and every export.
+            self._start_terrain_acquisition(self.inputFolderLine.text())
+
             self._set_CancelButton(True)
         except Exception as e:
             self.logger.error(e)
@@ -820,7 +826,39 @@ class MainWindow(TranslationMixin, QMainWindow, Ui_MainWindow):
             self.batchService.process_cancel()
         elif hasattr(self, 'analyzeService'):
             self.analyzeService.process_cancel()
+        # A download must not outlive the run that started it.
+        self._cancel_terrain_acquisition()
         self._set_CancelButton(False)
+
+    def _start_terrain_acquisition(self, input_folder):
+        """Stock elevation data for this run's area.
+
+        One of three standardized triggers (analysis, viewer open, export);
+        the service decides whether anything is needed and which source to
+        fetch. Quiet and cancellable - see TerrainAcquisitionController.
+        """
+        try:
+            from core.controllers.images.TerrainAcquisitionController import (
+                TerrainAcquisitionController)
+            from core.services.terrain.TerrainAcquisitionService import (
+                TRIGGER_ANALYSIS)
+            controller = TerrainAcquisitionController(
+                parent=self, settings_service=self.settings_service,
+                logger=self.logger)
+            controller.message.connect(self._on_worker_msg)
+            if controller.ensure(input_folder=input_folder,
+                                 trigger=TRIGGER_ANALYSIS):
+                self._terrain_acquisition = controller
+        except Exception as e:
+            # Terrain is an enhancement; starting an analysis must not depend
+            # on it.
+            self.logger.warning(f"Could not start terrain acquisition: {e}")
+
+    def _cancel_terrain_acquisition(self):
+        """Abandon an in-flight terrain download. Safe when none is running."""
+        controller = getattr(self, '_terrain_acquisition', None)
+        if controller is not None:
+            controller.cancel()
 
     def _viewResultsButton_clicked(self):
         """

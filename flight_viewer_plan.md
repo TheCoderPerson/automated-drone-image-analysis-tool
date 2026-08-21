@@ -256,6 +256,9 @@ Two channels are opened by mobile right after the video track:
     "lon": -97.7431,
     "altitude_msl_m": 312.4,
     "horizontal_accuracy_m": 2.5
+    // No altitude reference beyond MSL: a detection is geotagged with the
+    // aircraft position, and all three references for that moment come from
+    // joining detections.csv to telemetry.csv on video_time_seconds.
   },
   "thumb": {
     "channel": "detections.thumb",
@@ -809,6 +812,8 @@ class FlightTileController(QObject):
   "aircraft_longitude": -97.7431,
   "aircraft_altitude_msl_m": 312.4,
   "aircraft_altitude_agl_m": 25.6,
+  "aircraft_altitude_agl_terrain_m": 21.2,
+  "aircraft_altitude_agl_source": "TERRAIN_DEM",
   "aircraft_yaw_deg": 90.5,
   "aircraft_pitch_deg": -1.2,
   "aircraft_roll_deg": 0.3,
@@ -880,13 +885,27 @@ self.telemetry_feed_service.telemetryReceived.connect(self._on_telemetry)
 Suggested layout (compact):
 
 ```
-LAT 30.2672  LON -97.7431  ALT 312 m MSL / 26 m AGL
+LAT 30.2672  LON -97.7431  ALT MSL 312 / ATO 26 / AGL 21 m
 HDG 091°     SPD 4.3 m/s   ↓0.5 m/s  BAT 82%   FLY · Normal
 ```
 
 Field formatting:
 - Coordinates: respect the operator's preferred format (DD / DM / MGRS) — pull from `Settings`. DD is fine for M1; DM/MGRS in M2 alongside the Mission Gallery's coordinate formatter (§7).
-- Altitude: prefer the unit operator-preference in `Settings` (m vs. ft).
+- Altitude: three references on one line, unit written once, honouring the
+  `DistanceUnit` operator preference (m vs. ft). `aircraft_altitude_msl_m` is
+  MSL, `aircraft_altitude_agl_m` is **ATO** (above the takeoff point — the
+  drone's own barometric reading), and `aircraft_altitude_agl_terrain_m` is
+  **AGL** (above the terrain beneath the aircraft), supplied by ADIAT Flight
+  or derived by `TelemetryEnrichmentService` from the DEM. An absent AGL
+  renders `—`; ATO is **never** substituted for it. An AGL nothing referenced
+  to terrain gets a trailing `*`. The widget tooltip names the AGL's source,
+  which keeps the strip bounded. Provenance arrives as
+  `aircraft_altitude_agl_source` (`ULTRASONIC` / `LASER` / `TERRAIN_DEM` /
+  `TAKEOFF_REFERENCE`, sent unconditionally) and is folded into the internal
+  `agl_source` at ingest. `aircraft_altitude_msl_m` has an undetermined datum
+  from either source — never difference it against a DEM without a geoid
+  correction; `aircraft_altitude_agl_terrain_m` needs none, being built from
+  DEM differences. See CLAUDE.md §2.11.
 - Heading: degrees + a cardinal letter (N/NE/E/…); pad to 3 digits.
 - Battery: append a colored chip — green ≥ 50, amber 20–49, red < 20.
 - `is_flying = true` shows a small "FLY" pill; absent / `false` hides it.

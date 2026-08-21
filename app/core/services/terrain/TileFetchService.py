@@ -33,6 +33,21 @@ from typing import List, Optional, Tuple
 
 from core.services.LoggerService import LoggerService
 
+# The 3DEP ImageServer reports failures as HTTP 200 with a JSON or HTML body
+# (documented USGS behaviour), so a status check alone will happily write an
+# error page into a .tif and register it in the manifest as coverage. The only
+# reliable signal is the TIFF magic number.
+_TIFF_MAGIC = (b"II*\x00", b"MM\x00*")
+
+# Courtesy pause between chunked requests to a free public service.
+DEFAULT_INTER_REQUEST_MS = 150
+
+
+def is_tiff(data) -> bool:
+    """True when ``data`` begins with a little- or big-endian TIFF header."""
+    return bool(data) and data[:4] in _TIFF_MAGIC
+
+
 # Outcome constants for a single tile transfer.
 OUTCOME_OK = 'ok'
 OUTCOME_ABSENT = 'absent'        # confirmed 403/404 -> sparse coverage, benign
@@ -102,7 +117,8 @@ class TileFetchService:
     METERS_PER_DEG = 111320.0
 
     def __init__(self, logger: Optional[LoggerService] = None, session=None,
-                 timeout: float = 60.0, backoff_ms: Optional[int] = None):
+                 timeout: float = 60.0, backoff_ms: Optional[int] = None,
+                 inter_request_ms: Optional[int] = None):
         self.logger = logger or LoggerService()
         self._session = session
         # Record whether the caller supplied the session. The lazily created
@@ -113,6 +129,11 @@ class TileFetchService:
         self._session_injected = session is not None
         self.timeout = timeout
         self.backoff_ms = self.BACKOFF_MS if backoff_ms is None else backoff_ms
+        # A courtesy pause between chunked requests: 3DEP is a free public
+        # service and asks callers to fetch sequentially rather than hammer it.
+        # Tests pass 0 to keep runs instant.
+        self.inter_request_ms = (DEFAULT_INTER_REQUEST_MS if inter_request_ms is None
+                                 else inter_request_ms)
 
     @property
     def session(self):
@@ -437,8 +458,9 @@ class TileFetchService:
                 if outcome == OUTCOME_CANCELLED:
                     result.cancelled = True
                     return result
-                if content is None:
-                    # one blind retry (endpoint occasionally 502s)
+                if content is None or not is_tiff(content):
+                    # One blind retry: the endpoint occasionally 502s, and its
+                    # error pages arrive as HTTP 200 - both are transient.
                     outcome, content = self._http_get(self.DEP_EXPORT_URL, params=params,
                                                       cancel_check=cancel_check)
                     if outcome == OUTCOME_CANCELLED:
@@ -447,6 +469,16 @@ class TileFetchService:
                 if content is None:
                     result.tiles_failed += 1
                     result.errors.append((filename, "download failed"))
+                elif not is_tiff(content):
+                    # Never write a non-raster body: the manifest row would
+                    # claim coverage that no reader can open, which reads
+                    # downstream as "terrain mysteriously unavailable here".
+                    result.tiles_failed += 1
+                    snippet = content[:120].decode('utf-8', 'replace').strip()
+                    result.errors.append(
+                        (filename, f"service returned a non-TIFF body: {snippet}"))
+                    self.logger.warning(
+                        f"TileFetch: 3DEP returned a non-TIFF body for {filename}")
                 else:
                     Path(out_dir, filename).write_bytes(content)
                     rows.append({'filename': filename, 'minX': w, 'minY': s,
@@ -455,6 +487,8 @@ class TileFetchService:
                 done += 1
                 if progress_callback:
                     progress_callback(done, total, f"Downloading DEM tile {done}/{total}...")
+                if done < total and self.inter_request_ms:
+                    time.sleep(self.inter_request_ms / 1000.0)
 
         if rows:
             manifest = os.path.join(out_dir, "dem_manifest.csv")

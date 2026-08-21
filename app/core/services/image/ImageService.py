@@ -14,9 +14,39 @@ from PIL import Image
 from core.services.GSDService import GSDService
 
 from core.services.LoggerService import LoggerService
-from helpers.MetaDataHelper import MetaDataHelper
+from dataclasses import dataclass
+from types import SimpleNamespace
+from typing import Optional
+
+from helpers.FormatHelper import FormatHelper
+from helpers.MetaDataHelper import MetaDataHelper, XMP_ALTITUDE_TYPE_TERRAIN
 from helpers.PickleHelper import PickleHelper
 from helpers.LocationInfo import LocationInfo
+
+
+@dataclass
+class AltitudeReadings:
+    """An image's altitude, the plane it is measured from, and its AGL.
+
+    ``value`` is what the image's own metadata carries - ATO for DJI
+    imagery, a terrain-referenced AGL for WALDO-prepassed imagery, an
+    operator override where one is set. ``terrain_agl`` is the DEM-derived
+    height above the ground beneath the camera, present only when it is a
+    *different* number from ``value`` and the DEM could supply it.
+    """
+
+    value: Optional[float] = None
+    reference: str = FormatHelper.ALTITUDE_REFERENCE_TAKEOFF
+    unit: str = 'm'
+    terrain_agl: Optional[float] = None
+
+    @property
+    def has_value(self) -> bool:
+        return isinstance(self.value, (int, float))
+
+    @property
+    def has_terrain_agl(self) -> bool:
+        return isinstance(self.terrain_agl, (int, float))
 
 
 class ImageService:
@@ -99,6 +129,138 @@ class ImageService:
             except ValueError:
                 return None
         return None
+
+    def get_altitude_reference(self):
+        """Return the plane :meth:`get_relative_altitude` is measured from.
+
+        ``drone-dji:RelativeAltitude`` carries two different quantities.
+        DJI writes height above the **takeoff point** (ATO) - the value
+        does not change when the terrain beneath the aircraft rises. ADIAT's
+        WALDO pre-pass computes a genuine terrain-referenced **AGL** and
+        writes it into the same tag, marking it with
+        ``drone-dji:AltitudeType``.
+
+        Only the exact marker counts. An absent tag - every DJI image ever
+        shot - means takeoff-relative, which is also the safe assumption
+        for any value ADIAT did not write.
+
+        This is for labelling and diagnostics only: no GSD, AOI
+        geolocation or coverage calculation branches on it. Making one do
+        so would move numeric output and belongs in its own change.
+
+        Returns:
+            str: ``FormatHelper.ALTITUDE_REFERENCE_TERRAIN`` or
+            ``FormatHelper.ALTITUDE_REFERENCE_TAKEOFF``.
+        """
+        if self.xmp_data is None or self.drone_make is None:
+            return FormatHelper.ALTITUDE_REFERENCE_TAKEOFF
+
+        altitude_type = MetaDataHelper.get_drone_xmp_attribute(
+            'Altitude Type', self.drone_make, self.xmp_data
+        )
+        if (isinstance(altitude_type, str)
+                and altitude_type.strip().lower() == XMP_ALTITUDE_TYPE_TERRAIN):
+            return FormatHelper.ALTITUDE_REFERENCE_TERRAIN
+        return FormatHelper.ALTITUDE_REFERENCE_TAKEOFF
+
+    def get_altitude_readings(self, distance_unit='m', use_terrain=True,
+                              custom_altitude_ft=None, offline_only=True):
+        """Every altitude reference that applies to this image, resolved once.
+
+        The single place that decides *which* planes an image has, so no
+        display or export surface repeats the reasoning:
+
+        * an operator override is height above the ground being flown over,
+          so it stands alone as AGL;
+        * WALDO-prepassed imagery already carries a terrain-referenced AGL
+          in ``RelativeAltitude``, so it stands alone too;
+        * DJI imagery carries ATO, and the DEM is asked for the matching
+          AGL - the number that describes clearance and image scale - which
+          is None when the DEM cannot answer for this position.
+
+        Args:
+            distance_unit (str): ``'ft'`` or ``'m'``; applies to both values.
+            use_terrain (bool): Honor the DEM.
+            custom_altitude_ft (float, optional): Operator override, in feet.
+            offline_only (bool): Passed to :meth:`get_terrain_agl`; default
+                True keeps a display read off the network.
+
+        Returns:
+            AltitudeReadings: ``value``/``reference`` from the image's own
+            metadata, plus ``terrain_agl`` when a second plane exists.
+        """
+        if custom_altitude_ft is not None and custom_altitude_ft > 0:
+            value = (custom_altitude_ft if distance_unit == 'ft'
+                     else custom_altitude_ft / 3.28084)
+            return AltitudeReadings(
+                value=round(value, 2),
+                reference=FormatHelper.ALTITUDE_REFERENCE_MANUAL,
+                unit=distance_unit,
+            )
+
+        reference = self.get_altitude_reference()
+        readings = AltitudeReadings(
+            value=self.get_relative_altitude(distance_unit),
+            reference=reference,
+            unit=distance_unit,
+        )
+        if reference == FormatHelper.ALTITUDE_REFERENCE_TAKEOFF:
+            readings.terrain_agl = self.get_terrain_agl(
+                distance_unit, use_terrain=use_terrain,
+                custom_altitude_ft=custom_altitude_ft,
+                offline_only=offline_only,
+            )
+        return readings
+
+    def get_terrain_agl(self, distance_unit='m', use_terrain=True,
+                        custom_altitude_ft=None, offline_only=True):
+        """Height above the terrain beneath the camera, from the DEM.
+
+        The companion to :meth:`get_relative_altitude`: that one reports
+        the reference plane the image's own metadata carries (ATO for DJI
+        imagery), this one reports height above the ground actually being
+        flown over. Over flat terrain they agree; over relief they diverge
+        by the whole terrain change, and the AGL is the figure that
+        describes clearance and image scale.
+
+        No new arithmetic: this is the same effective-AGL iteration the GSD
+        and AOI-geolocation paths run, evaluated at the image centre - the
+        ground directly below the camera.
+
+        Args:
+            distance_unit (str): ``'ft'`` or ``'m'``.
+            use_terrain (bool): Honor the DEM. False returns None.
+            custom_altitude_ft (float, optional): Operator override.
+            offline_only (bool): Default True - a *display* read must never
+                block on a tile fetch, so it uses cached elevation only and
+                returns None until the tile is local. Acquisition stocks the
+                area in the background; callers doing real work (GSD, AOI
+                positioning) pass False and accept the wait.
+
+        Returns:
+            float or None: AGL in the requested unit, or None when the DEM
+            cannot answer for this position.
+        """
+        METERS_TO_FEET = 3.28084
+        if not use_terrain:
+            return None
+        try:
+            if self.img_array is None:
+                return None
+            height, width = self.img_array.shape[:2]
+            agl_m = self.get_effective_agl_at_pixel(
+                width / 2.0, height / 2.0, use_terrain=True,
+                custom_altitude_ft=custom_altitude_ft,
+                offline_only=offline_only,
+            )
+        except Exception as e:
+            # Display-only: an unavailable DEM is not an error worth
+            # interrupting anything for.
+            LoggerService().debug(f"Terrain AGL unavailable for {self.path}: {e}")
+            return None
+        if agl_m is None:
+            return None
+        return round(agl_m * METERS_TO_FEET, 2) if distance_unit == 'ft' else agl_m
 
     def get_asl_altitude(self, distance_unit):
         """Retrieve the drone's altitude above sea level from EXIF data.
@@ -411,7 +573,88 @@ class ImageService:
         hfov = 2 * math.atan(sensor_w / (2 * focal_length))
         return math.degrees(hfov)
 
-    def get_gsd_service(self, custom_altitude_ft=None):
+    def get_working_altitude_m(self, use_terrain=True, custom_altitude_ft=None,
+                               offline_only=False):
+        """The altitude image geometry should be computed with, in metres.
+
+        The single place this decision is made, so GSD, ground distances and
+        anything else scaling with height agree on the plane:
+
+        * an operator override wins outright - it is entered as height above
+          the ground being flown over, which is what the geometry wants, and
+          it is set precisely when the metadata cannot be trusted;
+        * otherwise the DEM-derived AGL, height above the ground actually
+          being photographed;
+        * otherwise the image's own takeoff-relative figure, which is what
+          every ADIAT release before this one used everywhere.
+
+        Args:
+            use_terrain (bool): Honor the DEM. False forces the ATO path,
+                which is what ``UseTerrainElevation`` and the effective-AGL
+                iteration itself both need.
+            custom_altitude_ft (float, optional): Operator override, feet.
+            offline_only (bool): Use cached elevation only. A caller that
+                must not block passes True and accepts ATO until terrain
+                acquisition has stocked the area.
+
+        Returns:
+            float or None: Altitude in metres, or None when the image has
+            none at all.
+        """
+        if custom_altitude_ft is not None and custom_altitude_ft > 0:
+            return custom_altitude_ft / 3.28084
+
+        reported = self.get_relative_altitude()
+        if not use_terrain:
+            return reported
+
+        base = self._build_gsd_service()
+        if base is None:
+            # No intrinsics, so nothing can be projected: the DEM cannot be
+            # consulted and the reported figure is all there is.
+            return reported
+        try:
+            if self.img_array is None:
+                return reported
+            height, width = self.img_array.shape[:2]
+            # The iteration projects with `base`, an ATO-altitude service, so
+            # it cannot re-enter this method. Sampled where the camera is
+            # pointed - the same value the altitude readout shows.
+            effective_agl_m = self._effective_agl_at_pixel(
+                int(width // 2), int(height // 2), base,
+                offline_only=offline_only,
+            )
+        except Exception as e:
+            LoggerService().debug(
+                f"Working altitude: terrain AGL unavailable for {self.path}: {e}")
+            return reported
+        if effective_agl_m is None or effective_agl_m <= 0:
+            return reported
+        return effective_agl_m
+
+    def get_gsd_service(self, custom_altitude_ft=None, use_terrain=True,
+                        offline_only=False):
+        """Return a GSDService for this image, at the best altitude available.
+
+        Ground sample distance scales with height above the ground being
+        photographed, so the altitude comes from
+        :meth:`get_working_altitude_m` - the DEM-derived AGL where terrain
+        data can answer, the takeoff-relative figure where it cannot.
+
+        Args:
+            custom_altitude_ft (float, optional): Operator override, feet.
+            use_terrain (bool): Honor the DEM.
+            offline_only (bool): Use cached elevation only.
+
+        Returns:
+            GSDService or None: None when intrinsics or altitude are missing.
+        """
+        altitude_m = self.get_working_altitude_m(
+            use_terrain=use_terrain, custom_altitude_ft=custom_altitude_ft,
+            offline_only=offline_only)
+        return self._build_gsd_service(altitude_m=altitude_m)
+
+    def _build_gsd_service(self, custom_altitude_ft=None, altitude_m=None):
         """
         Build a GSDService configured for this image.
 
@@ -442,8 +685,13 @@ class ImageService:
             return None
         focal_length = focal_length[0] / focal_length[1]
 
-        # Use custom altitude if provided, otherwise get from XMP
-        if custom_altitude_ft is not None and custom_altitude_ft > 0:
+        # An explicit altitude - the plane resolved by
+        # get_working_altitude_m - wins, then the operator override, then the
+        # image's own takeoff-relative figure. Callers that need the
+        # uncorrected projection (the effective-AGL iteration) pass neither.
+        if altitude_m is not None and altitude_m > 0:
+            altitude_meters = altitude_m
+        elif custom_altitude_ft is not None and custom_altitude_ft > 0:
             altitude_meters = custom_altitude_ft / 3.28084
         else:
             altitude_meters = self.get_relative_altitude()
@@ -537,7 +785,8 @@ class ImageService:
 
         return gsd_service.compute_gsd(irow, icol, altitude_override=effective_agl_m)
 
-    def get_effective_agl_at_pixel(self, col, row, use_terrain=True, custom_altitude_ft=None):
+    def get_effective_agl_at_pixel(self, col, row, use_terrain=True, custom_altitude_ft=None,
+                                   offline_only=False):
         """Public accessor for the DEM-corrected effective AGL at a pixel.
 
         Args:
@@ -554,11 +803,14 @@ class ImageService:
         """
         if not use_terrain:
             return None
-        gsd_service = self.get_gsd_service(custom_altitude_ft=custom_altitude_ft)
+        # The ATO-altitude projection: this is what the AGL is being solved
+        # for, so it must not itself be built from an AGL.
+        gsd_service = self._build_gsd_service(custom_altitude_ft)
         if gsd_service is None:
             return None
         return self._effective_agl_at_pixel(
-            int(round(col)), int(round(row)), gsd_service, custom_altitude_ft=custom_altitude_ft
+            int(round(col)), int(round(row)), gsd_service,
+            custom_altitude_ft=custom_altitude_ft, offline_only=offline_only
         )
 
     # ---------------- terrain helpers ----------------
@@ -591,7 +843,7 @@ class ImageService:
         cache[cache_key] = fg
         return fg
 
-    def _get_projection_context(self, custom_altitude_ft=None):
+    def _get_projection_context(self, custom_altitude_ft=None, offline_only=False):
         """Collect drone pose, intrinsics and per-image terrain data needed for
         per-pixel projection. Caches the result on the instance so repeated
         per-pixel queries (e.g. dragging the person-reference overlay) don't
@@ -604,7 +856,7 @@ class ImageService:
             dict or None: projection context, or None if any required data is
             missing.
         """
-        cache_key = ('proj_ctx', custom_altitude_ft)
+        cache_key = ('proj_ctx', custom_altitude_ft, bool(offline_only))
         cached = getattr(self, '_projection_context_cache', {}).get(cache_key)
         if cached is not None:
             return cached
@@ -635,16 +887,34 @@ class ImageService:
             drone_terrain_elev_m = None
             geoid_undulation_m = None
             drone_absolute_elev_m = None
+            altitude_anchored = False
 
             if terrain_service is not None and getattr(terrain_service, 'enabled', False):
-                geoid_undulation_m = terrain_service.get_geoid_undulation(drone_lat, drone_lon)
-                drone_terrain = terrain_service.get_elevation(drone_lat, drone_lon)
+                # The mission anchor first: takeoff elevation resolved once
+                # for the whole flight, carried per-frame by the barometer.
+                # Datum-free, so neither the geoid nor EXIF GPSAltitude's
+                # unknown reference enters the arithmetic.
+                from core.services.image.AltitudeAnchorService import (
+                    mission_anchor_elevation)
+                anchor_elev = mission_anchor_elevation(
+                    offline_only=offline_only, image_path=self.path)
+                drone_terrain = terrain_service.get_elevation(
+                    drone_lat, drone_lon, offline_only=offline_only)
                 if drone_terrain.source == 'terrain' and drone_terrain.elevation_m is not None:
                     drone_terrain_elev_m = drone_terrain.elevation_m
-                if absolute_alt is not None and geoid_undulation_m is not None:
-                    drone_absolute_elev_m = absolute_alt - geoid_undulation_m
-                elif drone_terrain_elev_m is not None:
-                    drone_absolute_elev_m = drone_terrain_elev_m + reported_agl
+                if anchor_elev is not None:
+                    drone_absolute_elev_m = anchor_elev + reported_agl
+                    altitude_anchored = True
+                else:
+                    # Fallback: the per-frame chains. GPSAltitude's datum is
+                    # per-airframe unknown, which is why this is only ever a
+                    # cross-checked fallback, never the primary.
+                    geoid_undulation_m = terrain_service.get_geoid_undulation(
+                        drone_lat, drone_lon, offline_only=offline_only)
+                    if absolute_alt is not None and geoid_undulation_m is not None:
+                        drone_absolute_elev_m = absolute_alt - geoid_undulation_m
+                    elif drone_terrain_elev_m is not None:
+                        drone_absolute_elev_m = drone_terrain_elev_m + reported_agl
 
             ctx = {
                 'drone_lat': drone_lat,
@@ -663,6 +933,8 @@ class ImageService:
                 'reported_agl': reported_agl,
                 'drone_terrain_elev_m': drone_terrain_elev_m,
                 'drone_absolute_elev_m': drone_absolute_elev_m,
+                'geoid_undulation_m': geoid_undulation_m,
+                'altitude_anchored': altitude_anchored,
                 'terrain_service': terrain_service,
             }
             if not hasattr(self, '_projection_context_cache'):
@@ -672,14 +944,27 @@ class ImageService:
         except Exception:
             return None
 
-    def _effective_agl_at_pixel(self, col, row, gsd_service, custom_altitude_ft=None):
+    @staticmethod
+    def _agl_selection_context():
+        """A stand-in ``self`` for ``AOIService._select_effective_agl``.
+
+        That method reads nothing off the instance but ``.logger``, and
+        sharing the real selection matters more than the awkward call - a
+        second implementation here is exactly how the AOI path and everything
+        else drifted onto different altitudes.
+        """
+        return SimpleNamespace(logger=LoggerService())
+
+    def _effective_agl_at_pixel(self, col, row, gsd_service, custom_altitude_ft=None,
+                                offline_only=False):
         """Iteratively refine the effective AGL at a pixel using DEM data.
 
         Mirrors the algorithm used by AOIService for AOI positioning. Returns
         the effective AGL in meters when terrain data is available, otherwise
         None (caller should fall back to the flat-ground GSD).
         """
-        ctx = self._get_projection_context(custom_altitude_ft=custom_altitude_ft)
+        ctx = self._get_projection_context(custom_altitude_ft=custom_altitude_ft,
+                                           offline_only=offline_only)
         if ctx is None:
             return None
         terrain_service = ctx['terrain_service']
@@ -702,7 +987,7 @@ class ImageService:
         # Quantize the pixel to a small grid (every 8 pixels) so we hit the
         # cache even when the user is dragging continuously without committing
         # to a stale value for big jumps.
-        ck = (col >> 3, row >> 3, custom_altitude_ft)
+        ck = (col >> 3, row >> 3, custom_altitude_ft, bool(offline_only))
         if ck in cache:
             return cache[ck]
 
@@ -727,12 +1012,37 @@ class ImageService:
                 return None
 
             terrain_elev = terrain_result.elevation_m
-            if drone_absolute_elev is not None:
+
+            # Absolute-elevation estimate: precise when the altitude datum
+            # matches the DEM's. Terrain-relief estimate: immune to the datum
+            # entirely, because a constant offset cancels in the difference of
+            # two DEM samples.
+            #
+            # Trusting the first without checking it against the second is how
+            # a measured frame near Georgetown TX read 254 ft AGL where the
+            # true figure was ~165 ft (ATO 150.9 ft over ground 11-15 ft below
+            # the takeoff point). The 89 ft gap is the local geoid undulation:
+            # this aircraft's EXIF GPSAltitude is already orthometric, so
+            # applying the ellipsoid correction to it adds ~27 m to every
+            # image in the dataset.
+            if ctx.get('altitude_anchored') and drone_absolute_elev is not None:
+                # Anchored: camera elevation is takeoff + ATO, datum-free by
+                # construction. No cross-check - the nadir-relief estimate
+                # differs from this by the real takeoff-to-nadir relief, and
+                # rejecting the anchor over real relief is the trap the
+                # per-frame check falls into from the other side.
                 effective_agl = max(1.0, drone_absolute_elev - terrain_elev)
-            elif drone_terrain_elev is not None:
-                effective_agl = max(1.0, reported_agl + (drone_terrain_elev - terrain_elev))
             else:
-                effective_agl = reported_agl
+                agl_abs = (drone_absolute_elev - terrain_elev
+                           if drone_absolute_elev is not None else None)
+                agl_rel = (reported_agl + (drone_terrain_elev - terrain_elev)
+                           if drone_terrain_elev is not None else None)
+                effective_agl = max(1.0, AOIService._select_effective_agl(
+                    self._agl_selection_context(), agl_abs, agl_rel, reported_agl,
+                    ctx.get('geoid_undulation_m'),
+                    SimpleNamespace(elevation_m=drone_terrain_elev),
+                    terrain_elev,
+                ))
 
             new_pos = AOIService._calculate_ground_position(
                 ctx['drone_lat'], ctx['drone_lon'], col, row,

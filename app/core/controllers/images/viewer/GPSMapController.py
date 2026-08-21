@@ -595,7 +595,11 @@ class GPSMapController(QObject):
                 elev = self.tr("{value} m").format(value=int(round(anchor)))
             return self.tr("Altitude basis: takeoff elevation {elev}").format(elev=elev)
         if (getattr(result, 'altitude_source_counts', None) or {}).get('agl_nadir'):
-            return self.tr("Altitude basis: reported AGL (approximate over terrain)")
+            # The fallback chain is DEM(nadir) + the drone's reported
+            # takeoff-relative figure, so what it produces is an ATO-based
+            # approximation - calling it AGL would claim terrain
+            # referencing the number does not have.
+            return self.tr("Altitude basis: reported ATO (approximate over terrain)")
         return None
 
     def _rgba_to_pixmap(self, rgba, transform):

@@ -667,10 +667,22 @@ class AOIService:
         else:
             geoid_undulation = terrain_service.get_geoid_undulation(drone_lat, drone_lon)
 
-        # Calculate drone absolute elevation (orthometric)
+        # Calculate drone absolute elevation (orthometric). The mission
+        # anchor - takeoff elevation resolved once for the flight - wins:
+        # camera elevation is then anchor + ATO, barometric per-frame
+        # precision with no datum assumption on GPS altitude at all.
+        from core.services.image.AltitudeAnchorService import (
+            mission_anchor_elevation)
+        anchor_elev = mission_anchor_elevation(
+            offline_only=False, image_path=image.get('path'))
+        altitude_anchored = anchor_elev is not None
         drone_absolute_elev = None
-        if absolute_alt is not None and geoid_undulation is not None:
-            # Convert GPS altitude (ellipsoidal) to orthometric
+        if altitude_anchored:
+            drone_absolute_elev = anchor_elev + reported_agl
+        elif absolute_alt is not None and geoid_undulation is not None:
+            # Convert GPS altitude (assumed ellipsoidal) to orthometric.
+            # Per-airframe the datum is actually unknown, which is why this
+            # chain is only ever used cross-checked, and only anchorless.
             drone_absolute_elev = absolute_alt - geoid_undulation
         elif drone_terrain.source == 'terrain' and drone_terrain.elevation_m is not None:
             # Estimate from terrain + reported AGL
@@ -712,10 +724,17 @@ class AOIService:
             elif reported_agl and reported_agl > 0:
                 agl_rel = reported_agl
 
-            effective_agl = self._select_effective_agl(
-                agl_abs, agl_rel, reported_agl,
-                geoid_undulation, drone_terrain, terrain_elevation
-            )
+            if altitude_anchored and agl_abs is not None:
+                # Anchored: no cross-check. The nadir-relief estimate differs
+                # from the anchored one by the real takeoff-to-nadir relief;
+                # rejecting the anchor over real relief is exactly the trap
+                # the per-frame check exists to avoid from the other side.
+                effective_agl = agl_abs
+            else:
+                effective_agl = self._select_effective_agl(
+                    agl_abs, agl_rel, reported_agl,
+                    geoid_undulation, drone_terrain, terrain_elevation
+                )
 
             # Clamp to minimum positive value
             effective_agl = max(1.0, effective_agl)

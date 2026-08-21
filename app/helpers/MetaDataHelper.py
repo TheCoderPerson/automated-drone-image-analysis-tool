@@ -22,6 +22,14 @@ _XMP_EXT_HDR = b"http://ns.adobe.com/xmp/extension/\x00"
 # for any make.
 DRONE_DJI_NS = "http://www.dji.com/drone-dji/1.0/"
 
+# Marker written into ``drone-dji:AltitudeType`` when the value in
+# ``drone-dji:RelativeAltitude`` is height above the **terrain** rather
+# than above the takeoff point. Only ADIAT's WALDO pre-pass computes such
+# a value, and until it started marking them nothing recorded which of the
+# two meanings a given image carried. Any other value - including an
+# absent tag, which is every DJI image ever shot - means takeoff-relative.
+XMP_ALTITUDE_TYPE_TERRAIN = "terrain"
+
 
 class MetaDataHelper:
     """Helper class for managing EXIF, XMP, and thermal metadata of image files."""
@@ -638,9 +646,19 @@ class MetaDataHelper:
         Returns:
             str or None: Attribute value, if available.
         """
-        # Handle special cases for attribute names
+        # Handle special cases for attribute names.
+        #
+        # The ``'AGL'`` request key and the ``AGL`` row in ``xmp.csv`` are
+        # public identifiers on a user-installable, version-refreshed file
+        # (CLAUDE.md §2.7), so they keep their names. What they actually
+        # resolve to is ``drone-dji:RelativeAltitude``, which for DJI
+        # imagery is height above the **takeoff point** (ATO), not height
+        # above the terrain. ADIAT's WALDO pre-pass writes a genuine
+        # terrain-referenced AGL into the same tag and marks it with
+        # ``drone-dji:AltitudeType``; ``ImageService.get_altitude_reference``
+        # is what tells the two apart.
         attribute_map = {
-            'AGL': 'Relative Altitude',  # AGL (Above Ground Level) maps to Relative Altitude
+            'AGL': 'Relative Altitude',  # -> drone-dji:RelativeAltitude (ATO)
         }
         mapped_attribute = attribute_map.get(attribute, attribute)
 
@@ -692,6 +710,16 @@ class MetaDataHelper:
                     'RelativeAltitude',
                     'XMP:RelativeAltitude',
                     'XMP-drone-dji:RelativeAltitude',
+                ]
+            elif mapped_attribute == 'Altitude Type':
+                # Which plane RelativeAltitude is measured from. The row
+                # exists in xmp.csv but nothing requested it until the
+                # three references were split apart.
+                possible_keys = [
+                    'drone-dji:AltitudeType',
+                    'AltitudeType',
+                    'XMP:AltitudeType',
+                    'XMP-drone-dji:AltitudeType',
                 ]
             elif attribute == 'ImageSource':
                 possible_keys = [

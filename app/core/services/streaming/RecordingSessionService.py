@@ -19,6 +19,13 @@ The derived artifacts (``ADIAT_Data.xml``, ``detections.csv``,
 from those JSONL logs by :mod:`~core.services.streaming.\
 RecordingBundleService` when the recording stops.
 
+``telemetry.jsonl`` holds each envelope verbatim, so it carries every
+altitude reference the publisher and desktop enrichment produced —
+``aircraft_altitude_agl_m`` is above the takeoff point (ATO) and
+``aircraft_altitude_agl_terrain_m`` is above the terrain, never the
+reverse. ``telemetry.csv`` writes an explicit column list, so a new key
+reaches it only when that list names it.
+
 Two properties drive the design:
 
 * **Append-as-you-go.** Every confirmed detection is flushed to

@@ -1021,7 +1021,10 @@ class AOIController(TranslationMixin):
                         "custom_alt_ft": custom_alt_ft,
                         "use_terrain_preference": use_terrain,
                         "drone_make": img_service.drone_make if hasattr(img_service, 'drone_make') else 'N/A',
-                        "reported_agl_m": img_service.get_relative_altitude('m'),
+                        # Above the takeoff point, not above the terrain -
+                        # the distinction that matters when this fails.
+                        "reported_ato_m": img_service.get_relative_altitude('m'),
+                        "altitude_reference": img_service.get_altitude_reference(),
                         "reported_asl_m": img_service.get_asl_altitude('m'),
                         "camera_pitch": img_service.get_camera_pitch(),
                         "camera_yaw": img_service.get_camera_yaw(),
@@ -1037,9 +1040,12 @@ class AOIController(TranslationMixin):
                     if not diag_info["camera_intrinsics"]:
                         reasons.append("Camera model not recognized or missing focal length/sensor data in database.")
 
-                    agl = custom_alt_ft * 0.3048 if custom_alt_ft else diag_info["reported_agl_m"]
-                    if agl is None or agl <= 0:
-                        reasons.append(f"Invalid altitude for calculation: {agl}m. Ensure image has AGL metadata or set a custom altitude.")
+                    altitude_m = custom_alt_ft * 0.3048 if custom_alt_ft else diag_info["reported_ato_m"]
+                    if altitude_m is None or altitude_m <= 0:
+                        reasons.append(
+                            f"Invalid altitude for calculation: {altitude_m}m. Ensure the image "
+                            "carries altitude metadata (drone-dji:RelativeAltitude) or set a "
+                            "custom altitude.")
 
                     if diag_info["camera_pitch"] is not None and diag_info["camera_pitch"] > -5:
                         reasons.append(f"Camera pitch ({diag_info['camera_pitch']}°) is too close to horizontal; the AOI might be above the horizon.")

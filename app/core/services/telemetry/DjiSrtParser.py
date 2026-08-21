@@ -42,7 +42,8 @@ This module therefore:
   trusting a fixed index, and tolerates 3-line entries;
 * tokenizes with a key/value regex so multi-pair brackets split
   correctly;
-* distinguishes MSL (``abs_alt``) from AGL (``rel_alt``) instead of
+* distinguishes MSL (``abs_alt``) from ATO (``rel_alt`` — above the
+  takeoff point, never height above the terrain) instead of
   collapsing both into one ``altitude``.
 """
 
@@ -107,7 +108,10 @@ class DjiSrtSample:
     latitude: Optional[float] = None
     longitude: Optional[float] = None
     altitude_msl_m: Optional[float] = None   # abs_alt — above mean sea level
-    altitude_agl_m: Optional[float] = None   # rel_alt — above takeoff point
+    # ``rel_alt``: above the takeoff point (ATO). The field name predates
+    # the three-reference vocabulary and matches the wire key
+    # ``aircraft_altitude_agl_m``, which has always carried ATO.
+    altitude_agl_m: Optional[float] = None
     yaw_deg: Optional[float] = None          # gimbal yaw; see module note below
     frame_index: Optional[int] = None
     # The aircraft's own wall clock for this cue, in drone local time.
@@ -236,7 +240,7 @@ def _parse_entry(block: str) -> Optional[DjiSrtSample]:
         # Some firmware misspells the key; preserved from the original parser.
         longitude = _to_float(fields.get("longtitude"))
 
-    # Altitude precedence: DJI's explicit MSL/AGL pair when present,
+    # Altitude precedence: DJI's explicit MSL/ATO pair when present,
     # otherwise the legacy single ``altitude`` key. That key's datum is not
     # knowable from one cue, so it is parked in the MSL slot and flagged;
     # :func:`_resolve_legacy_altitude` decides once it can see the whole

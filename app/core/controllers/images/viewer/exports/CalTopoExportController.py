@@ -26,6 +26,7 @@ from core.services.image.ImageService import ImageService
 from core.services.image.AOIService import AOIService
 from core.services.image.AOICompositeService import AOICompositeService
 from core.services.image.CoverageExtentService import CoverageExtentService
+from helpers.FormatHelper import FormatHelper
 from helpers.LocationInfo import LocationInfo
 from helpers.MetaDataHelper import MetaDataHelper
 from helpers.TranslationMixin import TranslationMixin
@@ -957,10 +958,14 @@ class CalTopoExportController(TranslationMixin):
                 if hasattr(self.parent, 'custom_agl_altitude_ft') and self.parent.custom_agl_altitude_ft and self.parent.custom_agl_altitude_ft > 0:
                     custom_alt = self.parent.custom_agl_altitude_ft
 
-                if custom_alt is not None and custom_alt > 0:
-                    altitude_ft = custom_alt
-                else:
-                    altitude_ft = image_service.get_relative_altitude(distance_unit='ft')
+                # The reference plane travels with the value - see
+                # KMLGeneratorService for why all three cases differ.
+                # Resolved by the service, rendered by FormatHelper - see
+                # KMLGeneratorService for why both planes are exported.
+                readings = image_service.get_altitude_readings(
+                    'ft',
+                    use_terrain=getattr(self.parent, 'use_terrain_elevation', True),
+                    custom_altitude_ft=custom_alt, offline_only=False)
 
                 gimbal_pitch = image_service.get_camera_pitch()
                 gimbal_yaw = image_service.get_camera_yaw()
@@ -969,8 +974,8 @@ class CalTopoExportController(TranslationMixin):
                 description += f"Image: {image_name}\n"
                 description += f"GPS: {image_gps['latitude']:.6f}, {image_gps['longitude']:.6f}\n"
 
-                if altitude_ft:
-                    description += f"Altitude: {altitude_ft:.1f} ft AGL\n"
+                for line in FormatHelper.altitude_lines(readings):
+                    description += f"{line}\n"
                 if gimbal_pitch is not None:
                     description += f"Gimbal Pitch: {gimbal_pitch:.1f}°\n"
                 if gimbal_yaw is not None:

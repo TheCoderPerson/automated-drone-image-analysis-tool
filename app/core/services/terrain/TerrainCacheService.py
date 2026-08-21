@@ -23,6 +23,20 @@ from core.services.LoggerService import LoggerService
 from .ElevationProvider import ElevationProvider, TerrariumProvider
 
 
+def bounds_for_radius(lat: float, lon: float, radius_km: float):
+    """``(min_lon, min_lat, max_lon, max_lat)`` around a point.
+
+    Longitude degrees shrink with the cosine of latitude. Scaling by the
+    latitude itself - as this conversion did - collapses the box to a
+    sliver: at 30 degrees it was about 35 times too narrow, so a "5 km"
+    prefetch covered a few hundred metres of longitude.
+    """
+    import math
+    dlat = radius_km / 111.0
+    dlon = radius_km / max(1.0, 111.0 * math.cos(math.radians(lat)))
+    return (lon - dlon, lat - dlat, lon + dlon, lat + dlat)
+
+
 class TerrainCacheService:
     """
     Service for caching terrain elevation tiles.
@@ -140,28 +154,71 @@ class TerrainCacheService:
         Returns:
             Number of tiles downloaded
         """
-        # Calculate bounding box
-        # Approximate: 1 degree ≈ 111km at equator
-        dlat = radius_km / 111.0
-        dlon = radius_km / (111.0 * abs(max(0.01, abs(lat))) if lat != 0 else 111.0)
+        return self.prefetch_bounds(
+            bounds_for_radius(lat, lon, radius_km), zoom=zoom)
 
-        min_lat = lat - dlat
-        max_lat = lat + dlat
-        min_lon = lon - dlon
-        max_lon = lon + dlon
+    def tile_range(self, bounds, zoom: int):
+        """Inclusive ``(min_x, min_y, max_x, max_y)`` tile range for a bbox.
 
-        # Get tile range
-        min_x, max_y = TerrariumProvider.lat_lon_to_tile(max_lat, min_lon, zoom)
-        max_x, min_y = TerrariumProvider.lat_lon_to_tile(min_lat, max_lon, zoom)
+        Args:
+            bounds: ``(min_lon, min_lat, max_lon, max_lat)`` in WGS84.
+            zoom: Tile zoom level.
+        """
+        min_lon, min_lat, max_lon, max_lat = bounds
+        # Tile y increases *southward*, so the north-west corner supplies the
+        # minimum of both axes and the south-east corner the maximum. Reading
+        # max_y off the north edge inverts the range, which makes every
+        # `range(min_y, max_y + 1)` empty - the reason the radius prefetch
+        # silently downloaded nothing and its test had to accept a count of 0.
+        min_x, min_y = TerrariumProvider.lat_lon_to_tile(max_lat, min_lon, zoom)
+        max_x, max_y = TerrariumProvider.lat_lon_to_tile(min_lat, max_lon, zoom)
+        return min_x, min_y, max_x, max_y
+
+    def count_missing_tiles(self, bounds, zoom: int = 12) -> int:
+        """How many tiles covering ``bounds`` are not cached yet."""
+        min_x, min_y, max_x, max_y = self.tile_range(bounds, zoom)
+        return sum(1
+                   for x in range(min_x, max_x + 1)
+                   for y in range(min_y, max_y + 1)
+                   if not self.is_tile_cached(zoom, x, y))
+
+    def prefetch_bounds(self, bounds, zoom: int = 12, progress_callback=None,
+                        cancel_check=None) -> int:
+        """Download every uncached tile covering ``bounds``.
+
+        A bounding box, not a radius: imagery covers a strip or a polygon,
+        and the flight area is known exactly, so there is nothing to
+        approximate with a circle.
+
+        Args:
+            bounds: ``(min_lon, min_lat, max_lon, max_lat)`` in WGS84.
+            zoom: Tile zoom level.
+            progress_callback (callable, optional): ``(done, total, message)``.
+            cancel_check (callable, optional): Returns True to stop between
+                tiles - a prefetch is opportunistic and must never hold up
+                whatever asked for it.
+
+        Returns:
+            int: Tiles downloaded. Tiles already cached are not refetched.
+        """
+        min_x, min_y, max_x, max_y = self.tile_range(bounds, zoom)
+        pending = [(x, y)
+                   for x in range(min_x, max_x + 1)
+                   for y in range(min_y, max_y + 1)
+                   if not self.is_tile_cached(zoom, x, y)]
 
         downloaded = 0
-        for x in range(min_x, max_x + 1):
-            for y in range(min_y, max_y + 1):
-                if not self.is_tile_cached(zoom, x, y):
-                    tile = self._download_and_cache_tile(zoom, x, y)
-                    if tile is not None:
-                        downloaded += 1
-
+        total = len(pending)
+        for index, (x, y) in enumerate(pending):
+            if cancel_check and cancel_check():
+                break
+            if progress_callback:
+                progress_callback(index, total,
+                                  f"Downloading elevation tile {index + 1}/{total}...")
+            if self._download_and_cache_tile(zoom, x, y) is not None:
+                downloaded += 1
+        if progress_callback and total:
+            progress_callback(total, total, "Elevation tiles cached")
         return downloaded
 
     def _get_tile_path(self, z: int, x: int, y: int) -> Path:

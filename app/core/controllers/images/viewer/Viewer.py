@@ -9,6 +9,10 @@ from core.services.cache.BackfillCacheService import BackfillCacheService
 from core.services.SettingsService import SettingsService
 from core.services.thermal.ThermalParserService import ThermalParserService
 from core.services.image.ImageService import ImageService
+from core.services.terrain.TerrainAcquisitionService import (
+    TRIGGER_EXPORT,
+    TRIGGER_VIEWER_OPEN,
+)
 from core.services.XmlService import XmlService
 from core.services.LoggerService import LoggerService
 from helpers import BuildInfo
@@ -264,6 +268,19 @@ class Viewer(TranslationMixin, QMainWindow, Ui_Viewer):
 
         # Terrain elevation preference for AOI positioning
         self.use_terrain_elevation = self.settings_service.get_bool_setting('UseTerrainElevation', True)
+
+        # Opening a viewer is the second standardized acquisition trigger:
+        # the operator is about to work AOIs whose coordinates come out of
+        # the DEM, and tiles fetched now are tiles not fetched during the
+        # first AOI click. The service decides whether anything is needed.
+        self._terrain_acquisition = None
+        self._ensure_terrain_data(trigger=TRIGGER_VIEWER_OPEN)
+
+        # Register this mission with the altitude-anchor service: AOI
+        # geolocation, GSD and the altitude readout all resolve altitudes
+        # against the takeoff elevation estimated once from these images.
+        from core.services.image.AltitudeAnchorService import set_mission_images
+        set_mission_images(self.images)
         self.skipHidden.setChecked(not self.show_hidden)
         self.skipHidden.clicked.connect(self._skip_hidden_clicked)
 
@@ -1827,8 +1844,32 @@ class Viewer(TranslationMixin, QMainWindow, Ui_Viewer):
         self.aoiJumpLine.setText("")
         self.aoi_controller.go_to_aoi_number(number)
 
+    def _ensure_terrain_data(self, trigger):
+        """Stock elevation data for these images, without waiting for it.
+
+        Called on viewer open and before an export - the second and third
+        of the app's standardized acquisition triggers. Repeat calls for an
+        area already attempted are no-ops inside the service, so hitting
+        this from several places is free.
+
+        Args:
+            trigger (str): A ``TRIGGER_*`` constant, for the log line.
+        """
+        try:
+            from core.controllers.images.TerrainAcquisitionController import (
+                TerrainAcquisitionController)
+            controller = TerrainAcquisitionController(
+                parent=self, settings_service=self.settings_service,
+                logger=self.logger)
+            if controller.ensure(images=self.images, trigger=trigger):
+                self._terrain_acquisition = controller
+        except Exception as e:
+            # An enhancement to AOI accuracy must never break the viewer.
+            self.logger.warning(f"Could not start terrain acquisition: {e}")
+
     def _kmlButton_clicked(self):
         """Handles clicks on the Map Export button to show unified export options."""
+        self._ensure_terrain_data(trigger=TRIGGER_EXPORT)
         if hasattr(self, 'unified_map_export'):
             self.unified_map_export.show_export_dialog()
 
@@ -1851,6 +1892,7 @@ class Viewer(TranslationMixin, QMainWindow, Ui_Viewer):
 
     def _pdfButton_clicked(self):
         """Handles clicks on the Generate PDF button."""
+        self._ensure_terrain_data(trigger=TRIGGER_EXPORT)
         if hasattr(self, 'pdf_export'):
             self.pdf_export.export_pdf(self.images, self.aoi_controller.flagged_aois)
 

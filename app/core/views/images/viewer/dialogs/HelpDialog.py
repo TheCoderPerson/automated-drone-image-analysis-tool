@@ -258,8 +258,8 @@ class HelpDialog(TranslationMixin, QDialog):
                     </tr>
                     <tr>
                         <td>Shift + O</td>
-                        <td>Override altitude for all images (manually set custom
-                            AGL altitude for GSD calculations)</td>
+                        <td>Override altitude for all images (manually set the height above
+                            the ground being flown over, for GSD calculations)</td>
                     </tr>
                     <tr>
                         <td>Ctrl + H</td>
@@ -468,7 +468,22 @@ class HelpDialog(TranslationMixin, QDialog):
                 <p>The bottom status bar displays:</p>
                 <ul>
                     <li><b>GPS Coordinates:</b> Latitude and longitude of current image (clickable)</li>
-                    <li><b>Relative Altitude:</b> The altitude of the drone relative to its take off point</li>
+                    <li><b>Altitude:</b> The drone's altitude, followed by the reference plane it is
+                        measured from (<b>ATO</b> or <b>AGL</b>).
+                        ADIAT distinguishes three reference planes and never labels one as another:
+                        <ul>
+                            <li><b>ATO</b> (above takeoff) &mdash; height above the point the drone took
+                                off from. This is what a DJI image records, and it does not change when
+                                the terrain below the aircraft rises.</li>
+                            <li><b>AGL</b> (above ground level) &mdash; height above the terrain directly
+                                beneath the aircraft. Equal to ATO over flat ground, and different from it
+                                by the full terrain change everywhere else. ADIAT derives this from a DEM
+                                for live telemetry and for WALDO-processed imagery.</li>
+                            <li><b>MSL</b> (mean sea level) &mdash; height above sea level, used for
+                                comparing against maps and other aircraft.</li>
+                        </ul>
+                        Exports spell out which plane a number is measured from, and the live telemetry
+                        overlay shows all three with a tooltip naming where its AGL came from.</li>
                     <li><b>Estimated Average GSD:</b> The estimated Ground Sampling
                         Distance (cm/px) calculated from the drones Relative Altitude.
                         WARNING, may not be accurate</li>

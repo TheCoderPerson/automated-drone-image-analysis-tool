@@ -36,3 +36,120 @@ class FormatHelper:
         """
         megabytes = max(0, int(num_bytes)) / (1024 * 1024)
         return f"{megabytes:.2f}"
+
+    # ------------------------------------------------------------------
+    # altitude references
+    #
+    # ADIAT distinguishes three reference planes and never lets two share
+    # a label: MSL (mean sea level), ATO (above the takeoff point - the
+    # drone's own barometric reading) and AGL (above the terrain beneath
+    # the aircraft). ATO and AGL agree exactly over flat ground and
+    # diverge with relief, so a mislabelled value survives every bench
+    # test and misleads only in the field, over the terrain where a search
+    # team is actually working.
+    # ------------------------------------------------------------------
+
+    ALTITUDE_REFERENCE_TAKEOFF = 'takeoff'
+    ALTITUDE_REFERENCE_TERRAIN = 'terrain'
+    ALTITUDE_REFERENCE_MANUAL = 'manual'
+
+    # Explains the pair wherever both are shown. One string, so the status
+    # bar, the HUD and any future surface teach the same distinction - and
+    # the operator never has to remember which abbreviation is which.
+    ALTITUDE_TOOLTIP = (
+        "AGL - height above the ground beneath the aircraft. This is what "
+        "image scale and clearance depend on, and what ADIAT uses for GSD "
+        "and AOI positions.\n"
+        "ATO - height above the takeoff point, as the drone reported it. "
+        "Equal to AGL over flat ground, and different by the full terrain "
+        "change everywhere else."
+    )
+
+    @staticmethod
+    def altitude_inline(readings):
+        """One-line altitude summary for tight UI, e.g. a status bar.
+
+        AGL leads: it is the figure that describes clearance and image
+        scale, so it is the one an operator should read first. ATO follows
+        as the drone's own reported number. With no AGL available only the
+        image's own value is shown, labelled with its real reference plane.
+
+        Args:
+            readings: An ``AltitudeReadings`` from
+                ``ImageService.get_altitude_readings``.
+
+        Returns:
+            str or None: None when the image has no altitude at all.
+        """
+        if readings is None or not readings.has_value:
+            return None
+        own = (f"{readings.value} {readings.unit} "
+               f"{FormatHelper.altitude_reference_abbreviation(readings.reference)}")
+        if readings.has_terrain_agl:
+            return f"{readings.terrain_agl} {readings.unit} AGL · {own}"
+        return own
+
+    @staticmethod
+    def altitude_lines(readings):
+        """Altitude lines for an export description, one per reference plane.
+
+        Spelled out because a KML or a printed report is read outside ADIAT,
+        with no tooltip and no way to ask what the number means.
+
+        Args:
+            readings: An ``AltitudeReadings`` from
+                ``ImageService.get_altitude_readings``.
+
+        Returns:
+            list[str]: Empty when the image has no altitude at all.
+        """
+        if readings is None or not readings.has_value:
+            return []
+        own = (f"Altitude: {readings.value:.1f} {readings.unit} "
+               f"{FormatHelper.altitude_reference_phrase(readings.reference)}")
+        if not readings.has_terrain_agl:
+            return [own]
+        # AGL first: a reader outside ADIAT wants clearance over the ground
+        # photographed, not height above a launch point they cannot see.
+        return [f"Altitude: {readings.terrain_agl:.1f} {readings.unit} "
+                f"AGL (above the terrain, from DEM)", own]
+
+    @staticmethod
+    def altitude_reference_abbreviation(reference):
+        """Return the short label for an altitude reference plane.
+
+        Args:
+            reference (str): One of ``ALTITUDE_REFERENCE_*``. Anything
+                unrecognised is treated as takeoff-relative, which is what
+                an unmarked ``drone-dji:RelativeAltitude`` is.
+
+        Returns:
+            str: ``'AGL'`` or ``'ATO'``, for tight UI where a phrase will
+            not fit.
+        """
+        if reference in (FormatHelper.ALTITUDE_REFERENCE_TERRAIN,
+                         FormatHelper.ALTITUDE_REFERENCE_MANUAL):
+            return 'AGL'
+        return 'ATO'
+
+    @staticmethod
+    def altitude_reference_phrase(reference):
+        """Return the spelled-out label for an altitude reference plane.
+
+        Exports are read outside ADIAT - in CalTopo, in Google Earth, in a
+        printed report handed to a search team - where there is room to say
+        which plane the number is measured from and no tooltip to fall back
+        on.
+
+        Args:
+            reference (str): One of ``ALTITUDE_REFERENCE_*``. Anything
+                unrecognised is treated as takeoff-relative.
+
+        Returns:
+            str: e.g. ``'ATO (above the takeoff point)'``.
+        """
+        if reference == FormatHelper.ALTITUDE_REFERENCE_TERRAIN:
+            return 'AGL (above the terrain)'
+        if reference == FormatHelper.ALTITUDE_REFERENCE_MANUAL:
+            return 'AGL (operator-entered)'
+        return 'ATO (above the takeoff point)'

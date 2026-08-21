@@ -5,11 +5,25 @@ import os
 
 import pytest
 
-from core.services.terrain.TileFetchService import TileFetchService
+from unittest.mock import MagicMock
+
+from core.services.terrain.TileFetchService import (
+    OUTCOME_FAILED,
+    OUTCOME_OK,
+    TileFetchService,
+    is_tiff,
+)
+
+
+# A minimal little-endian TIFF header. The DEM path checks the magic
+# number before writing a tile, because the 3DEP ImageServer answers a
+# failed request with HTTP 200 and a JSON or HTML body - a payload that
+# would otherwise be saved as a .tif and manifested as coverage.
+TIFF_BODY = b"II*\x00" + b"\x00" * 60
 
 
 class _Resp:
-    def __init__(self, status, content=b"TILE"):
+    def __init__(self, status, content=TIFF_BODY):
         self.status_code = status
         self.content = content
 
@@ -535,10 +549,10 @@ def test_library_root_ignores_empty_legacy_location(tmp_path, monkeypatch):
 def test_dem_filenames_carry_aoi_digest(tmp_path):
     """Two different AOIs downloaded into the SAME folder must not overwrite
     each other's tiles (the central-library contract)."""
-    svc = _svc(lambda url, params, n: _Resp(200, b"TIFFDATA"))
+    svc = _svc(lambda url, params, n: _Resp(200, TIFF_BODY))
     r1 = svc.fetch_3dep_dem((-120.50, 38.70, -120.49, 38.71), str(tmp_path),
                             tile_px=2048, native_res_m=1.0)
-    svc2 = _svc(lambda url, params, n: _Resp(200, b"TIFFDATA"))
+    svc2 = _svc(lambda url, params, n: _Resp(200, TIFF_BODY))
     r2 = svc2.fetch_3dep_dem((-97.96, 30.65, -97.95, 30.66), str(tmp_path),
                              tile_px=2048, native_res_m=1.0)
 
@@ -553,11 +567,94 @@ def test_dem_filenames_carry_aoi_digest(tmp_path):
 def test_same_aoi_redownload_is_idempotent(tmp_path):
     """The same AOI re-downloaded reuses its filenames (overwrites, no growth)."""
     bounds = (-120.50, 38.70, -120.49, 38.71)
-    svc = _svc(lambda url, params, n: _Resp(200, b"TIFFDATA"))
+    svc = _svc(lambda url, params, n: _Resp(200, TIFF_BODY))
     r1 = svc.fetch_3dep_dem(bounds, str(tmp_path), tile_px=2048, native_res_m=1.0)
-    svc2 = _svc(lambda url, params, n: _Resp(200, b"TIFFDATA"))
+    svc2 = _svc(lambda url, params, n: _Resp(200, TIFF_BODY))
     r2 = svc2.fetch_3dep_dem(bounds, str(tmp_path), tile_px=2048, native_res_m=1.0)
 
     with open(r2.manifest_path, newline="") as fh:
         rows = list(csv.DictReader(fh))
     assert len(rows) == r1.tiles_written               # no duplicate rows
+
+
+class TestThreeDepBodyValidation:
+    """3DEP reports failures as HTTP 200 with a JSON or HTML body.
+
+    USGS documents this, and a status-only check writes the error page into a
+    .tif and records a manifest row claiming coverage. Downstream that reads
+    as "terrain is mysteriously unavailable in this square", which is far
+    harder to diagnose than a counted failure.
+    """
+
+    @staticmethod
+    def _service(bodies):
+        """A fetch service whose HTTP layer replays ``bodies`` in order."""
+        service = TileFetchService(logger=MagicMock(), inter_request_ms=0)
+        queue = list(bodies)
+
+        def fake_get(url, params=None, cancel_check=None):
+            body = queue.pop(0) if queue else None
+            return (OUTCOME_OK if body is not None else OUTCOME_FAILED), body
+
+        service._http_get = fake_get
+        return service
+
+    def test_a_real_tiff_is_written_and_manifested(self, tmp_path):
+        tiff = b"II*\x00" + b"\x00" * 64
+        service = self._service([tiff])
+        result = service.fetch_3dep_dem(
+            (-97.751, 30.651, -97.750, 30.652), str(tmp_path))
+
+        assert result.tiles_written == 1
+        assert result.tiles_failed == 0
+        assert result.manifest_path is not None
+        written = list(tmp_path.glob("dem_*.tif"))
+        assert len(written) == 1
+        assert written[0].read_bytes() == tiff
+
+    def test_a_json_error_body_is_counted_as_a_failure(self, tmp_path):
+        """Both the first attempt and the blind retry return the error page."""
+        error = b'{"error":{"code":500,"message":"Unable to complete operation"}}'
+        service = self._service([error, error])
+        result = service.fetch_3dep_dem(
+            (-97.751, 30.651, -97.750, 30.652), str(tmp_path))
+
+        assert result.tiles_written == 0
+        assert result.tiles_failed == 1
+        assert result.manifest_path is None
+        # Nothing may be left on disk pretending to be a raster.
+        assert list(tmp_path.glob("dem_*.tif")) == []
+
+    def test_the_error_body_is_surfaced_in_the_reported_reason(self, tmp_path):
+        error = b"<html><head><title>Service Unavailable</title></head>"
+        service = self._service([error, error])
+        result = service.fetch_3dep_dem(
+            (-97.751, 30.651, -97.750, 30.652), str(tmp_path))
+
+        assert len(result.errors) == 1
+        _filename, reason = result.errors[0]
+        assert "non-TIFF" in reason
+        assert "Service Unavailable" in reason
+
+    def test_a_retry_that_returns_a_tiff_succeeds(self, tmp_path):
+        """The 200-with-error-body case is transient, like the endpoint's 502s."""
+        service = self._service([b'{"error":1}', b"MM\x00*" + b"\x00" * 32])
+        result = service.fetch_3dep_dem(
+            (-97.751, 30.651, -97.750, 30.652), str(tmp_path))
+
+        assert result.tiles_written == 1
+        assert result.tiles_failed == 0
+
+
+class TestTiffSniff:
+    @pytest.mark.parametrize("payload,expected", [
+        (b"II*\x00rest", True),      # little-endian
+        (b"MM\x00*rest", True),      # big-endian
+        (b'{"error":1}', False),
+        (b"<html>", False),
+        (b"II*", False),             # truncated
+        (b"", False),
+        (None, False),
+    ])
+    def test_only_a_tiff_header_passes(self, payload, expected):
+        assert is_tiff(payload) is expected
