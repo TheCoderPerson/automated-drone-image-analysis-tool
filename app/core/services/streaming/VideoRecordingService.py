@@ -12,6 +12,7 @@ from pathlib import Path
 from dataclasses import dataclass
 from typing import Optional, Tuple, Dict, Any
 from queue import Queue, Empty
+import sys
 import threading
 import time
 import numpy as np
@@ -27,10 +28,50 @@ class RecordingConfig:
     filename_prefix: str = "rtmp_recording"
     fps: int = 30
     quality: int = 23  # H.264 CRF value (lower = better quality)
-    codec: str = "mp4v"  # Codec fourcc
+    codec: str = "mp4v"  # Last-resort codec fourcc (see _codec_candidates)
     segment_duration: int = 1800  # 30 minutes per segment
     max_segments: int = 100  # Maximum number of segments to keep
     use_hardware_encoding: bool = True
+
+
+# Which (backend, fourcc) produced a working writer on this machine.
+# Encoder availability is a property of the machine, not of a recording:
+# probing used to happen on EVERY recording start, and each doomed H.264
+# attempt made FFMPEG print a wall of "Failed to load OpenH264 library /
+# Unable to create encoder / Failed to initialize VideoWriter" to the
+# console. Caching the winner makes any such noise a once-per-process
+# event at worst, and zero on machines where the first candidate works.
+_CODEC_CACHE_LOCK = threading.Lock()
+_working_codec: Optional[Tuple[Optional[int], str, str]] = None  # (api, fourcc, label)
+
+
+def _codec_candidates() -> list:
+    """Encoder candidates, best first, as ``(api, fourcc, label)``.
+
+    Ordered by what actually works in the field rather than by wishful
+    fourcc names (the old list asked FFMPEG for NVENC-flavored fourccs,
+    which FFMPEG routes to libopenh264 — absent on stock Windows because
+    OpenCV cannot bundle Cisco's DLL, so every one of them failed):
+
+    1. **Media Foundation H.264** (Windows). Ships with Windows itself,
+       uses the hardware encoder where one exists, and produces real
+       H.264 at roughly half mp4v's size. No OpenH264 involved.
+    2. **FFMPEG avc1** — H.264 for builds that do have an encoder.
+    3. **mp4v** — MPEG-4 Part 2, the always-works floor.
+    """
+    candidates = []
+    if sys.platform == "win32":
+        candidates.append((cv2.CAP_MSMF, "H264", "H.264 (Media Foundation)"))
+    candidates.append((None, "avc1", "H.264 (FFMPEG)"))
+    candidates.append((None, "mp4v", "MPEG-4 (mp4v)"))
+    return candidates
+
+
+def reset_codec_cache() -> None:
+    """Forget the probed encoder (tests, or after a driver change)."""
+    global _working_codec
+    with _CODEC_CACHE_LOCK:
+        _working_codec = None
 
 
 class VideoRecorder(QThread):
@@ -192,79 +233,80 @@ class VideoRecorder(QThread):
         # self.logger.info("Recording thread stopped")
 
     def _init_video_writer(self) -> bool:
-        """Initialize video writer with optimal settings."""
+        """Open the video writer with the best encoder this machine has.
+
+        The winning (backend, fourcc) is cached process-wide, so the
+        probing — and any console noise from encoders that turn out to be
+        absent — happens at most once, not on every recording start and
+        segment rotation. A cached choice that stops opening (odd frame
+        size, driver change) falls through to a fresh probe rather than
+        failing the recording.
+        """
         try:
             width, height = self._resolution
 
-            # Try hardware encoding first if enabled
-            if self.config.use_hardware_encoding:
-                # self.logger.info("Attempting hardware encoding...")
-                for codec_info in self._get_hardware_codecs():
-                    try:
-                        fourcc = cv2.VideoWriter_fourcc(*codec_info['fourcc'])
-                        writer = cv2.VideoWriter(
-                            self._current_output_path,
-                            fourcc,
-                            self.config.fps,
-                            (width, height)
-                        )
-
-                        if writer.isOpened():
-                            self._current_writer = writer
-                            # self.logger.info(f"✅ Hardware encoding enabled: {codec_info['name']} ({codec_info['fourcc']})")
-                            return True
-                        else:
-                            writer.release()
-                            # self.logger.debug(f"❌ Hardware codec failed: {codec_info['name']}")
-                    except Exception:
-                        # self.logger.debug(f"❌ Hardware codec error {codec_info['name']}: {e}")
-                        pass
-
-                self.logger.warning("🔄 Hardware encoding failed, falling back to software encoding")
-
-            # Fallback to software encoding
-            # self.logger.info("Using software encoding...")
-            fourcc = cv2.VideoWriter_fourcc(*self.config.codec)
-            self._current_writer = cv2.VideoWriter(
-                self._current_output_path,
-                fourcc,
-                self.config.fps,
-                (width, height)
-            )
-
-            if self._current_writer.isOpened():
-                # self.logger.info(f"Using software codec: {self.config.codec}")
-                return True
-            else:
+            if not self.config.use_hardware_encoding:
+                # Operator opted out of probing: exactly the configured
+                # codec, exactly as before.
+                writer = self._open_writer(None, self.config.codec)
+                if writer is not None:
+                    self._current_writer = writer
+                    return True
                 self.logger.error("Failed to initialize video writer")
                 return False
+
+            global _working_codec
+            with _CODEC_CACHE_LOCK:
+                cached = _working_codec
+
+            if cached is not None:
+                api, fourcc, label = cached
+                writer = self._open_writer(api, fourcc)
+                if writer is not None:
+                    self._current_writer = writer
+                    return True
+                self.logger.warning(
+                    f"Cached recording codec {label} stopped opening; re-probing"
+                )
+
+            for api, fourcc, label in _codec_candidates():
+                if cached is not None and (api, fourcc) == cached[:2]:
+                    continue  # already failed just above
+                writer = self._open_writer(api, fourcc)
+                if writer is not None:
+                    self._current_writer = writer
+                    with _CODEC_CACHE_LOCK:
+                        _working_codec = (api, fourcc, label)
+                    self.logger.info(
+                        f"Recording codec: {label} at {width}x{height}"
+                    )
+                    return True
+
+            self.logger.error("Failed to initialize video writer")
+            return False
 
         except Exception as e:
             self.logger.error(f"Error initializing video writer: {e}")
             return False
 
-    def _get_hardware_codecs(self) -> list:
-        """Get available hardware encoding codecs."""
-        # Order by preference - optimized for performance
-        codecs = [
-            # NVIDIA hardware encoding (best performance)
-            {'name': 'H.264 NVENC', 'fourcc': 'h264'},  # lowercase for better compatibility
-            {'name': 'H.264 NVENC Alt', 'fourcc': 'H264'},
-            {'name': 'H.264 NVENC CUDA', 'fourcc': 'avc1'},
-
-            # Intel Quick Sync Video
-            {'name': 'Intel QSV H.264', 'fourcc': 'H264'},
-            {'name': 'Intel QSV H.264 Alt', 'fourcc': 'h264'},
-
-            # AMD VCE
-            {'name': 'AMD VCE H.264', 'fourcc': 'H264'},
-            {'name': 'AMD VCE H.264 Alt', 'fourcc': 'h264'},
-
-            # H.265 (slower but better compression)
-            {'name': 'H.265 NVENC', 'fourcc': 'HEVC'},
-            {'name': 'H.265 Alt', 'fourcc': 'h265'},
-        ]
-        return codecs
+    def _open_writer(self, api: Optional[int], fourcc: str):
+        """Try one encoder; return an opened ``cv2.VideoWriter`` or None."""
+        try:
+            code = cv2.VideoWriter_fourcc(*fourcc)
+            if api is None:
+                writer = cv2.VideoWriter(
+                    self._current_output_path, code, self.config.fps, self._resolution
+                )
+            else:
+                writer = cv2.VideoWriter(
+                    self._current_output_path, api, code, self.config.fps, self._resolution
+                )
+            if writer.isOpened():
+                return writer
+            writer.release()
+        except Exception:  # noqa: BLE001 - a failed candidate is not an error
+            pass
+        return None
 
     def _should_rotate_segment(self) -> bool:
         """Check if segment should be rotated."""
@@ -481,6 +523,15 @@ class RecordingManager(QObject):
     def is_recording(self) -> bool:
         """Check if currently recording."""
         return self._recorder and self._recorder.is_recording()
+
+    def configured_fps(self) -> float:
+        """The fixed frame rate the writer encodes at.
+
+        This is the recorded video's own clock: frames_written / this
+        value is a position in the output MP4, which is what telemetry
+        stamps ride so replay stays aligned across outage-spliced gaps.
+        """
+        return float(self._config.fps)
 
     def get_recording_info(self) -> Dict[str, Any]:
         """Get current recording information."""
