@@ -94,10 +94,10 @@ class ThermalAnomalyService(AlgorithmService):
                 for aoi in areas_of_interest:
                     detected_pixels = aoi.get('detected_pixels', [])
 
-                    # Transform to processing resolution if needed
-                    xs, ys = self._extract_valid_coordinates(
-                        detected_pixels, temperature_c.shape, apply_scale_factor=True
-                    )
+                    # The AOIs were detected in temperature_c, so they index it as-is. It is
+                    # parsed from the file at native thermal resolution, which processing
+                    # resolution never changes.
+                    xs, ys = self._extract_valid_coordinates(detected_pixels, temperature_c.shape)
 
                     if xs is not None:
                         # Calculate mean temperature across all detected pixels

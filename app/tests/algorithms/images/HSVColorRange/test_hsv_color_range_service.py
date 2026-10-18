@@ -5,6 +5,7 @@ import tempfile
 import os
 from algorithms.images.HSVColorRange.services.HSVColorRangeService import HSVColorRangeService
 from algorithms.AlgorithmService import AnalysisResult
+from core.services.AnalyzeService import AnalyzeService
 
 
 @pytest.fixture
@@ -519,18 +520,81 @@ def test_add_confidence_scores_aoi_without_pixels_gets_zero(hsv_color_range_serv
     assert result[0]['score_type'] == 'color_distance'
 
 
-def test_add_confidence_scores_scale_factor_transforms_coords(hsv_color_range_service):
+def test_add_confidence_scores_reads_aoi_pixels_unscaled(hsv_color_range_service):
+    # Inside process_image() AOIs are at processing resolution, like hsv_distances:
+    # AnalyzeService maps them to original resolution only after it returns. So at
+    # 50% the pixel at (20, 20) is scored at (20, 20), not halved again to (10, 10).
     hsv_color_range_service.set_scale_factor(0.5)
-    # Pixel at original-resolution (40, 40) -> processing (20, 20)
-    aois = [{'center': (40, 40), 'detected_pixels': [(40, 40)]}]
+    aois = [{'center': (20, 20), 'detected_pixels': [(20, 20)]}]
     distances = np.zeros((30, 30), dtype=np.float32)
     distances[20, 20] = 0.2
+    distances[10, 10] = 0.7
     mask = np.zeros((30, 30), dtype=np.uint8)
     mask[20, 20] = 255
+    mask[10, 10] = 255
 
     result = hsv_color_range_service._add_confidence_scores(aois, distances, mask)
-    assert 'confidence' in result[0]
-    assert result[0]['raw_score'] > 0
+    assert result[0]['raw_score'] == pytest.approx(0.2)
+    assert result[0]['confidence'] == pytest.approx(100.0)
+
+
+# ---------------------------------------------------------------------------
+# Processing resolution: scores must not depend on it
+# ---------------------------------------------------------------------------
+
+def _bgr_from_opencv_hsv(h, s, v):
+    return cv2.cvtColor(np.uint8([[[h, s, v]]]), cv2.COLOR_HSV2BGR)[0][0]
+
+
+def _three_reds_frame():
+    """A green 400x400 frame holding three reds at increasing distance from pure red.
+
+    Every edge sits on an even pixel, so a 50% INTER_AREA resize only averages
+    2x2 blocks of a single colour: the half-resolution frame holds exactly the
+    same colours, and any score difference comes from the lookup, not resampling.
+    """
+    img = np.empty((400, 400, 3), dtype=np.uint8)
+    img[:] = _bgr_from_opencv_hsv(60, 255, 255)
+    img[40:100, 40:100] = _bgr_from_opencv_hsv(0, 255, 255)
+    img[40:100, 260:340] = _bgr_from_opencv_hsv(0, 220, 230)
+    img[260:340, 260:340] = _bgr_from_opencv_hsv(0, 190, 200)
+    return img
+
+
+def _analyze_at_resolution(img, processing_resolution):
+    """Run one frame through AnalyzeService.process_file, the production ordering."""
+    algorithm = {'name': 'HSVColorRange', 'service': 'HSVColorRangeService', 'combine_overlapping_aois': False}
+    options = {'hsv_configs': [{
+        'selected_color': (255, 0, 0),
+        'hsv_ranges': {
+            'h': 0.0, 's': 1.0, 'v': 1.0,
+            'h_minus': 0.05, 'h_plus': 0.05,
+            's_minus': 0.3, 's_plus': 0.3,
+            'v_minus': 0.3, 'v_plus': 0.3,
+        },
+    }]}
+    with tempfile.TemporaryDirectory() as tmpdir:
+        full_path = os.path.join(tmpdir, 'frame.png')
+        cv2.imencode('.png', img)[1].tofile(full_path)
+        result = AnalyzeService.process_file(
+            algorithm, (255, 0, 0), 1, 0, 5, options, full_path, tmpdir,
+            os.path.join(tmpdir, 'output'), None, None, False, processing_resolution)
+    assert result.error_message is None
+    return sorted(result.areas_of_interest, key=lambda aoi: aoi['center'])
+
+
+def test_confidence_scores_match_at_half_processing_resolution():
+    frame = _three_reds_frame()
+    full = _analyze_at_resolution(frame, 1.0)
+    half = _analyze_at_resolution(frame, 0.5)
+
+    assert len(full) == len(half) == 3
+    # The scene discriminates: pure red scores highest, the farthest red lowest.
+    assert [aoi['confidence'] for aoi in full] == [100.0, pytest.approx(49.5, abs=1), 0.0]
+    for full_aoi, half_aoi in zip(full, half):
+        assert half_aoi['center'] == pytest.approx(full_aoi['center'], abs=2)
+        assert half_aoi['raw_score'] == pytest.approx(full_aoi['raw_score'], abs=0.005)
+        assert half_aoi['confidence'] == pytest.approx(full_aoi['confidence'], abs=0.5)
 
 
 # ---------------------------------------------------------------------------

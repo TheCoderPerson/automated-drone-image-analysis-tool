@@ -373,6 +373,15 @@ def test_transform_aois_preserves_non_geometric_fields(algorithm_service):
     assert result[0]["label"] == "hit"
 
 
+def test_extract_valid_coordinates_ignores_scale_factor(algorithm_service):
+    # process_image() sees AOIs at processing resolution; transform_aois_to_original_resolution
+    # runs only after it returns, so the lookup helper must not apply the scale factor.
+    algorithm_service.set_scale_factor(0.5)
+    xs, ys = algorithm_service._extract_valid_coordinates([(20, 10), (25, 15)], (30, 30))
+    assert xs.tolist() == [20, 25]
+    assert ys.tolist() == [10, 15]
+
+
 # ---------------------------------------------------------------------------
 # apply_hue_expansion edge cases
 # ---------------------------------------------------------------------------

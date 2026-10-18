@@ -21,9 +21,10 @@ tolerant path picks up whatever it rejects.
 
 **The scale factor is applied exactly as the loops applied it** - multiply,
 then truncate toward zero - so moving to array arithmetic cannot shift a
-coordinate by a pixel. Detected pixels are stored at original resolution
-while some algorithms score against a downscaled frame, which is the only
-transform these coordinates ever undergo.
+coordinate by a pixel. No algorithm needs it inside ``process_image()``:
+there an AOI is still at processing resolution, the same resolution as the
+arrays it is scored against, because ``AnalyzeService.process_file`` maps it
+to original resolution only after ``process_image()`` returns.
 """
 
 from typing import NamedTuple, Optional, Tuple
@@ -84,10 +85,10 @@ def in_bounds_coordinates(
             empty are accepted and yield ``(None, None)``.
         shape: Shape of the array the coordinates will index, ``(height,
             width, ...)``. Only the first two entries are read.
-        scale_factor: Multiply coordinates by this before bounds-checking.
-            Use it when ``detected_pixels`` are stored at original resolution
-            but the target array is at processing resolution. ``1.0`` is a
-            no-op.
+        scale_factor: Multiply coordinates by this before bounds-checking,
+            for ``detected_pixels`` stored at a different resolution from the
+            target array. ``1.0`` is a no-op. AOIs inside ``process_image()``
+            already match the frame and must not be scaled.
 
     Returns:
         ``(xs, ys)`` int64 arrays holding only the in-bounds coordinates, or

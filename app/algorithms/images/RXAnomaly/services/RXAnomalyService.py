@@ -153,9 +153,9 @@ class RXAnomalyService(AlgorithmService):
         # Add confidence to each AOI
         for aoi in areas_of_interest:
             detected_pixels = aoi.get('detected_pixels', [])
-            # NOTE: detected_pixels are in ORIGINAL resolution, but rx_values are in PROCESSING resolution
-            # Need to transform coordinates back to processing resolution for lookup
-            xs, ys = self._extract_valid_coordinates(detected_pixels, rx_values.shape, apply_scale_factor=True)
+            # detected_pixels and rx_values are both at processing resolution: AnalyzeService
+            # maps AOIs to original resolution only after process_image() returns.
+            xs, ys = self._extract_valid_coordinates(detected_pixels, rx_values.shape)
 
             if xs is not None:
                 # Calculate mean RX value for this AOI

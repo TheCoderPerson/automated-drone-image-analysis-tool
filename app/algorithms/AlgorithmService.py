@@ -88,28 +88,31 @@ class AlgorithmService:
         inverse_scale = 1.0 / self.scale_factor
         return (contour * inverse_scale).astype(np.int32)
 
-    def _extract_valid_coordinates(self, detected_pixels, shape, apply_scale_factor=False):
+    def _extract_valid_coordinates(self, detected_pixels, shape):
         """
         Convert an AOI's detected_pixels list to in-bounds coordinate arrays.
 
-        Thin wrapper over :func:`helpers.AOIPixelHelper.in_bounds_coordinates`
-        that supplies this service's scale factor. The shared helper is the one
-        implementation of this operation; see its module docstring for why
-        ragged input must not raise.
+        Thin wrapper over :func:`helpers.AOIPixelHelper.in_bounds_coordinates`.
+        The shared helper is the one implementation of this operation; see its
+        module docstring for why ragged input must not raise.
+
+        Coordinates are used as given, never scaled by ``self.scale_factor``.
+        Inside ``process_image()`` an AOI is still in the space it was detected
+        in - ``AnalyzeService.process_file`` maps it to original resolution only
+        after ``process_image()`` returns - so it already indexes the arrays
+        derived from the frame it was found in. Scaling it here applied the
+        processing resolution twice: at 50% each lookup read the pixels at half
+        the AOI's coordinates instead of the AOI itself.
 
         Args:
             detected_pixels: List of (x, y) pixel tuples.
             shape: Shape of the array these coordinates will index into (height, width, ...).
-            apply_scale_factor: If True, scale coordinates by self.scale_factor before
-                bounds-checking (for detected_pixels stored at original resolution when
-                the target array is at processing resolution).
 
         Returns:
             Tuple[np.ndarray, np.ndarray] or Tuple[None, None]: (xs, ys) int arrays of
             valid, in-bounds coordinates, or (None, None) if there are none.
         """
-        scale = self.scale_factor if apply_scale_factor else 1.0
-        return in_bounds_coordinates(detected_pixels, shape, scale_factor=scale)
+        return in_bounds_coordinates(detected_pixels, shape)
 
     def process_image(self, img, full_path, input_dir, output_dir):
         """
@@ -276,9 +279,9 @@ class AlgorithmService:
         """
         Transform AOI coordinates from processing resolution back to original resolution.
 
-        This should be called at the end of process_image() after all processing that
-        requires processing-resolution coordinates is complete (e.g., hue expansion,
-        confidence score calculation).
+        ``AnalyzeService.process_file`` calls this after process_image() returns, so
+        everything process_image() does with its AOIs (hue expansion, confidence
+        scores, temperature extraction) sees processing-resolution coordinates.
 
         Args:
             areas_of_interest: List of AOI dictionaries with coordinates at processing resolution.

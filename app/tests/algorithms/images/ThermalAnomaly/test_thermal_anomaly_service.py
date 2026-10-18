@@ -1,10 +1,12 @@
 import pytest
 import numpy as np
+import cv2
 import tempfile
 import os
 from unittest.mock import patch, MagicMock
 from algorithms.images.ThermalAnomaly.services.ThermalAnomalyService import ThermalAnomalyService
 from algorithms.AlgorithmService import AnalysisResult
+from core.services.AnalyzeService import AnalyzeService
 
 
 @pytest.fixture
@@ -214,3 +216,40 @@ def test_process_image_uniform_temperature_no_anomalies():
     assert result.error_message is None
     # Either no AOIs or base_contour_count is 0/None
     assert result.areas_of_interest is None or len(result.areas_of_interest) == 0
+
+
+def _analyze_at_resolution(temperature, processing_resolution):
+    """Run one frame through AnalyzeService.process_file, the production ordering.
+
+    The parser hands back the same native-resolution temperature array at every
+    processing resolution; only the 320x320 visual frame is downscaled.
+    """
+    algorithm = {'name': 'ThermalAnomaly', 'service': 'ThermalAnomalyService', 'combine_overlapping_aois': False}
+    options = {'threshold': 2.0, 'segments': 1, 'type': 'Above Mean'}
+    with patch(
+        "algorithms.images.ThermalAnomaly.services.ThermalAnomalyService.ThermalParserService"
+    ) as MockParser:
+        MockParser.return_value.parse_file.return_value = (temperature, None)
+        with tempfile.TemporaryDirectory() as tmpdir:
+            full_path = os.path.join(tmpdir, "frame.png")
+            cv2.imencode(".png", np.zeros((320, 320, 3), dtype=np.uint8))[1].tofile(full_path)
+            result = AnalyzeService.process_file(
+                algorithm, (255, 0, 0), 1, 0, 3, options, full_path, tmpdir,
+                os.path.join(tmpdir, "output"), None, None, True, processing_resolution)
+    assert result.error_message is None
+    return sorted(result.areas_of_interest, key=lambda aoi: aoi['center'])
+
+
+def test_temperatures_match_at_half_processing_resolution():
+    temperature = np.full((160, 160), 20.0, dtype=np.float32)
+    temperature[100:120, 100:120] = 60.0
+    temperature[20:40, 110:130] = 45.0
+
+    full = _analyze_at_resolution(temperature, 1.0)
+    half = _analyze_at_resolution(temperature, 0.5)
+
+    assert len(full) == len(half) == 2
+    assert sorted(aoi['temperature'] for aoi in full) == [pytest.approx(45.0), pytest.approx(60.0)]
+    for full_aoi, half_aoi in zip(full, half):
+        assert half_aoi['center'] == pytest.approx(full_aoi['center'], abs=2)
+        assert half_aoi['temperature'] == pytest.approx(full_aoi['temperature'])
