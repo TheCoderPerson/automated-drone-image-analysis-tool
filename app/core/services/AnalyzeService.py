@@ -18,7 +18,7 @@ from algorithms.AlgorithmService import AnalysisResult
 from core.services.LoggerService import LoggerService
 from core.services.advancedFeatures.HistogramNormalizationService import HistogramNormalizationService
 from core.services.advancedFeatures.KMeansClustersService import KMeansClustersService
-from core.services.XmlService import XmlService
+from core.services.XmlService import XmlService, MAX_SAVED_DETECTED_PIXELS
 from helpers.PathHelper import build_image_cache_identities, cross_platform_path_key
 # Algorithm services imported lazily in process_file() to avoid worker startup overhead
 
@@ -470,6 +470,9 @@ class AnalyzeService(QObject):
                     logger = LoggerService()
                     logger.warning(f"Cache generation failed for {full_path}: {cache_error}")
 
+                # The AOI cache was the last reader of the full pixel lists
+                AnalyzeService._drop_unsaved_detected_pixels(result.areas_of_interest)
+
             return result
 
         except Exception as e:
@@ -477,6 +480,26 @@ class AnalyzeService(QObject):
             logger.error(traceback.format_exc())
             logger.error(f"Error processing image {full_path}: {e}")
             return AnalysisResult(input_path=full_path, error_message=str(e))
+
+    @staticmethod
+    def _drop_unsaved_detected_pixels(areas_of_interest):
+        """Remove detected_pixels lists that ADIAT_Data.xml will not save.
+
+        Only AOIs with at most MAX_SAVED_DETECTED_PIXELS pixels keep their
+        list in the XML; the viewer reads larger AOIs from the mask TIFF.
+        Returning the larger lists from the worker anyway made the parent
+        hold every detected pixel of the whole run as Python lists (well
+        over 100 bytes a pixel) until the XML was written, and unpickle
+        them all on the pool's single result thread. On large datasets
+        with broad color ranges that exhausted memory partway through.
+
+        Args:
+            areas_of_interest: AOI dicts, modified in place.
+        """
+        for aoi in areas_of_interest:
+            pixels = aoi.get('detected_pixels')
+            if pixels is not None and len(pixels) > MAX_SAVED_DETECTED_PIXELS:
+                del aoi['detected_pixels']
 
     @Slot()
     def _process_complete(self, result):

@@ -3,6 +3,7 @@ import numpy as np
 import cv2
 import tempfile
 import os
+from unittest.mock import patch
 from algorithms.images.HSVColorRange.services.HSVColorRangeService import HSVColorRangeService
 from algorithms.AlgorithmService import AnalysisResult
 
@@ -664,3 +665,65 @@ def test_windowed_hue_expansion_seed_at_corner():
     aois = [_hue_aoi([(1, 1), (1, 2)])]
 
     _assert_hue_expansion_equivalent(aois, hsv)
+
+
+# ---------------------------------------------------------------------------
+# Masked HSV distances equivalence vs the old full-frame implementation
+# ---------------------------------------------------------------------------
+
+def _reference_hsv_distances(hsv_image, target_hsv, mask):
+    """The pre-masking full-frame implementation, kept as the oracle."""
+    h, s, v = hsv_image[:, :, 0], hsv_image[:, :, 1], hsv_image[:, :, 2]
+    target_h, target_s, target_v = target_hsv
+    h_diff = np.abs(h.astype(np.float32) - float(target_h))
+    h_diff = np.minimum(h_diff, 179 - h_diff)
+    h_dist = h_diff / 179.0
+    s_dist = np.abs(s.astype(np.float32) - float(target_s)) / 255.0
+    v_dist = np.abs(v.astype(np.float32) - float(target_v)) / 255.0
+    distances = np.sqrt(2.0 * h_dist**2 + s_dist**2 + v_dist**2)
+    return distances * (mask > 0)
+
+
+@pytest.mark.parametrize('target', [(0, 255, 255), (90, 150, 200), (178, 10, 30)])
+def test_calculate_hsv_distances_matches_full_frame_reference(hsv_color_range_service, target):
+    rng = np.random.default_rng(7)
+    hsv_image = np.dstack([
+        rng.integers(0, 180, (120, 160)),
+        rng.integers(0, 256, (120, 160)),
+        rng.integers(0, 256, (120, 160)),
+    ]).astype(np.uint8)
+    mask = np.where(rng.random((120, 160)) < 0.3, 255, 0).astype(np.uint8)
+    target_hsv = np.array(target, dtype=np.uint8)
+
+    distances = hsv_color_range_service._calculate_hsv_distances(hsv_image, target_hsv, mask)
+
+    expected = _reference_hsv_distances(hsv_image, target_hsv, mask)
+    assert distances.dtype == expected.dtype == np.float32
+    assert np.array_equal(distances, expected)
+
+
+def test_calculate_hsv_distances_empty_mask_is_all_zero(hsv_color_range_service):
+    hsv_image = np.full((20, 30, 3), 100, dtype=np.uint8)
+    mask = np.zeros((20, 30), dtype=np.uint8)
+
+    distances = hsv_color_range_service._calculate_hsv_distances(hsv_image, np.array([0, 0, 0]), mask)
+
+    assert distances.shape == (20, 30)
+    assert distances.dtype == np.float32
+    assert not distances.any()
+
+
+def test_process_image_scores_confidence_once(hsv_color_range_service, tmp_path):
+    hsv = np.zeros((100, 100, 3), dtype=np.uint8)
+    hsv[40:60, 40:60] = (89, 153, 204)  # the fixture's configured color
+    img = cv2.cvtColor(hsv, cv2.COLOR_HSV2BGR)
+    service = hsv_color_range_service
+    input_dir = str(tmp_path / 'input')
+
+    with patch.object(service, '_add_confidence_scores', wraps=service._add_confidence_scores) as scorer:
+        result = service.process_image(img, os.path.join(input_dir, 'img.jpg'), input_dir, str(tmp_path / 'output'))
+
+    assert result.error_message is None
+    assert len(result.areas_of_interest) == 1
+    assert 'confidence' in result.areas_of_interest[0]
+    assert scorer.call_count == 1
