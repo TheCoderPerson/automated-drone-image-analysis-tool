@@ -1,0 +1,66 @@
+name: Build Windows test exe
+
+# Test builds of this branch: produces dist/ADIAT (the same folder
+# `python setup.py bdist_app` builds locally) as a downloadable artifact,
+# so the change can be tried on Windows without a local build toolchain.
+on:
+  push:
+    branches: [claude/focused-dirac-5m8qah]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: build-windows-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: windows-latest
+    timeout-minutes: 90
+    steps:
+      # Check out files byte-for-byte as committed so the build stamp in
+      # app.spec does not read the tree as '+dirty'
+      - name: Keep committed line endings
+        run: git config --global core.autocrlf false
+
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: |
+            requirements.txt
+            requirements-dev.txt
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt -r requirements-dev.txt
+
+      - name: Test the analysis changes on Windows
+        env:
+          QT_QPA_PLATFORM: offscreen
+        run: >
+          python -m pytest -q -p no:cacheprovider --no-cov
+          app/tests/core/services/test_analyze_service.py
+          app/tests/core/services/test_xml_service.py
+          app/tests/algorithms/images/HSVColorRange/test_hsv_color_range_service.py
+
+      - name: Build
+        run: python setup.py bdist_app
+
+      - name: Show build stamp
+        id: stamp
+        run: |
+          $stamp = (Get-Content dist/ADIAT/_internal/build_info.txt -TotalCount 1).Trim()
+          Write-Output "Build stamp: $stamp"
+          "stamp=$stamp" >> $env:GITHUB_OUTPUT
+
+      - uses: actions/upload-artifact@v6
+        with:
+          name: ADIAT-windows-${{ steps.stamp.outputs.stamp }}
+          path: dist/ADIAT
+          retention-days: 14
