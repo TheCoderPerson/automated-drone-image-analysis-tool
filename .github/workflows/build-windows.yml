@@ -1,15 +1,16 @@
 name: Build Windows test exe
 
-# Test builds of this branch: produces dist/ADIAT (the same folder
-# `python setup.py bdist_app` builds locally) as a downloadable artifact,
-# so the change can be tried on Windows without a local build toolchain.
+# Test builds of this branch: zips dist/ADIAT (the same folder
+# `python setup.py bdist_app` builds locally) and publishes it as the
+# 'windows-test-build' pre-release, replaced on every push, so the change
+# can be tried on Windows without a local build toolchain.
 on:
   push:
     branches: [claude/focused-dirac-5m8qah]
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write  # publish the pre-release
 
 concurrency:
   group: build-windows-${{ github.ref }}
@@ -58,9 +59,19 @@ jobs:
           $stamp = (Get-Content dist/ADIAT/_internal/build_info.txt -TotalCount 1).Trim()
           Write-Output "Build stamp: $stamp"
           "stamp=$stamp" >> $env:GITHUB_OUTPUT
+          # '+' in a download name can be decoded as a space along the way
+          "zip=ADIAT-windows-$($stamp.Replace('+', '-')).zip" >> $env:GITHUB_OUTPUT
 
-      - uses: actions/upload-artifact@v6
-        with:
-          name: ADIAT-windows-${{ steps.stamp.outputs.stamp }}
-          path: dist/ADIAT
-          retention-days: 14
+      - name: Zip the build
+        run: 7z a -tzip -mx=5 "${{ steps.stamp.outputs.zip }}" ./dist/ADIAT
+
+      - name: Publish the windows-test-build pre-release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete windows-test-build --yes --cleanup-tag || true
+          gh release create windows-test-build "${{ steps.stamp.outputs.zip }}" \
+            --prerelease --target "${{ github.sha }}" \
+            --title "Windows test build (${{ steps.stamp.outputs.stamp }})" \
+            --notes "Test build of branch ${{ github.ref_name }} at ${{ github.sha }}. Not an official ADIAT release. Unzip the whole folder and run ADIAT/ADIAT.exe."
