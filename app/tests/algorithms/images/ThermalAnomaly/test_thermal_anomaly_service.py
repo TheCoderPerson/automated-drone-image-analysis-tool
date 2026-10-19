@@ -218,7 +218,7 @@ def test_process_image_uniform_temperature_no_anomalies():
     assert result.areas_of_interest is None or len(result.areas_of_interest) == 0
 
 
-def _analyze_at_resolution(temperature, processing_resolution):
+def _analyze_at_resolution(temperature, processing_resolution, min_area=1, max_area=0):
     """Run one frame through AnalyzeService.process_file, the production ordering.
 
     The parser hands back the same native-resolution temperature array at every
@@ -234,7 +234,7 @@ def _analyze_at_resolution(temperature, processing_resolution):
             full_path = os.path.join(tmpdir, "frame.png")
             cv2.imencode(".png", np.zeros((320, 320, 3), dtype=np.uint8))[1].tofile(full_path)
             result = AnalyzeService.process_file(
-                algorithm, (255, 0, 0), 1, 0, 3, options, full_path, tmpdir,
+                algorithm, (255, 0, 0), min_area, max_area, 3, options, full_path, tmpdir,
                 os.path.join(tmpdir, "output"), None, None, True, processing_resolution)
     assert result.error_message is None
     return sorted(result.areas_of_interest, key=lambda aoi: aoi['center'])
@@ -253,3 +253,32 @@ def test_temperatures_match_at_half_processing_resolution():
     for full_aoi, half_aoi in zip(full, half):
         assert half_aoi['center'] == pytest.approx(full_aoi['center'], abs=2)
         assert half_aoi['temperature'] == pytest.approx(full_aoi['temperature'])
+
+
+def _four_sized_spots(background, hot):
+    """A 160x160 temperature matrix holding hot squares of 16, 25, 144 and 400 px.
+
+    With min_area 50 and max_area 300 only the 144 px square qualifies.
+    """
+    temperature = np.full((160, 160), background, dtype=np.float32)
+    temperature[20:24, 20:24] = hot
+    temperature[20:25, 120:125] = hot
+    temperature[70:82, 70:82] = hot
+    temperature[110:130, 110:130] = hot
+    return temperature
+
+
+def test_area_limits_match_at_half_processing_resolution():
+    # temperature_c stays at native resolution when the frame is downscaled, so the
+    # area limits must not shrink with it: at 50% they used to drop to 12 and 75 px,
+    # which kept the 16 and 25 px squares and rejected the 144 px one.
+    temperature = _four_sized_spots(20.0, 60.0)
+
+    full = _analyze_at_resolution(temperature, 1.0, min_area=50, max_area=300)
+    half = _analyze_at_resolution(temperature, 0.5, min_area=50, max_area=300)
+
+    assert len(full) == len(half) == 1
+    assert full[0]['area'] == half[0]['area'] == 144
+    # thermal [70:82] is frame [140:164] in the 320x320 frame at either resolution
+    assert full[0]['center'] == pytest.approx((152, 152), abs=2)
+    assert half[0]['center'] == pytest.approx(full[0]['center'], abs=2)

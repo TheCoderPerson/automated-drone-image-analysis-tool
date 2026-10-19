@@ -280,6 +280,30 @@ def test_process_file_unknown_algorithm_service_returns_error(mock_fromfile, moc
     assert 'Unknown algorithm service: MissingService' in result.error_message
 
 
+@pytest.mark.parametrize('thermal, expected_limits', [
+    (False, (25, 250)),  # RGB algorithms detect on the downscaled frame
+    (True, (100, 1000)),  # thermal algorithms detect on native-resolution temperature data
+])
+@patch('core.services.AnalyzeService.cv2.imdecode')
+@patch('core.services.AnalyzeService.np.fromfile')
+def test_process_file_scales_area_limits_only_for_non_thermal(mock_fromfile, mock_imdecode, thermal, expected_limits):
+    """At 50% processing resolution only non-thermal area limits shrink by 0.5²."""
+    mock_fromfile.return_value = np.array([1], dtype=np.uint8)
+    mock_imdecode.return_value = np.zeros((40, 40, 3), dtype=np.uint8)
+    service_cls = MagicMock()
+    service_cls.return_value.process_image.return_value = None
+    algorithm = {'name': 'Stub', 'service': 'StubService', 'combine_overlapping_aois': True}
+
+    with patch.object(AnalyzeService, '_resolve_algorithm_service_class', return_value=service_cls):
+        AnalyzeService.process_file(
+            algorithm, (255, 0, 0), 100, 1000, 5, {}, '/tmp/fake.jpg', '/tmp/input', '/tmp/output',
+            None, None, thermal, 0.5)
+
+    min_area, max_area = service_cls.call_args.args[1:3]
+    assert (min_area, max_area) == expected_limits
+    service_cls.return_value.set_scale_factor.assert_called_once_with(0.5)
+
+
 # ---------------------------------------------------------------------------
 # _resolve_algorithm_service_class
 # ---------------------------------------------------------------------------

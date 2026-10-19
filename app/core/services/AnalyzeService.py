@@ -412,9 +412,15 @@ class AnalyzeService(QObject):
                     # Use INTER_AREA for best quality when downscaling
                     img = cv2.resize(img, (new_width, new_height), interpolation=cv2.INTER_AREA)
 
-                    # Scale area thresholds to match processing resolution (area scales by factor²)
-                    min_area = int(min_area * scale_factor * scale_factor)
-                    max_area = int(max_area * scale_factor * scale_factor) if max_area > 0 else 0
+                    # Scale area thresholds to match processing resolution (area scales by factor²).
+                    # Not for thermal algorithms: they find contours in the temperature matrix that
+                    # ThermalParserService reads from the file at native sensor resolution, and this
+                    # resize never touches it, so the limits as entered already fit those pixels.
+                    # Skipped here rather than undone in the service: int() truncates, so dividing
+                    # by scale_factor² cannot recover the original (a min_area of 3 at 50% is 0).
+                    if not thermal:
+                        min_area = int(min_area * scale_factor * scale_factor)
+                        max_area = int(max_area * scale_factor * scale_factor) if max_area > 0 else 0
                 else:
                     # Image too small to scale, process at original resolution
                     scale_factor = 1.0

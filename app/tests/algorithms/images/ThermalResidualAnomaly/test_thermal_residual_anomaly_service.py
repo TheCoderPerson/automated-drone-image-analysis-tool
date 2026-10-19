@@ -1,12 +1,14 @@
 import os
 import tempfile
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
+import cv2
 import numpy as np
 import pytest
 
 from algorithms.AlgorithmService import AnalysisResult
 from algorithms.images.ThermalResidualAnomaly.services.ThermalResidualAnomalyService import ThermalResidualAnomalyService
+from core.services.AnalyzeService import AnalyzeService
 
 
 @pytest.fixture
@@ -284,3 +286,46 @@ def test_score_threshold_option_overrides_adaptive_multiplier():
     )
 
     assert service._compute_effective_score_threshold() == pytest.approx(4.2, rel=1e-6)
+
+
+def _analyze_at_resolution(temperature, processing_resolution, min_area, max_area):
+    """Run one frame through AnalyzeService.process_file, the production ordering.
+
+    The parser hands back the same native-resolution temperature array at every
+    processing resolution; only the 320x320 visual frame is downscaled.
+    """
+    algorithm = {'name': 'ThermalResidualAnomaly', 'service': 'ThermalResidualAnomalyService', 'combine_overlapping_aois': False}
+    options = {'sensitivity': 5, 'type': 'Above Mean'}
+    with patch(
+        'algorithms.images.ThermalResidualAnomaly.services.ThermalResidualAnomalyService.ThermalParserService'
+    ) as MockParser:
+        MockParser.return_value.parse_file.return_value = (temperature.astype(np.float32), None)
+        with tempfile.TemporaryDirectory() as tmpdir:
+            full_path = os.path.join(tmpdir, 'frame.png')
+            cv2.imencode('.png', np.zeros((320, 320, 3), dtype=np.uint8))[1].tofile(full_path)
+            result = AnalyzeService.process_file(
+                algorithm, (255, 0, 0), min_area, max_area, 3, options, full_path, tmpdir,
+                os.path.join(tmpdir, 'output'), None, None, True, processing_resolution)
+    assert result.error_message is None
+    return sorted(result.areas_of_interest, key=lambda aoi: aoi['center'])
+
+
+def test_area_limits_match_at_half_processing_resolution():
+    # temperature_c stays at native resolution when the frame is downscaled, so the
+    # area limits must not shrink with it: at 50% they used to drop to 12 and 75 px,
+    # which kept the 16 and 25 px squares and rejected the 144 px one.
+    # With min_area 50 and max_area 300 only the 144 px square qualifies.
+    temperature = _build_background(160, 160)
+    temperature[20:24, 20:24] += 10.0
+    temperature[20:25, 120:125] += 10.0
+    temperature[70:82, 70:82] += 10.0
+    temperature[110:130, 110:130] += 10.0
+
+    full = _analyze_at_resolution(temperature, 1.0, min_area=50, max_area=300)
+    half = _analyze_at_resolution(temperature, 0.5, min_area=50, max_area=300)
+
+    assert len(full) == len(half) == 1
+    assert full[0]['area'] == half[0]['area'] == 144
+    # thermal [70:82] is frame [140:164] in the 320x320 frame at either resolution
+    assert full[0]['center'] == pytest.approx((152, 152), abs=2)
+    assert half[0]['center'] == pytest.approx(full[0]['center'], abs=2)
