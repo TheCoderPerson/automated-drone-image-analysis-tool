@@ -1191,6 +1191,13 @@ class ImageService:
             else:
                 return None
 
+            # The viewer indexes this band with image pixel coordinates. Results that earlier
+            # versions analysed below 100% processing resolution stored it smaller than the
+            # image, so bring it to the image's size with the interpolation store_mask uses.
+            width, height = self.get_image_size()
+            if thermal_data.shape != (height, width):
+                thermal_data = cv2.resize(thermal_data, (width, height), interpolation=cv2.INTER_LINEAR)
+
             # Convert units if needed
             if unit.upper() == 'F':
                 thermal_data = thermal_data * 1.8 + 32.0

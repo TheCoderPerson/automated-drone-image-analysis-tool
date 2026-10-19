@@ -461,6 +461,31 @@ def test_get_thermal_data_with_mask():
             os.unlink(mask_path)
 
 
+def test_get_thermal_data_resizes_band_smaller_than_image(tmp_path):
+    """A band stored smaller than the image is read back at the image's size.
+
+    Earlier versions stored it that way for thermal runs below 100% processing
+    resolution, and the viewer indexes it with image pixel coordinates.
+    """
+    if tifffile is None:
+        pytest.skip("tifffile is not available")
+
+    image_path = str(tmp_path / 'thermal.jpg')
+    cv2.imwrite(image_path, np.zeros((100, 100, 3), dtype=np.uint8))
+    bands = np.zeros((2, 50, 50), dtype=np.float32)
+    bands[1] = 25.0
+    bands[1][10:20, 30:40] = 40.0
+    mask_path = str(tmp_path / 'thermal.tif')
+    tifffile.imwrite(mask_path, bands)
+
+    thermal_c = ImageService(image_path, mask_path=mask_path).get_thermal_data('C')
+
+    assert thermal_c.shape == (100, 100)
+    # band (row 15, col 35) is image (row 30, col 70)
+    assert thermal_c[30, 70] == pytest.approx(40.0)
+    assert thermal_c[5, 5] == pytest.approx(25.0)
+
+
 def test_image_service_defer_load_skips_decode_until_access():
     """defer_load must not read pixels at construction, only on first access."""
     with tempfile.NamedTemporaryFile(suffix='.jpg', delete=False) as tmp_file:

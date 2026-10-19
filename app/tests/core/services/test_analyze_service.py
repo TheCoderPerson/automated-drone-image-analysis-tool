@@ -8,6 +8,8 @@ import pytest
 import tempfile
 import os
 import numpy as np
+import cv2
+import tifffile
 from unittest.mock import patch, MagicMock
 from PySide6.QtCore import QObject
 from core.services.AnalyzeService import AnalyzeService
@@ -280,14 +282,15 @@ def test_process_file_unknown_algorithm_service_returns_error(mock_fromfile, moc
     assert 'Unknown algorithm service: MissingService' in result.error_message
 
 
-@pytest.mark.parametrize('thermal, expected_limits', [
-    (False, (25, 250)),  # RGB algorithms detect on the downscaled frame
-    (True, (100, 1000)),  # thermal algorithms detect on native-resolution temperature data
+@pytest.mark.parametrize('thermal, expected_shape, expected_scale, expected_limits', [
+    (False, (20, 20), 0.5, (25, 250)),  # RGB algorithms detect on the downscaled frame
+    (True, (40, 40), 1.0, (100, 1000)),  # thermal algorithms detect on native-resolution temperature data
 ])
 @patch('core.services.AnalyzeService.cv2.imdecode')
 @patch('core.services.AnalyzeService.np.fromfile')
-def test_process_file_scales_area_limits_only_for_non_thermal(mock_fromfile, mock_imdecode, thermal, expected_limits):
-    """At 50% processing resolution only non-thermal area limits shrink by 0.5²."""
+def test_process_file_downscales_only_for_non_thermal(mock_fromfile, mock_imdecode, thermal, expected_shape,
+                                                      expected_scale, expected_limits):
+    """At 50% processing resolution only non-thermal frames shrink, and their area limits by 0.5²."""
     mock_fromfile.return_value = np.array([1], dtype=np.uint8)
     mock_imdecode.return_value = np.zeros((40, 40, 3), dtype=np.uint8)
     service_cls = MagicMock()
@@ -301,7 +304,57 @@ def test_process_file_scales_area_limits_only_for_non_thermal(mock_fromfile, moc
 
     min_area, max_area = service_cls.call_args.args[1:3]
     assert (min_area, max_area) == expected_limits
-    service_cls.return_value.set_scale_factor.assert_called_once_with(0.5)
+    service_cls.return_value.set_scale_factor.assert_called_once_with(expected_scale)
+    assert service_cls.return_value.process_image.call_args.args[0].shape[:2] == expected_shape
+
+
+THERMAL_ALGORITHMS = [
+    ('ThermalRange', {'minTemp': 20.0, 'maxTemp': 40.0}),
+    ('ThermalAnomaly', {'threshold': 2.0, 'segments': 1, 'type': 'Above Mean'}),
+    ('ThermalResidualAnomaly', {'sensitivity': 5, 'type': 'Above Mean'}),
+]
+
+
+def _run_thermal_algorithm(name, options, temperature, processing_resolution, workdir):
+    """Run a 320x320 frame through process_file, its parser patched to return `temperature`.
+
+    Returns the result and the bands of the mask TIFF stored for the viewer.
+    """
+    algorithm = {'name': name, 'service': f'{name}Service', 'combine_overlapping_aois': False}
+    workdir.mkdir()
+    full_path = str(workdir / 'frame.png')
+    cv2.imencode('.png', np.zeros((320, 320, 3), dtype=np.uint8))[1].tofile(full_path)
+    output_dir = str(workdir / 'output')
+    with patch(f'algorithms.images.{name}.services.{name}Service.ThermalParserService') as MockParser:
+        MockParser.return_value.parse_file.return_value = (temperature, None)
+        result = AnalyzeService.process_file(
+            algorithm, (255, 0, 0), 1, 0, 3, options, full_path, str(workdir), output_dir,
+            None, None, True, processing_resolution)
+    assert result.error_message is None
+    return result, tifffile.imread(os.path.join(output_dir, result.output_path))
+
+
+@pytest.mark.parametrize('name, options', THERMAL_ALGORITHMS)
+def test_thermal_results_do_not_depend_on_processing_resolution(name, options, tmp_path):
+    """Thermal algorithms detect in native-resolution temperature data, so 50% changes nothing.
+
+    In particular the stored temperature band matches the 320x320 image at either
+    resolution: the viewer reads it at image pixel coordinates.
+    """
+    # 160x160 native temperature behind a 320x320 frame, as in an upscaled DJI R-JPEG
+    temperature = np.full((160, 160), 15.0, dtype=np.float32)
+    temperature[70:82, 70:82] = 35.0
+
+    full, full_bands = _run_thermal_algorithm(name, options, temperature, 1.0, tmp_path / 'full')
+    half, half_bands = _run_thermal_algorithm(name, options, temperature, 0.5, tmp_path / 'half')
+
+    assert len(full.areas_of_interest) == 1
+    assert half.areas_of_interest == full.areas_of_interest
+    assert full_bands.shape == half_bands.shape == (2, 320, 320)
+    np.testing.assert_array_equal(half_bands, full_bands)
+    # thermal (75, 75) is image (150, 150)
+    assert half_bands[1][150, 150] == pytest.approx(35.0)
+    assert half_bands[1][20, 20] == pytest.approx(15.0)
 
 
 # ---------------------------------------------------------------------------

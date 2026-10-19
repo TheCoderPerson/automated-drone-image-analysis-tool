@@ -379,7 +379,8 @@ class AnalyzeService(QObject):
             kmeans_clusters: Number of clusters (colors) to retain in the image.
             thermal: Whether this is a thermal image algorithm.
             processing_resolution: Percentage to scale images (0.1 to 1.0).
-                1.0 = no scaling. Defaults to 1.0.
+                1.0 = no scaling. Defaults to 1.0. Not applied to thermal
+                algorithms, which detect in native-resolution temperature data.
             image_identity: This image's dataset-relative cache identity
                 (PathHelper.build_image_cache_identities), computed once by
                 the dispatching parent so AOI cache keys distinguish
@@ -401,8 +402,14 @@ class AnalyzeService(QObject):
             original_height, original_width = img.shape[:2]
             scale_factor = 1.0
 
-            # Apply percentage-based resolution scaling if specified
-            if processing_resolution is not None and processing_resolution < 1.0:
+            # Apply percentage-based resolution scaling if specified. Not for thermal algorithms:
+            # they detect in the temperature matrix ThermalParserService reads from the file at
+            # native sensor resolution, which resizing this frame cannot change, and use the frame
+            # only for its size - to map AOIs into image space and to size the mask and
+            # temperature band stored for the viewer. Downscaling it would only shrink their area
+            # limits against unscaled temperature pixels and store that band smaller than the
+            # image the viewer indexes it with.
+            if not thermal and processing_resolution is not None and processing_resolution < 1.0:
                 scale_factor = processing_resolution
                 new_width = int(original_width * scale_factor)
                 new_height = int(original_height * scale_factor)
@@ -412,15 +419,9 @@ class AnalyzeService(QObject):
                     # Use INTER_AREA for best quality when downscaling
                     img = cv2.resize(img, (new_width, new_height), interpolation=cv2.INTER_AREA)
 
-                    # Scale area thresholds to match processing resolution (area scales by factor²).
-                    # Not for thermal algorithms: they find contours in the temperature matrix that
-                    # ThermalParserService reads from the file at native sensor resolution, and this
-                    # resize never touches it, so the limits as entered already fit those pixels.
-                    # Skipped here rather than undone in the service: int() truncates, so dividing
-                    # by scale_factor² cannot recover the original (a min_area of 3 at 50% is 0).
-                    if not thermal:
-                        min_area = int(min_area * scale_factor * scale_factor)
-                        max_area = int(max_area * scale_factor * scale_factor) if max_area > 0 else 0
+                    # Scale area thresholds to match processing resolution (area scales by factor²)
+                    min_area = int(min_area * scale_factor * scale_factor)
+                    max_area = int(max_area * scale_factor * scale_factor) if max_area > 0 else 0
                 else:
                     # Image too small to scale, process at original resolution
                     scale_factor = 1.0

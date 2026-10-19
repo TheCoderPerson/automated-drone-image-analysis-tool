@@ -222,7 +222,7 @@ def _analyze_at_resolution(temperature, processing_resolution, min_area=1, max_a
     """Run one frame through AnalyzeService.process_file, the production ordering.
 
     The parser hands back the same native-resolution temperature array at every
-    processing resolution; only the 320x320 visual frame is downscaled.
+    processing resolution, behind a 320x320 visual frame.
     """
     algorithm = {'name': 'ThermalAnomaly', 'service': 'ThermalAnomalyService', 'combine_overlapping_aois': False}
     options = {'threshold': 2.0, 'segments': 1, 'type': 'Above Mean'}
