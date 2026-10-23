@@ -8,9 +8,11 @@ import pytest
 import tempfile
 import os
 import numpy as np
+import cv2
 from unittest.mock import patch, MagicMock
 from PySide6.QtCore import QObject
 from core.services.AnalyzeService import AnalyzeService
+from core.services.XmlService import MAX_SAVED_DETECTED_PIXELS
 
 
 @pytest.fixture
@@ -567,3 +569,70 @@ def test_assign_aoi_numbers_handles_empty_and_missing_aois():
     ]
     AnalyzeService.assign_aoi_numbers(images_with_aois)
     assert images_with_aois[1]["aois"][0]["number"] == 1
+
+
+# ---------------------------------------------------------------------------
+# Pixel lists returned from the worker
+# ---------------------------------------------------------------------------
+
+def test_drop_unsaved_detected_pixels_keeps_only_what_the_xml_saves():
+    at_limit = [(i, 0) for i in range(MAX_SAVED_DETECTED_PIXELS)]
+    over_limit = [(i, 1) for i in range(MAX_SAVED_DETECTED_PIXELS + 1)]
+    aois = [
+        {'center': (1, 1), 'detected_pixels': at_limit},
+        {'center': (2, 2), 'detected_pixels': over_limit},
+        {'center': (3, 3)},
+    ]
+
+    AnalyzeService._drop_unsaved_detected_pixels(aois)
+
+    assert aois[0]['detected_pixels'] == at_limit
+    assert 'detected_pixels' not in aois[1]
+    assert 'detected_pixels' not in aois[2]
+
+
+def test_process_file_returns_only_pixel_lists_the_xml_saves(tmp_path):
+    """Large AOIs come back without their pixel list, after the AOI cache
+    has used every pixel for the AOI color."""
+    input_dir = tmp_path / 'input'
+    input_dir.mkdir()
+    img = np.zeros((200, 200, 3), dtype=np.uint8)
+    img[:, :] = (255, 0, 0)  # blue background (BGR)
+    img[20:60, 20:60] = (0, 0, 255)  # 1600 px red square
+    img[150:155, 150:155] = (0, 0, 255)  # 25 px red square
+    image_path = input_dir / 'img.png'
+    cv2.imwrite(str(image_path), img)
+    algorithm = {
+        'name': 'HSVColorRange',
+        'service': 'HSVColorRangeService',
+        'combine_overlapping_aois': False,
+        'type': 'RGB'
+    }
+    options = {'hsv_configs': [{
+        'selected_color': (255, 0, 0),
+        'hsv_ranges': {'h': 0.0, 's': 1.0, 'v': 1.0, 'h_minus': 0.05, 'h_plus': 0.05,
+                       's_minus': 0.2, 's_plus': 0.2, 'v_minus': 0.2, 'v_plus': 0.2}
+    }]}
+
+    result = AnalyzeService.process_file(
+        algorithm=algorithm,
+        identifier_color=(0, 255, 0),
+        min_area=10,
+        max_area=0,
+        aoi_radius=0,
+        options=options,
+        full_path=str(image_path),
+        input_dir=str(input_dir),
+        output_dir=str(tmp_path / 'output'),
+        hist_ref_path=None,
+        kmeans_clusters=None,
+        thermal=False
+    )
+
+    assert result.error_message is None
+    small, large = sorted(result.areas_of_interest, key=lambda aoi: aoi['area'])
+    assert large['area'] == 1600
+    assert 'detected_pixels' not in large
+    # Sampled from the red pixels alone; the AOI circle would mix in blue
+    assert large['color_info']['hue_degrees'] == 0
+    assert len(small['detected_pixels']) == 25

@@ -267,10 +267,6 @@ class HSVColorRangeService(AlgorithmService):
             if areas_of_interest:
                 areas_of_interest = self._add_confidence_scores(areas_of_interest, hsv_distances, mask)
 
-            # Add confidence scores to AOIs based on HSV distance
-            if areas_of_interest:
-                areas_of_interest = self._add_confidence_scores(areas_of_interest, hsv_distances, mask)
-
             # Optional hue expansion. Runs after confidence so scores reflect
             # the original detection, not the expanded footprint.
             if areas_of_interest and self.hue_expansion > 0:
@@ -415,11 +411,18 @@ class HSVColorRangeService(AlgorithmService):
         Returns:
             numpy.ndarray: Distance values for each pixel (same shape as mask)
         """
-        # Initialize distance array
+        # Undetected pixels stay 0. Computing the full frame and masking it
+        # afterwards held about eight full-frame float32 temporaries (~670 MB
+        # on a 20MP image, per worker) and was the slowest step of the
+        # algorithm, however few pixels the color ranges matched.
         distances = np.zeros(hsv_image.shape[:2], dtype=np.float32)
+        detected = mask > 0
+        if not detected.any():
+            return distances
 
-        # Extract HSV channels
-        h, s, v = hsv_image[:, :, 0], hsv_image[:, :, 1], hsv_image[:, :, 2]
+        # Extract HSV channels of the detected pixels only
+        detected_hsv = hsv_image[detected]
+        h, s, v = detected_hsv[:, 0], detected_hsv[:, 1], detected_hsv[:, 2]
         target_h, target_s, target_v = target_hsv
 
         # Calculate hue distance (circular, 0-179 in OpenCV)
@@ -434,10 +437,7 @@ class HSVColorRangeService(AlgorithmService):
 
         # Combined Euclidean distance in HSV space
         # Weight hue more heavily as it's the primary discriminator
-        distances = np.sqrt(2.0 * h_dist**2 + s_dist**2 + v_dist**2)
-
-        # Only keep distances for detected pixels
-        distances = distances * (mask > 0)
+        distances[detected] = np.sqrt(2.0 * h_dist**2 + s_dist**2 + v_dist**2)
 
         return distances
 
