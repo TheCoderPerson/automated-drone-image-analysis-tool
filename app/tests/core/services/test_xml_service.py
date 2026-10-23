@@ -1,7 +1,7 @@
 import pytest
 import os
 import xml.etree.ElementTree as ET
-from core.services.XmlService import XmlService
+from core.services.XmlService import XmlService, MAX_SAVED_DETECTED_PIXELS
 
 
 @pytest.fixture
@@ -614,3 +614,23 @@ def test_setting_the_wingtra_geotags_link_replaces_the_old_one(sample_xml):
 
     assert service.get_wingtra_geotags() == {'csv_path': "b.csv", 'status': "loaded"}
     assert len(service.xml.getroot().findall('wingtra_geotags')) == 1
+
+
+def test_detected_pixels_saved_only_up_to_the_limit(tmp_path):
+    """AnalyzeService drops longer lists in the worker, relying on this limit."""
+    small = [(i, 0) for i in range(MAX_SAVED_DETECTED_PIXELS)]
+    large = [(i, 1) for i in range(MAX_SAVED_DETECTED_PIXELS + 1)]
+    service = XmlService()
+    service.add_image_to_xml({
+        "path": "img.jpg",
+        "aois": [
+            {"center": (10, 10), "radius": 5, "area": len(small), "detected_pixels": small},
+            {"center": (30, 30), "radius": 6, "area": len(large), "detected_pixels": large},
+        ],
+    })
+    out_path = tmp_path / "pixels.xml"
+    service.save_xml_file(out_path)
+
+    aois = XmlService(out_path).get_images()[0]["areas_of_interest"]
+    assert aois[0]["detected_pixels"] == small
+    assert "detected_pixels" not in aois[1]
