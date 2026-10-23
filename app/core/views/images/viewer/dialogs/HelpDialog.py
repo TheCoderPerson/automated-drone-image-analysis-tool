@@ -358,11 +358,11 @@ class HelpDialog(TranslationMixin, QDialog):
                 <table>
                     <tr>
                         <td>{icon_html('previous')} Previous Image</td>
-                        <td>Navigate to the previous image (respects Skip Hidden).</td>
+                        <td>Navigate to the previous image (respects Skip Hidden and Skip Redundant).</td>
                     </tr>
                     <tr>
                         <td>{icon_html('next')} Next Image</td>
-                        <td>Navigate to the next image (respects Skip Hidden).</td>
+                        <td>Navigate to the next image (respects Skip Hidden and Skip Redundant).</td>
                     </tr>
                     <tr>
                         <td>{icon_html('filter')} Filter AOIs</td>
@@ -389,6 +389,14 @@ class HelpDialog(TranslationMixin, QDialog):
                     <tr>
                         <td>Skip Hidden</td>
                         <td>Skip hidden images when navigating with arrow keys</td>
+                    </tr>
+                    <tr>
+                        <td>Skip Redundant (%)</td>
+                        <td>Skip images whose ground one other image from the same camera already covers
+                            by at least the set percentage, at similar or finer resolution, from a similar
+                            direction and within a few minutes. Turning it on first works out every image's ground footprint
+                            from its camera position, orientation, field of view and the terrain. Images
+                            with flagged AOIs are always shown, and exports still include every image</td>
                     </tr>
                     <tr>
                         <td>Hide Image Toggle</td>
@@ -473,7 +481,7 @@ class HelpDialog(TranslationMixin, QDialog):
                     </tr>
                     <tr>
                         <td>Previous/Next Buttons</td>
-                        <td>Navigate to previous/next image (respects "Skip Hidden" setting)</td>
+                        <td>Navigate to previous/next image (respects "Skip Hidden" and "Skip Redundant")</td>
                     </tr>
                 </table>
             </div>

@@ -42,6 +42,7 @@ from core.controllers.images.viewer.exports.PDFExportController import PDFExport
 from core.controllers.images.viewer.AltitudeController import AltitudeController
 from core.controllers.images.viewer.WingtraDataController import WingtraDataController
 from core.controllers.images.viewer.AlignImageController import AlignImageController
+from core.controllers.images.viewer.RedundantImageController import RedundantImageController
 from core.controllers.images.viewer.WaldoPrePassController import WaldoPrePassController
 from core.controllers.images.viewer.image.ImageLoadController import ImageLoadController
 from core.controllers.images.viewer.grid.GridReviewController import GridReviewController
@@ -268,6 +269,7 @@ class Viewer(TranslationMixin, QMainWindow, Ui_Viewer):
         self.altitude_controller = AltitudeController(self)
         self.wingtra_controller = WingtraDataController(self)
         self.align_image_controller = AlignImageController(self)
+        self.redundant_image_controller = RedundantImageController(self)
 
         # Initialize services
         self.cache_path_service = CachePathService()
@@ -1486,7 +1488,7 @@ class Viewer(TranslationMixin, QMainWindow, Ui_Viewer):
             # Find the first visible image
             self.current_image = None
             for i in range(0, len(self.images)):
-                if not self.show_hidden and self.images[i]['hidden']:
+                if self._is_image_skipped(i):
                     continue
                 self.current_image = i
                 break
@@ -1609,15 +1611,23 @@ class Viewer(TranslationMixin, QMainWindow, Ui_Viewer):
             return None
         return apply_zoom
 
+    def _is_image_skipped(self, index):
+        """Whether Previous/Next step over image ``index``: hidden while Skip
+        Hidden is on, or redundant while Skip Redundant is on."""
+        if not self.show_hidden and self.images[index]['hidden']:
+            return True
+        controller = getattr(self, 'redundant_image_controller', None)
+        return controller is not None and controller.is_skipped(index)
+
     def _previousImageButton_clicked(self):
-        """Navigates to the previous image in the list, skipping hidden images if applicable."""
+        """Navigates to the previous image in the list, skipping hidden and redundant images if applicable."""
         # Prevent race conditions by checking if viewer is still valid
         if not hasattr(self, 'main_image') or self.main_image is None:
             return
 
         found = False
         for i in range(self.current_image - 1, -1, -1):
-            if not self.show_hidden and self.images[i]['hidden']:
+            if self._is_image_skipped(i):
                 continue
             found = True
             self.current_image = i
@@ -1625,7 +1635,7 @@ class Viewer(TranslationMixin, QMainWindow, Ui_Viewer):
 
         if not found:
             for i in range(len(self.images) - 1, self.current_image, -1):
-                if not self.show_hidden and self.images[i]['hidden']:
+                if self._is_image_skipped(i):
                     continue
                 self.current_image = i
                 found = True
@@ -1639,14 +1649,14 @@ class Viewer(TranslationMixin, QMainWindow, Ui_Viewer):
             self._show_additional_images_message()
 
     def _nextImageButton_clicked(self):
-        """Navigates to the next image in the list, skipping hidden images if applicable."""
+        """Navigates to the next image in the list, skipping hidden and redundant images if applicable."""
         # Prevent race conditions by checking if viewer is still valid
         if not hasattr(self, 'main_image') or self.main_image is None:
             return
 
         found = False
         for i in range(self.current_image + 1, len(self.images)):
-            if not self.show_hidden and self.images[i]['hidden']:
+            if self._is_image_skipped(i):
                 continue
             found = True
             self.current_image = i
@@ -1654,7 +1664,7 @@ class Viewer(TranslationMixin, QMainWindow, Ui_Viewer):
 
         if not found:
             for i in range(0, self.current_image):
-                if not self.show_hidden and self.images[i]['hidden']:
+                if self._is_image_skipped(i):
                     continue
                 self.current_image = i
                 found = True
