@@ -8418,27 +8418,27 @@ li.checked::marker { content: &quot;\2612&quot;; }
 <context>
     <name>ImageLoadController</name>
     <message>
-        <location filename="../app/core/controllers/images/viewer/image/ImageLoadController.py" line="127"/>
+        <location filename="../app/core/controllers/images/viewer/image/ImageLoadController.py" line="129"/>
         <source>(Image {current} of {total})</source>
         <translation>(Imagen {current} de {total})</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/image/ImageLoadController.py" line="191"/>
+        <location filename="../app/core/controllers/images/viewer/image/ImageLoadController.py" line="193"/>
         <source>Local terrain data</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/image/ImageLoadController.py" line="194"/>
+        <location filename="../app/core/controllers/images/viewer/image/ImageLoadController.py" line="196"/>
         <source>{provider} is not answering and no fallback terrain is available — some calculations assume flat terrain. Check the terrain settings in Preferences.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/image/ImageLoadController.py" line="200"/>
+        <location filename="../app/core/controllers/images/viewer/image/ImageLoadController.py" line="202"/>
         <source>{provider} is not answering — using ~30 m global terrain data instead. Check the terrain settings in Preferences.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/image/ImageLoadController.py" line="559"/>
+        <location filename="../app/core/controllers/images/viewer/image/ImageLoadController.py" line="561"/>
         <source>Error Loading Image</source>
         <translation>Error al cargar la imagen</translation>
     </message>
@@ -12775,6 +12775,66 @@ not colour, so it works for black, grey or earth-toned targets.</source>
     <message>
         <location filename="../app/algorithms/images/RectilinearShape/controllers/RectilinearShapeWizardController.py" line="134"/>
         <source>The short side range must not exceed the long side range.</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
+    <name>RedundantImageController</name>
+    <message>
+        <location filename="../app/core/controllers/images/viewer/RedundantImageController.py" line="137"/>
+        <source>Redundant: {percent}% of this image&apos;s ground is also in {name}</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/controllers/images/viewer/RedundantImageController.py" line="171"/>
+        <location filename="../app/core/controllers/images/viewer/RedundantImageController.py" line="224"/>
+        <source>Redundant Images</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/controllers/images/viewer/RedundantImageController.py" line="172"/>
+        <source>Comparing image footprints...</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/controllers/images/viewer/RedundantImageController.py" line="200"/>
+        <source>Projecting image {current} of {total}...</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/controllers/images/viewer/RedundantImageController.py" line="216"/>
+        <source>Redundant image comparison cancelled</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/controllers/images/viewer/RedundantImageController.py" line="225"/>
+        <source>Could not compare image footprints:
+{error}</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/controllers/images/viewer/RedundantImageController.py" line="235"/>
+        <source>{redundant} of {total} images are redundant at {percent}% overlap</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/controllers/images/viewer/RedundantImageController.py" line="240"/>
+        <source>; {count} could not be placed and are always shown</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/controllers/images/viewer/RedundantImageController.py" line="242"/>
+        <source>; {count} had no terrain data and assumed flat ground</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/controllers/images/viewer/RedundantImageController.py" line="248"/>
+        <source>Skip Redundant ({count}) </source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/core/controllers/images/viewer/RedundantImageController.py" line="250"/>
+        <source>Skip Redundant</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -17279,8 +17339,8 @@ Muestra el total de fotogramas extraídos al completarse.</translation>
     <message>
         <location filename="../resources/views/images/viewer/Viewer.ui" line="112"/>
         <location filename="../resources/views/images/viewer/Viewer.ui" line="133"/>
-        <location filename="../resources/views/images/viewer/Viewer.ui" line="994"/>
-        <location filename="../resources/views/images/viewer/Viewer.ui" line="1165"/>
+        <location filename="../resources/views/images/viewer/Viewer.ui" line="1046"/>
+        <location filename="../resources/views/images/viewer/Viewer.ui" line="1217"/>
         <source>TextLabel</source>
         <translation>TextLabel</translation>
     </message>
@@ -17301,13 +17361,13 @@ Cuando está deshabilitada, muestra la imagen original sin procesar.
 Úselo para comparar la imagen original con los resultados de detección.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="550"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="552"/>
         <location filename="../resources/views/images/viewer/Viewer.ui" line="205"/>
         <source>Show Overlay</source>
         <translation>Mostrar superposición</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1419"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1421"/>
         <location filename="../resources/views/images/viewer/Viewer.ui" line="225"/>
         <source>Toggle Gallery Mode (G)
 Shows all AOIs from all images in a grid view</source>
@@ -17325,7 +17385,7 @@ Muestra todos los AOI de todas las imágenes en una vista de cuadrícula</transl
         <translation>Mostrar AOI</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1439"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1441"/>
         <location filename="../resources/views/images/viewer/Viewer.ui" line="328"/>
         <source>Open Histogram</source>
         <translation>Abrir histograma</translation>
@@ -17373,7 +17433,7 @@ Muestra todos los AOI de todas las imágenes en una vista de cuadrícula</transl
         <translation>ruler.png</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="2250"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="2260"/>
         <location filename="../resources/views/images/viewer/Viewer.ui" line="427"/>
         <source>Person Size Reference (Ctrl+P)</source>
         <translation>Referencia de tamaño de persona (Ctrl+P)</translation>
@@ -17455,7 +17515,34 @@ Atajo de teclado: H para ocultar/mostrar la imagen actual</translation>
         <translation>Omitir ocultas</translation>
     </message>
     <message>
+        <location filename="../resources/views/images/viewer/Viewer.ui" line="670"/>
+        <source>Skip images whose ground another image already covers.
+When enabled, Previous/Next skip an image when one other image from the same camera
+saw at least the set percentage of its ground, at similar or finer resolution, from a
+similar direction, within a few minutes. Camera position, camera and gimbal orientation, field of view
+(including optical zoom) and terrain are all taken into account.
+Images with flagged AOIs are never skipped.
+Skipped images still appear in exports and coverage.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../resources/views/images/viewer/Viewer.ui" line="679"/>
+        <source>Skip Redundant</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
         <location filename="../resources/views/images/viewer/Viewer.ui" line="691"/>
+        <source>Minimum share of an image&apos;s ground that one other image must cover
+for the image to count as redundant.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../resources/views/images/viewer/Viewer.ui" line="695"/>
+        <source>%</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../resources/views/images/viewer/Viewer.ui" line="743"/>
         <source>Mark current image as hidden.
 Hidden images can be excluded from reports, exports, and navigation.
 Use to remove images with false positives or no relevant detections.
@@ -17468,13 +17555,13 @@ Cuando &quot;Omitir ocultas&quot; está habilitado, las imágenes ocultas se omi
 Atajo de teclado: H</translation>
     </message>
     <message>
-        <location filename="../resources/views/images/viewer/Viewer.ui" line="698"/>
-        <location filename="../resources/views/images/viewer/Viewer.ui" line="718"/>
+        <location filename="../resources/views/images/viewer/Viewer.ui" line="750"/>
+        <location filename="../resources/views/images/viewer/Viewer.ui" line="770"/>
         <source>Hide Image</source>
         <translation>Ocultar imagen</translation>
     </message>
     <message>
-        <location filename="../resources/views/images/viewer/Viewer.ui" line="710"/>
+        <location filename="../resources/views/images/viewer/Viewer.ui" line="762"/>
         <source>Displays the name of the currently hidden image.
 When an image is marked as hidden, its filename appears here.
 Hidden images are excluded from navigation when &quot;Skip Hidden&quot; is enabled.</source>
@@ -17483,7 +17570,7 @@ Cuando una imagen se marca como oculta, su nombre de archivo aparece aquí.
 Las imágenes ocultas se excluyen de la navegación cuando &quot;Omitir ocultas&quot; está habilitado.</translation>
     </message>
     <message>
-        <location filename="../resources/views/images/viewer/Viewer.ui" line="746"/>
+        <location filename="../resources/views/images/viewer/Viewer.ui" line="798"/>
         <source>Jump directly to a specific image number.
 Enter an image number and press Enter to navigate instantly.
 Useful for reviewing specific images or returning to a noted location.</source>
@@ -17492,12 +17579,12 @@ Introduzca un número de imagen y pulse Enter para navegar al instante.
 Útil para revisar imágenes específicas o volver a una ubicación anotada.</translation>
     </message>
     <message>
-        <location filename="../resources/views/images/viewer/Viewer.ui" line="751"/>
+        <location filename="../resources/views/images/viewer/Viewer.ui" line="803"/>
         <source>Jump To:</source>
         <translation>Ir a:</translation>
     </message>
     <message>
-        <location filename="../resources/views/images/viewer/Viewer.ui" line="776"/>
+        <location filename="../resources/views/images/viewer/Viewer.ui" line="828"/>
         <source>Enter an image number (1 to total) and press Enter.
 Quickly navigate to any image in the analysis results.
 Example: Type &quot;25&quot; and press Enter to jump to image #25</source>
@@ -17506,56 +17593,56 @@ Navegue rápidamente a cualquier imagen en los resultados de análisis.
 Ejemplo: Escriba &quot;25&quot; y pulse Enter para saltar a la imagen n.º 25</translation>
     </message>
     <message>
-        <location filename="../resources/views/images/viewer/Viewer.ui" line="790"/>
+        <location filename="../resources/views/images/viewer/Viewer.ui" line="842"/>
         <source>Jump to a specific AOI by its run-wide number.
 Enter an AOI number and press Enter to select and scroll to it.</source>
         <translation>Saltar a un AOI específico por su número dentro de toda la ejecución.
 Introduzca un número de AOI y pulse Intro para seleccionarlo y desplazarse hasta él.</translation>
     </message>
     <message>
-        <location filename="../resources/views/images/viewer/Viewer.ui" line="794"/>
+        <location filename="../resources/views/images/viewer/Viewer.ui" line="846"/>
         <source>Go to AOI #:</source>
         <translation>Ir al AOI n.º:</translation>
     </message>
     <message>
-        <location filename="../resources/views/images/viewer/Viewer.ui" line="819"/>
+        <location filename="../resources/views/images/viewer/Viewer.ui" line="871"/>
         <source>Enter an AOI number and press Enter.
 Selects that AOI and scrolls it into view in the gallery or single-image list.</source>
         <translation>Introduzca un número de AOI y pulse Intro.
 Selecciona ese AOI y lo desplaza a la vista en la galería o en la lista de una sola imagen.</translation>
     </message>
     <message>
-        <location filename="../resources/views/images/viewer/Viewer.ui" line="832"/>
+        <location filename="../resources/views/images/viewer/Viewer.ui" line="884"/>
         <source>Previous Image</source>
         <translation>Imagen anterior</translation>
     </message>
     <message>
-        <location filename="../resources/views/images/viewer/Viewer.ui" line="839"/>
+        <location filename="../resources/views/images/viewer/Viewer.ui" line="891"/>
         <source>previous.png</source>
         <translation>previous.png</translation>
     </message>
     <message>
-        <location filename="../resources/views/images/viewer/Viewer.ui" line="854"/>
+        <location filename="../resources/views/images/viewer/Viewer.ui" line="906"/>
         <source>Next Image</source>
         <translation>Siguiente imagen</translation>
     </message>
     <message>
-        <location filename="../resources/views/images/viewer/Viewer.ui" line="861"/>
+        <location filename="../resources/views/images/viewer/Viewer.ui" line="913"/>
         <source>next.png</source>
         <translation>next.png</translation>
     </message>
     <message>
-        <location filename="../resources/views/images/viewer/Viewer.ui" line="1004"/>
+        <location filename="../resources/views/images/viewer/Viewer.ui" line="1056"/>
         <source>Filter AOIs by color and pixel area</source>
         <translation>Filtrar AOI por color y área de píxeles</translation>
     </message>
     <message>
-        <location filename="../resources/views/images/viewer/Viewer.ui" line="1076"/>
+        <location filename="../resources/views/images/viewer/Viewer.ui" line="1128"/>
         <source>Sort By</source>
         <translation>Ordenar por</translation>
     </message>
     <message>
-        <location filename="../resources/views/images/viewer/Viewer.ui" line="1088"/>
+        <location filename="../resources/views/images/viewer/Viewer.ui" line="1140"/>
         <source>Sort Areas of Interest (AOIs) in the list.
 Choose how to order the detected objects:
 • Pixel Area: Sort by size (largest to smallest)
@@ -17572,37 +17659,37 @@ Elija cómo ordenar los objetos detectados:
 La ordenación ayuda a priorizar la revisión de objetos más grandes o más cercanos.</translation>
     </message>
     <message>
-        <location filename="../resources/views/images/viewer/Viewer.ui" line="1176"/>
+        <location filename="../resources/views/images/viewer/Viewer.ui" line="1228"/>
         <source>Open</source>
         <translation>Abrir</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="150"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="151"/>
         <source>Automated Drone Image Analysis Tool v{version} - Sponsored by TEXSAR</source>
         <translation>Herramienta automatizada de análisis de imágenes de dron v{version} - Patrocinado por TEXSAR</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="162"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="163"/>
         <source>Reading result file...</source>
         <translation>Leyendo archivo de resultados...</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="191"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="192"/>
         <source>Checking image dimensions ({n} images)...</source>
         <translation>Comprobando dimensiones de imagen ({n} imágenes)...</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="201"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="202"/>
         <source>Validating image paths...</source>
         <translation>Validando rutas de imagen...</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="208"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="209"/>
         <source>Load Results Failed</source>
         <translation>Error al cargar los resultados</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="210"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="211"/>
         <source>Cannot load results without valid image and mask locations.
 
 The viewer will now close.</source>
@@ -17611,60 +17698,60 @@ The viewer will now close.</source>
 El visor se cerrará ahora.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="217"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="218"/>
         <source>Scanning source folder for full flight...</source>
         <translation>Escaneando carpeta de origen para el vuelo completo...</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="233"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="234"/>
         <source>Initialising controllers...</source>
         <translation>Inicializando controladores...</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="244"/>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1699"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="245"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1709"/>
         <source>Skip Hidden ({count}) </source>
         <translation>Omitir ocultas ({count}) </translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="276"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="278"/>
         <source>Loading detection results from {n} images...</source>
         <translation>Cargando resultados de detección de {n} imágenes...</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="328"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="330"/>
         <source>Image metadata and information.
 Click on GPS Coordinates to copy, share, or open in mapping applications.</source>
         <translation>Metadatos e información de la imagen.
 Haga clic en las coordenadas GPS para copiar, compartir o abrir en aplicaciones de mapas.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="368"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="370"/>
         <source>Loading first image...</source>
         <translation>Cargando primera imagen...</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="383"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="385"/>
         <source>Preparing thumbnails...</source>
         <translation>Preparando miniaturas...</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="772"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="774"/>
         <source>No Dataset</source>
         <translation>Sin conjunto de datos</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="773"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="775"/>
         <source>No dataset is currently loaded.</source>
         <translation>Actualmente no hay ningún conjunto de datos cargado.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="780"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="782"/>
         <source>Generate Cache</source>
         <translation>Generar caché</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="782"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="784"/>
         <source>This will regenerate thumbnail and color caches for all AOIs in this dataset.
 
 This may take a few minutes depending on the dataset size.
@@ -17677,39 +17764,39 @@ Esto puede tardar varios minutos según el tamaño del conjunto de datos.
 ¿Continuar?</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="795"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="797"/>
         <source>Initializing cache generation...</source>
         <translation>Inicializando generación de caché...</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="796"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="798"/>
         <source>Cancel</source>
         <translation>Cancelar</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="801"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="803"/>
         <source>Generating Cache</source>
         <translation>Generando caché</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="838"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="840"/>
         <source>Error</source>
         <translation>Error</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="839"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="841"/>
         <source>Failed to start cache generation:
 {error}</source>
         <translation>Error al iniciar la generación de caché:
 {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="857"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="859"/>
         <source>Cache Generated</source>
         <translation>Caché generada</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="859"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="861"/>
         <source>Cache generation complete!
 
 Processed {images} images with {aois} AOIs.
@@ -17722,12 +17809,12 @@ Se procesaron {images} imágenes con {aois} AOI.
 El visor cargará ahora miniaturas y colores mucho más rápido.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="890"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="892"/>
         <source>Cache Generation Error</source>
         <translation>Error de generación de caché</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="892"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="894"/>
         <source>An error occurred during cache generation:
 
 {error}</source>
@@ -17736,12 +17823,12 @@ El visor cargará ahora miniaturas y colores mucho más rápido.</translation>
 {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1086"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1088"/>
         <source>AOI Not Visible</source>
         <translation>AOI no visible</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1088"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1090"/>
         <source>The AOI at the cursor position cannot be selected because it is currently hidden due to active filters.
 
 To select this AOI, please clear or adjust your filters.</source>
@@ -17750,12 +17837,12 @@ To select this AOI, please clear or adjust your filters.</source>
 Para seleccionar este AOI, borre o ajuste sus filtros.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1297"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1299"/>
         <source>Update Image Dimensions</source>
         <translation>Actualizar dimensiones de imagen</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1299"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1301"/>
         <source>This dataset is missing image dimensions needed for heatmap filtering ({count} images).
 
 Would you like to read dimensions from the image files and update the results file?</source>
@@ -17764,61 +17851,61 @@ Would you like to read dimensions from the image files and update the results fi
 ¿Desea leer las dimensiones desde los archivos de imagen y actualizar el archivo de resultados?</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1338"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1340"/>
         <source>Reading image dimensions ({done}/{total})...</source>
         <translation>Leyendo dimensiones de imagen ({done}/{total})...</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1430"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1432"/>
         <source>Show Pixels of Interest (H or Ctrl+I)</source>
         <translation>Mostrar píxeles de interés (H o Ctrl+I)</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1445"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1447"/>
         <source>Toggle AOI Circles</source>
         <translation>Alternar círculos de AOI</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1452"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1454"/>
         <source>Toggle AOI Ruler</source>
         <translation>Mostrar/ocultar regla de AOI</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1885"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1895"/>
         <source>Missing Dependency</source>
         <translation>Dependencia faltante</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1887"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1897"/>
         <source>The qimage2ndarray module is required for the upscale feature.
 Please install it using: pip install qimage2ndarray</source>
         <translation>El módulo qimage2ndarray es necesario para la función de escalado.
 Instálelo usando: pip install qimage2ndarray</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1896"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1906"/>
         <source>Upscale Error</source>
         <translation>Error de escalado</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1898"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1908"/>
         <source>An error occurred while opening the upscale dialog:
 {error}</source>
         <translation>Se produjo un error al abrir el diálogo de escalado:
 {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="2254"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="2264"/>
         <source>Person Size Reference is unavailable: no GSD for this image</source>
         <translation>La referencia de tamaño de persona no está disponible: esta imagen no tiene GSD</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="2367"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="2377"/>
         <source>Unknown Reviewer</source>
         <translation>Revisor desconocido</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="2430"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="2440"/>
         <source>Loading gallery...</source>
         <translation>Cargando galería...</translation>
     </message>
