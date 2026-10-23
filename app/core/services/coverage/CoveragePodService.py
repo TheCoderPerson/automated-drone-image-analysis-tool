@@ -14,7 +14,8 @@ over unchanged.
 
 import math
 import time
-from typing import Any, Dict, List, Optional
+from dataclasses import dataclass
+from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
 
@@ -50,6 +51,30 @@ _AGL_DISAGREE_LOG_M = 25.0        # report frames whose true height differs by t
 _ANCHOR_MIN_SAMPLES = 3           # below this the estimate cannot be cross-checked
 _ANCHOR_SAMPLE_FRAMES = 40        # bounded pre-pass; a median over this many is plenty
 _ANCHOR_MAX_MAD_M = 15.0          # spread above which the ASL/baro chains disagree
+
+
+@dataclass
+class ProjectedFrame:
+    """One frame placed on the terrain by ``CoveragePodService.project_frame``.
+
+    ``skip_reason`` is set when the frame could not be placed. ``alt_source``
+    and the two AGLs are set as soon as the camera elevation was resolved,
+    which can happen before a later step skips the frame - POD's altitude
+    statistics count those frames too.
+    """
+
+    skip_reason: Optional[str] = None
+    alt_source: Optional[str] = None     # which _resolve_cam_elev rule placed the camera
+    reported_agl: Optional[float] = None  # height above takeoff, or an override
+    effective_agl: Optional[float] = None  # camera elevation minus DEM(nadir)
+    spec: Any = None                     # the frame's lattice-snapped GridSpec
+    dem_sample: Any = None
+    dem: Optional[np.ndarray] = None
+    cam_xyz: Optional[Tuple[float, float, float]] = None
+    mask: Optional[np.ndarray] = None    # cells inside the sensor frustum
+    gsd: Optional[np.ndarray] = None     # per-cell GSD in cm (meaningful under mask)
+    t_dem: float = 0.0
+    t_mask: float = 0.0
 
 
 class CoveragePodService:
@@ -133,61 +158,19 @@ class CoveragePodService:
                     cell_size_3857 = self.params.grid_res_m * mercator_units_per_meter(fg.lat)
                     accumulator = MissionAccumulator(cell_size_3857, self.params, self.logger)
 
-                agl_override = self._agl_is_override(image)
-                reported_agl = fg.agl_m     # height above takeoff, or an override
-
-                # ``compute_frame_spec`` sizes the frame grid from fg.agl_m, so it
-                # needs the TRUE height above the ground below - sizing from the
-                # height above takeoff truncates the real footprint. A cache-backed
-                # point lookup gets that right on the first sample; without one the
-                # re-sample below is the safety net.
-                if anchor is not None and not agl_override:
-                    nadir_pt = self._point_elevation(fg.lat, fg.lon)
-                    if nadir_pt is not None:
-                        fg.agl_m = max(anchor + reported_agl - nadir_pt, _MIN_AGL_M)
-
-                cam_x, cam_y = lonlat_to_mercator(fg.lon, fg.lat)
-                payload, skip_reason, t_dem = self._sample_frame_dem(
-                    fg, cell_size_3857, cam_x, cam_y)
-                if payload is None:
-                    skipped.append((name, skip_reason))
-                    continue
-                spec, dem_sample, dem, nadir_elev = payload
-
-                cam_z, alt_source = self._resolve_cam_elev(
-                    nadir_elev, reported_agl, agl_override, anchor)
-                alt_sources[alt_source] = alt_sources.get(alt_source, 0) + 1
-
-                effective_agl = cam_z - nadir_elev
-                if abs(effective_agl - reported_agl) > _AGL_DISAGREE_LOG_M:
-                    agl_disagree += 1
-
-                # Safety net: with no point lookup the grid was sized from the
-                # reported AGL, so a material correction still needs a re-sample.
-                if self._agl_differs(effective_agl, fg.agl_m):
-                    fg.agl_m = effective_agl
-                    payload, skip_reason, t_dem_2 = self._sample_frame_dem(
-                        fg, cell_size_3857, cam_x, cam_y)
-                    t_dem += t_dem_2
-                    if payload is None:
-                        skipped.append((name, skip_reason))
-                        continue
-                    # cam_z is an absolute elevation on the 'anchor' path (the only
-                    # path that can trip this), so re-sampling does not move it.
-                    spec, dem_sample, dem, nadir_elev = payload
-
-                if getattr(dem_sample, 'source', None) == 'terrarium_fallback':
+                frame = self.project_frame(image, fg, anchor, cell_size_3857, meters_per_unit)
+                if frame.alt_source is not None:
+                    alt_sources[frame.alt_source] = alt_sources.get(frame.alt_source, 0) + 1
+                    if abs(frame.effective_agl - frame.reported_agl) > _AGL_DISAGREE_LOG_M:
+                        agl_disagree += 1
+                if getattr(frame.dem_sample, 'source', None) == 'terrarium_fallback':
                     dem_fallback += 1
-
-                fg.cam_elev_m = cam_z
-                cam_xyz = (cam_x, cam_y, cam_z)
-
-                t0 = time.perf_counter()
-                mask, gsd = compute_target_mask_and_gsd(
-                    dem, spec, fg, cam_xyz, self.params, meters_per_unit)
-                if not mask.any():
-                    skipped.append((name, SKIP_EMPTY_FOOTPRINT))
+                if frame.skip_reason is not None:
+                    skipped.append((name, frame.skip_reason))
                     continue
+                spec, dem, cam_xyz = frame.spec, frame.dem, frame.cam_xyz
+                mask, gsd = frame.mask, frame.gsd
+                t_dem = frame.t_dem
 
                 # Sample canopy only for frames that actually search cells, and
                 # measure how much of THIS frame's searched footprint the canopy
@@ -207,11 +190,11 @@ class CoveragePodService:
                     if with_canopy == 0:
                         canopy_frames_missing += 1
 
+                t0 = time.perf_counter()
                 pod, factor = frame_pod_kernel(
                     dem, chm, cover, spec.transform, cam_xyz, mask, gsd,
                     self.params, meters_per_unit=meters_per_unit, return_factors=True)
-                # t0 was set before the mask; exclude the separately-timed canopy.
-                t_kernel = time.perf_counter() - t0 - t_canopy
+                t_kernel = frame.t_mask + (time.perf_counter() - t0)
 
                 placed = accumulator.add_frame(
                     idx, pod, spec, fg.yaw_deg, fg.pitch_deg, fg.bearing_confidence,
@@ -220,7 +203,7 @@ class CoveragePodService:
                     skipped.append((name, SKIP_OUTSIDE_BUDGET))
                     continue
 
-                cam_points.append((cam_x, cam_y))
+                cam_points.append((cam_xyz[0], cam_xyz[1]))
                 processed += 1
 
                 timings['geom'] += t_geom
@@ -317,6 +300,90 @@ class CoveragePodService:
             canopy_frames_missing=canopy_frames_missing,
             altitude_source_counts=dict(alt_sources),
             altitude_anchor_m=anchor, altitude_anchor_reason=anchor_reason)
+
+    def frame_geometry(self, image):
+        """Pose + intrinsics for one image record, read without decoding pixels.
+
+        Returns None when the image has no usable pose (no GPS, intrinsics or
+        AGL). Other services use this to read frames exactly as POD does.
+        """
+        return self._frame_geometry(image)
+
+    def project_frame(self, image, fg, anchor, cell_size_3857, meters_per_unit) -> ProjectedFrame:
+        """Place one frame on the terrain: its grid, DEM, camera and frustum.
+
+        This is the single projection path for anything that needs to know
+        which ground a frame saw. POD calls it per frame; the redundant-image
+        filter calls it so its footprints match POD's exactly.
+
+        Args:
+            image: the image record (consulted for an explicit AGL override).
+            fg: the frame's FrameGeometry. ``agl_m`` and ``cam_elev_m`` are
+                updated in place to the resolved true height and elevation.
+            anchor: takeoff elevation in the DEM's datum, or None.
+            cell_size_3857: lattice cell size in EPSG:3857 units, shared by
+                every frame so their grids co-register.
+            meters_per_unit: true ground meters per EPSG:3857 unit.
+
+        Returns:
+            ProjectedFrame: placed, or carrying the skip reason.
+        """
+        frame = ProjectedFrame()
+        agl_override = self._agl_is_override(image)
+        reported_agl = fg.agl_m     # height above takeoff, or an override
+
+        # ``compute_frame_spec`` sizes the frame grid from fg.agl_m, so it
+        # needs the TRUE height above the ground below - sizing from the
+        # height above takeoff truncates the real footprint. A cache-backed
+        # point lookup gets that right on the first sample; without one the
+        # re-sample below is the safety net.
+        if anchor is not None and not agl_override:
+            nadir_pt = self._point_elevation(fg.lat, fg.lon)
+            if nadir_pt is not None:
+                fg.agl_m = max(anchor + reported_agl - nadir_pt, _MIN_AGL_M)
+
+        cam_x, cam_y = lonlat_to_mercator(fg.lon, fg.lat)
+        payload, skip_reason, t_dem = self._sample_frame_dem(
+            fg, cell_size_3857, cam_x, cam_y)
+        frame.t_dem = t_dem
+        if payload is None:
+            frame.skip_reason = skip_reason
+            return frame
+        spec, dem_sample, dem, nadir_elev = payload
+
+        cam_z, alt_source = self._resolve_cam_elev(
+            nadir_elev, reported_agl, agl_override, anchor)
+        frame.alt_source = alt_source
+        frame.reported_agl = reported_agl
+        frame.effective_agl = cam_z - nadir_elev
+
+        # Safety net: with no point lookup the grid was sized from the
+        # reported AGL, so a material correction still needs a re-sample.
+        if self._agl_differs(frame.effective_agl, fg.agl_m):
+            fg.agl_m = frame.effective_agl
+            payload, skip_reason, t_dem_2 = self._sample_frame_dem(
+                fg, cell_size_3857, cam_x, cam_y)
+            frame.t_dem += t_dem_2
+            if payload is None:
+                frame.skip_reason = skip_reason
+                return frame
+            # cam_z is an absolute elevation on the 'anchor' path (the only
+            # path that can trip this), so re-sampling does not move it.
+            spec, dem_sample, dem, nadir_elev = payload
+
+        frame.spec = spec
+        frame.dem_sample = dem_sample
+        frame.dem = dem
+        fg.cam_elev_m = cam_z
+        frame.cam_xyz = (cam_x, cam_y, cam_z)
+
+        t0 = time.perf_counter()
+        frame.mask, frame.gsd = compute_target_mask_and_gsd(
+            dem, spec, fg, frame.cam_xyz, self.params, meters_per_unit)
+        frame.t_mask = time.perf_counter() - t0
+        if not frame.mask.any():
+            frame.skip_reason = SKIP_EMPTY_FOOTPRINT
+        return frame
 
     # ---- helpers ----
 
