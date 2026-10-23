@@ -1,0 +1,78 @@
+name: Build Windows test exe
+
+# Test builds of this branch: zips dist/ADIAT (the same folder
+# `python setup.py bdist_app` builds locally) and publishes it as the
+# 'windows-test-build' pre-release, replaced on every push, so the change
+# can be tried on Windows without a local build toolchain.
+on:
+  push:
+    branches: [test/redundant-image-filter-windows]
+  workflow_dispatch:
+
+permissions:
+  contents: write  # publish the pre-release
+
+concurrency:
+  group: build-windows-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: windows-latest
+    timeout-minutes: 90
+    steps:
+      # Check out files byte-for-byte as committed so the build stamp in
+      # app.spec does not read the tree as '+dirty'
+      - name: Keep committed line endings
+        run: git config --global core.autocrlf false
+
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: |
+            requirements.txt
+            requirements-dev.txt
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt -r requirements-dev.txt
+
+      - name: Test the redundant-image filter on Windows
+        env:
+          QT_QPA_PLATFORM: offscreen
+        run: >
+          python -m pytest -q -p no:cacheprovider --no-cov
+          app/tests/core/services/coverage
+          app/tests/core/controllers/images/viewer/test_redundant_image_controller.py
+          app/tests/core/controllers/images/viewer/test_viewer_redundant_navigation.py
+          app/tests/helpers/test_ui_module_hygiene.py
+
+      - name: Build
+        run: python setup.py bdist_app
+
+      - name: Show build stamp
+        id: stamp
+        run: |
+          $stamp = (Get-Content dist/ADIAT/_internal/build_info.txt -TotalCount 1).Trim()
+          Write-Output "Build stamp: $stamp"
+          "stamp=$stamp" >> $env:GITHUB_OUTPUT
+          # '+' in a download name can be decoded as a space along the way
+          "zip=ADIAT-windows-$($stamp.Replace('+', '-')).zip" >> $env:GITHUB_OUTPUT
+
+      - name: Zip the build
+        run: 7z a -tzip -mx=5 "${{ steps.stamp.outputs.zip }}" ./dist/ADIAT
+
+      - name: Publish the windows-test-build pre-release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete windows-test-build --yes --cleanup-tag || true
+          gh release create windows-test-build "${{ steps.stamp.outputs.zip }}" \
+            --prerelease --target "${{ github.sha }}" \
+            --title "Windows test build (${{ steps.stamp.outputs.stamp }})" \
+            --notes "Test build of branch ${{ github.ref_name }} at ${{ github.sha }}. Not an official ADIAT release. Unzip the whole folder and run ADIAT/ADIAT.exe."
