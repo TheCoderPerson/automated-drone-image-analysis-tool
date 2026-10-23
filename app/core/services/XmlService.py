@@ -10,6 +10,11 @@ from core.services.LoggerService import LoggerService
 from helpers.PathHelper import is_absolute_any_platform, canonical_path
 
 
+# An AOI's detected_pixels list is written to the XML only when it has at
+# most this many entries; larger AOIs are read back from the mask TIFF.
+MAX_SAVED_DETECTED_PIXELS = 100
+
+
 class XmlService:
     """Service for parsing and modifying an ADIAT XML file.
 
@@ -460,8 +465,8 @@ class XmlService:
                 area_xml.set('contour', str(area['contour']))
             if 'detected_pixels' in area and area['detected_pixels']:
                 # Only save a limited number of pixels to avoid huge XML files
-                # Full pixel data is preserved in the image XMP metadata
-                if len(area['detected_pixels']) <= 100:
+                # Full pixel data is preserved in the mask TIFF
+                if len(area['detected_pixels']) <= MAX_SAVED_DETECTED_PIXELS:
                     area_xml.set('detected_pixels', str(area['detected_pixels']))
 
         # Debug logging for temperature save
