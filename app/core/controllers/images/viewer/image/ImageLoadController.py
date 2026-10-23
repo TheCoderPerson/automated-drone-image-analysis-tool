@@ -123,6 +123,8 @@ class ImageLoadController(TranslationMixin):
 
             self.parent.main_image.setFocus()
             self.parent.hideImageToggle.setChecked(image['hidden'])
+            if hasattr(self.parent, 'redundant_image_controller'):
+                self.parent.redundant_image_controller.on_image_loaded(self.parent.current_image)
             self.parent.indexLabel.setText(
                 self.tr("(Image {current} of {total})").format(
                     current=self.parent.current_image + 1,

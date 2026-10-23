@@ -19,8 +19,8 @@ from PySide6.QtGui import (QAction, QBrush, QColor, QConicalGradient,
 from PySide6.QtWidgets import (QApplication, QCheckBox, QComboBox, QFrame,
     QGraphicsView, QHBoxLayout, QLabel, QLineEdit,
     QListWidget, QListWidgetItem, QMainWindow, QPushButton,
-    QScrollArea, QSizePolicy, QSpacerItem, QSplitter,
-    QToolButton, QVBoxLayout, QWidget)
+    QScrollArea, QSizePolicy, QSpacerItem, QSpinBox,
+    QSplitter, QToolButton, QVBoxLayout, QWidget)
 from . import resources_rc
 
 class Ui_Viewer(object):
@@ -340,6 +340,23 @@ class Ui_Viewer(object):
         self.skipHidden.setFont(font3)
 
         self.horizontalLayout_5.addWidget(self.skipHidden)
+
+        self.skipRedundant = QCheckBox(self.mainHeaderWidget)
+        self.skipRedundant.setObjectName(u"skipRedundant")
+        sizePolicy2.setHeightForWidth(self.skipRedundant.sizePolicy().hasHeightForWidth())
+        self.skipRedundant.setSizePolicy(sizePolicy2)
+        self.skipRedundant.setFont(font3)
+
+        self.horizontalLayout_5.addWidget(self.skipRedundant)
+
+        self.redundantOverlapSpinBox = QSpinBox(self.mainHeaderWidget)
+        self.redundantOverlapSpinBox.setObjectName(u"redundantOverlapSpinBox")
+        self.redundantOverlapSpinBox.setFont(font3)
+        self.redundantOverlapSpinBox.setMinimum(50)
+        self.redundantOverlapSpinBox.setMaximum(100)
+        self.redundantOverlapSpinBox.setValue(90)
+
+        self.horizontalLayout_5.addWidget(self.redundantOverlapSpinBox)
 
 
         self.verticalLayout_3.addWidget(self.mainHeaderWidget)
@@ -679,6 +696,21 @@ class Ui_Viewer(object):
 "Keyboard shortcut: H to hide/unhide current image", None))
 #endif // QT_CONFIG(tooltip)
         self.skipHidden.setText(QCoreApplication.translate("Viewer", u"Skip Hidden", None))
+#if QT_CONFIG(tooltip)
+        self.skipRedundant.setToolTip(QCoreApplication.translate("Viewer", u"Skip images whose ground another image already covers.\n"
+"When enabled, Previous/Next skip an image when one other image from the same camera\n"
+"saw at least the set percentage of its ground, at similar or finer resolution, from a\n"
+"similar direction, within a few minutes. Camera position, camera and gimbal orientation, field of view\n"
+"(including optical zoom) and terrain are all taken into account.\n"
+"Images with flagged AOIs are never skipped.\n"
+"Skipped images still appear in exports and coverage.", None))
+#endif // QT_CONFIG(tooltip)
+        self.skipRedundant.setText(QCoreApplication.translate("Viewer", u"Skip Redundant", None))
+#if QT_CONFIG(tooltip)
+        self.redundantOverlapSpinBox.setToolTip(QCoreApplication.translate("Viewer", u"Minimum share of an image's ground that one other image must cover\n"
+"for the image to count as redundant.", None))
+#endif // QT_CONFIG(tooltip)
+        self.redundantOverlapSpinBox.setSuffix(QCoreApplication.translate("Viewer", u"%", None))
 #if QT_CONFIG(tooltip)
         self.hideImageCheckbox.setToolTip(QCoreApplication.translate("Viewer", u"Mark current image as hidden.\n"
 "Hidden images can be excluded from reports, exports, and navigation.\n"
