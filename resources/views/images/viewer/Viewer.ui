@@ -653,6 +653,58 @@ Keyboard shortcut: H to hide/unhide current image</string>
                 </property>
                </widget>
               </item>
+              <item>
+               <widget class="QCheckBox" name="skipRedundant">
+                <property name="sizePolicy">
+                 <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
+                  <horstretch>0</horstretch>
+                  <verstretch>0</verstretch>
+                 </sizepolicy>
+                </property>
+                <property name="font">
+                 <font>
+                  <pointsize>14</pointsize>
+                 </font>
+                </property>
+                <property name="toolTip">
+                 <string>Skip images whose ground another image already covers.
+When enabled, Previous/Next skip an image when one other image from the same camera
+saw at least the set percentage of its ground, at similar or finer resolution, from a
+similar direction, within a few minutes. Camera position, camera and gimbal orientation, field of view
+(including optical zoom) and terrain are all taken into account.
+Images with flagged AOIs are never skipped.
+Skipped images still appear in exports and coverage.</string>
+                </property>
+                <property name="text">
+                 <string>Skip Redundant</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QSpinBox" name="redundantOverlapSpinBox">
+                <property name="font">
+                 <font>
+                  <pointsize>14</pointsize>
+                 </font>
+                </property>
+                <property name="toolTip">
+                 <string>Minimum share of an image's ground that one other image must cover
+for the image to count as redundant.</string>
+                </property>
+                <property name="suffix">
+                 <string>%</string>
+                </property>
+                <property name="minimum">
+                 <number>50</number>
+                </property>
+                <property name="maximum">
+                 <number>100</number>
+                </property>
+                <property name="value">
+                 <number>90</number>
+                </property>
+               </widget>
+              </item>
              </layout>
             </widget>
            </item>
