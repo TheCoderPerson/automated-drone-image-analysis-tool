@@ -41,11 +41,14 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt -r requirements-dev.txt
 
-      - name: Test the redundant-image filter on Windows
+      - name: Test the redundant-image filter and HSV memory fix on Windows
         env:
           QT_QPA_PLATFORM: offscreen
         run: >
           python -m pytest -q -p no:cacheprovider --no-cov
+          app/tests/core/services/test_analyze_service.py
+          app/tests/core/services/test_xml_service.py
+          app/tests/algorithms/images/HSVColorRange/test_hsv_color_range_service.py
           app/tests/core/services/coverage
           app/tests/core/controllers/images/viewer/test_redundant_image_controller.py
           app/tests/core/controllers/images/viewer/test_viewer_redundant_navigation.py
