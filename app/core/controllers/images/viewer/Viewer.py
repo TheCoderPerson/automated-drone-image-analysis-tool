@@ -31,6 +31,7 @@ from core.controllers.images.viewer.bearing.BearingRecoveryController import Bea
 from core.controllers.images.viewer.path.PathValidationController import PathValidationController
 from core.controllers.images.viewer.thumbnails.ThumbnailController import ThumbnailController
 from core.controllers.images.viewer.gallery.GalleryController import GalleryController
+from core.controllers.images.viewer.gallery.ImagePopoutController import ImagePopoutController
 from core.controllers.images.viewer.aoi.AOIController import AOIController
 from core.controllers.images.viewer.neighbor.AOINeighborTrackingController import AOINeighborTrackingController
 from core.controllers.images.viewer.similarity.AOISimilarityController import AOISimilarityController
@@ -251,6 +252,7 @@ class Viewer(TranslationMixin, QMainWindow, Ui_Viewer):
         # Initialize controllers
         self.aoi_controller = AOIController(self)
         self.gallery_controller = GalleryController(self)
+        self.image_popout_controller = ImagePopoutController(self)
         self.thumbnail_controller = ThumbnailController(self)
         self.coordinate_controller = CoordinateController(self)
         self.status_controller = StatusController(self)
@@ -444,18 +446,34 @@ class Viewer(TranslationMixin, QMainWindow, Ui_Viewer):
                 self.overlay._place_overlay()
 
     def changeEvent(self, event):
-        """Window deactivation ends the current AOI dwell interval.
+        """Window deactivation ends the current AOI dwell interval."""
+        if event.type() == QEvent.ActivationChange:
+            self._end_dwell_if_review_unfocused()
+        super().changeEvent(event)
+
+    def _end_dwell_if_review_unfocused(self):
+        """End the current AOI dwell interval once review focus has left ADIAT.
 
         Time spent with the viewer in the background is not review time; the
-        interval ends here rather than pausing (no resume bookkeeping).
+        interval ends here rather than pausing (no resume bookkeeping). The
+        image pop-out window is part of the review surface, so moving focus
+        between it and the viewer - which every gallery click that opens it
+        does - must not end the interval. Both windows' activation changes
+        land here.
         """
-        if (event.type() == QEvent.ActivationChange and not self.isActiveWindow()
-                and hasattr(self, 'interaction_log')):
-            self.interaction_log.end_current_interval(REASON_WINDOW_UNFOCUSED)
-        super().changeEvent(event)
+        if not hasattr(self, 'interaction_log') or self.isActiveWindow():
+            return
+        popout = getattr(getattr(self, 'image_popout_controller', None), 'popout_window', None)
+        if popout is not None and popout.isActiveWindow():
+            return
+        self.interaction_log.end_current_interval(REASON_WINDOW_UNFOCUSED)
 
     def closeEvent(self, event):
         """Event triggered on window close; quits all thumbnail threads."""
+        # Return the image pane from the pop-out window before anything below
+        # tears it down.
+        if hasattr(self, 'image_popout_controller'):
+            self.image_popout_controller.cleanup()
         if hasattr(self, 'interaction_log'):
             self.interaction_log.end_session()
         for thread, loader in self._threads:
@@ -692,33 +710,41 @@ class Viewer(TranslationMixin, QMainWindow, Ui_Viewer):
     def _sync_aoi_header_width(self):
         """Sync aoiHeaderWidget width with the AOI splitter panel.
 
-        Also keep the image pane at least as wide as the toolbar's minimum. The
-        toolbar (``mainHeaderWidget``) and the AOI header (``aoiHeaderWidget``,
-        pinned to the AOI-pane width) share one header row above the splitter.
-        If the image pane were allowed narrower than the toolbar, that header
-        row would be wider than the splitter, so pinning the AOI header pushes
-        the window's minimum width past its current width -- and because the
-        minimum is re-read on every resize, the window grows without bound (a
-        runaway that eventually forces the window far off-screen). Flooring the
-        image pane at the toolbar minimum keeps the header row and the splitter
-        the same width, which stops the loop.
+        The toolbar (``mainHeaderWidget``) and the AOI header
+        (``aoiHeaderWidget``) share one header row above the splitter. The AOI
+        header is pinned to the AOI-pane width so the two line up, but the pin
+        is capped at whatever the toolbar's minimum leaves of the row. A header
+        row wider than the splitter pushes the window's minimum width past its
+        current width, and because that minimum is re-read on every resize the
+        window grows without bound (a runaway that eventually forces the
+        window far off-screen).
+
+        The cap replaces an earlier floor that held the image pane at the
+        toolbar's minimum width. That floor stopped the gallery at two columns
+        on a 1920 px screen. Now the image pane can narrow, or collapse so the
+        gallery fills the viewer, and the AOI header gives up alignment and
+        takes what the toolbar leaves. While the toolbar is in the image
+        pop-out window, the row holds the AOI header alone.
         """
         try:
             splitter = getattr(self, 'image_gallery_splitter', None)
             if not splitter:
                 return
-            # Floor the image pane at the toolbar's minimum width (idempotent:
-            # only assigned when it actually changes, so it never re-triggers a
-            # layout pass on its own).
-            if hasattr(self, 'mainHeaderWidget') and hasattr(self, 'imageWidget'):
-                toolbar_min = self.mainHeaderWidget.minimumSizeHint().width()
-                if toolbar_min and self.imageWidget.minimumWidth() != toolbar_min:
-                    self.imageWidget.setMinimumWidth(toolbar_min)
             sizes = splitter.sizes()
-            if len(sizes) == 2:
-                self.aoiHeaderWidget.setFixedWidth(sizes[1])
-                if hasattr(self, '_header_layout'):
-                    self._header_layout.setSpacing(splitter.handleWidth())
+            if len(sizes) != 2:
+                return
+            aoi_width = sizes[1]
+            toolbar = getattr(self, 'mainHeaderWidget', None)
+            header_row = getattr(self, '_header_row', None)
+            if toolbar is not None and (header_row is None or toolbar.parentWidget() is header_row):
+                # Row = toolbar + spacing (the handle width) + AOI header, and
+                # the splitter spans both panes plus the handle, so the AOI
+                # header may take the panes' total less the toolbar minimum.
+                room = sum(sizes) - toolbar.minimumSizeHint().width()
+                aoi_width = max(0, min(aoi_width, room))
+            self.aoiHeaderWidget.setFixedWidth(aoi_width)
+            if hasattr(self, '_header_layout'):
+                self._header_layout.setSpacing(splitter.handleWidth())
         except Exception:
             pass
 
@@ -746,6 +772,15 @@ class Viewer(TranslationMixin, QMainWindow, Ui_Viewer):
 
     def _on_gallery_mode_clicked(self):
         """Handle Gallery Mode button click - update styling and toggle gallery mode."""
+        # The button rides along to the image pop-out window in the toolbar.
+        # There it means what G means: back to the gallery, which stays in
+        # gallery mode. The click has already unchecked it, so re-check it.
+        if hasattr(self, 'image_popout_controller') and self.image_popout_controller.is_open():
+            if hasattr(self, 'galleryModeButton'):
+                self.galleryModeButton.setChecked(True)
+            self.image_popout_controller.close()
+            self._update_gallery_mode_button_style()
+            return
         # A mode switch ends the current dwell interval; the next selection
         # is recorded under the new mode.
         if hasattr(self, 'interaction_log'):
@@ -990,6 +1025,11 @@ class Viewer(TranslationMixin, QMainWindow, Ui_Viewer):
                 # This allows text input in dialogs to work properly on macOS
                 super().keyPressEvent(e)
                 return
+
+        # With the image pane popped out, Esc and G close its window back to
+        # the gallery (G would otherwise leave gallery mode altogether).
+        if hasattr(self, 'image_popout_controller') and self.image_popout_controller.handle_key(e):
+            return
 
         # Grid review mode gets first claim on keys: while active it owns
         # Space/arrows/X/Esc (and S toggles it from anywhere). It returns

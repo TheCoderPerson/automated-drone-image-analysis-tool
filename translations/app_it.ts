@@ -1614,52 +1614,52 @@ Ogni maniglia d&apos;angolo è abbinata per colore a un angolo della foto del dr
 <context>
     <name>AnalyzeService</name>
     <message>
-        <location filename="../app/core/services/AnalyzeService.py" line="162"/>
+        <location filename="../app/core/services/AnalyzeService.py" line="163"/>
         <source>Processing {count} files</source>
         <translation>Elaborazione di {count} file</translation>
     </message>
     <message>
-        <location filename="../app/core/services/AnalyzeService.py" line="217"/>
+        <location filename="../app/core/services/AnalyzeService.py" line="218"/>
         <source>Skipping {file} :: File is not an image</source>
         <translation>Saltato {file} :: Il file non è un&apos;immagine</translation>
     </message>
     <message>
-        <location filename="../app/core/services/AnalyzeService.py" line="222"/>
+        <location filename="../app/core/services/AnalyzeService.py" line="223"/>
         <source>All {count} images queued, processing started...</source>
         <translation>Tutte le {count} immagini in coda, elaborazione avviata...</translation>
     </message>
     <message>
-        <location filename="../app/core/services/AnalyzeService.py" line="280"/>
+        <location filename="../app/core/services/AnalyzeService.py" line="281"/>
         <source>{images} images with {aois} areas of interest identified</source>
         <translation>{images} immagini con {aois} aree di interesse identificate</translation>
     </message>
     <message>
-        <location filename="../app/core/services/AnalyzeService.py" line="286"/>
+        <location filename="../app/core/services/AnalyzeService.py" line="287"/>
         <source>Total Processing Time: {seconds} seconds</source>
         <translation>Tempo totale di elaborazione: {seconds} secondi</translation>
     </message>
     <message>
-        <location filename="../app/core/services/AnalyzeService.py" line="289"/>
+        <location filename="../app/core/services/AnalyzeService.py" line="290"/>
         <source>Total Images Processed: {count}</source>
         <translation>Totale immagini elaborate: {count}</translation>
     </message>
     <message>
-        <location filename="../app/core/services/AnalyzeService.py" line="512"/>
+        <location filename="../app/core/services/AnalyzeService.py" line="536"/>
         <source>Unable to process {file} :: {error} ({percent}%)</source>
         <translation>Impossibile elaborare {file} :: {error} ({percent}%)</translation>
     </message>
     <message>
-        <location filename="../app/core/services/AnalyzeService.py" line="539"/>
+        <location filename="../app/core/services/AnalyzeService.py" line="563"/>
         <source>{count} areas of interest identified in {file} ({percent}%)</source>
         <translation>{count} aree di interesse identificate in {file} ({percent}%)</translation>
     </message>
     <message>
-        <location filename="../app/core/services/AnalyzeService.py" line="556"/>
+        <location filename="../app/core/services/AnalyzeService.py" line="580"/>
         <source>No areas of interest identified in {file} ({percent}%)</source>
         <translation>Nessuna area di interesse identificata in {file} ({percent}%)</translation>
     </message>
     <message>
-        <location filename="../app/core/services/AnalyzeService.py" line="638"/>
+        <location filename="../app/core/services/AnalyzeService.py" line="662"/>
         <source>--- Cancelling Image Processing ---</source>
         <translation>--- Annullamento elaborazione immagini ---</translation>
     </message>
@@ -8444,6 +8444,14 @@ li.checked::marker { content: &quot;\2612&quot;; }
     </message>
 </context>
 <context>
+    <name>ImagePopoutWindow</name>
+    <message>
+        <location filename="../resources/views/images/viewer/ImagePopoutWindow.ui" line="14"/>
+        <source>Image View</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
     <name>InputProcessingTab</name>
     <message>
         <location filename="../app/core/views/streaming/components/InputProcessingTab.py" line="31"/>
@@ -13336,17 +13344,17 @@ Valori più alti = unisce rilevamenti più distanti (può unire troppo).</transl
 <context>
     <name>ResultsLoadingDialog</name>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/ResultsLoadingDialog.py" line="29"/>
+        <location filename="../app/core/views/images/viewer/dialogs/ResultsLoadingDialog.py" line="65"/>
         <source>Loading Results</source>
         <translation>Caricamento risultati</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/ResultsLoadingDialog.py" line="43"/>
+        <location filename="../app/core/views/images/viewer/dialogs/ResultsLoadingDialog.py" line="79"/>
         <source>Opening results...</source>
         <translation>Apertura risultati...</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/ResultsLoadingDialog.py" line="55"/>
+        <location filename="../app/core/views/images/viewer/dialogs/ResultsLoadingDialog.py" line="91"/>
         <source>Preparing...</source>
         <translation>Preparazione...</translation>
     </message>
@@ -17361,13 +17369,13 @@ Quando disabilitato, mostra l&apos;immagine originale non elaborata.
 Usa per confrontare l&apos;immagine originale con i risultati del rilevamento.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="552"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="570"/>
         <location filename="../resources/views/images/viewer/Viewer.ui" line="205"/>
         <source>Show Overlay</source>
         <translation>Mostra Overlay</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1421"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1461"/>
         <location filename="../resources/views/images/viewer/Viewer.ui" line="225"/>
         <source>Toggle Gallery Mode (G)
 Shows all AOIs from all images in a grid view</source>
@@ -17385,7 +17393,7 @@ Mostra tutte le AOI di tutte le immagini in una vista a griglia</translation>
         <translation>Mostra AOI</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1441"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1481"/>
         <location filename="../resources/views/images/viewer/Viewer.ui" line="328"/>
         <source>Open Histogram</source>
         <translation>Apri Istogramma</translation>
@@ -17433,7 +17441,7 @@ Mostra tutte le AOI di tutte le immagini in una vista a griglia</translation>
         <translation>ruler.png</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="2260"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="2300"/>
         <location filename="../resources/views/images/viewer/Viewer.ui" line="427"/>
         <source>Person Size Reference (Ctrl+P)</source>
         <translation>Riferimento dimensioni persona (Ctrl+P)</translation>
@@ -17664,32 +17672,32 @@ L&apos;ordinamento aiuta a dare priorità alla revisione di oggetti più grandi 
         <translation>Apri</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="151"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="152"/>
         <source>Automated Drone Image Analysis Tool v{version} - Sponsored by TEXSAR</source>
         <translation>Strumento Automatico di Analisi Immagini Drone v{version} - Sponsorizzato da TEXSAR</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="163"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="164"/>
         <source>Reading result file...</source>
         <translation>Lettura file risultati...</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="192"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="193"/>
         <source>Checking image dimensions ({n} images)...</source>
         <translation>Controllo dimensioni immagini ({n} immagini)...</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="202"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="203"/>
         <source>Validating image paths...</source>
         <translation>Convalida percorsi immagini...</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="209"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="210"/>
         <source>Load Results Failed</source>
         <translation>Caricamento Risultati Non Riuscito</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="211"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="212"/>
         <source>Cannot load results without valid image and mask locations.
 
 The viewer will now close.</source>
@@ -17698,60 +17706,60 @@ The viewer will now close.</source>
 Il visualizzatore verrà chiuso.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="218"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="219"/>
         <source>Scanning source folder for full flight...</source>
         <translation>Scansione cartella sorgente per l&apos;intero volo...</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="234"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="235"/>
         <source>Initialising controllers...</source>
         <translation>Inizializzazione controller...</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="245"/>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1709"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="246"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1749"/>
         <source>Skip Hidden ({count}) </source>
         <translation>Salta Nascoste ({count}) </translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="278"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="280"/>
         <source>Loading detection results from {n} images...</source>
         <translation>Caricamento risultati rilevamenti da {n} immagini...</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="330"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="332"/>
         <source>Image metadata and information.
 Click on GPS Coordinates to copy, share, or open in mapping applications.</source>
         <translation>Metadati e informazioni dell&apos;immagine.
 Clicca su Coordinate GPS per copiare, condividere o aprire in applicazioni di mappatura.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="370"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="372"/>
         <source>Loading first image...</source>
         <translation>Caricamento prima immagine...</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="385"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="387"/>
         <source>Preparing thumbnails...</source>
         <translation>Preparazione miniature...</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="774"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="809"/>
         <source>No Dataset</source>
         <translation>Nessun Dataset</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="775"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="810"/>
         <source>No dataset is currently loaded.</source>
         <translation>Nessun dataset è attualmente caricato.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="782"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="817"/>
         <source>Generate Cache</source>
         <translation>Genera Cache</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="784"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="819"/>
         <source>This will regenerate thumbnail and color caches for all AOIs in this dataset.
 
 This may take a few minutes depending on the dataset size.
@@ -17764,39 +17772,39 @@ Questo potrebbe richiedere alcuni minuti a seconda della dimensione del dataset.
 Continuare?</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="797"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="832"/>
         <source>Initializing cache generation...</source>
         <translation>Inizializzazione generazione cache...</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="798"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="833"/>
         <source>Cancel</source>
         <translation>Annulla</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="803"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="838"/>
         <source>Generating Cache</source>
         <translation>Generazione Cache</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="840"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="875"/>
         <source>Error</source>
         <translation>Errore</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="841"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="876"/>
         <source>Failed to start cache generation:
 {error}</source>
         <translation>Impossibile avviare la generazione della cache:
 {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="859"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="894"/>
         <source>Cache Generated</source>
         <translation>Cache Generata</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="861"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="896"/>
         <source>Cache generation complete!
 
 Processed {images} images with {aois} AOIs.
@@ -17809,12 +17817,12 @@ Elaborate {images} immagini con {aois} AOI.
 Il visualizzatore ora caricherà miniature e colori molto più velocemente.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="892"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="927"/>
         <source>Cache Generation Error</source>
         <translation>Errore Generazione Cache</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="894"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="929"/>
         <source>An error occurred during cache generation:
 
 {error}</source>
@@ -17823,12 +17831,12 @@ Il visualizzatore ora caricherà miniature e colori molto più velocemente.</tra
 {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1088"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1128"/>
         <source>AOI Not Visible</source>
         <translation>AOI Non Visibile</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1090"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1130"/>
         <source>The AOI at the cursor position cannot be selected because it is currently hidden due to active filters.
 
 To select this AOI, please clear or adjust your filters.</source>
@@ -17837,12 +17845,12 @@ To select this AOI, please clear or adjust your filters.</source>
 Per selezionare questa AOI, cancella o regola i tuoi filtri.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1299"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1339"/>
         <source>Update Image Dimensions</source>
         <translation>Aggiorna Dimensioni Immagini</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1301"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1341"/>
         <source>This dataset is missing image dimensions needed for heatmap filtering ({count} images).
 
 Would you like to read dimensions from the image files and update the results file?</source>
@@ -17851,61 +17859,61 @@ Would you like to read dimensions from the image files and update the results fi
 Vuoi leggere le dimensioni dai file immagine e aggiornare il file dei risultati?</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1340"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1380"/>
         <source>Reading image dimensions ({done}/{total})...</source>
         <translation>Lettura dimensioni immagini ({done}/{total})...</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1432"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1472"/>
         <source>Show Pixels of Interest (H or Ctrl+I)</source>
         <translation>Mostra Pixel di Interesse (H o Ctrl+I)</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1447"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1487"/>
         <source>Toggle AOI Circles</source>
         <translation>Attiva/disattiva Cerchi AOI</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1454"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1494"/>
         <source>Toggle AOI Ruler</source>
         <translation>Mostra/nascondi righello AOI</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1895"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1935"/>
         <source>Missing Dependency</source>
         <translation>Dipendenza Mancante</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1897"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1937"/>
         <source>The qimage2ndarray module is required for the upscale feature.
 Please install it using: pip install qimage2ndarray</source>
         <translation>Il modulo qimage2ndarray è richiesto per la funzione di upscale.
 Installalo usando: pip install qimage2ndarray</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1906"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1946"/>
         <source>Upscale Error</source>
         <translation>Errore di Upscale</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1908"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1948"/>
         <source>An error occurred while opening the upscale dialog:
 {error}</source>
         <translation>Si è verificato un errore durante l&apos;apertura della finestra di upscale:
 {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="2264"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="2304"/>
         <source>Person Size Reference is unavailable: no GSD for this image</source>
         <translation>Riferimento dimensioni persona non disponibile: nessun GSD per questa immagine</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="2377"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="2417"/>
         <source>Unknown Reviewer</source>
         <translation>Revisore Sconosciuto</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="2440"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="2480"/>
         <source>Loading gallery...</source>
         <translation>Caricamento galleria...</translation>
     </message>

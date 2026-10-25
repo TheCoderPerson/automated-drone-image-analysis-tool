@@ -348,6 +348,79 @@ def test_on_splitter_moved_syncs_header_in_single_image_mode(controller):
 
 
 # ---------------------------------------------------------------------------
+# Full-width gallery: the image pane collapses and the gallery keeps the whole
+# width; a tile click then opens the image pop-out window.
+# ---------------------------------------------------------------------------
+
+def test_on_splitter_moved_keeps_a_collapsed_image_pane(controller):
+    """Column snapping would re-open a 400px image pane beside the gallery."""
+    controller.parent.gallery_mode = True
+    controller.update_gallery_geometry = MagicMock()
+    controller.save_splitter_position = MagicMock()
+    splitter = _splitter([0, 1912])
+
+    controller.on_splitter_moved(0, 1, splitter, MagicMock())
+
+    splitter.setSizes.assert_not_called()
+    controller.save_splitter_position.assert_called_once_with(splitter)
+
+
+def test_on_splitter_moved_still_snaps_an_open_image_pane(controller):
+    controller.parent.gallery_mode = True
+    controller.update_gallery_geometry = MagicMock()
+    controller.save_splitter_position = MagicMock()
+    splitter = _splitter([1000, 912])
+
+    controller.on_splitter_moved(0, 1, splitter, MagicMock())
+
+    # 912 - 35 overhead fits 4 columns of 200: 835 for the gallery.
+    splitter.setSizes.assert_called_once_with([1077, 835])
+
+
+@pytest.mark.parametrize("gallery_mode, sizes, expected", [
+    (True, [0, 1912], True),
+    (True, [1077, 835], False),
+    (False, [0, 1912], False),
+])
+def test_is_full_gallery(controller, gallery_mode, sizes, expected):
+    controller.parent.gallery_mode = gallery_mode
+    controller.parent.image_gallery_splitter = _splitter(sizes)
+
+    assert controller.is_full_gallery() is expected
+
+
+@pytest.mark.parametrize("full_gallery, already_open, opens", [
+    (True, False, True),
+    (True, True, False),
+    (False, False, False),
+])
+def test_thumbnail_click_opens_the_popout_only_from_a_full_gallery(controller, full_gallery, already_open, opens):
+    controller.is_full_gallery = MagicMock(return_value=full_gallery)
+    controller.on_aoi_clicked = MagicMock()
+    popout = controller.parent.image_popout_controller
+    popout.is_open.return_value = already_open
+    aoi = _aoi()
+
+    controller.on_thumbnail_clicked(2, 1, aoi)
+
+    assert popout.open.called is opens
+    # The AOI is loaded and framed through the normal click path either way.
+    controller.on_aoi_clicked.assert_called_once_with(2, 1, aoi)
+
+
+def test_thumbnail_click_still_loads_the_aoi_if_the_popout_fails(controller):
+    controller.is_full_gallery = MagicMock(return_value=True)
+    controller.on_aoi_clicked = MagicMock()
+    popout = controller.parent.image_popout_controller
+    popout.is_open.return_value = False
+    popout.open.side_effect = RuntimeError("boom")
+
+    controller.on_thumbnail_clicked(2, 1, _aoi())
+
+    controller.on_aoi_clicked.assert_called_once()
+
+
+# ---------------------------------------------------------------------------
 # color-calc signal lifecycle — regression: opening the gallery logged Qt
 # RuntimeWarnings because _disconnect_color_calc_signals tried to disconnect
 # slots that were never connected (color_calc_progress/message, and complete on

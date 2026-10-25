@@ -1614,52 +1614,52 @@ Elke hoekgreep is op kleur gekoppeld aan een hoek van de dronefoto (de kleine ge
 <context>
     <name>AnalyzeService</name>
     <message>
-        <location filename="../app/core/services/AnalyzeService.py" line="162"/>
+        <location filename="../app/core/services/AnalyzeService.py" line="163"/>
         <source>Processing {count} files</source>
         <translation>{count} bestanden verwerken</translation>
     </message>
     <message>
-        <location filename="../app/core/services/AnalyzeService.py" line="217"/>
+        <location filename="../app/core/services/AnalyzeService.py" line="218"/>
         <source>Skipping {file} :: File is not an image</source>
         <translation>{file} overslaan :: Bestand is geen afbeelding</translation>
     </message>
     <message>
-        <location filename="../app/core/services/AnalyzeService.py" line="222"/>
+        <location filename="../app/core/services/AnalyzeService.py" line="223"/>
         <source>All {count} images queued, processing started...</source>
         <translation>Alle {count} afbeeldingen in wachtrij, verwerking gestart...</translation>
     </message>
     <message>
-        <location filename="../app/core/services/AnalyzeService.py" line="280"/>
+        <location filename="../app/core/services/AnalyzeService.py" line="281"/>
         <source>{images} images with {aois} areas of interest identified</source>
         <translation>{images} afbeeldingen met {aois} interessegebieden geïdentificeerd</translation>
     </message>
     <message>
-        <location filename="../app/core/services/AnalyzeService.py" line="286"/>
+        <location filename="../app/core/services/AnalyzeService.py" line="287"/>
         <source>Total Processing Time: {seconds} seconds</source>
         <translation>Totale verwerkingstijd: {seconds} seconden</translation>
     </message>
     <message>
-        <location filename="../app/core/services/AnalyzeService.py" line="289"/>
+        <location filename="../app/core/services/AnalyzeService.py" line="290"/>
         <source>Total Images Processed: {count}</source>
         <translation>Totaal aantal verwerkte afbeeldingen: {count}</translation>
     </message>
     <message>
-        <location filename="../app/core/services/AnalyzeService.py" line="512"/>
+        <location filename="../app/core/services/AnalyzeService.py" line="536"/>
         <source>Unable to process {file} :: {error} ({percent}%)</source>
         <translation>Kan {file} niet verwerken :: {error} ({percent}%)</translation>
     </message>
     <message>
-        <location filename="../app/core/services/AnalyzeService.py" line="539"/>
+        <location filename="../app/core/services/AnalyzeService.py" line="563"/>
         <source>{count} areas of interest identified in {file} ({percent}%)</source>
         <translation>{count} interessegebieden geïdentificeerd in {file} ({percent}%)</translation>
     </message>
     <message>
-        <location filename="../app/core/services/AnalyzeService.py" line="556"/>
+        <location filename="../app/core/services/AnalyzeService.py" line="580"/>
         <source>No areas of interest identified in {file} ({percent}%)</source>
         <translation>Geen interessegebieden geïdentificeerd in {file} ({percent}%)</translation>
     </message>
     <message>
-        <location filename="../app/core/services/AnalyzeService.py" line="638"/>
+        <location filename="../app/core/services/AnalyzeService.py" line="662"/>
         <source>--- Cancelling Image Processing ---</source>
         <translation>--- Beeldverwerking annuleren ---</translation>
     </message>
@@ -8444,6 +8444,14 @@ li.checked::marker { content: &quot;\2612&quot;; }
     </message>
 </context>
 <context>
+    <name>ImagePopoutWindow</name>
+    <message>
+        <location filename="../resources/views/images/viewer/ImagePopoutWindow.ui" line="14"/>
+        <source>Image View</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
     <name>InputProcessingTab</name>
     <message>
         <location filename="../app/core/views/streaming/components/InputProcessingTab.py" line="31"/>
@@ -13336,17 +13344,17 @@ Hogere waarden = voeg verder uit elkaar liggende detecties samen (kan oversamenv
 <context>
     <name>ResultsLoadingDialog</name>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/ResultsLoadingDialog.py" line="29"/>
+        <location filename="../app/core/views/images/viewer/dialogs/ResultsLoadingDialog.py" line="65"/>
         <source>Loading Results</source>
         <translation>Resultaten laden</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/ResultsLoadingDialog.py" line="43"/>
+        <location filename="../app/core/views/images/viewer/dialogs/ResultsLoadingDialog.py" line="79"/>
         <source>Opening results...</source>
         <translation>Resultaten openen...</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/ResultsLoadingDialog.py" line="55"/>
+        <location filename="../app/core/views/images/viewer/dialogs/ResultsLoadingDialog.py" line="91"/>
         <source>Preparing...</source>
         <translation>Voorbereiden...</translation>
     </message>
@@ -17361,13 +17369,13 @@ Indien uitgeschakeld, wordt de originele onbewerkte afbeelding getoond.
 Gebruik om de originele afbeelding met detectieresultaten te vergelijken.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="552"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="570"/>
         <location filename="../resources/views/images/viewer/Viewer.ui" line="205"/>
         <source>Show Overlay</source>
         <translation>Overlay tonen</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1421"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1461"/>
         <location filename="../resources/views/images/viewer/Viewer.ui" line="225"/>
         <source>Toggle Gallery Mode (G)
 Shows all AOIs from all images in a grid view</source>
@@ -17385,7 +17393,7 @@ Toont alle AOI&apos;s van alle afbeeldingen in een rasterweergave</translation>
         <translation>AOI&apos;s tonen</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1441"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1481"/>
         <location filename="../resources/views/images/viewer/Viewer.ui" line="328"/>
         <source>Open Histogram</source>
         <translation>Histogram openen</translation>
@@ -17433,7 +17441,7 @@ Toont alle AOI&apos;s van alle afbeeldingen in een rasterweergave</translation>
         <translation>ruler.png</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="2260"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="2300"/>
         <location filename="../resources/views/images/viewer/Viewer.ui" line="427"/>
         <source>Person Size Reference (Ctrl+P)</source>
         <translation>Referentie voor persoonsgrootte (Ctrl+P)</translation>
@@ -17664,32 +17672,32 @@ Sorteren helpt bij het prioriteren van de beoordeling van grotere of nabije obje
         <translation>Openen</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="151"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="152"/>
         <source>Automated Drone Image Analysis Tool v{version} - Sponsored by TEXSAR</source>
         <translation>Geautomatiseerd drone-beeldanalyse-instrument v{version} - Gesponsord door TEXSAR</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="163"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="164"/>
         <source>Reading result file...</source>
         <translation>Resultaatbestand lezen...</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="192"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="193"/>
         <source>Checking image dimensions ({n} images)...</source>
         <translation>Afbeeldingsafmetingen controleren ({n} afbeeldingen)...</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="202"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="203"/>
         <source>Validating image paths...</source>
         <translation>Afbeeldingspaden valideren...</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="209"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="210"/>
         <source>Load Results Failed</source>
         <translation>Laden van resultaten mislukt</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="211"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="212"/>
         <source>Cannot load results without valid image and mask locations.
 
 The viewer will now close.</source>
@@ -17698,60 +17706,60 @@ The viewer will now close.</source>
 De viewer wordt nu gesloten.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="218"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="219"/>
         <source>Scanning source folder for full flight...</source>
         <translation>Bronmap scannen op volledige vlucht...</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="234"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="235"/>
         <source>Initialising controllers...</source>
         <translation>Controllers initialiseren...</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="245"/>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1709"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="246"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1749"/>
         <source>Skip Hidden ({count}) </source>
         <translation>Verborgen overslaan ({count}) </translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="278"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="280"/>
         <source>Loading detection results from {n} images...</source>
         <translation>Detectieresultaten van {n} afbeeldingen laden...</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="330"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="332"/>
         <source>Image metadata and information.
 Click on GPS Coordinates to copy, share, or open in mapping applications.</source>
         <translation>Afbeeldingsmetagegevens en -informatie.
 Klik op GPS-coördinaten om te kopiëren, delen of te openen in kaarttoepassingen.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="370"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="372"/>
         <source>Loading first image...</source>
         <translation>Eerste afbeelding laden...</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="385"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="387"/>
         <source>Preparing thumbnails...</source>
         <translation>Miniaturen voorbereiden...</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="774"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="809"/>
         <source>No Dataset</source>
         <translation>Geen dataset</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="775"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="810"/>
         <source>No dataset is currently loaded.</source>
         <translation>Er is momenteel geen dataset geladen.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="782"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="817"/>
         <source>Generate Cache</source>
         <translation>Cache genereren</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="784"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="819"/>
         <source>This will regenerate thumbnail and color caches for all AOIs in this dataset.
 
 This may take a few minutes depending on the dataset size.
@@ -17764,39 +17772,39 @@ Dit kan enkele minuten duren, afhankelijk van de grootte van de dataset.
 Doorgaan?</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="797"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="832"/>
         <source>Initializing cache generation...</source>
         <translation>Cachegeneratie initialiseren...</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="798"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="833"/>
         <source>Cancel</source>
         <translation>Annuleren</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="803"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="838"/>
         <source>Generating Cache</source>
         <translation>Cache genereren</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="840"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="875"/>
         <source>Error</source>
         <translation>Fout</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="841"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="876"/>
         <source>Failed to start cache generation:
 {error}</source>
         <translation>Kan cachegeneratie niet starten:
 {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="859"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="894"/>
         <source>Cache Generated</source>
         <translation>Cache gegenereerd</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="861"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="896"/>
         <source>Cache generation complete!
 
 Processed {images} images with {aois} AOIs.
@@ -17809,12 +17817,12 @@ The viewer will now load thumbnails and colors much faster.</source>
 De viewer laadt nu miniaturen en kleuren veel sneller.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="892"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="927"/>
         <source>Cache Generation Error</source>
         <translation>Fout bij cachegeneratie</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="894"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="929"/>
         <source>An error occurred during cache generation:
 
 {error}</source>
@@ -17823,12 +17831,12 @@ De viewer laadt nu miniaturen en kleuren veel sneller.</translation>
 {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1088"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1128"/>
         <source>AOI Not Visible</source>
         <translation>AOI niet zichtbaar</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1090"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1130"/>
         <source>The AOI at the cursor position cannot be selected because it is currently hidden due to active filters.
 
 To select this AOI, please clear or adjust your filters.</source>
@@ -17837,12 +17845,12 @@ To select this AOI, please clear or adjust your filters.</source>
 Wis of pas uw filters aan om deze AOI te selecteren.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1299"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1339"/>
         <source>Update Image Dimensions</source>
         <translation>Afbeeldingsafmetingen bijwerken</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1301"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1341"/>
         <source>This dataset is missing image dimensions needed for heatmap filtering ({count} images).
 
 Would you like to read dimensions from the image files and update the results file?</source>
@@ -17851,61 +17859,61 @@ Would you like to read dimensions from the image files and update the results fi
 Wilt u de afmetingen uit de afbeeldingsbestanden lezen en het resultatenbestand bijwerken?</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1340"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1380"/>
         <source>Reading image dimensions ({done}/{total})...</source>
         <translation>Afbeeldingsafmetingen lezen ({done}/{total})...</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1432"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1472"/>
         <source>Show Pixels of Interest (H or Ctrl+I)</source>
         <translation>Interessepixels tonen (H of Ctrl+I)</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1447"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1487"/>
         <source>Toggle AOI Circles</source>
         <translation>AOI-cirkels in-/uitschakelen</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1454"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1494"/>
         <source>Toggle AOI Ruler</source>
         <translation>AOI-liniaal in-/uitschakelen</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1895"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1935"/>
         <source>Missing Dependency</source>
         <translation>Ontbrekende afhankelijkheid</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1897"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1937"/>
         <source>The qimage2ndarray module is required for the upscale feature.
 Please install it using: pip install qimage2ndarray</source>
         <translation>De qimage2ndarray-module is vereist voor de opschaalfunctie.
 Installeer deze met: pip install qimage2ndarray</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1906"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1946"/>
         <source>Upscale Error</source>
         <translation>Opschaalfout</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1908"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1948"/>
         <source>An error occurred while opening the upscale dialog:
 {error}</source>
         <translation>Er is een fout opgetreden bij het openen van het opschaaldialoogvenster:
 {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="2264"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="2304"/>
         <source>Person Size Reference is unavailable: no GSD for this image</source>
         <translation>Referentie voor persoonsgrootte is niet beschikbaar: geen GSD voor deze afbeelding</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="2377"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="2417"/>
         <source>Unknown Reviewer</source>
         <translation>Onbekende beoordelaar</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="2440"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="2480"/>
         <source>Loading gallery...</source>
         <translation>Galerij laden...</translation>
     </message>
