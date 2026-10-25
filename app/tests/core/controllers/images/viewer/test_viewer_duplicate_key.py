@@ -18,6 +18,7 @@ def app():
 def _viewer(gallery_mode):
     viewer = MagicMock()
     viewer.grid_review_controller.handle_key.return_value = False
+    viewer.image_popout_controller.handle_key.return_value = False
     viewer.gallery_mode = gallery_mode
     viewer._resolve_gallery_selected_aoi.return_value = (2, 3)
     return viewer

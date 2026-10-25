@@ -667,6 +667,37 @@ class GalleryController:
 
         # self.logger.debug("Synced filters from AOI controller")
 
+    def is_full_gallery(self):
+        """True when gallery mode has the image pane collapsed, so the gallery fills the viewer."""
+        splitter = getattr(self.parent, 'image_gallery_splitter', None)
+        if not getattr(self.parent, 'gallery_mode', False) or splitter is None:
+            return False
+        sizes = splitter.sizes()
+        return len(sizes) == 2 and sizes[0] == 0
+
+    def on_thumbnail_clicked(self, image_idx, aoi_idx, aoi_data):
+        """Handle a mouse click on a gallery tile.
+
+        With the gallery filling the viewer there is no image pane on screen,
+        so the click first opens the image pop-out window, which takes the
+        pane. The normal click path then loads and frames the AOI in it.
+        Keyboard navigation goes straight to on_aoi_clicked and never opens
+        the window.
+
+        Args:
+            image_idx: Index of the image containing the AOI
+            aoi_idx: Index of the AOI within the image
+            aoi_data: AOI data dictionary
+        """
+        popout = getattr(self.parent, 'image_popout_controller', None)
+        if popout is not None and not popout.is_open() and self.is_full_gallery():
+            try:
+                popout.open()
+            except Exception as e:
+                self.logger.error(f"Could not open the image pop-out window for image {image_idx}, AOI {aoi_idx}: {e}")
+                self.logger.error(traceback.format_exc())
+        self.on_aoi_clicked(image_idx, aoi_idx, aoi_data)
+
     def on_aoi_clicked(self, image_idx, aoi_idx, aoi_data):
         """
         Handle click on an AOI in the gallery.
@@ -1228,27 +1259,31 @@ class GalleryController:
             gallery_width = sizes[1]
             total_width = image_width + gallery_width
 
-            # Calculate usable width for columns (subtract overhead for margins/scrollbar)
-            usable_width = gallery_width - self.GALLERY_OVERHEAD
+            # A collapsed image pane (the divider dragged to the edge) means a
+            # full-width gallery. Snapping would re-open a 400px image pane,
+            # so the gallery keeps the whole width.
+            if image_width > 0:
+                # Calculate usable width for columns (subtract overhead for margins/scrollbar)
+                usable_width = gallery_width - self.GALLERY_OVERHEAD
 
-            # Calculate number of columns that fit in the usable space
-            # Use floor to ensure we only count columns that fully fit
-            num_columns = max(1, math.floor(usable_width / self.GALLERY_COLUMN_WIDTH))
+                # Calculate number of columns that fit in the usable space
+                # Use floor to ensure we only count columns that fully fit
+                num_columns = max(1, math.floor(usable_width / self.GALLERY_COLUMN_WIDTH))
 
-            # Calculate the ideal gallery width for this number of columns
-            # This ensures no extra space on the right
-            snapped_gallery_width = (num_columns * self.GALLERY_COLUMN_WIDTH) + self.GALLERY_OVERHEAD
+                # Calculate the ideal gallery width for this number of columns
+                # This ensures no extra space on the right
+                snapped_gallery_width = (num_columns * self.GALLERY_COLUMN_WIDTH) + self.GALLERY_OVERHEAD
 
-            # Apply minimum and maximum constraints
-            min_gallery_width = self.GALLERY_COLUMN_WIDTH + self.GALLERY_OVERHEAD  # 1 column + overhead
-            max_gallery_width = total_width - 400  # Minimum 400px for image
+                # Apply minimum and maximum constraints
+                min_gallery_width = self.GALLERY_COLUMN_WIDTH + self.GALLERY_OVERHEAD  # 1 column + overhead
+                max_gallery_width = total_width - 400  # Minimum 400px for image
 
-            snapped_gallery_width = max(min_gallery_width, min(snapped_gallery_width, max_gallery_width))
-            snapped_image_width = total_width - snapped_gallery_width
+                snapped_gallery_width = max(min_gallery_width, min(snapped_gallery_width, max_gallery_width))
+                snapped_image_width = total_width - snapped_gallery_width
 
-            # Only update if changed significantly (avoid infinite loop)
-            if abs(gallery_width - snapped_gallery_width) > 5:
-                splitter.setSizes([snapped_image_width, snapped_gallery_width])
+                # Only update if changed significantly (avoid infinite loop)
+                if abs(gallery_width - snapped_gallery_width) > 5:
+                    splitter.setSizes([snapped_image_width, snapped_gallery_width])
 
             # Update gallery widget geometry to match new aoiFrame size
             if gallery_widget:
@@ -1363,6 +1398,10 @@ class GalleryController:
 
             # Save current position BEFORE toggling mode (so we know which mode we're leaving)
             was_in_gallery_mode = getattr(self.parent, 'gallery_mode', False)
+            # Leaving the gallery needs the image pane back in the viewer.
+            popout = getattr(self.parent, 'image_popout_controller', None)
+            if was_in_gallery_mode and popout is not None:
+                popout.close()
             if was_in_gallery_mode and hasattr(self.parent, 'image_gallery_splitter'):
                 # We're about to exit gallery mode, save the current gallery position
                 self.save_splitter_position(self.parent.image_gallery_splitter)
@@ -1374,6 +1413,11 @@ class GalleryController:
                 # Enable splitter handle for resizing
                 if hasattr(self.parent, 'image_gallery_splitter'):
                     self.parent.image_gallery_splitter.setHandleWidth(4)
+                    # Dragging the divider past the image pane's minimum
+                    # collapses the pane and the gallery fills the viewer.
+                    # Set before the saved position is restored, which may
+                    # itself be collapsed.
+                    self.parent.image_gallery_splitter.setCollapsible(0, True)
                     # Explicitly set resize cursor on the handle for gallery mode
                     try:
                         handle = self.parent.image_gallery_splitter.handle(1)
@@ -1506,6 +1550,9 @@ class GalleryController:
                     # Set cursor to arrow to prevent drag cursor from appearing
                     self._set_splitter_cursor(self.parent.image_gallery_splitter, Qt.ArrowCursor)
                     self.set_splitter_to_single_column(self.parent.image_gallery_splitter)
+                    # The single-column sizes above re-open a collapsed pane;
+                    # outside the gallery it stays open.
+                    self.parent.image_gallery_splitter.setCollapsible(0, False)
                     # Resize main image and reposition overlay
                     if hasattr(self.parent, '_resize_main_image_and_reposition_overlay'):
                         self.parent._resize_main_image_and_reposition_overlay()

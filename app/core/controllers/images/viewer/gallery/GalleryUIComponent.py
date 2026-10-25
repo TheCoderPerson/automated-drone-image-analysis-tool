@@ -477,8 +477,8 @@ class GalleryUIComponent(TranslationMixin, QObject):
 
             if aoi_info:
                 image_idx, aoi_idx, aoi_data = aoi_info
-                # Notify controller
-                self.gallery_controller.on_aoi_clicked(image_idx, aoi_idx, aoi_data)
+                # Notify controller (a click may open the image pop-out window)
+                self.gallery_controller.on_thumbnail_clicked(image_idx, aoi_idx, aoi_data)
 
         except Exception as e:
             self.logger.error(f"Error handling gallery item click: {e}")
