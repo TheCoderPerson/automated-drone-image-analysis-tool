@@ -19,6 +19,7 @@ from core.services.LoggerService import LoggerService
 from core.services.advancedFeatures.HistogramNormalizationService import HistogramNormalizationService
 from core.services.advancedFeatures.KMeansClustersService import KMeansClustersService
 from core.services.XmlService import XmlService, MAX_SAVED_DETECTED_PIXELS
+from core.services.cache.ThumbnailBlobStore import ThumbnailBlobStore
 from helpers.PathHelper import build_image_cache_identities, cross_platform_path_key
 # Algorithm services imported lazily in process_file() to avoid worker startup overhead
 
@@ -666,7 +667,10 @@ class AnalyzeService(QObject):
         """Generate a thumbnail for the main image to speed up viewer loading.
 
         Creates a thumbnail image (max 100x56) maintaining aspect ratio and
-        stores it in the .thumbnails directory with a hash-based filename.
+        stores it in the .thumbnails directory's thumbnails.db container,
+        keyed by the hash that older builds used as a loose .jpg filename.
+        One container instead of a file per image keeps a results folder fast
+        to copy between machines.
 
         Args:
             img: Original image array (before any scaling).
@@ -696,8 +700,6 @@ class AnalyzeService(QObject):
 
             norm_key = rel_key_source.replace('\\', '/').lower()
             path_hash = hashlib.md5(norm_key.encode()).hexdigest()
-            thumb_filename = f"{path_hash}.jpg"
-            thumb_path = thumb_dir / thumb_filename
 
             # Convert to RGB if needed
             if len(img.shape) == 2:
@@ -724,11 +726,13 @@ class AnalyzeService(QObject):
             # Resize using cv2 - use INTER_AREA for downscaling (faster and better quality)
             thumb_img = cv2.resize(img_rgb, (thumb_width, thumb_height), interpolation=cv2.INTER_AREA)
 
-            # Convert RGB back to BGR for cv2.imwrite (cv2 expects BGR format)
+            # Convert RGB back to BGR for cv2.imencode (cv2 expects BGR format)
             thumb_img_bgr = cv2.cvtColor(thumb_img, cv2.COLOR_RGB2BGR)
 
-            # Save as JPEG with balanced quality (80 = good balance of quality and speed)
-            cv2.imwrite(str(thumb_path), thumb_img_bgr, [cv2.IMWRITE_JPEG_QUALITY, 80])
+            # Encode as JPEG with balanced quality (80 = good balance of quality and speed)
+            success, encoded = cv2.imencode('.jpg', thumb_img_bgr, [cv2.IMWRITE_JPEG_QUALITY, 80])
+            if success:
+                ThumbnailBlobStore(thumb_dir, logger=LoggerService()).put(path_hash, encoded.tobytes())
 
         except Exception:
             # Don't fail processing if thumbnail generation fails

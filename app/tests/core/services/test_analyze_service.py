@@ -7,12 +7,14 @@ Tests the core image analysis orchestration service.
 import pytest
 import tempfile
 import os
+import hashlib
 import numpy as np
 import cv2
 from unittest.mock import patch, MagicMock
 from PySide6.QtCore import QObject
 from core.services.AnalyzeService import AnalyzeService
 from core.services.XmlService import MAX_SAVED_DETECTED_PIXELS
+from core.services.cache.ThumbnailBlobStore import ThumbnailBlobStore
 
 
 @pytest.fixture
@@ -503,14 +505,41 @@ def test_process_complete_zero_aois(analyze_service):
 # _generate_main_image_thumbnail
 # ---------------------------------------------------------------------------
 
-def test_generate_thumbnail_creates_file(tmp_path):
+def test_generate_thumbnail_stored_in_container_not_loose_file(tmp_path):
+    """The filmstrip thumbnail lands in thumbnails.db under the old filename's hash."""
     img = np.random.randint(0, 255, (200, 400, 3), dtype=np.uint8)
     AnalyzeService._generate_main_image_thumbnail(
         img, image_path="/input/test.jpg", output_dir=str(tmp_path), input_root="/input"
     )
-    thumbs = list((tmp_path / ".thumbnails").iterdir())
-    assert len(thumbs) == 1
-    assert thumbs[0].suffix == ".jpg"
+    thumb_dir = tmp_path / ".thumbnails"
+    assert [p.name for p in thumb_dir.iterdir()] == [ThumbnailBlobStore.DB_FILENAME]
+
+    key = hashlib.md5("test.jpg".encode()).hexdigest()
+    jpeg_bytes = ThumbnailBlobStore(thumb_dir).get(key)
+    assert jpeg_bytes is not None
+    decoded = cv2.imdecode(np.frombuffer(jpeg_bytes, dtype=np.uint8), cv2.IMREAD_COLOR)
+    assert decoded.shape == (50, 100, 3)
+
+
+def test_generate_thumbnail_one_container_for_many_images(tmp_path):
+    img = np.zeros((200, 400, 3), dtype=np.uint8)
+    for i in range(5):
+        AnalyzeService._generate_main_image_thumbnail(
+            img, image_path=f"/input/img_{i}.jpg", output_dir=str(tmp_path), input_root="/input"
+        )
+    thumb_dir = tmp_path / ".thumbnails"
+    assert list(thumb_dir.glob("*.jpg")) == []
+    assert ThumbnailBlobStore(thumb_dir).count() == 5
+
+
+def test_generate_thumbnail_non_ascii_output_dir(tmp_path):
+    """cv2.imwrite cannot open non-ASCII paths on Windows; the container can."""
+    output_dir = tmp_path / "résultats_búsqueda"
+    img = np.zeros((200, 400, 3), dtype=np.uint8)
+    AnalyzeService._generate_main_image_thumbnail(
+        img, image_path="/input/test.jpg", output_dir=str(output_dir), input_root="/input"
+    )
+    assert ThumbnailBlobStore(output_dir / ".thumbnails").count() == 1
 
 
 def test_generate_thumbnail_handles_grayscale(tmp_path):
