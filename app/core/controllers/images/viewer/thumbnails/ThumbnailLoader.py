@@ -9,6 +9,9 @@ import hashlib
 import os
 from pathlib import Path
 
+from core.services.LoggerService import LoggerService
+from core.services.cache.ThumbnailBlobStore import ThumbnailBlobStore
+
 
 class ThumbnailLoader(QObject):
     """Background thumbnail loader that processes thumbnails on demand."""
@@ -22,6 +25,29 @@ class ThumbnailLoader(QObject):
         self.loaded_indices = set()
         self.results_dir = results_dir
         self.input_root = input_root
+        # Container for the current results_dir, opened on first use. Reopened
+        # when results_dir is pointed elsewhere (CachePathService does that).
+        self._blob_store = None
+
+    def _get_blob_store(self, thumb_dir):
+        """
+        Return the thumbnails.db container in thumb_dir, or None if there is none.
+
+        Never creates one: a results folder from an older build holds only
+        loose .jpg files, and the viewer must not write into it (it may sit
+        on read-only media) just to look thumbnails up.
+        """
+        db_path = thumb_dir / ThumbnailBlobStore.DB_FILENAME
+        if not db_path.exists():
+            return None
+        # is_cached runs on the GUI thread and loading on the loader thread;
+        # a race here at worst opens the same file twice, and the store opens
+        # a fresh connection per operation, so no lock is needed
+        store = self._blob_store
+        if store is None or store.db_path != str(db_path):
+            store = ThumbnailBlobStore(thumb_dir, logger=LoggerService())
+            self._blob_store = store
+        return store
 
     @Slot(int)
     def load_thumbnail(self, index):
@@ -95,6 +121,13 @@ class ThumbnailLoader(QObject):
 
             norm_key = key_source.replace('\\', '/').lower()
             path_hash = hashlib.md5(norm_key.encode()).hexdigest()
+
+            # Container written by current builds
+            store = self._get_blob_store(thumb_dir)
+            if store is not None and store.has(path_hash):
+                return True
+
+            # Loose .jpg written by older builds
             thumb_path = thumb_dir / f"{path_hash}.jpg"
 
             if thumb_path.exists():
@@ -163,6 +196,17 @@ class ThumbnailLoader(QObject):
 
             norm_key = key_source.replace('\\', '/').lower()
             path_hash = hashlib.md5(norm_key.encode()).hexdigest()
+
+            # Container written by current builds
+            store = self._get_blob_store(thumb_dir)
+            if store is not None:
+                jpeg_bytes = store.get(path_hash)
+                if jpeg_bytes:
+                    pixmap = QPixmap()
+                    if pixmap.loadFromData(jpeg_bytes):
+                        return pixmap
+
+            # Loose .jpg written by older builds
             thumb_path = thumb_dir / f"{path_hash}.jpg"
 
             if thumb_path.exists():

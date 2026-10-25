@@ -1,5 +1,9 @@
 """
-ThumbnailBlobStore - Single-file SQLite container for cached AOI thumbnails.
+ThumbnailBlobStore - Single-file SQLite container for cached thumbnails.
+
+Holds both AOI thumbnails (ThumbnailCacheService) and the per-image filmstrip
+thumbnails (AnalyzeService writes, viewer ThumbnailLoader reads); their md5
+keys hash different inputs, so they share the table without colliding.
 
 A large search produces thousands of loose thumbnail JPEGs, and copying
 thousands of small files between drives or machines is dominated by per-file
