@@ -6,8 +6,8 @@ separate window with all the image tools, then closes the window and lands
 back in the gallery where they left off.
 
 The tests drive the real viewer UI (Viewer.ui), splitter, gallery and image
-widgets through the Viewer's own layout and key methods. Only the parts that
-load images and record review state are stubbed.
+widgets through the Viewer's own layout and key methods, under the app's own
+theme. Only the parts that load images and record review state are stubbed.
 """
 
 from types import SimpleNamespace
@@ -15,10 +15,11 @@ from unittest.mock import MagicMock
 
 import pytest
 from PySide6.QtCore import QEvent, QPoint, QPointF, Qt
-from PySide6.QtGui import QMouseEvent
+from PySide6.QtGui import QMouseEvent, QPalette
 from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QApplication, QMainWindow, QWidget
 
+from helpers.ThemeHelper import apply_theme
 from core.controllers.images.viewer.Viewer import Viewer
 from core.controllers.images.viewer.gallery.GalleryController import GalleryController
 from core.controllers.images.viewer.gallery.ImagePopoutController import ImagePopoutController
@@ -85,7 +86,26 @@ def _aoi(n):
 
 
 @pytest.fixture
-def viewer(qtbot):
+def app_theme(qapp):
+    """The theme the app applies at startup (__main__ calls apply_theme).
+
+    Its stylesheet changes the layout under test: the splitter gets a frame
+    border and a wider handle than handleWidth() reports. Applied here so the
+    tests see the app's real geometry whatever ran before them, then the
+    previous stylesheet and palette are put back. qdarktheme's proxy style
+    stays: it is installed once per process, and swapping it out would
+    delete the style object qdarktheme keeps.
+    """
+    saved_stylesheet = qapp.styleSheet()
+    saved_palette = QPalette(qapp.palette())
+    apply_theme('Dark')
+    yield
+    qapp.setStyleSheet(saved_stylesheet)
+    qapp.setPalette(saved_palette)
+
+
+@pytest.fixture
+def viewer(qtbot, app_theme):
     """A shown viewer in gallery mode with a page-spanning set of AOI tiles."""
     harness = _ViewerHarness()
     qtbot.addWidget(harness)
@@ -176,10 +196,19 @@ def test_divider_drags_past_the_toolbar_width(viewer):
 
 
 def test_divider_reaches_the_screen_edge(viewer):
+    """The image pane collapses completely. All that is left beside the
+    gallery is the divider's own handle, which the operator drags to bring
+    the pane back. The theme draws the handle wider than handleWidth() (10
+    px against 4), so the handle is measured, not assumed."""
     _fill_screen_with_gallery(viewer)
 
     splitter = viewer.image_gallery_splitter
-    assert splitter.sizes()[1] == splitter.width() - splitter.handleWidth()
+    contents = splitter.contentsRect()
+    handle = splitter.handle(1).geometry()
+    gallery = splitter.widget(1).geometry()
+    assert handle.left() == contents.left()
+    assert gallery.left() == handle.right() + 1
+    assert gallery.right() == contents.right()
     assert viewer.gallery_controller.is_full_gallery()
 
 
