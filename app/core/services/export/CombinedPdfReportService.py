@@ -33,6 +33,7 @@ from reportlab.platypus import Image, PageBreak, Paragraph, Spacer, Table, Table
 from core.services import AOIDuplicateService
 from core.services.export.PdfGeneratorService import PdfGeneratorService, PDFDocTemplate
 from core.services.export.ReviewMergeService import ReviewMergeService
+from core.services.image.WingtraDataService import attach_geotags
 from helpers.ColorUtils import ColorUtils
 from helpers.PathHelper import cross_platform_basename
 
@@ -204,6 +205,18 @@ def load_run_contexts(xml_paths, position_format, distance_unit,
                 use_terrain_elevation=use_terrain_elevation,
                 path_resolver=path_resolver,
             )
+            # The heading and altitude a viewer would read from a Wingtra
+            # run's geotags CSV on open; after from_merged, so the search
+            # sees image paths the scan session has already resolved. A
+            # failure costs the run its geotags, not its place in the report.
+            try:
+                attach_geotags(context.images, merged.xml_service.get_wingtra_geotags(),
+                               logger=logger)
+            except Exception as e:
+                if logger is not None:
+                    logger.warning(
+                        f"Combined report: Wingtra geotags not applied to "
+                        f"{merged.xml_path}: {e}")
             contexts.append(context)
         except Exception as e:
             if logger is not None:
