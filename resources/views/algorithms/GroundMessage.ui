@@ -1,0 +1,272 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>GroundMessage</class>
+ <widget class="QWidget" name="GroundMessage">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>674</width>
+    <height>140</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Form</string>
+  </property>
+  <layout class="QVBoxLayout" name="verticalLayout">
+   <item>
+    <layout class="QHBoxLayout" name="confidenceLayout">
+     <item>
+      <widget class="QLabel" name="confidenceLabel">
+       <property name="font">
+        <font>
+         <pointsize>10</pointsize>
+        </font>
+       </property>
+       <property name="toolTip">
+        <string>Minimum confidence for a message to be reported.
+Confidence combines how character-like each shape is with how consistently the characters line up as a message.</string>
+       </property>
+       <property name="text">
+        <string>Confidence Threshold</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QSlider" name="confidenceSlider">
+       <property name="toolTip">
+        <string>Minimum confidence (0-100%) for a message to be reported.
+• Default: 50%
+• Lower values (30-45%): Report weaker candidates (more detections, more false positives)
+• Medium values (45-60%): Balanced (recommended for most searches)
+• Higher values (60-80%): Only report rows of clearly formed characters (fewer false positives)
+Single characters (e.g. an X) score lower than multi-character messages, so very high thresholds report words only.</string>
+       </property>
+       <property name="minimum">
+        <number>0</number>
+       </property>
+       <property name="maximum">
+        <number>100</number>
+       </property>
+       <property name="pageStep">
+        <number>5</number>
+       </property>
+       <property name="value">
+        <number>50</number>
+       </property>
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+       <property name="tickPosition">
+        <enum>QSlider::TicksBelow</enum>
+       </property>
+       <property name="tickInterval">
+        <number>10</number>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QLabel" name="confidenceValueLabel">
+       <property name="minimumSize">
+        <size>
+         <width>30</width>
+         <height>0</height>
+        </size>
+       </property>
+       <property name="font">
+        <font>
+         <pointsize>10</pointsize>
+         <bold>true</bold>
+        </font>
+       </property>
+       <property name="toolTip">
+        <string>Current confidence threshold percentage.</string>
+       </property>
+       <property name="text">
+        <string notr="true">50</string>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+   <item>
+    <layout class="QHBoxLayout" name="charSizeLayout">
+     <item>
+      <widget class="QLabel" name="charSizeLabel">
+       <property name="font">
+        <font>
+         <pointsize>10</pointsize>
+        </font>
+       </property>
+       <property name="toolTip">
+        <string>Expected size of one character in the image, in pixels (its longest side).
+Character size in pixels = character size on the ground / ground sample distance (GSD).
+Example: a 2 m (6.5 ft) letter photographed at 2 cm/pixel is about 100 pixels tall.</string>
+       </property>
+       <property name="text">
+        <string>Character Size (px)</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QLabel" name="minCharSizeLabel">
+       <property name="font">
+        <font>
+         <pointsize>10</pointsize>
+        </font>
+       </property>
+       <property name="text">
+        <string>Min</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QSpinBox" name="minCharSizeSpinBox">
+       <property name="toolTip">
+        <string>Smallest character to look for, in pixels of the original image.
+• Default: 40
+Characters smaller than about 40 pixels rarely have enough detail to be recognised as characters.</string>
+       </property>
+       <property name="minimum">
+        <number>10</number>
+       </property>
+       <property name="maximum">
+        <number>5000</number>
+       </property>
+       <property name="singleStep">
+        <number>10</number>
+       </property>
+       <property name="value">
+        <number>40</number>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QLabel" name="maxCharSizeLabel">
+       <property name="font">
+        <font>
+         <pointsize>10</pointsize>
+        </font>
+       </property>
+       <property name="text">
+        <string>Max</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QSpinBox" name="maxCharSizeSpinBox">
+       <property name="toolTip">
+        <string>Largest character to look for, in pixels of the original image.
+• Default: 600
+A wider range takes longer to process and can increase false positives.</string>
+       </property>
+       <property name="minimum">
+        <number>20</number>
+       </property>
+       <property name="maximum">
+        <number>10000</number>
+       </property>
+       <property name="singleStep">
+        <number>50</number>
+       </property>
+       <property name="value">
+        <number>600</number>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <spacer name="charSizeSpacer">
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>40</width>
+         <height>20</height>
+        </size>
+       </property>
+      </spacer>
+     </item>
+    </layout>
+   </item>
+   <item>
+    <layout class="QHBoxLayout" name="polarityLayout">
+     <item>
+      <widget class="QLabel" name="polarityLabel">
+       <property name="font">
+        <font>
+         <pointsize>10</pointsize>
+        </font>
+       </property>
+       <property name="toolTip">
+        <string>Whether the material the characters are made of is darker or lighter than the ground around it.</string>
+       </property>
+       <property name="text">
+        <string>Character Material</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QComboBox" name="polarityComboBox">
+       <property name="toolTip">
+        <string>Whether the characters are darker or lighter than the ground around them.
+• Darker or lighter: Search for both (default; slower)
+• Darker than the ground: e.g. branches or logs on snow, sand or dry grass
+• Lighter than the ground: e.g. pale rocks or bright clothing on soil or vegetation</string>
+       </property>
+       <item>
+        <property name="text">
+         <string>Darker or lighter than the ground</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>Darker than the ground</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>Lighter than the ground</string>
+        </property>
+       </item>
+      </widget>
+     </item>
+     <item>
+      <spacer name="polaritySpacer">
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>40</width>
+         <height>20</height>
+        </size>
+       </property>
+      </spacer>
+     </item>
+    </layout>
+   </item>
+   <item>
+    <widget class="QCheckBox" name="singleCharactersCheckBox">
+     <property name="font">
+      <font>
+       <pointsize>10</pointsize>
+      </font>
+     </property>
+     <property name="toolTip">
+      <string>Also report a single, isolated character such as an X or V (international ground-to-air signals).
+A lone character is harder to tell apart from crossed branches than a whole word, so this can add false positives.</string>
+     </property>
+     <property name="text">
+      <string>Report single characters (e.g. X or V)</string>
+     </property>
+     <property name="checked">
+      <bool>true</bool>
+     </property>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

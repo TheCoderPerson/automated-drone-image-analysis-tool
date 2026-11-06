@@ -18,6 +18,7 @@ class AlgorithmSelectionPage(BasePage):
             'temperature_range': None,
             'local_residual_anomaly': None,
             'person_only': None,
+            'ground_message': None,
             'specific_color': None,
             'direct_color_control': None,
             'consistent_lighting': None,
@@ -83,6 +84,7 @@ class AlgorithmSelectionPage(BasePage):
             'temperature_range': None,
             'local_residual_anomaly': None,
             'person_only': None,
+            'ground_message': None,
             'specific_color': None,
             'direct_color_control': None,
             'consistent_lighting': None,
@@ -182,6 +184,16 @@ class AlgorithmSelectionPage(BasePage):
                 self.selected_algorithm = "AI Person Detector"
                 self._show_algorithm_result()
             else:  # No - not person only
+                self.dialog.labelCurrentQuestion.setText(self.tr(
+                    "Are you looking for a message laid out on the ground, "
+                    "such as SOS spelled with branches or rocks?"))
+
+        elif not state['thermal'] and state['person_only'] is False and state['ground_message'] is None:
+            state['ground_message'] = answer
+            if answer:  # Yes - letters/numbers/symbols on the ground
+                self.selected_algorithm = "Ground Message Detector"
+                self._show_algorithm_result()
+            else:  # No - continue to the color questions
                 self.dialog.labelCurrentQuestion.setText(self.tr("Are you trying to find a specific color?"))
 
         elif not state['thermal'] and not state['person_only'] and state['specific_color'] is None:

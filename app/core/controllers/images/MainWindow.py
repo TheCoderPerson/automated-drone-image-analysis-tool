@@ -4,6 +4,7 @@ from algorithms.images.ThermalResidualAnomaly.controllers.ThermalResidualAnomaly
 from algorithms.images.ThermalRange.controllers.ThermalRangeController import ThermalRangeController
 from algorithms.images.HSVColorRange.controllers.HSVColorRangeController import HSVColorRangeController
 from algorithms.images.AIPersonDetector.controllers.AIPersonDetectorController import AIPersonDetectorController
+from algorithms.images.GroundMessage.controllers.GroundMessageController import GroundMessageController
 from algorithms.images.MRMap.controllers.MRMapController import MRMapController
 from algorithms.images.MatchedFilter.controllers.MatchedFilterController import MatchedFilterController
 from algorithms.images.RXAnomaly.controllers.RXAnomalyController import RXAnomalyController
