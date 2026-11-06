@@ -69,6 +69,10 @@
       "app/algorithms/images/AIPersonDetector/views"
     ],
     [
+      "resources/views/algorithms/GroundMessage.ui",
+      "app/algorithms/images/GroundMessage/views"
+    ],
+    [
       "resources/views/algorithms/ThermalRange.ui",
       "app/algorithms/images/ThermalRange/views"
     ],
@@ -119,6 +123,10 @@
     [
       "resources/views/algorithms/AIPersonDetectorWizard.ui",
       "app/algorithms/images/AIPersonDetector/views"
+    ],
+    [
+      "resources/views/algorithms/GroundMessageWizard.ui",
+      "app/algorithms/images/GroundMessage/views"
     ],
     [
       "resources/views/algorithms/ThermalRangeWizard.ui",

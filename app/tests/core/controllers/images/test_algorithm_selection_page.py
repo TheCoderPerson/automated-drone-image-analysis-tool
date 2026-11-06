@@ -125,7 +125,7 @@ def test_every_decision_tree_outcome_names_a_real_algorithm():
                 and isinstance(node.value.value, str)):
             outcomes.add(node.value.value)
 
-    assert len(outcomes) == 9, outcomes
+    assert len(outcomes) == 10, outcomes
 
     config_path = os.path.join(
         os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(
@@ -142,3 +142,52 @@ def test_every_decision_tree_outcome_names_a_real_algorithm():
     page, _wizard_data, _dialog = _create_page()
     for name in outcomes:
         assert name in page._display_name_map()
+
+
+def test_non_thermal_branch_asks_about_ground_messages_after_people():
+    page, _, dialog = _create_page()
+
+    page._on_algorithm_answer(False)  # Not thermal
+    page._on_algorithm_answer(False)  # Not only people
+
+    assert page.selected_algorithm is None
+    assert "message laid out on the ground" in dialog.labelCurrentQuestion.text()
+
+
+def test_ground_message_branch_selects_ground_message_detector():
+    page, wizard_data, dialog = _create_page()
+
+    page._on_algorithm_answer(False)  # Not thermal
+    page._on_algorithm_answer(False)  # Not only people
+    page._on_algorithm_answer(True)   # Looking for a ground message
+
+    assert page.selected_algorithm == "GroundMessage"
+    assert wizard_data.get('algorithm') == "GroundMessage"
+    assert dialog.labelAlgorithmResult.visible
+
+
+def test_declining_ground_message_continues_to_color_questions():
+    page, wizard_data, dialog = _create_page()
+
+    page._on_algorithm_answer(False)  # Not thermal
+    page._on_algorithm_answer(False)  # Not only people
+    page._on_algorithm_answer(False)  # Not a ground message
+    assert "specific color" in dialog.labelCurrentQuestion.text()
+
+    page._on_algorithm_answer(False)  # No specific color
+    page._on_algorithm_answer(True)   # Complex backgrounds
+
+    assert page.selected_algorithm == "MRMap"
+    assert wizard_data.get('algorithm') == "MRMap"
+
+
+def test_reset_clears_ground_message_answer():
+    page, _, _ = _create_page()
+
+    page._on_algorithm_answer(False)
+    page._on_algorithm_answer(False)
+    page._on_algorithm_answer(True)
+    page._reset_algorithm_selection()
+
+    assert page.algorithm_decision_state['ground_message'] is None
+    assert page.selected_algorithm is None

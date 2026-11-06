@@ -12,6 +12,7 @@ This module contains algorithms for analyzing static images and image batches:
 - ThermalAnomaly: Thermal anomaly detection
 - ThermalResidualAnomaly: Local delta-T residual anomaly detection
 - AIPersonDetector: AI-based person detection
+- GroundMessage: letters, numbers and symbols laid out on the ground (e.g. SOS spelled in branches)
 """
 
 __all__ = [
@@ -25,5 +26,6 @@ __all__ = [
     'ThermalAnomaly',
     'ThermalResidualAnomaly',
     'AIPersonDetector',
+    'GroundMessage',
     'Shared'
 ]
