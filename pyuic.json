@@ -105,6 +105,14 @@
       "app/algorithms/images/RectilinearShape/views"
     ],
     [
+      "resources/views/algorithms/RoundShape.ui",
+      "app/algorithms/images/RoundShape/views"
+    ],
+    [
+      "resources/views/algorithms/RoundShapeWizard.ui",
+      "app/algorithms/images/RoundShape/views"
+    ],
+    [
       "resources/views/algorithms/ColorRangeWizard.ui",
       "app/algorithms/images/ColorRange/views"
     ],
