@@ -11,6 +11,7 @@ This module contains algorithms for analyzing static images and image batches:
 - ThermalAnomaly: Thermal anomaly detection
 - ThermalResidualAnomaly: Local delta-T residual anomaly detection
 - AIPersonDetector: AI-based person detection
+- SnowTrack: human foot-track trails in snow, by print spacing, width and cadence
 """
 
 __all__ = [
@@ -23,5 +24,6 @@ __all__ = [
     'ThermalAnomaly',
     'ThermalResidualAnomaly',
     'AIPersonDetector',
+    'SnowTrack',
     'Shared'
 ]

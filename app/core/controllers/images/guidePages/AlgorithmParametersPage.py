@@ -14,6 +14,7 @@ from algorithms.images.MRMap.controllers.MRMapWizardController import MRMapWizar
 from algorithms.images.MatchedFilter.controllers.MatchedFilterWizardController import MatchedFilterWizardController
 from algorithms.images.RXAnomaly.controllers.RXAnomalyWizardController import RXAnomalyWizardController
 from algorithms.images.ColorRange.controllers.ColorRangeWizardController import ColorRangeWizardController
+from algorithms.images.SnowTrack.controllers.SnowTrackWizardController import SnowTrackWizardController
 from algorithms.images.ThermalAnomaly.controllers.ThermalAnomalyController import ThermalAnomalyController
 from algorithms.images.ThermalResidualAnomaly.controllers.ThermalResidualAnomalyController import ThermalResidualAnomalyController
 from algorithms.images.ThermalRange.controllers.ThermalRangeController import ThermalRangeController
@@ -23,6 +24,7 @@ from algorithms.images.MRMap.controllers.MRMapController import MRMapController
 from algorithms.images.MatchedFilter.controllers.MatchedFilterController import MatchedFilterController
 from algorithms.images.RXAnomaly.controllers.RXAnomalyController import RXAnomalyController
 from algorithms.images.ColorRange.controllers.ColorRangeController import ColorRangeController
+from algorithms.images.SnowTrack.controllers.SnowTrackController import SnowTrackController
 from core.services.LoggerService import LoggerService
 import os
 import sys

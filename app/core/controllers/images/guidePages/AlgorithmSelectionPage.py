@@ -18,6 +18,7 @@ class AlgorithmSelectionPage(BasePage):
             'temperature_range': None,
             'local_residual_anomaly': None,
             'person_only': None,
+            'snow_tracks': None,
             'specific_color': None,
             'direct_color_control': None,
             'consistent_lighting': None,
@@ -83,6 +84,7 @@ class AlgorithmSelectionPage(BasePage):
             'temperature_range': None,
             'local_residual_anomaly': None,
             'person_only': None,
+            'snow_tracks': None,
             'specific_color': None,
             'direct_color_control': None,
             'consistent_lighting': None,
@@ -178,11 +180,22 @@ class AlgorithmSelectionPage(BasePage):
 
         elif not state['thermal'] and state['person_only'] is None:
             state['person_only'] = answer
-            if answer:  # Yes - person only
-                self.selected_algorithm = "AI Person Detector"
-                self._show_algorithm_result()
+            if answer:  # Yes - people: the people themselves, or the tracks they leave?
+                self.dialog.labelCurrentQuestion.setText(
+                    self.tr("Are you looking for people's foot tracks in snow, rather than the people themselves?")
+                )
             else:  # No - not person only
                 self.dialog.labelCurrentQuestion.setText(self.tr("Are you trying to find a specific color?"))
+
+        # Must precede the color branches: with person_only answered they would
+        # otherwise also match, because specific_color is still unanswered.
+        elif state['person_only'] and state['snow_tracks'] is None:
+            state['snow_tracks'] = answer
+            if answer:  # Yes - trails of footprints in snow
+                self.selected_algorithm = "Snow Footprint Tracks"
+            else:  # No - the people themselves
+                self.selected_algorithm = "AI Person Detector"
+            self._show_algorithm_result()
 
         elif not state['thermal'] and not state['person_only'] and state['specific_color'] is None:
             state['specific_color'] = answer

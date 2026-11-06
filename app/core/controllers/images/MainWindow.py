@@ -8,6 +8,7 @@ from algorithms.images.MRMap.controllers.MRMapController import MRMapController
 from algorithms.images.MatchedFilter.controllers.MatchedFilterController import MatchedFilterController
 from algorithms.images.RXAnomaly.controllers.RXAnomalyController import RXAnomalyController
 from algorithms.images.ColorRange.controllers.ColorRangeController import ColorRangeController
+from algorithms.images.SnowTrack.controllers.SnowTrackController import SnowTrackController
 from core.services.ConfigService import ConfigService
 from core.services.XmlService import XmlService
 from core.services.SettingsService import SettingsService

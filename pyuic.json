@@ -49,6 +49,10 @@
       "app/algorithms/images/MRMap/views"
     ],
     [
+      "resources/views/algorithms/SnowTrack.ui",
+      "app/algorithms/images/SnowTrack/views"
+    ],
+    [
       "resources/views/algorithms/ColorRange.ui",
       "app/algorithms/images/ColorRange/views"
     ],
@@ -95,6 +99,10 @@
     [
       "resources/views/algorithms/MRMapWizard.ui",
       "app/algorithms/images/MRMap/views"
+    ],
+    [
+      "resources/views/algorithms/SnowTrackWizard.ui",
+      "app/algorithms/images/SnowTrack/views"
     ],
     [
       "resources/views/algorithms/ColorRangeWizard.ui",
