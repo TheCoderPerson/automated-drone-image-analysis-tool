@@ -8,6 +8,7 @@ This module contains algorithms for analyzing static images and image batches:
 - RXAnomaly: RX anomaly detection
 - MRMap: Mahalanobis-Reed anomaly mapping
 - RectilinearShape: Man-made rectangles of a known physical size (geometry, not colour)
+- RoundShape: Round and oval objects, or arcs of them, of a known physical size (geometry, not colour)
 - ThermalRange: Thermal temperature range detection
 - ThermalAnomaly: Thermal anomaly detection
 - ThermalResidualAnomaly: Local delta-T residual anomaly detection
@@ -23,6 +24,7 @@ __all__ = [
     'RXAnomaly',
     'MRMap',
     'RectilinearShape',
+    'RoundShape',
     'ThermalRange',
     'ThermalAnomaly',
     'ThermalResidualAnomaly',
