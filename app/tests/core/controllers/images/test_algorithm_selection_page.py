@@ -125,7 +125,7 @@ def test_every_decision_tree_outcome_names_a_real_algorithm():
                 and isinstance(node.value.value, str)):
             outcomes.add(node.value.value)
 
-    assert len(outcomes) == 10, outcomes
+    assert len(outcomes) == 11, outcomes
 
     config_path = os.path.join(
         os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(
@@ -181,6 +181,52 @@ def test_declining_ground_message_continues_to_color_questions():
     assert wizard_data.get('algorithm') == "MRMap"
 
 
+def _answer_people_question(page, wants_people):
+    if page.algorithm_decision_state['thermal'] is None:
+        page._on_algorithm_answer(False)  # Not thermal (auto-answered on macOS)
+    page._on_algorithm_answer(wants_people)
+
+
+def test_people_branch_asks_about_foot_tracks():
+    page, _, dialog = _create_page()
+
+    _answer_people_question(page, True)
+
+    assert page.selected_algorithm is None
+    assert "foot tracks in snow" in dialog.labelCurrentQuestion.text()
+
+
+def test_people_branch_can_select_snow_footprint_tracks():
+    page, wizard_data, _ = _create_page()
+
+    _answer_people_question(page, True)
+    page._on_algorithm_answer(True)  # Foot tracks in snow
+
+    assert page.selected_algorithm == "SnowTrack"
+    assert wizard_data.get('algorithm') == "SnowTrack"
+
+
+def test_people_branch_can_select_ai_person_detector():
+    page, wizard_data, _ = _create_page()
+
+    _answer_people_question(page, True)
+    page._on_algorithm_answer(False)  # The people themselves
+
+    assert page.selected_algorithm == "AIPersonDetector"
+    assert wizard_data.get('algorithm') == "AIPersonDetector"
+
+
+def test_anomaly_branch_is_unaffected_by_the_snow_track_question():
+    page, _, _ = _create_page()
+
+    _answer_people_question(page, False)
+    page._on_algorithm_answer(False)  # Not a ground message
+    page._on_algorithm_answer(False)  # No specific color
+    page._on_algorithm_answer(True)   # Complex backgrounds
+
+    assert page.selected_algorithm == "MRMap"
+
+
 def test_reset_clears_ground_message_answer():
     page, _, _ = _create_page()
 
@@ -191,3 +237,34 @@ def test_reset_clears_ground_message_answer():
 
     assert page.algorithm_decision_state['ground_message'] is None
     assert page.selected_algorithm is None
+
+
+def test_reset_clears_the_snow_track_answer():
+    page, _, _ = _create_page()
+    _answer_people_question(page, True)
+    page._on_algorithm_answer(True)
+
+    page._reset_algorithm_selection()
+
+    assert page.selected_algorithm is None
+    assert page.algorithm_decision_state['snow_tracks'] is None
+
+
+def test_every_selectable_algorithm_label_exists_in_the_registry():
+    """The guide selects algorithms by key; a typo would silently select nothing."""
+    import json
+    import os
+    import re
+    import importlib
+    import inspect
+
+    module = importlib.import_module('core.controllers.images.guidePages.AlgorithmSelectionPage')
+
+    source = inspect.getsource(module)
+    selectable = set(re.findall(r'self\.selected_algorithm = "([^"]+)"', source))
+    conf_path = os.path.join(os.path.dirname(module.__file__), '..', '..', '..', '..', 'algorithms.conf')
+    with open(conf_path, encoding='utf-8') as handle:
+        labels = {a['name'] for a in json.load(handle)['algorithms']}
+
+    assert "SnowTrack" in selectable
+    assert selectable <= labels, selectable - labels
