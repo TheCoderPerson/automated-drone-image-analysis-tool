@@ -687,7 +687,7 @@ Permissive</translation>
         <translation>Cannot Calculate GPS</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/neighbor/AOINeighborTrackingController.py" line="406"/>
+        <location filename="../app/core/controllers/images/viewer/neighbor/AOINeighborTrackingController.py" line="405"/>
         <source>Unable to calculate GPS coordinates for this AOI.
 
 This may be due to missing image metadata (GPS, altitude, or camera info).</source>
@@ -952,7 +952,7 @@ Right-click to copy data to clipboard</source>
 Right-click to copy data to clipboard</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/aoi/AOIUIComponent.py" line="256"/>
+        <location filename="../app/core/controllers/images/viewer/aoi/AOIUIComponent.py" line="255"/>
         <source>
 
 Score Type: {type}
@@ -989,7 +989,7 @@ Click to edit comment</source>
 Click to edit comment</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/aoi/AOIUIComponent.py" line="411"/>
+        <location filename="../app/core/controllers/images/viewer/aoi/AOIUIComponent.py" line="410"/>
         <source>No comment yet.
 Click to add a comment for this AOI.
 
@@ -1889,7 +1889,7 @@ Make sure you are signed in to CalTopo in this window and have opened your map, 
         <translation>CalTopo Team API Credentials</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/CalTopoCredentialDialog.py" line="85"/>
+        <location filename="../app/core/views/images/viewer/dialogs/CalTopoCredentialDialog.py" line="84"/>
         <source>Enter your CalTopo Team API credentials.
 These can be found in the Team Admin page under Service Accounts.</source>
         <translation>Enter your CalTopo Team API credentials.
@@ -2000,7 +2000,7 @@ These can be found in the Team Admin page under Service Accounts.</translation>
         <translation>Invalid Credential Secret</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/CalTopoCredentialDialog.py" line="263"/>
+        <location filename="../app/core/views/images/viewer/dialogs/CalTopoCredentialDialog.py" line="262"/>
         <source>The Credential Secret cannot be used to sign a CalTopo request.
 
 Copy it exactly as shown on the CalTopo Team Admin page under Service Accounts - it is a long base64 string, not the Credential ID or the Team ID.
@@ -2033,7 +2033,7 @@ Details: {error}</translation>
         <translation>Credentials Invalid</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/CalTopoCredentialDialog.py" line="325"/>
+        <location filename="../app/core/views/images/viewer/dialogs/CalTopoCredentialDialog.py" line="324"/>
         <source>The credentials failed to authenticate with CalTopo API.
 
 Please check:
@@ -2398,7 +2398,7 @@ Would you like to re-enter your Team ID, Credential ID and Credential Secret?</t
         <translation>Select CalTopo Export Method</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/CalTopoMethodDialog.py" line="61"/>
+        <location filename="../app/core/views/images/viewer/dialogs/CalTopoMethodDialog.py" line="60"/>
         <source>Choose how you want to authenticate with CalTopo:</source>
         <translation>Choose how you want to authenticate with CalTopo:</translation>
     </message>
@@ -2413,7 +2413,7 @@ Would you like to re-enter your Team ID, Credential ID and Credential Secret?</t
         <translation>API (Recommended for CalTopo Team Account)</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/CalTopoMethodDialog.py" line="75"/>
+        <location filename="../app/core/views/images/viewer/dialogs/CalTopoMethodDialog.py" line="74"/>
         <source>Use CalTopo Team API with service account credentials.
 Best for Teams accounts with service accounts configured.</source>
         <translation>Use CalTopo Team API with service account credentials.
@@ -2425,14 +2425,14 @@ Best for Teams accounts with service accounts configured.</translation>
         <translation>Browser Login</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/CalTopoMethodDialog.py" line="81"/>
+        <location filename="../app/core/views/images/viewer/dialogs/CalTopoMethodDialog.py" line="80"/>
         <source>Use browser-based authentication.
 Log in through an embedded browser window.</source>
         <translation>Use browser-based authentication.
 Log in through an embedded browser window.</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/CalTopoMethodDialog.py" line="96"/>
+        <location filename="../app/core/views/images/viewer/dialogs/CalTopoMethodDialog.py" line="95"/>
         <source>API method requires Team ID and Credential Secret from your
 CalTopo Team Admin page. Browser method uses your regular login.</source>
         <translation>API method requires Team ID and Credential Secret from your
@@ -2462,7 +2462,7 @@ CalTopo Team Admin page. Browser method uses your regular login.</translation>
         <translation>Enable Temporal Voting (reduce flicker)</translation>
     </message>
     <message>
-        <location filename="../app/core/views/streaming/components/CleanupTab.py" line="38"/>
+        <location filename="../app/core/views/streaming/components/CleanupTab.py" line="37"/>
         <source>Smooths detections across frames using temporal consistency.
 Detections must appear in N out of M consecutive frames to be confirmed.
 Significantly reduces flickering false positives.
@@ -2478,7 +2478,7 @@ Recommended: ON for all use cases (default).</translation>
         <translation>Window Frames (M):</translation>
     </message>
     <message>
-        <location filename="../app/core/views/streaming/components/CleanupTab.py" line="53"/>
+        <location filename="../app/core/views/streaming/components/CleanupTab.py" line="52"/>
         <source>Size of temporal voting window (2-30 frames).
 Detections must appear in N out of M consecutive frames.
 Larger values = longer memory, more stable, slower response to new objects.
@@ -2496,7 +2496,7 @@ Recommended: 5 for 30fps (~167ms window), 7 for 60fps.</translation>
         <translation>Threshold (N of M):</translation>
     </message>
     <message>
-        <location filename="../app/core/views/streaming/components/CleanupTab.py" line="66"/>
+        <location filename="../app/core/views/streaming/components/CleanupTab.py" line="65"/>
         <source>Number of frames within window where detection must appear (N of M).
 Higher values = more stringent, filters transient false positives.
 Lower values = more lenient, faster response to new objects.
@@ -2519,7 +2519,7 @@ Recommended: 3 out of 5 (detection in 60% of frames).</translation>
         <translation>Enable Aspect Ratio Filtering</translation>
     </message>
     <message>
-        <location filename="../app/core/views/streaming/components/CleanupTab.py" line="85"/>
+        <location filename="../app/core/views/streaming/components/CleanupTab.py" line="84"/>
         <source>Filter out very thin or stretched detections based on width/height.
 Useful for removing wires, long shadows, or other non-object shapes.
 Most users can leave this OFF unless you see many long skinny false detections.</source>
@@ -2533,7 +2533,7 @@ Most users can leave this OFF unless you see many long skinny false detections.<
         <translation>Min Ratio:</translation>
     </message>
     <message>
-        <location filename="../app/core/views/streaming/components/CleanupTab.py" line="100"/>
+        <location filename="../app/core/views/streaming/components/CleanupTab.py" line="99"/>
         <source>Minimum width/height ratio to keep (0.1-10.0).
 Lower values = allow taller, thinner detections.
 Higher values = require detections to be more square.
@@ -2549,7 +2549,7 @@ Example: 0.2 = reject if height is more than 5x width.</translation>
         <translation>Max Ratio:</translation>
     </message>
     <message>
-        <location filename="../app/core/views/streaming/components/CleanupTab.py" line="113"/>
+        <location filename="../app/core/views/streaming/components/CleanupTab.py" line="112"/>
         <source>Maximum width/height ratio to keep (0.1-20.0).
 Lower values = reject very wide, thin detections.
 Higher values = allow wider objects such as vehicles or long equipment.</source>
@@ -2568,7 +2568,7 @@ Higher values = allow wider objects such as vehicles or long equipment.</transla
         <translation>Enable Detection Clustering</translation>
     </message>
     <message>
-        <location filename="../app/core/views/streaming/components/CleanupTab.py" line="128"/>
+        <location filename="../app/core/views/streaming/components/CleanupTab.py" line="127"/>
         <source>Optionally merge nearby detections into a single, larger detection.
 Useful when one object appears as many small adjacent detections.
 Most users can leave this OFF unless objects look fragmented.</source>
@@ -2582,7 +2582,7 @@ Most users can leave this OFF unless objects look fragmented.</translation>
         <translation>Clustering Distance (px):</translation>
     </message>
     <message>
-        <location filename="../app/core/views/streaming/components/CleanupTab.py" line="142"/>
+        <location filename="../app/core/views/streaming/components/CleanupTab.py" line="141"/>
         <source>Maximum distance between detection centers to merge them (0-500 pixels).
 Lower values = only merge very close detections.
 Higher values = merge detections that are farther apart (may over-merge).</source>
@@ -2594,17 +2594,17 @@ Higher values = merge detections that are farther apart (may over-merge).</trans
 <context>
     <name>ClickableColorSwatch</name>
     <message>
-        <location filename="../app/algorithms/images/ColorRange/views/ColorRowWidget.py" line="55"/>
-        <location filename="../app/algorithms/images/ColorRange/views/ColorRowWizardWidget.py" line="64"/>
         <location filename="../app/algorithms/Shared/views/HSVColorRowWidget.py" line="83"/>
+        <location filename="../app/algorithms/images/ColorRange/views/ColorRowWizardWidget.py" line="64"/>
+        <location filename="../app/algorithms/images/ColorRange/views/ColorRowWidget.py" line="55"/>
         <source>RGB: ({r}, {g}, {b})
 Click to change color</source>
         <translation>RGB: ({r}, {g}, {b})
 Click to change color</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/images/HSVColorRange/views/HSVColorRowWizardWidget.py" line="71"/>
         <location filename="../app/algorithms/Shared/views/HSVColorRowWizardWidget.py" line="71"/>
+        <location filename="../app/algorithms/images/HSVColorRange/views/HSVColorRowWizardWidget.py" line="71"/>
         <source>HSV: ({h}, {s}, {v})
 Click to change color</source>
         <translation>HSV: ({h}, {s}, {v})
@@ -4461,7 +4461,7 @@ Tolerance:</translation>
         <translation>No reviewers yet</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="312"/>
+        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="311"/>
         <source>Batch review status and assignments. Load reviewer XMLs to update progress. Double-click a batch to open its results in the Viewer.</source>
         <translation>Batch review status and assignments. Load reviewer XMLs to update progress. Double-click a batch to open its results in the Viewer.</translation>
     </message>
@@ -4546,7 +4546,7 @@ Tolerance:</translation>
         <translation>Select Initial Batch XML Files</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="403"/>
+        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="402"/>
         <source>You can select multiple ADIAT_Data.xml files from different folders.
 
 Tips:
@@ -4673,7 +4673,7 @@ Tips:
         <translation>Add More Batch XML Files</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="540"/>
+        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="539"/>
         <source>Select additional ADIAT_Data.xml batch files to add to this search.
 
 Tips:
@@ -4695,7 +4695,7 @@ Tips:
         <translation>Select Batch ADIAT_Data.xml Files to Add (Hold Ctrl to select multiple)</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="579"/>
+        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="578"/>
         <source>Successfully added {count} batch(es) to the project!
 Total batches: {total}</source>
         <translation>Successfully added {count} batch(es) to the project!
@@ -4707,7 +4707,7 @@ Total batches: {total}</translation>
         <translation>No Batches Added</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="591"/>
+        <location filename="../app/core/controllers/coordinator/CoordinatorWindow.py" line="590"/>
         <source>No batches were added. Check that the XML files are valid ADIAT_Data.xml files.</source>
         <translation>No batches were added. Check that the XML files are valid ADIAT_Data.xml files.</translation>
     </message>
@@ -5969,7 +5969,7 @@ That is {dist:.1f} m from its previous position. The corrected location is saved
         <translation>POD Overlay</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="190"/>
+        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="189"/>
         <source>Run a map export with the POD option to generate this overlay</source>
         <translation>Run a map export with the POD option to generate this overlay</translation>
     </message>
@@ -6004,17 +6004,17 @@ That is {dist:.1f} m from its previous position. The corrected location is saved
         <translation>Calculate POD</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="222"/>
+        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="221"/>
         <source>Compute the terrain-aware probability-of-detection heatmap for this mission (may take several minutes)</source>
         <translation>Compute the terrain-aware probability-of-detection heatmap for this mission (may take several minutes)</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="231"/>
+        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="230"/>
         <source>Click point to select • Drag to pan • Scroll to zoom • Drag AOI marker to correct its location</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="240"/>
+        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="239"/>
         <source>Map data © OpenStreetMap contributors, Esri, OpenTopoMap • Overlays: Esri, US Forest Service, Waymarked Trails</source>
         <translation type="unfinished"></translation>
     </message>
@@ -6039,7 +6039,7 @@ That is {dist:.1f} m from its previous position. The corrected location is saved
         <translation>Map Tile Loading Issue</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="492"/>
+        <location filename="../app/core/views/images/viewer/dialogs/GPSMapDialog.py" line="491"/>
         <source>{error}
 
 The map will continue to work with cached tiles where available.</source>
@@ -6140,7 +6140,7 @@ The map will continue to work with cached tiles where available.</translation>
         <translation>Benchmark Complete</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/guidePages/GeneralSettingsPage.py" line="161"/>
+        <location filename="../app/core/controllers/images/guidePages/GeneralSettingsPage.py" line="160"/>
         <source>Detected {count} CPU core(s).
 
 Recommended number of processes: {recommended}
@@ -7261,44 +7261,44 @@ Pixels with saturation below {1}% or value below {2}% are excluded.</translation
 <context>
     <name>HSVColorRowWizardWidget</name>
     <message>
-        <location filename="../app/algorithms/images/HSVColorRange/views/HSVColorRowWizardWidget.py" line="146"/>
         <location filename="../app/algorithms/Shared/views/HSVColorRowWizardWidget.py" line="146"/>
+        <location filename="../app/algorithms/images/HSVColorRange/views/HSVColorRowWizardWidget.py" line="146"/>
         <source>Very Narrow</source>
         <translation>Very Narrow</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/images/HSVColorRange/views/HSVColorRowWizardWidget.py" line="147"/>
         <location filename="../app/algorithms/Shared/views/HSVColorRowWizardWidget.py" line="147"/>
+        <location filename="../app/algorithms/images/HSVColorRange/views/HSVColorRowWizardWidget.py" line="147"/>
         <source>Narrow</source>
         <translation>Narrow</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/images/HSVColorRange/views/HSVColorRowWizardWidget.py" line="148"/>
         <location filename="../app/algorithms/Shared/views/HSVColorRowWizardWidget.py" line="148"/>
+        <location filename="../app/algorithms/images/HSVColorRange/views/HSVColorRowWizardWidget.py" line="148"/>
         <source>Moderate</source>
         <translation>Moderate</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/images/HSVColorRange/views/HSVColorRowWizardWidget.py" line="149"/>
         <location filename="../app/algorithms/Shared/views/HSVColorRowWizardWidget.py" line="149"/>
+        <location filename="../app/algorithms/images/HSVColorRange/views/HSVColorRowWizardWidget.py" line="149"/>
         <source>Wide</source>
         <translation>Wide</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/images/HSVColorRange/views/HSVColorRowWizardWidget.py" line="150"/>
         <location filename="../app/algorithms/Shared/views/HSVColorRowWizardWidget.py" line="150"/>
+        <location filename="../app/algorithms/images/HSVColorRange/views/HSVColorRowWizardWidget.py" line="150"/>
         <source>Very Wide</source>
         <translation>Very Wide</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/images/HSVColorRange/views/HSVColorRowWizardWidget.py" line="414"/>
         <location filename="../app/algorithms/Shared/views/HSVColorRowWizardWidget.py" line="414"/>
+        <location filename="../app/algorithms/images/HSVColorRange/views/HSVColorRowWizardWidget.py" line="414"/>
         <source>H: {h_min}-{h_max}°, S: {s_min}-{s_max}, V: {v_min}-{v_max}</source>
         <translation>H: {h_min}-{h_max}°, S: {s_min}-{s_max}, V: {v_min}-{v_max}</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/images/HSVColorRange/views/HSVColorRowWizardWidget.py" line="234"/>
         <location filename="../app/algorithms/Shared/views/HSVColorRowWizardWidget.py" line="234"/>
+        <location filename="../app/algorithms/images/HSVColorRange/views/HSVColorRowWizardWidget.py" line="234"/>
         <source>Match
 Tolerance:</source>
         <translation>Match
@@ -8167,12 +8167,12 @@ li.checked::marker { content: &quot;\2612&quot;; }
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/image/ImageLoadController.py" line="193"/>
+        <location filename="../app/core/controllers/images/viewer/image/ImageLoadController.py" line="192"/>
         <source>{provider} is not answering and no fallback terrain is available — some calculations assume flat terrain. Check the terrain settings in Preferences.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/image/ImageLoadController.py" line="199"/>
+        <location filename="../app/core/controllers/images/viewer/image/ImageLoadController.py" line="198"/>
         <source>{provider} is not answering — using ~30 m global terrain data instead. Check the terrain settings in Preferences.</source>
         <translation type="unfinished"></translation>
     </message>
@@ -8541,7 +8541,7 @@ Lower values = more sensitive detection.</translation>
         <translation>Threshold Expansion</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/images/MRMap/controllers/MRMapController.py" line="50"/>
+        <location filename="../app/algorithms/images/MRMap/controllers/MRMapController.py" line="49"/>
         <source>When enabled, expand each AOI to also include pixels with histogram bin-counts
 below (threshold + {0}). Pixels inside the cluster rectangle are added unconditionally;
 pixels outside are added if they are connected through other qualifying pixels.</source>
@@ -8555,7 +8555,7 @@ pixels outside are added if they are connected through other qualifying pixels.<
         <translation>Hue Expansion</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/images/MRMap/controllers/MRMapController.py" line="59"/>
+        <location filename="../app/algorithms/images/MRMap/controllers/MRMapController.py" line="58"/>
         <source>When enabled, expand each AOI through neighbors whose hue is within +/- {0}
 (OpenCV units) of the mean hue of the original detected pixels.
 Pixels with saturation below {1}% or value below {2}% are excluded.</source>
@@ -8634,7 +8634,7 @@ Aggressive</translation>
         <translation>Threshold Expansion</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/images/MRMap/controllers/MRMapWizardController.py" line="69"/>
+        <location filename="../app/algorithms/images/MRMap/controllers/MRMapWizardController.py" line="68"/>
         <source>When enabled, expand each AOI to also include pixels with histogram bin-counts
 below (threshold + {0}). Pixels inside the cluster rectangle are added unconditionally;
 pixels outside are added if they are connected through other qualifying pixels.</source>
@@ -8648,7 +8648,7 @@ pixels outside are added if they are connected through other qualifying pixels.<
         <translation>Hue Expansion</translation>
     </message>
     <message>
-        <location filename="../app/algorithms/images/MRMap/controllers/MRMapWizardController.py" line="78"/>
+        <location filename="../app/algorithms/images/MRMap/controllers/MRMapWizardController.py" line="77"/>
         <source>When enabled, expand each AOI through neighbors whose hue is within +/- {0}
 (OpenCV units) of the mean hue of the original detected pixels.
 Pixels with saturation below {1}% or value below {2}% are excluded.</source>
@@ -10098,7 +10098,7 @@ AI PERSON DETECTOR: Deep learning model for accurate people detection
         <translation>POD coverage heatmap (terrain-aware)</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/MapExportDialog.py" line="107"/>
+        <location filename="../app/core/views/images/viewer/dialogs/MapExportDialog.py" line="106"/>
         <source>Compute a terrain and canopy aware probability-of-detection raster for the whole mission (all non-hidden images, independent of the selections above). KML exports embed the heatmap in the KML/KMZ as an image overlay; the GeoTIFF products (coverage_pod.tif, coverage_looks.tif, coverage_gaps.geojson, stats.json) are also written — the GeoTIFF can be imported into CalTopo Map Sheets. May take several minutes.</source>
         <translation>Compute a terrain and canopy aware probability-of-detection raster for the whole mission (all non-hidden images, independent of the selections above). KML exports embed the heatmap in the KML/KMZ as an image overlay; the GeoTIFF products (coverage_pod.tif, coverage_looks.tif, coverage_gaps.geojson, stats.json) are also written — the GeoTIFF can be imported into CalTopo Map Sheets. May take several minutes.</translation>
     </message>
@@ -10143,7 +10143,7 @@ AI PERSON DETECTOR: Deep learning model for accurate people detection
         <translation>Both</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/MapExportDialog.py" line="142"/>
+        <location filename="../app/core/views/images/viewer/dialogs/MapExportDialog.py" line="141"/>
         <source>Large Image uploads the same multi-zoom composite used in the PDF report
 (full image with 3x and 6x insets). AOI Thumbnail uploads a zoomed crop
 centered on the detection. Both uploads each.</source>
@@ -10589,7 +10589,7 @@ Open this file from the Image Analysis window via Menu → Load Results File.</t
         <translation>No Images to Export</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/PDFExportController.py" line="153"/>
+        <location filename="../app/core/controllers/images/viewer/exports/PDFExportController.py" line="152"/>
         <source>There are no images available to include in the PDF report.
 
 All images may be hidden or there are no images in the dataset.</source>
@@ -10598,7 +10598,7 @@ All images may be hidden or there are no images in the dataset.</source>
 All images may be hidden or there are no images in the dataset.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/PDFExportController.py" line="162"/>
+        <location filename="../app/core/controllers/images/viewer/exports/PDFExportController.py" line="161"/>
         <source>There are no images with flagged AOIs to include in the PDF report.
 
 Please flag at least one AOI, or check &apos;Include images without flagged AOIs&apos; to include all images in the report.</source>
@@ -10695,7 +10695,7 @@ Please flag at least one AOI, or check &apos;Include images without flagged AOIs
         <translation>Include images without flagged AOIs</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/PDFExportDialog.py" line="62"/>
+        <location filename="../app/core/views/images/viewer/dialogs/PDFExportDialog.py" line="61"/>
         <source>When checked, all images will be included in the PDF report, even if they don&apos;t have any flagged AOIs. When unchecked, only images with flagged AOIs will be included.</source>
         <translation>When checked, all images will be included in the PDF report, even if they don&apos;t have any flagged AOIs. When unchecked, only images with flagged AOIs will be included.</translation>
     </message>
@@ -10740,7 +10740,7 @@ Please flag at least one AOI, or check &apos;Include images without flagged AOIs
   ... and {count} more</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/path/PathValidationController.py" line="142"/>
+        <location filename="../app/core/controllers/images/viewer/path/PathValidationController.py" line="141"/>
         <source>{count} source image(s) not found at expected locations:
 
 {files}
@@ -10768,7 +10768,7 @@ Please select the folder containing the source images.</translation>
         <translation>Some Images Still Missing</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/path/PathValidationController.py" line="176"/>
+        <location filename="../app/core/controllers/images/viewer/path/PathValidationController.py" line="175"/>
         <source>{count} detection mask(s) not found at expected locations:
 
 {files}
@@ -10786,7 +10786,7 @@ Please select the folder containing the mask files.</translation>
         <translation>Detection Masks Not Found</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/path/PathValidationController.py" line="149"/>
+        <location filename="../app/core/controllers/images/viewer/path/PathValidationController.py" line="148"/>
         <source>Found {found} of {total} images.
 
 Still missing:
@@ -10797,7 +10797,7 @@ Still missing:
 {missing}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/path/PathValidationController.py" line="153"/>
+        <location filename="../app/core/controllers/images/viewer/path/PathValidationController.py" line="152"/>
         <source>None of the {total} missing images were found in that folder (including its subfolders).
 
 Expected to find files named:
@@ -10818,7 +10818,7 @@ Expected to find files named:
         <translation>Some Masks Still Missing</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/path/PathValidationController.py" line="183"/>
+        <location filename="../app/core/controllers/images/viewer/path/PathValidationController.py" line="182"/>
         <source>Found {found} of {total} masks.
 
 Still missing:
@@ -10829,7 +10829,7 @@ Still missing:
 {missing}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/path/PathValidationController.py" line="187"/>
+        <location filename="../app/core/controllers/images/viewer/path/PathValidationController.py" line="186"/>
         <source>None of the {total} missing masks were found in that folder (including its subfolders).
 
 Expected to find files named:
@@ -10850,7 +10850,7 @@ Expected to find files named:
         <translation>Continue Anyway</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/path/PathValidationController.py" line="477"/>
+        <location filename="../app/core/controllers/images/viewer/path/PathValidationController.py" line="476"/>
         <source>
 
 {count} of these appear more than once in that folder, so which capture they belong to cannot be determined:
@@ -11593,7 +11593,7 @@ All changes are saved automatically when modified.</translation>
     </message>
     <message>
         <location filename="../app/core/controllers/Preferences.py" line="145"/>
-        <location filename="../app/core/controllers/Preferences.py" line="422"/>
+        <location filename="../app/core/controllers/Preferences.py" line="421"/>
         <source>3DEP is inactive until both paths are set — the AWS Terrain Tiles baseline is used. Use Download tiles… or Browse.</source>
         <translation>3DEP is inactive until both paths are set — the AWS Terrain Tiles baseline is used. Use Download tiles… or Browse.</translation>
     </message>
@@ -11619,7 +11619,7 @@ All changes are saved automatically when modified.</translation>
     </message>
     <message>
         <location filename="../app/core/controllers/Preferences.py" line="229"/>
-        <location filename="../app/core/controllers/Preferences.py" line="502"/>
+        <location filename="../app/core/controllers/Preferences.py" line="501"/>
         <source>Canopy is disabled until both paths are set — use Download tiles… or Browse.</source>
         <translation>Canopy is disabled until both paths are set — use Download tiles… or Browse.</translation>
     </message>
@@ -11629,7 +11629,7 @@ All changes are saved automatically when modified.</translation>
         <translation>Download tiles...</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/Preferences.py" line="241"/>
+        <location filename="../app/core/controllers/Preferences.py" line="240"/>
         <source>Download DEM and/or canopy tiles for an area of interest and register them here. Note: the canopy download uses Meta/WRI data and registers it as the canopy source.</source>
         <translation>Download DEM and/or canopy tiles for an area of interest and register them here. Note: the canopy download uses Meta/WRI data and registers it as the canopy source.</translation>
     </message>
@@ -11650,7 +11650,7 @@ All changes are saved automatically when modified.</translation>
         <translation>{version}_{date}</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/Preferences.py" line="428"/>
+        <location filename="../app/core/controllers/Preferences.py" line="427"/>
         <source>The registered 3DEP files no longer exist on disk — the AWS Terrain Tiles baseline is used. Re-download or fix the paths.</source>
         <translation>The registered 3DEP files no longer exist on disk — the AWS Terrain Tiles baseline is used. Re-download or fix the paths.</translation>
     </message>
@@ -11671,7 +11671,7 @@ All changes are saved automatically when modified.</translation>
         <translation>Select 3DEP tiles directory</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/Preferences.py" line="508"/>
+        <location filename="../app/core/controllers/Preferences.py" line="507"/>
         <source>The registered canopy files no longer exist on disk — canopy is disabled. Re-download or fix the paths.</source>
         <translation>The registered canopy files no longer exist on disk — canopy is disabled. Re-download or fix the paths.</translation>
     </message>
@@ -11730,7 +11730,7 @@ All changes are saved automatically when modified.</translation>
         <translation>Clear Terrain Cache</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/Preferences.py" line="655"/>
+        <location filename="../app/core/controllers/Preferences.py" line="654"/>
         <source>Are you sure you want to clear all cached terrain elevation data?
 
 This will require re-downloading tiles when terrain elevation is used.</source>
@@ -13057,7 +13057,7 @@ Higher values = merge detections that are farther apart (may over-merge).</trans
         <translation>File Name Warning</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/guidePages/ReviewOrNewPage.py" line="128"/>
+        <location filename="../app/core/controllers/images/guidePages/ReviewOrNewPage.py" line="127"/>
         <source>The selected file does not appear to be an ADIAT_Data.xml result or an ADIAT_Search project file.
 
 Do you want to continue with this file?</source>
@@ -13079,7 +13079,7 @@ Do you want to continue with this file?</translation>
         <translation>Review Tracking</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/ReviewerNameDialog.py" line="51"/>
+        <location filename="../app/core/views/images/viewer/dialogs/ReviewerNameDialog.py" line="50"/>
         <source>Enter your name to track your review activity.
 This helps coordinate reviews across multiple reviewers.</source>
         <translation>Enter your name to track your review activity.
@@ -13106,7 +13106,7 @@ This helps coordinate reviews across multiple reviewers.</translation>
         <translation>Remember my name</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/ReviewerNameDialog.py" line="74"/>
+        <location filename="../app/core/views/images/viewer/dialogs/ReviewerNameDialog.py" line="73"/>
         <source>Save your name for future review sessions.
 You can change it later in Preferences or by clicking the reviewer name in the viewer.</source>
         <translation>Save your name for future review sessions.
@@ -13131,6 +13131,422 @@ You can change it later in Preferences or by clicking the reviewer name in the v
         <location filename="../app/core/views/images/viewer/dialogs/ReviewerNameDialog.py" line="124"/>
         <source>Please enter your name to continue.</source>
         <translation>Please enter your name to continue.</translation>
+    </message>
+</context>
+<context>
+    <name>RoundShape</name>
+    <message>
+        <location filename="../resources/views/algorithms/RoundShape.ui" line="14"/>
+        <source>Form</source>
+        <translation type="unfinished">Form</translation>
+    </message>
+    <message>
+        <location filename="../resources/views/algorithms/RoundShape.ui" line="35"/>
+        <location filename="../resources/views/algorithms/RoundShape.ui" line="52"/>
+        <source>The kind of object to search for. Each preset sets the expected top-down size range;
+choose Custom size to enter your own. Detection is driven by size and curved edges,
+not colour, so it works for black, grey or earth-toned targets.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../resources/views/algorithms/RoundShape.ui" line="40"/>
+        <source>Target Type:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../resources/views/algorithms/RoundShape.ui" line="58"/>
+        <source>Hat, helmet or bucket</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../resources/views/algorithms/RoundShape.ui" line="63"/>
+        <source>Life ring, tube or tire</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../resources/views/algorithms/RoundShape.ui" line="68"/>
+        <source>Umbrella</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../resources/views/algorithms/RoundShape.ui" line="73"/>
+        <source>Dome tent</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../resources/views/algorithms/RoundShape.ui" line="78"/>
+        <source>Custom size</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../resources/views/algorithms/RoundShape.ui" line="107"/>
+        <source>Expected width of the target across its longest direction, seen from directly above.
+For a round target both diameters are the same.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../resources/views/algorithms/RoundShape.ui" line="111"/>
+        <source>Long Diameter:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../resources/views/algorithms/RoundShape.ui" line="123"/>
+        <source>Smallest expected long diameter.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../resources/views/algorithms/RoundShape.ui" line="150"/>
+        <location filename="../resources/views/algorithms/RoundShape.ui" line="232"/>
+        <source>to</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../resources/views/algorithms/RoundShape.ui" line="162"/>
+        <source>Largest expected long diameter.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../resources/views/algorithms/RoundShape.ui" line="189"/>
+        <source>Expected width of the target across its narrowest direction, seen from directly above.
+For an oval this is smaller than the long diameter.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../resources/views/algorithms/RoundShape.ui" line="193"/>
+        <source>Short Diameter:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../resources/views/algorithms/RoundShape.ui" line="205"/>
+        <source>Smallest expected short diameter.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../resources/views/algorithms/RoundShape.ui" line="244"/>
+        <source>Largest expected short diameter.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../resources/views/algorithms/RoundShape.ui" line="271"/>
+        <source>Min Confidence:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../resources/views/algorithms/RoundShape.ui" line="283"/>
+        <source>Only shapes scoring at least this confidence (0-100) become AOIs.
+Raise if boulders or bushes produce many hits; lower to see weaker candidates.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../resources/views/algorithms/RoundShape.ui" line="311"/>
+        <source>Max Per Image:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../resources/views/algorithms/RoundShape.ui" line="323"/>
+        <source>At most this many AOIs are kept per image, highest confidence first.
+Protects reviewers from floods of hits in rocky or brushy terrain.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../resources/views/algorithms/RoundShape.ui" line="345"/>
+        <source>Size Tolerance:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../resources/views/algorithms/RoundShape.ui" line="357"/>
+        <source>How far a shape may fall outside the size range before its score starts to drop.
+Raise when altitude data is uncertain or the terrain is steep.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../resources/views/algorithms/RoundShape.ui" line="361"/>
+        <source>%</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../resources/views/algorithms/RoundShape.ui" line="382"/>
+        <source>Angle Tolerance:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../resources/views/algorithms/RoundShape.ui" line="394"/>
+        <source>How far an edge may turn away from the outline it is meant to follow and still count.
+Raise for soft or lumpy targets such as tents; lower to reject more natural clutter.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../resources/views/algorithms/RoundShape.ui" line="398"/>
+        <location filename="../resources/views/algorithms/RoundShape.ui" line="521"/>
+        <source>°</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../resources/views/algorithms/RoundShape.ui" line="425"/>
+        <source>Edge Contrast:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../resources/views/algorithms/RoundShape.ui" line="437"/>
+        <source>Minimum brightness step across an edge (0-255 scale).
+Raise if grass, gravel or shadows produce many weak edges; lower for faded or dusty targets.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../resources/views/algorithms/RoundShape.ui" line="465"/>
+        <source>Edge Support:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../resources/views/algorithms/RoundShape.ui" line="477"/>
+        <source>Fraction of a candidate&apos;s outline that must lie on a real edge for it to count as a
+whole circle or oval. Lower for faint or partly shaded targets; raise if bushes produce many hits.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../resources/views/algorithms/RoundShape.ui" line="505"/>
+        <source>Min Arc:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../resources/views/algorithms/RoundShape.ui" line="517"/>
+        <source>Shortest unbroken stretch of outline, in degrees of the full circle, reported as an arc
+when Detect Arcs is on. Lower to catch more of a hidden target; raise if curved trails or shadows produce hits.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../resources/views/algorithms/RoundShape.ui" line="548"/>
+        <source>Min Diameter:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../resources/views/algorithms/RoundShape.ui" line="560"/>
+        <source>Smallest target diameter, in processing pixels, worth searching for. Images where the target
+would be smaller are skipped and logged - raise the processing resolution or fly lower.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../resources/views/algorithms/RoundShape.ui" line="564"/>
+        <source> px</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../resources/views/algorithms/RoundShape.ui" line="585"/>
+        <source>Fallback GSD:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../resources/views/algorithms/RoundShape.ui" line="597"/>
+        <source>Ground sample distance (cm per pixel at full resolution) to assume when an image has no usable
+altitude or camera metadata. Leave at None to report such images as errors instead.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../resources/views/algorithms/RoundShape.ui" line="601"/>
+        <source> cm/px</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../resources/views/algorithms/RoundShape.ui" line="604"/>
+        <source>None</source>
+        <translation type="unfinished">None</translation>
+    </message>
+    <message>
+        <location filename="../resources/views/algorithms/RoundShape.ui" line="631"/>
+        <source>Also report outlines that are only partly visible - a tire half under brush, a tent cut by the
+image edge, a coiled hose - when one unbroken arc of at least Min Arc shows.
+Turn off to report only whole circles and ovals.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../resources/views/algorithms/RoundShape.ui" line="636"/>
+        <source>Detect Arcs</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../resources/views/algorithms/RoundShape.ui" line="651"/>
+        <source>Save an overlay per image (traced edges, candidates, symmetry heatmap) to a round_debug folder
+in the output folder. Useful for tuning in new terrain; slows processing.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../resources/views/algorithms/RoundShape.ui" line="655"/>
+        <source>Write Debug Images</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
+    <name>RoundShapeController</name>
+    <message>
+        <location filename="../app/algorithms/images/RoundShape/controllers/RoundShapeController.py" line="63"/>
+        <source> in</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/algorithms/images/RoundShape/controllers/RoundShapeController.py" line="63"/>
+        <source> cm</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/algorithms/images/RoundShape/controllers/RoundShapeController.py" line="138"/>
+        <source>The minimum long diameter must not be larger than the maximum long diameter.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/algorithms/images/RoundShape/controllers/RoundShapeController.py" line="140"/>
+        <source>The minimum short diameter must not be larger than the maximum short diameter.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/algorithms/images/RoundShape/controllers/RoundShapeController.py" line="142"/>
+        <source>The short diameter range must not exceed the long diameter range.</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
+    <name>RoundShapeWizard</name>
+    <message>
+        <location filename="../resources/views/algorithms/RoundShapeWizard.ui" line="29"/>
+        <source>What kind of object are you looking for?</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../resources/views/algorithms/RoundShapeWizard.ui" line="46"/>
+        <source>The kind of object to search for. Each preset sets the expected top-down size range;
+choose Custom size to enter your own. Detection is driven by size and curved edges,
+not colour, so it works for black, grey or earth-toned targets.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../resources/views/algorithms/RoundShapeWizard.ui" line="52"/>
+        <source>Hat, helmet or bucket</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../resources/views/algorithms/RoundShapeWizard.ui" line="57"/>
+        <source>Life ring, tube or tire</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../resources/views/algorithms/RoundShapeWizard.ui" line="62"/>
+        <source>Umbrella</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../resources/views/algorithms/RoundShapeWizard.ui" line="67"/>
+        <source>Dome tent</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../resources/views/algorithms/RoundShapeWizard.ui" line="72"/>
+        <source>Custom size</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../resources/views/algorithms/RoundShapeWizard.ui" line="101"/>
+        <source>Detection uses the object&apos;s size and curved outline, not its colour, and also finds outlines that are partly hidden. Sizes are as seen from directly above.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../resources/views/algorithms/RoundShapeWizard.ui" line="119"/>
+        <source>Expected width of the target across its longest direction, seen from directly above.
+For a round target both diameters are the same.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../resources/views/algorithms/RoundShapeWizard.ui" line="123"/>
+        <source>Long Diameter:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../resources/views/algorithms/RoundShapeWizard.ui" line="135"/>
+        <source>Smallest expected long diameter.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../resources/views/algorithms/RoundShapeWizard.ui" line="162"/>
+        <location filename="../resources/views/algorithms/RoundShapeWizard.ui" line="244"/>
+        <source>to</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../resources/views/algorithms/RoundShapeWizard.ui" line="174"/>
+        <source>Largest expected long diameter.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../resources/views/algorithms/RoundShapeWizard.ui" line="201"/>
+        <source>Expected width of the target across its narrowest direction, seen from directly above.
+For an oval this is smaller than the long diameter.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../resources/views/algorithms/RoundShapeWizard.ui" line="205"/>
+        <source>Short Diameter:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../resources/views/algorithms/RoundShapeWizard.ui" line="217"/>
+        <source>Smallest expected short diameter.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../resources/views/algorithms/RoundShapeWizard.ui" line="256"/>
+        <source>Largest expected short diameter.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../resources/views/algorithms/RoundShapeWizard.ui" line="308"/>
+        <source>How many candidates should ADIAT show?</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../resources/views/algorithms/RoundShapeWizard.ui" line="321"/>
+        <source>Note: A higher setting shows weaker candidates too, which finds more targets but also more boulders, bushes and debris.</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
+    <name>RoundShapeWizardController</name>
+    <message>
+        <location filename="../app/algorithms/images/RoundShape/controllers/RoundShapeWizardController.py" line="56"/>
+        <source>Low</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/algorithms/images/RoundShape/controllers/RoundShapeWizardController.py" line="56"/>
+        <source>Medium</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/algorithms/images/RoundShape/controllers/RoundShapeWizardController.py" line="56"/>
+        <source>High</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/algorithms/images/RoundShape/controllers/RoundShapeWizardController.py" line="71"/>
+        <source> in</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/algorithms/images/RoundShape/controllers/RoundShapeWizardController.py" line="71"/>
+        <source> cm</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/algorithms/images/RoundShape/controllers/RoundShapeWizardController.py" line="130"/>
+        <source>The minimum long diameter must not be larger than the maximum long diameter.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/algorithms/images/RoundShape/controllers/RoundShapeWizardController.py" line="132"/>
+        <source>The minimum short diameter must not be larger than the maximum short diameter.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../app/algorithms/images/RoundShape/controllers/RoundShapeWizardController.py" line="134"/>
+        <source>The short diameter range must not exceed the long diameter range.</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
@@ -16348,7 +16764,7 @@ Register the downloaded Meta/WRI canopy tiles instead? (Your LANDFIRE files stay
         <translation>POD coverage complete</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="713"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="712"/>
         <source>POD coverage complete — {count} frame(s) used online elevation (outside local DEM)</source>
         <translation>POD coverage complete — {count} frame(s) used online elevation (outside local DEM)</translation>
     </message>
@@ -16363,17 +16779,17 @@ Register the downloaded Meta/WRI canopy tiles instead? (Your LANDFIRE files stay
         <translation>({count} without elevation data)</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="732"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="731"/>
         <source>(canopy data covered {pct}% of the searched area)</source>
         <translation>(canopy data covered {pct}% of the searched area)</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="808"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="807"/>
         <source>Terrain and canopy aware probability-of-detection heatmap.</source>
         <translation>Terrain and canopy aware probability-of-detection heatmap.</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="812"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="811"/>
         <source>Mean POD over covered area: {pod}%</source>
         <translation>Mean POD over covered area: {pod}%</translation>
     </message>
@@ -16441,7 +16857,7 @@ The POD GeoTIFF products were still written next to the export.</translation>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="747"/>
+        <location filename="../app/core/controllers/images/viewer/exports/UnifiedMapExportController.py" line="746"/>
         <source>(no takeoff elevation — POD is approximate over changing terrain)</source>
         <translation type="unfinished"></translation>
     </message>
@@ -16643,7 +17059,7 @@ The POD GeoTIFF products were still written next to the export.</translation>
         <translation>Close this upscale window</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/UpscaleDialog.py" line="302"/>
+        <location filename="../app/core/views/images/viewer/dialogs/UpscaleDialog.py" line="301"/>
         <source>Resolution: {width} × {height} pixels | Original: {orig_w} × {orig_h} pixels | Upscale: {level}x | Use mouse wheel to zoom, right-click to pan</source>
         <translation>Resolution: {width} × {height} pixels | Original: {orig_w} × {orig_h} pixels | Upscale: {level}x | Use mouse wheel to zoom, right-click to pan</translation>
     </message>
@@ -16672,7 +17088,7 @@ The POD GeoTIFF products were still written next to the export.</translation>
         <translation>Maximum Upscale Reached</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/UpscaleDialog.py" line="399"/>
+        <location filename="../app/core/views/images/viewer/dialogs/UpscaleDialog.py" line="398"/>
         <source>Maximum upscale level of {level}x has been reached.
 Further upscaling is not allowed to prevent memory issues.</source>
         <translation>Maximum upscale level of {level}x has been reached.
@@ -16684,7 +17100,7 @@ Further upscaling is not allowed to prevent memory issues.</translation>
         <translation>Image Too Large</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/UpscaleDialog.py" line="415"/>
+        <location filename="../app/core/views/images/viewer/dialogs/UpscaleDialog.py" line="414"/>
         <source>Upscaling would result in an image of {width}×{height} pixels.
 Maximum allowed dimension is {max_dim} pixels.
 
@@ -16700,7 +17116,7 @@ Try zooming in to a smaller area before upscaling.</translation>
         <translation>Image Too Small</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/UpscaleDialog.py" line="428"/>
+        <location filename="../app/core/views/images/viewer/dialogs/UpscaleDialog.py" line="427"/>
         <source>Visible portion is too small ({width}×{height} pixels).
 Please zoom in to a larger area before upscaling.</source>
         <translation>Visible portion is too small ({width}×{height} pixels).
@@ -16715,7 +17131,7 @@ Please zoom in to a larger area before upscaling.</translation>
 {error}</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/UpscaleDialog.py" line="487"/>
+        <location filename="../app/core/views/images/viewer/dialogs/UpscaleDialog.py" line="486"/>
         <source>Upscaling image with AI enhancement...
 From {width}×{height} to {new_width}×{new_height} pixels
 This may take a few seconds.</source>
@@ -16747,7 +17163,7 @@ This may take a few seconds.</translation>
         <translation>Method Not Available</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/UpscaleDialog.py" line="605"/>
+        <location filename="../app/core/views/images/viewer/dialogs/UpscaleDialog.py" line="604"/>
         <source>Real-ESRGAN is not yet implemented.
 Falling back to Lanczos interpolation.</source>
         <translation>Real-ESRGAN is not yet implemented.
@@ -17050,7 +17466,7 @@ Use to compare original image with detection results.</translation>
         <translation>Show Overlay</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1390"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1389"/>
         <location filename="../resources/views/images/viewer/Viewer.ui" line="225"/>
         <source>Toggle Gallery Mode (G)
 Shows all AOIs from all images in a grid view</source>
@@ -17320,7 +17736,7 @@ Sorting helps prioritize review of larger or closer objects.</translation>
         <translation>Open</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="150"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="149"/>
         <source>Automated Drone Image Analysis Tool v{version} - Sponsored by TEXSAR</source>
         <translation>Automated Drone Image Analysis Tool v{version} - Sponsored by TEXSAR</translation>
     </message>
@@ -17345,7 +17761,7 @@ Sorting helps prioritize review of larger or closer objects.</translation>
         <translation>Load Results Failed</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="210"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="209"/>
         <source>Cannot load results without valid image and mask locations.
 
 The viewer will now close.</source>
@@ -17375,7 +17791,7 @@ The viewer will now close.</translation>
         <translation>Loading detection results from {n} images...</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="328"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="327"/>
         <source>Image metadata and information.
 Click on GPS Coordinates to copy, share, or open in mapping applications.</source>
         <translation>Image metadata and information.
@@ -17407,7 +17823,7 @@ Click on GPS Coordinates to copy, share, or open in mapping applications.</trans
         <translation>Generate Cache</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="770"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="769"/>
         <source>This will regenerate thumbnail and color caches for all AOIs in this dataset.
 
 This may take a few minutes depending on the dataset size.
@@ -17452,7 +17868,7 @@ Continue?</translation>
         <translation>Cache Generated</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="847"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="846"/>
         <source>Cache generation complete!
 
 Processed {images} images with {aois} AOIs.
@@ -17470,7 +17886,7 @@ The viewer will now load thumbnails and colors much faster.</translation>
         <translation>Cache Generation Error</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="880"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="879"/>
         <source>An error occurred during cache generation:
 
 {error}</source>
@@ -17484,7 +17900,7 @@ The viewer will now load thumbnails and colors much faster.</translation>
         <translation>AOI Not Visible</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1075"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1074"/>
         <source>The AOI at the cursor position cannot be selected because it is currently hidden due to active filters.
 
 To select this AOI, please clear or adjust your filters.</source>
@@ -17498,7 +17914,7 @@ To select this AOI, please clear or adjust your filters.</translation>
         <translation>Update Image Dimensions</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1271"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1270"/>
         <source>This dataset is missing image dimensions needed for heatmap filtering ({count} images).
 
 Would you like to read dimensions from the image files and update the results file?</source>
@@ -17532,7 +17948,7 @@ Would you like to read dimensions from the image files and update the results fi
         <translation>Missing Dependency</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1858"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1857"/>
         <source>The qimage2ndarray module is required for the upscale feature.
 Please install it using: pip install qimage2ndarray</source>
         <translation>The qimage2ndarray module is required for the upscale feature.
@@ -17544,7 +17960,7 @@ Please install it using: pip install qimage2ndarray</translation>
         <translation>Upscale Error</translation>
     </message>
     <message>
-        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1869"/>
+        <location filename="../app/core/controllers/images/viewer/Viewer.py" line="1868"/>
         <source>An error occurred while opening the upscale dialog:
 {error}</source>
         <translation>An error occurred while opening the upscale dialog:
@@ -18042,7 +18458,7 @@ Ensure image filenames in the CSV match exactly.</translation>
         <translation>ZIP Export Options</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/ZipExportDialog.py" line="26"/>
+        <location filename="../app/core/views/images/viewer/dialogs/ZipExportDialog.py" line="25"/>
         <source>Choose what to export:
 
 - Native: Original images, TIFF masks, and XML (paths made portable).
@@ -18071,7 +18487,7 @@ Ensure image filenames in the CSV match exactly.</translation>
         <translation>Include images without flagged AOIs</translation>
     </message>
     <message>
-        <location filename="../app/core/views/images/viewer/dialogs/ZipExportDialog.py" line="63"/>
+        <location filename="../app/core/views/images/viewer/dialogs/ZipExportDialog.py" line="62"/>
         <source>When unchecked, only images with at least one flagged AOI will be exported.
 When checked, all images will be exported regardless of flagged AOI status.</source>
         <translation>When unchecked, only images with at least one flagged AOI will be exported.
