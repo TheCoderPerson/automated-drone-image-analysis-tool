@@ -232,7 +232,11 @@ def test_header_sync_keeps_the_header_row_within_the_splitter(qtbot):
     bound. Whatever the split - image pane wider than the toolbar, narrower,
     or collapsed for a full-width gallery - the row must fit."""
     win, ui = _build_header(qtbot)
-    for sizes in ([800, 600], [400, 1500], [0, 1912]):
+    # Splits are relative to the toolbar minimum: the window can never be
+    # narrower than the toolbar, so a split narrower than it is not a state
+    # the viewer reaches, and fixed pixel splits go stale as buttons are added.
+    toolbar_min = ui.mainHeaderWidget.minimumSizeHint().width()
+    for sizes in ([toolbar_min + 100, 600], [400, toolbar_min + 200], [0, toolbar_min + 400]):
         splitter = _FakeSplitter(sizes)
 
         Viewer._sync_aoi_header_width(_header_sync_target(ui, sizes))
