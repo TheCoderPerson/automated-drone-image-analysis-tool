@@ -194,7 +194,7 @@ class SnowTrackService(AlgorithmService):
         """
         self.logger = LoggerService()
         options = options if isinstance(options, dict) else {}
-        super().__init__(ALGORITHM_NAME, identifier, min_area, max_area, aoi_radius, combine_aois, options)
+        super().__init__('SnowTrack', identifier, min_area, max_area, aoi_radius, combine_aois, options)
         self.params = SnowTrackParams.from_options(options)
 
     # ------------------------------------------------------------------ public
