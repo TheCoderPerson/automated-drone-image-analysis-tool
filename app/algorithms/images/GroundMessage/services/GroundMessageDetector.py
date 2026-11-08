@@ -2,17 +2,25 @@
 
 Pipeline
 --------
-1. Stroke maps. On an image pyramid, a morphological black-hat (dark strokes)
-   or top-hat (light strokes) keeps features thinner than a stroke-sized
-   element. Texture *inside* objects wider than a stroke (bark on a log, a
-   shadow) is subtracted, then the response is hysteresis-thresholded.
+1. Stroke maps. On an image pyramid, a straight-bar detector compares the
+   mean brightness along a short line with the mean along two parallel
+   lines either side of it, in eight directions. A stick or a row of rocks
+   is brighter (or darker) than both of its flanks; ground texture averages
+   out along the line, and an edge or a wide patch of sun or shadow has one
+   flank like the line itself. The response is thinned to ridge centrelines
+   and thresholded with hysteresis against *local* statistics, so a busy
+   tree canopy elsewhere in the frame does not raise the bar for a message
+   laid out in a clearing.
 2. Glyph candidates. Each connected stroke component of character size is
    measured and scored for character-likeness (GlyphShapeAnalyzer).
 3. Cross-scale persistence. Pyramid levels overlap in the sizes they cover, so
    a real character is usually found at an adjacent level too.
-4. Messages. Candidates are grouped into text lines: neighbours of similar
-   size, stroke width and brightness, evenly spaced, sharing a baseline and
-   a height. A lone character can still be reported when its shape is strong.
+4. Messages. Text lines are grown from pairs of neighbouring candidates of
+   similar size and stroke width: a line keeps the characters' height and
+   baseline consistent and their spacing about one character apart. Light
+   and dark candidates may share a line: pale branches read as light strokes
+   in shade but as dark strokes in sun, where they cast shadows. A lone
+   character can still be reported when its shape is strong.
 
 Characters made of natural material are hard to tell apart from a single
 bent branch or a few crossed sticks, so most of the precision comes from
@@ -22,11 +30,11 @@ The module is pure numpy/OpenCV/scikit-image with no Qt dependency.
 """
 
 import math
+from collections import defaultdict
 from dataclasses import dataclass, field
 
 import cv2
 import numpy as np
-from skimage.filters import apply_hysteresis_threshold
 
 from algorithms.images.GroundMessage.services.GlyphShapeAnalyzer import measure_glyph, score_glyph
 
@@ -38,15 +46,21 @@ POLARITY_LIGHT = 'light'
 # boundary are seen twice.
 LEVEL_MIN_SIZE = 20.0
 LEVEL_MAX_SIZE = 120.0
-# Widest stroke the per-level black-/top-hat captures, in level pixels.
-MAX_STROKE_WIDTH = 12
 MAX_PYRAMID_FACTOR = 32
 MIN_LEVEL_DIMENSION = 64
 
-# Hysteresis thresholds on the stroke response: robust z-scores, with floors in
-# grey levels so near-uniform images do not turn noise into strokes.
-HIGH_SIGMA, LOW_SIGMA = 5.0, 2.5
-HIGH_FLOOR, LOW_FLOOR = 20.0, 10.0
+# Straight-bar stroke detector (level pixels). The flank offsets cover strokes
+# up to about 12 px wide; wider strokes are found at a coarser level.
+BAR_LENGTH = 15
+BAR_ORIENTATIONS = 8
+FLANK_OFFSETS = (2, 4, 7)
+
+# Hysteresis on the bar response, against its mean and standard deviation in a
+# window of a few characters around each pixel, with floors in grey levels.
+THRESHOLD_WINDOW = 121
+THRESHOLD_STATS_DOWNSCALE = 4
+HIGH_SIGMA, LOW_SIGMA = 3.0, 1.0
+HIGH_FLOOR, LOW_FLOOR = 10.0, 5.0
 
 # Candidates below this shape score are not considered at all.
 MIN_GLYPH_SCORE = 0.35
@@ -54,10 +68,45 @@ NON_PERSISTENT_PENALTY = 0.85
 # Message score multiplier by number of characters: longer rows of consistent
 # characters are much less likely to be chance arrangements of clutter.
 COUNT_FACTORS = {2: 0.8, 3: 0.92}
+MAX_MESSAGE_LENGTH = 16
 SINGLE_MIN_GLYPH_SCORE = 0.9
 SINGLE_FACTOR = 0.7
 SINGLE_MIN_COMPLEXITY = 1.6
 MAX_POINTS_PER_GLYPH = 400
+# Neighbouring characters are at most this many character sizes apart.
+MAX_NEIGHBOR_DISTANCE = 2.2
+SPATIAL_CELL = 128
+
+
+def _line_kernel(length, angle):
+    """Normalised kernel averaging along a centred line at the given angle (radians)."""
+    kernel = np.zeros((length, length), np.float32)
+    center = (length - 1) / 2.0
+    dx, dy = math.cos(angle), math.sin(angle)
+    for t in np.linspace(-center, center, length * 4):
+        x, y = center + t * dx, center + t * dy
+        x0, y0 = int(math.floor(x)), int(math.floor(y))
+        fx, fy = x - x0, y - y0
+        for xx, yy, weight in ((x0, y0, (1 - fx) * (1 - fy)), (x0 + 1, y0, fx * (1 - fy)),
+                               (x0, y0 + 1, (1 - fx) * fy), (x0 + 1, y0 + 1, fx * fy)):
+            if 0 <= xx < length and 0 <= yy < length:
+                kernel[yy, xx] += weight
+    return kernel / kernel.sum()
+
+
+def _bar_directions():
+    directions = []
+    for index in range(BAR_ORIENTATIONS):
+        angle = math.pi * index / BAR_ORIENTATIONS
+        normal = (-math.sin(angle), math.cos(angle))
+        flanks = [(int(round(normal[0] * d)), int(round(normal[1] * d))) for d in FLANK_OFFSETS]
+        across = (int(round(normal[0])), int(round(normal[1])))
+        directions.append((_line_kernel(BAR_LENGTH, angle), flanks, across))
+    return directions
+
+
+# (line kernel, integer flank offsets, one-pixel step across the bar) per direction.
+_BAR_DIRECTIONS = _bar_directions()
 
 
 @dataclass
@@ -75,7 +124,6 @@ class GlyphCandidate:
     score: float
     long_side: float
     stroke_width: float
-    brightness: float
     features: dict
     level_mask: np.ndarray = field(repr=False)
     level_origin: tuple = (0, 0)
@@ -118,7 +166,7 @@ def to_gray_u8(img):
             raise ValueError(f"Unsupported channel count: {img.shape[2]}")
     if img.dtype != np.uint8:
         img = cv2.normalize(img.astype(np.float32), None, 0, 255, cv2.NORM_MINMAX).astype(np.uint8)
-    return img
+    return np.ascontiguousarray(img)
 
 
 def _box_iou(a, b):
@@ -137,11 +185,44 @@ def _box_containment(a, b):
     return ix * iy / smaller if smaller > 0 else 0.0
 
 
-def _robust_level(values):
-    """Median and MAD-based sigma of a sample."""
-    median = float(np.median(values))
-    sigma = float(np.median(np.abs(values - median))) * 1.4826
-    return median, sigma
+def _shifted(padded, pad, dx, dy, height, width):
+    """View of the unpadded image moved so that result[y, x] = image[y + dy, x + dx]."""
+    return padded[pad + dy:pad + dy + height, pad + dx:pad + dx + width]
+
+
+class _BoxGrid:
+    """Uniform-grid index of boxes, so neighbour queries avoid all-pairs scans."""
+
+    def __init__(self, cell=SPATIAL_CELL):
+        self.cell = cell
+        self.cells = defaultdict(list)
+
+    def _span(self, box, margin):
+        c = self.cell
+        return (range(int((box[0] - margin) // c), int((box[2] + margin) // c) + 1),
+                range(int((box[1] - margin) // c), int((box[3] + margin) // c) + 1))
+
+    def add(self, key, box):
+        xs, ys = self._span(box, 0)
+        for cx in xs:
+            for cy in ys:
+                self.cells[(cx, cy)].append(key)
+
+    def query(self, box, margin=0.0):
+        """Keys of boxes that may lie within `margin` of this box."""
+        found = set()
+        xs, ys = self._span(box, margin)
+        for cx in xs:
+            for cy in ys:
+                found.update(self.cells.get((cx, cy), ()))
+        return found
+
+
+def _grid_of(glyphs):
+    grid = _BoxGrid()
+    for index, glyph in enumerate(glyphs):
+        grid.add(index, glyph.box)
+    return grid
 
 
 class GroundMessageDetector:
@@ -153,7 +234,7 @@ class GroundMessageDetector:
         max_char_size: Largest character to look for.
         polarities: Which strokes to look for: POLARITY_DARK (material darker
             than the ground), POLARITY_LIGHT, or both.
-        detect_single_characters: Also report a lone character (an X or V
+        detect_single_characters: Also report a lone character (an X or Y
             ground-to-air signal) when its shape alone is convincing.
     """
 
@@ -199,14 +280,11 @@ class GroundMessageDetector:
         gray = to_gray_u8(img)
         glyphs = self.find_glyphs(gray)
         self._mark_persistence(glyphs)
-        messages = []
-        for polarity in self.polarities:
-            candidates = self._dedupe_glyphs([g for g in glyphs if g.polarity == polarity])
-            grouped = self._group_messages(candidates)
-            messages.extend(grouped)
-            if self.detect_single_characters:
-                used = {id(g) for m in grouped for g in m.glyphs}
-                messages.extend(self._single_messages([g for g in candidates if id(g) not in used]))
+        candidates = self._dedupe_glyphs(glyphs)
+        messages = self._group_messages(candidates)
+        if self.detect_single_characters:
+            used = {id(g) for m in messages for g in m.glyphs}
+            messages.extend(self._single_messages([g for g in candidates if id(g) not in used]))
         return self._dedupe_messages([m for m in messages if m.score >= min_score])
 
     def find_glyphs(self, gray):
@@ -220,62 +298,97 @@ class GroundMessageDetector:
                 level_gray = cv2.resize(gray, (width // level, height // level), interpolation=cv2.INTER_AREA)
             min_size = max(LEVEL_MIN_SIZE, self.min_char_size / level)
             max_size = min(LEVEL_MAX_SIZE, self.max_char_size / level)
-            for polarity in self.polarities:
-                response = self.stroke_response(level_gray, polarity)
-                strokes = self.binarize(response)
-                glyphs.extend(self._extract_glyphs(level_gray, strokes, polarity, level, min_size, max_size))
+            for polarity, (response, direction) in self.bar_responses(level_gray).items():
+                strokes = self.stroke_mask(response, direction)
+                glyphs.extend(self._extract_glyphs(strokes, polarity, level, min_size, max_size))
         return glyphs
 
-    @staticmethod
-    def stroke_response(gray, polarity):
-        """Strength of thin dark (black-hat) or light (top-hat) features.
+    def bar_responses(self, gray):
+        """Straight-bar response for each requested polarity.
 
-        A black-hat also responds to texture inside an object wider than its
-        element (bark on a log, mottling inside a shadow). There, the local
-        background (closing at stroke scale) is far darker than the background
-        at three times that scale, so that excess is subtracted. Ordinary
-        ground texture lifts the same difference a little everywhere, so only
-        the part above the image's typical level counts.
+        For each of BAR_ORIENTATIONS directions, the mean along a BAR_LENGTH
+        line through each pixel is compared with the means along the parallel
+        lines FLANK_OFFSETS away on either side: a light bar must beat the
+        brighter flank, a dark bar must undercut the darker one.
+
+        Returns:
+            {polarity: (response, direction)}: uint8 response in grey levels
+            and the index of the best direction (uint8) at each pixel.
         """
-        size = 2 * MAX_STROKE_WIDTH + 1
-        element = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (size, size))
         height, width = gray.shape
-        small = cv2.resize(gray, (max(1, width // 3), max(1, height // 3)), interpolation=cv2.INTER_AREA)
-        if polarity == POLARITY_DARK:
-            near = cv2.morphologyEx(gray, cv2.MORPH_CLOSE, element)
-            far = cv2.morphologyEx(small, cv2.MORPH_CLOSE, element)
-            far = cv2.resize(far, (width, height), interpolation=cv2.INTER_LINEAR)
-            response = cv2.subtract(near, gray)
-            wide = cv2.subtract(far, near)
-        else:
-            near = cv2.morphologyEx(gray, cv2.MORPH_OPEN, element)
-            far = cv2.morphologyEx(small, cv2.MORPH_OPEN, element)
-            far = cv2.resize(far, (width, height), interpolation=cv2.INTER_LINEAR)
-            response = cv2.subtract(gray, near)
-            wide = cv2.subtract(near, far)
-        median, sigma = _robust_level(wide[::4, ::4].astype(np.float32))
-        allowance = int(min(255, median + 3 * sigma + 5))
-        excess = cv2.subtract(wide, np.full_like(wide, allowance))
-        response = cv2.subtract(response, excess)
-        return cv2.GaussianBlur(response, (3, 3), 0)
+        pad = max(FLANK_OFFSETS) + 1
+        best = {p: np.zeros((height, width), np.uint8) for p in self.polarities}
+        direction = {p: np.zeros((height, width), np.uint8) for p in self.polarities}
+        for index, (kernel, flanks, _) in enumerate(_BAR_DIRECTIONS):
+            mean = cv2.filter2D(gray, -1, kernel, borderType=cv2.BORDER_REPLICATE)
+            padded = cv2.copyMakeBorder(mean, pad, pad, pad, pad, cv2.BORDER_REPLICATE)
+            responses = {p: np.zeros((height, width), np.uint8) for p in self.polarities}
+            for dx, dy in flanks:
+                side_a = _shifted(padded, pad, dx, dy, height, width)
+                side_b = _shifted(padded, pad, -dx, -dy, height, width)
+                if POLARITY_LIGHT in responses:
+                    bar = cv2.subtract(mean, cv2.max(side_a, side_b))
+                    cv2.max(responses[POLARITY_LIGHT], bar, dst=responses[POLARITY_LIGHT])
+                if POLARITY_DARK in responses:
+                    bar = cv2.subtract(cv2.min(side_a, side_b), mean)
+                    cv2.max(responses[POLARITY_DARK], bar, dst=responses[POLARITY_DARK])
+            for polarity, response in responses.items():
+                better = response > best[polarity]
+                best[polarity][better] = response[better]
+                direction[polarity][better] = index
+        return {p: (best[p], direction[p]) for p in self.polarities}
 
     @staticmethod
-    def binarize(response):
-        """Hysteresis-threshold a stroke response into a 0/255 stroke mask.
+    def local_thresholds(response):
+        """Low and high hysteresis thresholds from the response's local mean and spread."""
+        height, width = response.shape
+        scale = THRESHOLD_STATS_DOWNSCALE
+        small_size = (max(1, width // scale), max(1, height // scale))
+        window = max(3, (THRESHOLD_WINDOW // scale) | 1)
+        r = cv2.resize(response, small_size, interpolation=cv2.INTER_AREA).astype(np.float32)
+        r2 = cv2.resize(response.astype(np.uint16) ** 2, small_size, interpolation=cv2.INTER_AREA).astype(np.float32)
+        mean = cv2.boxFilter(r, -1, (window, window), borderType=cv2.BORDER_REFLECT)
+        mean_sq = cv2.boxFilter(r2, -1, (window, window), borderType=cv2.BORDER_REFLECT)
+        std = np.sqrt(np.maximum(mean_sq - mean * mean, 0.0))
+        high = np.clip(np.maximum(mean + HIGH_SIGMA * std, HIGH_FLOOR), 0, 255)
+        low = np.clip(np.maximum(mean + LOW_SIGMA * std, LOW_FLOOR), 0, 255)
+        full = (width, height)
+        return (cv2.resize(low, full, interpolation=cv2.INTER_LINEAR).astype(np.uint8),
+                cv2.resize(high, full, interpolation=cv2.INTER_LINEAR).astype(np.uint8))
 
-        Small gaps (between rocks in a row, or where two sticks nearly meet)
-        are closed so a character stays one component.
+    @classmethod
+    def stroke_mask(cls, response, direction):
+        """Threshold a bar response into a 0/255 stroke mask.
+
+        Ridge centrelines (maxima across the bar) are kept by hysteresis, so
+        a stroke is followed along its length without bleeding sideways into
+        neighbouring texture; the kept centrelines are then widened over the
+        stroke's own above-threshold pixels.
         """
-        median, sigma = _robust_level(response[::4, ::4].astype(np.float32))
-        high = max(HIGH_FLOOR, median + HIGH_SIGMA * sigma)
-        low = min(high, max(LOW_FLOOR, median + LOW_SIGMA * sigma))
-        mask = apply_hysteresis_threshold(response, low, high).astype(np.uint8) * 255
-        gap_closer = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
-        return cv2.morphologyEx(mask, cv2.MORPH_CLOSE, gap_closer)
+        height, width = response.shape
+        low, high = cls.local_thresholds(response)
+        padded = cv2.copyMakeBorder(response, 1, 1, 1, 1, cv2.BORDER_CONSTANT, value=0)
+        ridge = np.zeros((height, width), bool)
+        for index, (_, _, (dx, dy)) in enumerate(_BAR_DIRECTIONS):
+            here = direction == index
+            ridge |= (here & (response >= _shifted(padded, 1, dx, dy, height, width))
+                      & (response >= _shifted(padded, 1, -dx, -dy, height, width)))
+        above_low = response > low
+        weak = (ridge & above_low).astype(np.uint8)
+        count, labels = cv2.connectedComponents(weak, connectivity=8)
+        keep = np.zeros(count, bool)
+        keep[np.unique(labels[(weak > 0) & (response > high)])] = True
+        keep[0] = False
+        centrelines = keep[labels].astype(np.uint8) * 255
+        widened = cv2.dilate(centrelines, cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5)))
+        mask = np.where(above_low, widened, 0).astype(np.uint8)
+        cv2.max(mask, centrelines, dst=mask)
+        # Close the small gaps between rocks in a row or where sticks nearly meet.
+        return cv2.morphologyEx(mask, cv2.MORPH_CLOSE, cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3)))
 
     # ---------------------------------------------------------------- glyphs
 
-    def _extract_glyphs(self, level_gray, strokes, polarity, level, min_size, max_size):
+    def _extract_glyphs(self, strokes, polarity, level, min_size, max_size):
         count, labels, stats, _ = cv2.connectedComponentsWithStats(strokes, connectivity=8)
         widths = stats[:, cv2.CC_STAT_WIDTH]
         heights = stats[:, cv2.CC_STAT_HEIGHT]
@@ -291,38 +404,41 @@ class GroundMessageDetector:
         glyphs = []
         for index in np.nonzero(keep)[0]:
             x, y, w, h = (int(v) for v in stats[index, :4])
-            crop = np.pad((labels[y:y + h, x:x + w] == index).astype(np.uint8) * 255, 2)
+            region = labels[y:y + h, x:x + w]
+            own = region == index
+            crop = np.pad(own.astype(np.uint8) * 255, 2)
             features = measure_glyph(crop)
             if features is None or not (min_size * 0.85 <= features['long_side'] <= max_size * 1.25):
                 continue
+            own_pixels = int(own.sum())
+            features['isolation'] = own_pixels / float(own_pixels + np.count_nonzero(region) - own_pixels)
             score = score_glyph(features)
             if score < MIN_GLYPH_SCORE:
                 continue
             ys, xs = np.nonzero(crop)
             stride = max(1, len(xs) // MAX_POINTS_PER_GLYPH)
             points = (np.stack([xs[::stride], ys[::stride]], 1).astype(np.float32) + (x - 2, y - 2)) * level
-            brightness = float(np.median(level_gray[ys + y - 2, xs + x - 2]))
             glyphs.append(GlyphCandidate(
                 x0=x * level, y0=y * level, x1=(x + w) * level, y1=(y + h) * level,
                 level=level, polarity=polarity, score=score,
                 long_side=features['long_side'] * level, stroke_width=features['stroke_width'] * level,
-                brightness=brightness, features=features, level_mask=crop, level_origin=(x - 2, y - 2),
-                points=points))
+                features=features, level_mask=crop, level_origin=(x - 2, y - 2), points=points))
         return glyphs
 
     @staticmethod
     def _mark_persistence(glyphs):
+        """Flag glyphs also found at an adjacent level (either polarity); penalise the rest."""
+        grid = _grid_of(glyphs)
         for glyph in glyphs:
             glyph.persistent = any(
-                other.polarity == glyph.polarity
-                and (other.level == 2 * glyph.level or 2 * other.level == glyph.level)
+                (other.level == 2 * glyph.level or 2 * other.level == glyph.level)
                 and _box_iou(glyph.box, other.box) >= 0.4
-                for other in glyphs)
+                for other in (glyphs[i] for i in grid.query(glyph.box)))
             if not glyph.persistent:
                 glyph.score *= NON_PERSISTENT_PENALTY
 
     @staticmethod
-    def _is_composite(glyph, glyphs):
+    def _is_composite(glyph, glyphs, grid):
         """Does this candidate contain two or more separate, smaller candidates?
 
         Closely spaced characters can merge into one component at a coarser
@@ -330,7 +446,7 @@ class GroundMessageDetector:
         When the separate parts were also found, the parts are the better
         reading.
         """
-        parts = [other for other in glyphs
+        parts = [other for other in (glyphs[i] for i in grid.query(glyph.box))
                  if other is not glyph and other.score >= MIN_GLYPH_SCORE
                  and other.long_side <= 0.75 * glyph.long_side
                  and _box_containment(other.box, glyph.box) >= 0.8]
@@ -342,11 +458,19 @@ class GroundMessageDetector:
 
     @classmethod
     def _dedupe_glyphs(cls, glyphs, iou_threshold=0.35):
-        """Keep the best-scoring candidate among overlapping ones (one polarity)."""
-        glyphs = [g for g in glyphs if not cls._is_composite(g, glyphs)]
+        """Keep the best-scoring candidate among overlapping ones, across levels and polarities.
+
+        A pale branch in sun yields a light stroke and the dark stroke of its
+        shadow at the same place; either reading of the character will do.
+        """
+        glyphs = [g for g in glyphs if g.score >= MIN_GLYPH_SCORE]
+        grid = _grid_of(glyphs)
+        glyphs = [g for g in glyphs if not cls._is_composite(g, glyphs, grid)]
         kept = []
+        kept_grid = _BoxGrid()
         for glyph in sorted(glyphs, key=lambda g: -g.score):
-            if glyph.score >= MIN_GLYPH_SCORE and all(_box_iou(glyph.box, k.box) < iou_threshold for k in kept):
+            if all(_box_iou(glyph.box, kept[i].box) < iou_threshold for i in kept_grid.query(glyph.box)):
+                kept_grid.add(len(kept), glyph.box)
                 kept.append(glyph)
         return kept
 
@@ -354,9 +478,12 @@ class GroundMessageDetector:
 
     @staticmethod
     def compatible(a, b):
-        """Could glyphs a and b be neighbouring characters of one message?"""
-        if a.polarity != b.polarity:
-            return False
+        """Could glyphs a and b be neighbouring characters of one message?
+
+        Brightness and polarity are deliberately not compared: light and
+        shadow often fall across a message, so the same material can look
+        pale in one character and dark in the next.
+        """
         if not (1 / 1.6 <= a.long_side / max(b.long_side, 1e-6) <= 1.6):
             return False
         if not (1 / 1.8 <= a.stroke_width / max(b.stroke_width, 1e-6) <= 1.8):
@@ -364,10 +491,7 @@ class GroundMessageDetector:
         (ax, ay), (bx, by) = a.center, b.center
         distance = math.hypot(ax - bx, ay - by)
         mean_size = (a.long_side + b.long_side) / 2
-        if not (0.45 * mean_size <= distance <= 2.2 * mean_size):
-            return False
-        # Characters of one message are made of the same kind of material.
-        return abs(a.brightness - b.brightness) <= max(30.0, 0.3 * max(a.brightness, b.brightness))
+        return 0.45 * mean_size <= distance <= MAX_NEIGHBOR_DISTANCE * mean_size
 
     @staticmethod
     def line_check(glyphs):
@@ -420,53 +544,71 @@ class GroundMessageDetector:
         worst = int(np.argmax(deviation))
         return bool(deviation.max() <= 1.0), worst
 
-    @classmethod
-    def prune_to_line(cls, members):
-        """Remove glyphs until the rest read as one line (possibly leaving < 2).
+    @staticmethod
+    def _line_ends(members):
+        """Indices (into members) of the first and last glyph along the line."""
+        centers = np.array([g.center for g in members], np.float64)
+        direction = centers[-1] - centers[0] if len(members) == 2 else \
+            np.linalg.svd(centers - centers.mean(0))[2][0]
+        along = centers @ direction
+        return int(np.argmin(along)), int(np.argmax(along))
 
-        The line is fitted through every member, so an outlier also drags the
-        fit and line_check may blame a good glyph. When one removal makes
-        the rest a line, that removal is used (weakest glyph first); only
-        otherwise is the glyph with the worst deviation dropped.
+    def _grow_line(self, chain, glyphs, neighbors):
+        """Extend a two-glyph line at either end while it stays a consistent line.
+
+        Each step adds the best-scoring neighbour of an end glyph that keeps
+        line_check satisfied.
         """
-        members = list(members)
-        while len(members) >= 2:
-            is_line, worst = cls.line_check(members)
-            if is_line:
-                return members
-            if len(members) >= 3:
-                for index in sorted(range(len(members)), key=lambda i: members[i].score):
-                    rest = members[:index] + members[index + 1:]
-                    if cls.line_check(rest)[0]:
-                        return rest
-            members = members[:worst] + members[worst + 1:]
-        return members
+        chain = list(chain)
+        while len(chain) < MAX_MESSAGE_LENGTH:
+            members = [glyphs[k] for k in chain]
+            first, last = self._line_ends(members)
+            best = None
+            for end in {chain[first], chain[last]}:
+                for k in neighbors[end]:
+                    if k in chain or (best is not None and glyphs[k].score <= glyphs[best].score):
+                        continue
+                    if self.line_check(members + [glyphs[k]])[0]:
+                        best = k
+            if best is None:
+                break
+            chain.append(best)
+        return chain
 
     def _group_messages(self, glyphs):
-        count = len(glyphs)
-        parent = list(range(count))
+        """Grow text lines from compatible pairs of glyphs.
 
-        def find(a):
-            while parent[a] != a:
-                parent[a] = parent[parent[a]]
-                a = parent[a]
-            return a
-
-        for i in range(count):
-            for j in range(i + 1, count):
-                if self.compatible(glyphs[i], glyphs[j]):
-                    parent[find(i)] = find(j)
-        clusters = {}
-        for i in range(count):
-            clusters.setdefault(find(i), []).append(glyphs[i])
+        Seeds are tried best pair first. Once a line is built, every pair of
+        its glyphs is marked as covered, so the same line is not regrown from
+        each of its other pairs.
+        """
+        grid = _grid_of(glyphs)
+        neighbors = [[] for _ in glyphs]
+        for i, glyph in enumerate(glyphs):
+            for j in grid.query(glyph.box, MAX_NEIGHBOR_DISTANCE * glyph.long_side):
+                if j > i and self.compatible(glyph, glyphs[j]):
+                    neighbors[i].append(j)
+                    neighbors[j].append(i)
+        seeds = sorted(((i, j) for i in range(len(glyphs)) for j in neighbors[i] if j > i),
+                       key=lambda pair: -(glyphs[pair[0]].score + glyphs[pair[1]].score))
+        covered = set()
+        lines = {}
+        for i, j in seeds:
+            if (i, j) in covered:
+                continue
+            covered.add((i, j))
+            if not self.line_check([glyphs[i], glyphs[j]])[0]:
+                continue
+            chain = self._grow_line((i, j), glyphs, neighbors)
+            covered.update((min(a, b), max(a, b)) for a in chain for b in chain if a != b)
+            lines.setdefault(frozenset(chain), chain)
 
         messages = []
-        for members in clusters.values():
-            members = self.prune_to_line(members)
-            if len(members) >= 2:
-                best = sorted((g.score for g in members), reverse=True)[:4]
-                score = float(np.mean(best)) * COUNT_FACTORS.get(len(members), 1.0)
-                messages.append(MessageCandidate(members, score))
+        for chain in lines.values():
+            members = [glyphs[k] for k in chain]
+            best = sorted((g.score for g in members), reverse=True)[:4]
+            score = float(np.mean(best)) * COUNT_FACTORS.get(len(members), 1.0)
+            messages.append(MessageCandidate(members, score))
         return messages
 
     @staticmethod
@@ -489,11 +631,16 @@ class GroundMessageDetector:
 
     @staticmethod
     def _dedupe_messages(messages):
-        """Drop messages mostly covered by a longer or better one (e.g. the other polarity)."""
+        """Keep longer, then better messages; drop ones sharing a glyph or mostly covered by a kept one."""
         kept = []
+        used = set()
         for message in sorted(messages, key=lambda m: (-len(m.glyphs), -m.score)):
+            ids = {id(g) for g in message.glyphs}
+            if ids & used:
+                continue
             if all(_box_containment(message.box, k.box) < 0.5 for k in kept):
                 kept.append(message)
+                used |= ids
         return sorted(kept, key=lambda m: -m.score)
 
 
