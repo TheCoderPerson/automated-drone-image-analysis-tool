@@ -6,7 +6,7 @@ name: Build Windows test exe
 # can be tried on Windows without a local build toolchain.
 on:
   push:
-    branches: [test/combined-windows-build]
+    branches: [test/combined-windows-build, test/combined-windows-build-2026-11]
   workflow_dispatch:
 
 permissions:
