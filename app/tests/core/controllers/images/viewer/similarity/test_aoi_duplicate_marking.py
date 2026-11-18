@@ -294,6 +294,59 @@ class TestMarkDuplicatesToast:
 
 
 # ---------------------------------------------------------------------------
+# Gallery Ctrl+click selection -> duplicates of the first AOI selected
+# ---------------------------------------------------------------------------
+
+class TestMarkDuplicatesOfFirst:
+
+    def test_the_rest_are_linked_to_the_first(self, controller, viewer):
+        viewer.aoi_controller.set_aoi_duplicates_bulk.return_value = DuplicateChange(
+            primary=(0, 0), changed=[(1, 0), (0, 1)], touched=[(1, 0), (0, 1)])
+
+        change = controller.mark_duplicates_of_first([(0, 0), (1, 0), (0, 1)])
+
+        viewer.aoi_controller.set_aoi_duplicates_bulk.assert_called_once_with([(1, 0), (0, 1)], (0, 0))
+        assert change.count == 2
+        assert viewer.status_controller.show_toast.call_args[0][0] == "Marked 2 AOI(s) as duplicates of AOI #1"
+
+    def test_there_is_no_picker_and_no_search(self, controller, viewer):
+        viewer.aoi_controller.set_aoi_duplicates_bulk.return_value = DuplicateChange(
+            primary=(0, 0), changed=[(1, 0)], touched=[(1, 0)])
+        controller._start_worker = MagicMock()
+
+        with patch(PICKER) as picker_cls:
+            controller.mark_duplicates_of_first([(0, 0), (1, 0)])
+
+        picker_cls.assert_not_called()
+        controller._start_worker.assert_not_called()
+
+    def test_an_unflagged_first_aoi_is_allowed_but_warned_about(self, controller, viewer):
+        """Unlike the picker, which only offers flagged AOIs, the reviewer chose this one."""
+        viewer.aoi_controller.set_aoi_duplicates_bulk.return_value = DuplicateChange(
+            primary=(0, 1), changed=[(1, 0)], touched=[(1, 0)])
+
+        controller.mark_duplicates_of_first([(0, 1), (1, 0)])
+
+        viewer.aoi_controller.set_aoi_duplicates_bulk.assert_called_once_with([(1, 0)], (0, 1))
+        assert "not flagged" in viewer.status_controller.show_toast.call_args[0][0]
+
+    @pytest.mark.parametrize('refs', [[], [(0, 0)]])
+    def test_fewer_than_two_aois_is_a_noop(self, controller, viewer, refs):
+        assert controller.mark_duplicates_of_first(refs) is None
+
+        viewer.aoi_controller.set_aoi_duplicates_bulk.assert_not_called()
+
+    def test_a_failure_is_logged_with_the_aois_involved(self, controller, viewer):
+        viewer.aoi_controller.set_aoi_duplicates_bulk.side_effect = RuntimeError("disk full")
+        controller.logger = MagicMock()
+
+        assert controller.mark_duplicates_of_first([(0, 0), (1, 0)]) is None
+
+        message = controller.logger.error.call_args[0][0]
+        assert "disk full" in message and "(0, 0)" in message and "(1, 0)" in message
+
+
+# ---------------------------------------------------------------------------
 # Find Similar dialog bulk actions
 # ---------------------------------------------------------------------------
 

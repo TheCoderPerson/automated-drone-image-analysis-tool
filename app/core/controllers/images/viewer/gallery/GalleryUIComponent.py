@@ -9,7 +9,8 @@ from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel,
                                QListView, QPushButton, QFrame,
                                QAbstractItemView, QStyledItemDelegate, QStyle,
                                QStyleOptionViewItem, QApplication)
-from PySide6.QtCore import Qt, QSize, QRect, QTimer, Signal, QModelIndex, QEvent, QObject, QPoint
+from PySide6.QtCore import (Qt, QSize, QRect, QTimer, Signal, QModelIndex, QEvent, QObject, QPoint,
+                            QItemSelectionModel)
 from PySide6.QtGui import QPainter, QColor, QPen, QFont, QFontMetrics, QPixmap, QIcon, QKeyEvent
 import qtawesome as qta
 
@@ -158,10 +159,53 @@ class AOIGalleryDelegate(QStyledItemDelegate):
                     painter.setPen(QPen(QColor(255, 255, 255), 1))
                     painter.drawRect(swatch_rect)
 
+            # With several AOIs selected, name the one the others would become
+            # duplicates of (the first one selected) before D is pressed.
+            if (option.state & QStyle.State_Selected) and self._is_selection_primary(user_data):
+                self._draw_primary_marker(painter, thumbnail_rect)
+
         except Exception:
             # Fallback to default rendering on error
             pass
 
+        painter.restore()
+
+    def _is_selection_primary(self, user_data):
+        """True for the first-selected AOI while several AOIs are selected."""
+        ui_component = getattr(self.gallery_controller, 'ui_component', None)
+        if ui_component is None:
+            return False
+        key = (user_data.get('image_idx'), user_data.get('aoi_idx'))
+        return ui_component.multi_selection_primary() == key
+
+    def _draw_primary_marker(self, painter, thumbnail_rect):
+        """Draw the "Primary" pill in the thumbnail's top-right corner.
+
+        Args:
+            painter: The active QPainter.
+            thumbnail_rect: The thumbnail's QRect.
+        """
+        painter.save()
+        text = self.tr("Primary")
+        font = QFont()
+        font.setPointSize(9)
+        font.setBold(True)
+        painter.setFont(font)
+        metrics = QFontMetrics(font)
+        padding_x, padding_y = 5, 2
+        width = metrics.horizontalAdvance(text) + padding_x * 2
+        marker_rect = QRect(
+            thumbnail_rect.right() - 4 - width,
+            thumbnail_rect.top() + 4,
+            width,
+            metrics.height() + padding_y * 2,
+        )
+        painter.setPen(Qt.NoPen)
+        # The selection highlight's blue: this is about the selection, not the AOI
+        painter.setBrush(QColor(100, 150, 255))
+        painter.drawRoundedRect(marker_rect, 4, 4)
+        painter.setPen(QPen(QColor(255, 255, 255)))
+        painter.drawText(marker_rect, Qt.AlignCenter, text)
         painter.restore()
 
     def _draw_number_badge(self, painter, thumbnail_rect, number, text=None, duplicate=False):
@@ -267,6 +311,14 @@ class GalleryUIComponent(TranslationMixin, QObject):
         # Track when the view has a valid geometry and initial thumbnails are queued
         self._initial_thumbnails_loaded = False
 
+        # (image_idx, aoi_idx) of the selected AOIs, in the order they were
+        # selected. The view's selection model knows what is selected but not
+        # in what order, and the first one is the primary when the rest are
+        # marked as its duplicates.
+        self._selection_order = []
+        # A Ctrl+click's press was handled in eventFilter; its release is ours too
+        self._ctrl_click_in_progress = False
+
         # Scroll debounce timer for performance
         self.scroll_timer = QTimer()
         self.scroll_timer.setSingleShot(True)
@@ -300,6 +352,10 @@ class GalleryUIComponent(TranslationMixin, QObject):
         self.gallery_view.setSpacing(10)
         self.gallery_view.setWrapping(True)
         self.gallery_view.setFlow(QListView.LeftToRight)
+        # The view's own clicks and keys select one AOI. Ctrl+click builds a
+        # multi-selection through the selection model in eventFilter instead of
+        # ExtendedSelection, which would also select by dragging across tiles -
+        # too easy to do by accident when D then marks duplicates with no picker.
         self.gallery_view.setSelectionMode(QAbstractItemView.SingleSelection)
         self.gallery_view.setVerticalScrollMode(QAbstractItemView.ScrollPerPixel)
         self.gallery_view.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
@@ -408,6 +464,92 @@ class GalleryUIComponent(TranslationMixin, QObject):
             # Connect model readiness signals to trigger initial thumbnail loading
             model.modelReset.connect(self._on_model_ready)
             model.rowsInserted.connect(lambda *_: self._on_model_ready())
+            # setModel gave the view a new selection model. It empties itself on
+            # a model reset without emitting selectionChanged, so the recorded
+            # order is dropped on reset as well.
+            self.gallery_view.selectionModel().selectionChanged.connect(self._on_selection_changed)
+            model.modelReset.connect(self._on_model_reset)
+
+    def _on_model_reset(self):
+        """Forget the selection order: a reset leaves nothing selected."""
+        self._selection_order = []
+
+    def _on_selection_changed(self, *_):
+        """Record the order AOIs were selected in and repaint the "Primary" marker."""
+        self._selection_order = self.selected_aois()
+        if self.gallery_view:
+            # The marker can move to a tile whose own selection state did not change
+            self.gallery_view.viewport().update()
+
+    def _aoi_key(self, index):
+        """(image_idx, aoi_idx) of the AOI at a model index, or None."""
+        model = self.gallery_view.model() if self.gallery_view else None
+        aoi_info = model.get_aoi_info(index) if model else None
+        if not aoi_info:
+            return None
+        return (aoi_info[0], aoi_info[1])
+
+    def selected_aois(self):
+        """The selected AOIs as (image_idx, aoi_idx), in the order they were selected.
+
+        The selection model decides what is selected; the recorded order only
+        says which came first. An AOI the order does not know (selected while
+        signals were blocked) goes after the ones it does, in gallery order.
+
+        Returns:
+            list: (image_idx, aoi_idx) tuples; the first is the one selected first.
+        """
+        selection_model = self.gallery_view.selectionModel() if self.gallery_view else None
+        if selection_model is None:
+            return []
+        indexes = sorted(selection_model.selectedIndexes(), key=lambda index: index.row())
+        selected = [key for key in (self._aoi_key(index) for index in indexes) if key is not None]
+        ordered = [key for key in self._selection_order if key in selected]
+        return ordered + [key for key in selected if key not in ordered]
+
+    def multi_selection_primary(self):
+        """(image_idx, aoi_idx) of the first-selected AOI while several are selected, else None."""
+        if len(self._selection_order) < 2:
+            return None
+        return self._selection_order[0]
+
+    def _toggle_selected(self, index):
+        """Ctrl+click: add an AOI to the selection, or take it back out.
+
+        The first AOI selected stays the current one - it is what the viewer
+        shows, what F and Shift+Z act on, and what the others become duplicates
+        of - so adding to the selection does not load another image.
+        """
+        selection_model = self.gallery_view.selectionModel()
+        if not selection_model.hasSelection():
+            # Nothing to add to: this is the first AOI, so it is a plain click
+            self._on_item_clicked(index)
+            return
+
+        if not selection_model.isSelected(index):
+            selection_model.select(index, QItemSelectionModel.Select)
+            return
+
+        if len(selection_model.selectedIndexes()) < 2:
+            # The only selected AOI stays selected: an empty selection would leave
+            # the keyboard shortcuts acting on a tile that is not highlighted
+            return
+
+        selection_model.select(index, QItemSelectionModel.Deselect)
+        # If that was the first one selected, the next in line takes its place
+        # as the current AOI, and the viewer follows as it does for any current AOI
+        model = self.gallery_view.model()
+        first = self._selection_order[0] if self._selection_order else None
+        if first is None or first == self._aoi_key(self.gallery_view.currentIndex()):
+            return
+        row = model.aoi_to_row.get(first)
+        if row is None:
+            return
+        first_index = model.index(row, 0)
+        selection_model.setCurrentIndex(first_index, QItemSelectionModel.NoUpdate)
+        aoi_info = model.get_aoi_info(first_index)
+        if aoi_info:
+            self.gallery_controller.on_aoi_clicked(*aoi_info)
 
     def _on_model_changed(self):
         """Handle model changes - update header and reload thumbnails if in gallery mode."""
@@ -587,13 +729,33 @@ class GalleryUIComponent(TranslationMixin, QObject):
                         window.keyPressEvent(event)
                     return True
 
+            # The release half of a Ctrl+click handled below. The view never saw
+            # the press, so it would compare this release with whichever tile
+            # was pressed before and, on a match, emit clicked - which selects
+            # that tile alone and throws away the selection just built.
+            if (obj == self.gallery_view.viewport() and
+                    event.type() == QEvent.MouseButtonRelease and
+                    self._ctrl_click_in_progress):
+                self._ctrl_click_in_progress = False
+                event.accept()
+                return True
+
             # Handle mouse clicks on the thumbnail's interactive icons and
             # right-click copy. Both left- and right-click are handled from a
             # single branch so the hit-testing and thumbnail-rect calculation
-            # are not duplicated.
+            # are not duplicated. Two quick Ctrl+clicks on one tile arrive as a
+            # press and a double-click; the second counts as a click too, so
+            # the tile toggles twice instead of the view opening it.
+            is_ctrl_double_click = (
+                event.type() == QEvent.MouseButtonDblClick and
+                event.button() == Qt.LeftButton and
+                bool(event.modifiers() & Qt.ControlModifier))
             if (obj == self.gallery_view.viewport() and
-                    event.type() == QEvent.MouseButtonPress and
+                    (event.type() == QEvent.MouseButtonPress or is_ctrl_double_click) and
                     event.button() in (Qt.LeftButton, Qt.RightButton)):
+                # A new press means any earlier Ctrl+click is over, even if its
+                # release went elsewhere (a dialog opened under the cursor)
+                self._ctrl_click_in_progress = False
                 # Get the item at the click position
                 index = self.gallery_view.indexAt(event.pos())
                 if index.isValid():
@@ -633,7 +795,10 @@ class GalleryUIComponent(TranslationMixin, QObject):
                                 # via the same context menu used by single-image view.
                                 if event.button() == Qt.RightButton:
                                     if thumbnail_rect.contains(event.pos()):
-                                        if self.gallery_view.currentIndex() != index:
+                                        # A tile that is part of the selection keeps it
+                                        # (the menu can then act on all of it); any
+                                        # other tile becomes the selection.
+                                        if not self.gallery_view.selectionModel().isSelected(index):
                                             self.gallery_view.setCurrentIndex(index)
                                         if aoi_controller:
                                             aoi_controller.show_aoi_context_menu(
@@ -687,6 +852,17 @@ class GalleryUIComponent(TranslationMixin, QObject):
                                     if aoi_controller:
                                         aoi_controller.show_aoi_location(aoi_idx, image_idx, anchor_point=anchor_point)
                                     # Prevent the click from propagating
+                                    event.accept()
+                                    return True
+
+                                # Ctrl+click anywhere else on the tile adds it to the
+                                # selection, or takes it back out. Consumed here so the
+                                # view's own click handling (select this tile alone and
+                                # show it in the viewer) does not run.
+                                if event.modifiers() & Qt.ControlModifier:
+                                    self._toggle_selected(index)
+                                    self._ctrl_click_in_progress = True
+                                    self.gallery_view.setFocus()
                                     event.accept()
                                     return True
 

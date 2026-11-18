@@ -1157,6 +1157,52 @@ def test_context_menu_offers_unmark_on_a_duplicate(dup_controller):
     assert "duplicate_of" not in dup_controller.parent.images[0]["areas_of_interest"][1]
 
 
+def _select_in_gallery(dup_controller, refs):
+    """Put the viewer in gallery mode with *refs* Ctrl+click-selected, in that order."""
+    dup_controller.parent.gallery_mode = True
+    dup_controller.parent.gallery_controller.get_selected_aois.return_value = list(refs)
+
+
+def test_context_menu_marks_the_gallery_selection_as_duplicates_of_the_first(dup_controller):
+    _select_in_gallery(dup_controller, [(1, 0), (0, 0), (0, 1)])
+
+    actions = _open_context_menu(dup_controller, aoi_index=1, image_idx=0)
+
+    assert "Mark as Duplicate..." not in actions
+    action = actions["Mark 2 AOI(s) as Duplicates of AOI #3"]
+    action.setEnabled.assert_called_once_with(True)
+    action.triggered.connect.call_args[0][0]()
+    dup_controller.parent.gallery_controller.mark_selected_duplicates.assert_called_once_with()
+    dup_controller.parent.similarity_controller.mark_duplicate_for_selected.assert_not_called()
+
+
+def test_context_menu_on_an_aoi_outside_the_gallery_selection_is_single(dup_controller):
+    _select_in_gallery(dup_controller, [(1, 0), (0, 0)])
+
+    actions = _open_context_menu(dup_controller, aoi_index=1, image_idx=0)
+
+    assert list(actions) == ["Copy Data", "Find Similar AOIs", "Mark as Duplicate..."]
+
+
+def test_context_menu_with_one_gallery_aoi_selected_is_single(dup_controller):
+    _select_in_gallery(dup_controller, [(0, 1)])
+
+    actions = _open_context_menu(dup_controller, aoi_index=1, image_idx=0)
+
+    assert "Mark as Duplicate..." in actions
+
+
+def test_context_menu_ignores_the_gallery_selection_in_single_image_mode(dup_controller):
+    """The gallery keeps its selection while hidden behind the single-image view."""
+    _select_in_gallery(dup_controller, [(0, 0), (0, 1)])
+    dup_controller.parent.gallery_mode = False
+
+    actions = _open_context_menu(dup_controller, aoi_index=1, image_idx=None)
+
+    assert "Mark as Duplicate..." in actions
+    dup_controller.parent.gallery_controller.get_selected_aois.assert_not_called()
+
+
 def test_context_menu_mark_as_duplicate_disabled_without_aoi(controller):
     actions = _open_context_menu(controller, aoi_index=None, image_idx=None)
 

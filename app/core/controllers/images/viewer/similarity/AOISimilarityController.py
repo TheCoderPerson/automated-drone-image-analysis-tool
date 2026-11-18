@@ -440,6 +440,30 @@ class AOISimilarityController(TranslationMixin, QObject):
         except Exception as e:
             self.logger.error(f"Error starting duplicate marking for image {image_idx} AOI {aoi_idx}: {e}")
 
+    def mark_duplicates_of_first(self, refs):
+        """
+        Mark every AOI after the first in *refs* as a duplicate of the first.
+
+        The gallery's Ctrl+click selection arrives here. The reviewer chose the
+        primary by selecting it first, so there is no ranking and no picker, and
+        the primary need not be flagged (as with Mark Duplicate in the Find
+        Similar results, the toast says when it is not in reports yet).
+
+        Args:
+            refs: (image_idx, aoi_idx) pairs in the order they were selected.
+
+        Returns:
+            AOIDuplicateService.DuplicateChange, or None if nothing was applied.
+        """
+        refs = [tuple(ref) for ref in refs]
+        if len(refs) < 2:
+            return None
+        try:
+            return self._mark_duplicates(refs[1:], refs[0])
+        except Exception as e:
+            self.logger.error(f"Error marking AOIs {refs[1:]} as duplicates of AOI {refs[0]}: {e}")
+            return None
+
     def _on_duplicate_candidates_complete(self, payload):
         """Show the picker for a finished candidate ranking and store the choice."""
         if self._defer_while_pumping(self._on_duplicate_candidates_complete, payload):

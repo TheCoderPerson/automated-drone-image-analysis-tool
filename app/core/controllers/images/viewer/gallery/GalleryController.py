@@ -916,6 +916,42 @@ class GalleryController:
         except Exception as e:
             self.logger.error(f"Error syncing selection from AOI controller: {e}")
 
+    def get_selected_aois(self):
+        """AOIs selected in the gallery, in the order they were selected.
+
+        Returns:
+            list: (image_idx, aoi_idx) tuples; several only after Ctrl+click.
+        """
+        if not self.ui_component:
+            return []
+        return self.ui_component.selected_aois()
+
+    def mark_selected_duplicates(self):
+        """Mark the Ctrl+click-selected AOIs as duplicates of the first one selected.
+
+        There is no picker: selecting an AOI first already says which one the
+        others repeat.
+
+        Returns:
+            bool: True when several AOIs were selected, so the marking was
+                handled here; False leaves the caller to its single-AOI flow.
+        """
+        selected = self.get_selected_aois()
+        if len(selected) < 2 or not hasattr(self.parent, 'similarity_controller'):
+            return False
+
+        change = self.parent.similarity_controller.mark_duplicates_of_first(selected)
+        if change is None or change.primary is None:
+            # Nothing was linked: leave the selection as the reviewer built it
+            return True
+
+        # The selection has done its job. Fall back to the first AOI alone so a
+        # later D or Ctrl+click does not build on AOIs scrolled out of sight.
+        row = self.model.aoi_to_row.get(selected[0])
+        if row is not None and self.ui_component.gallery_view:
+            self.ui_component.gallery_view.setCurrentIndex(self.model.index(row, 0))
+        return True
+
     def toggle_aoi_flag(self):
         """Toggle the flag status of the currently selected AOI in the gallery."""
         # self.logger.debug("===== toggle_aoi_flag() called =====")
@@ -1065,8 +1101,10 @@ class GalleryController:
                 self.ui_component.gallery_view.blockSignals(True)
                 # Emit dataChanged to trigger repaint
                 self.model.dataChanged.emit(index, index, [Qt.UserRole, Qt.DecorationRole])
-                # Restore the selection
-                if current_index.isValid():
+                # Restore the selection if the repaint moved it. Re-setting an
+                # unchanged current index would select it alone, dropping the
+                # other AOIs of a Ctrl+click selection every time F is pressed.
+                if current_index.isValid() and self.ui_component.gallery_view.currentIndex() != current_index:
                     self.ui_component.gallery_view.setCurrentIndex(current_index)
                     # self.logger.debug(f"Restored selection to row {current_index.row()}")
                 # Re-enable signals

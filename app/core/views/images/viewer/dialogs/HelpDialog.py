@@ -248,7 +248,9 @@ class HelpDialog(TranslationMixin, QDialog):
                     <tr>
                         <td>D</td>
                         <td>Mark the selected AOI as a duplicate (another sighting) of a flagged AOI - pick it from
-                            the closest, most alike matches. Press D on a duplicate to remove the mark</td>
+                            the closest, most alike matches. Press D on a duplicate to remove the mark. In
+                            Gallery View, Ctrl + click more AOIs first and D marks them all as duplicates of the
+                            first one you selected (labelled Primary)</td>
                     </tr>
                     <tr>
                         <td>S</td>
@@ -430,6 +432,12 @@ class HelpDialog(TranslationMixin, QDialog):
                         <td>Right Click</td>
                         <td>Copy AOI Data (GPS coordinates, color, etc) to clipboard</td>
                     </tr>
+                    <tr>
+                        <td>Ctrl + Click (Gallery View)</td>
+                        <td>Add the AOI to the selection, or take it back out. The first AOI selected is
+                            labelled Primary; press D, or right-click a selected AOI, to mark the others as
+                            its duplicates</td>
+                    </tr>
                 </table>
             </div>
 
@@ -537,7 +545,9 @@ class HelpDialog(TranslationMixin, QDialog):
                         AOIs at once</li>
                     <li>When the same object shows up in several images, flag the best view and mark
                         the others as <b>duplicates</b>: press <b>D</b> on each one, or use
-                        <b>Mark Duplicate</b> in the Shift+Z results. Duplicates show a purple flag and
+                        <b>Mark Duplicate</b> in the Shift+Z results. In Gallery View you can do it in one
+                        step: click the best view, <b>Ctrl + click</b> each other sighting, then press
+                        <b>D</b> (or right-click one of them). Duplicates show a purple flag and
                         "#46 &rarr; #12" on their number. Reports list the object once, at the flagged
                         AOI's position, with "Also seen in" naming every duplicate's image and AOI
                         number. Check <b>Hide Duplicate AOIs</b> in the filter to show only the

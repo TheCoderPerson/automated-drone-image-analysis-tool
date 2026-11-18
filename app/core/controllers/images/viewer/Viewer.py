@@ -1150,16 +1150,19 @@ class Viewer(TranslationMixin, QMainWindow, Ui_Viewer):
         if e.key() == Qt.Key_D and e.modifiers() == Qt.NoModifier:
             # Mark the selected AOI as a duplicate of another AOI with 'D'
             # (pressing it on a duplicate removes the mark). Gallery mode reads
-            # the selection from the gallery model, as Shift+Z does.
+            # the selection from the gallery model, as Shift+Z does. With several
+            # AOIs Ctrl+click-selected there, the gallery marks them all as
+            # duplicates of the first one selected instead of opening the picker.
             if hasattr(self, 'similarity_controller'):
                 if (hasattr(self, 'gallery_mode') and self.gallery_mode and
                         hasattr(self, 'gallery_controller') and self.gallery_controller):
-                    gallery_selection = self._resolve_gallery_selected_aoi()
-                    if gallery_selection:
-                        image_idx, aoi_idx = gallery_selection
-                        self.similarity_controller.mark_duplicate_for_selected(
-                            image_idx=image_idx, aoi_idx=aoi_idx
-                        )
+                    if not self.gallery_controller.mark_selected_duplicates():
+                        gallery_selection = self._resolve_gallery_selected_aoi()
+                        if gallery_selection:
+                            image_idx, aoi_idx = gallery_selection
+                            self.similarity_controller.mark_duplicate_for_selected(
+                                image_idx=image_idx, aoi_idx=aoi_idx
+                            )
                 else:
                     self.similarity_controller.mark_duplicate_for_selected()
         if e.key() == Qt.Key_W and e.modifiers() == Qt.ShiftModifier:

@@ -962,7 +962,19 @@ class AOIController(TranslationMixin):
         # Duplicate marking: link to the AOI it repeats, or undo that link
         target_image_idx = image_idx if image_idx is not None else getattr(self.parent, 'current_image', None)
         aoi = self._get_aoi_safe(target_image_idx, aoi_index)
-        if aoi is not None and AOIDuplicateService.is_duplicate(self.parent.images, aoi):
+        gallery_selection = self._gallery_selection_including(target_image_idx, aoi_index)
+        if gallery_selection:
+            # Several AOIs Ctrl+click-selected in the gallery: the first one
+            # selected is the primary, so there is nothing to pick
+            primary = self._get_aoi_safe(*gallery_selection[0])
+            primary_number = primary.get('number') if primary else None
+            duplicate_action = menu.addAction(
+                self.tr("Mark {count} AOI(s) as Duplicates of AOI #{number}").format(
+                    count=len(gallery_selection) - 1, number=primary_number))
+            duplicate_action.setEnabled(isinstance(primary_number, int))
+            duplicate_action.triggered.connect(
+                lambda: self.parent.gallery_controller.mark_selected_duplicates())
+        elif aoi is not None and AOIDuplicateService.is_duplicate(self.parent.images, aoi):
             duplicate_action = menu.addAction(self.tr("Not a Duplicate of AOI #{number}").format(
                 number=AOIDuplicateService.get_duplicate_of(aoi)))
             duplicate_action.triggered.connect(
@@ -980,6 +992,25 @@ class AOIController(TranslationMixin):
 
         # Show menu at cursor position
         menu.exec(global_pos)
+
+    def _gallery_selection_including(self, image_index, aoi_index):
+        """The gallery's multi-selection when this AOI is part of it, else [].
+
+        Only in gallery mode: the gallery keeps its selection while it is hidden,
+        and a selection the reviewer cannot see must not change what the menu does.
+
+        Returns:
+            list: (image_idx, aoi_idx) tuples in the order they were selected.
+        """
+        if not getattr(self.parent, 'gallery_mode', False):
+            return []
+        gallery_controller = getattr(self.parent, 'gallery_controller', None)
+        if gallery_controller is None:
+            return []
+        selected = gallery_controller.get_selected_aois()
+        if len(selected) < 2 or (image_index, aoi_index) not in selected:
+            return []
+        return selected
 
     def copy_aoi_data(self, center, pixel_area, avg_info=None, aoi_index=None, image_idx=None):
         """Copy AOI data to clipboard including image name, coordinates, and GPS.
